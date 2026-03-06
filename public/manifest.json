@@ -1,0 +1,16 @@
+{
+  "short_name": "ACB_Soft GPS Plus",
+  "name": "ACB_Soft GPS Plus v4.7.0",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/854/854878.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#3b82f6",
+  "background_color": "#F1F5F9"
+}
