@@ -74,21 +74,7 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
         
         {/* Yeni Ölçüm Yap */}
         <button 
-          onClick={() => {
-            // iOS Safari için "User Gesture" (Kullanıcı Dokunuşu) ile doğrudan izin isteği
-            if (navigator.geolocation) {
-              navigator.geolocation.getCurrentPosition(
-                () => onStartCapture(),
-                (error) => {
-                  console.warn("Konum izni reddedildi veya hata oluştu:", error);
-                  onStartCapture(); // Hata olsa bile devam et
-                },
-                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-              );
-            } else {
-              onStartCapture();
-            }
-          }}
+          onClick={onStartCapture}
           className="w-full py-3 md:py-4 px-5 bg-emerald-600 text-white rounded-xl md:rounded-2xl shadow-lg shadow-emerald-600/30 active:scale-[0.98] transition-all flex items-center justify-between group relative overflow-hidden border border-white/10"
         >
           <div className="relative z-10 flex items-center gap-3">
@@ -103,21 +89,7 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
 
         {/* Aplikasyon Yap */}
         <button 
-          onClick={() => {
-            // iOS Safari için "User Gesture" (Kullanıcı Dokunuşu) ile doğrudan izin isteği
-            if (navigator.geolocation) {
-              navigator.geolocation.getCurrentPosition(
-                () => onStakeout(),
-                (error) => {
-                  console.warn("Konum izni reddedildi veya hata oluştu:", error);
-                  onStakeout(); // Hata olsa bile devam et
-                },
-                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-              );
-            } else {
-              onStakeout();
-            }
-          }}
+          onClick={onStakeout}
           className="w-full py-3 md:py-4 px-5 bg-blue-600 text-white rounded-xl md:rounded-2xl shadow-lg shadow-blue-600/30 active:scale-[0.98] transition-all flex items-center justify-between group relative overflow-hidden border border-white/10"
         >
           <div className="relative z-10 flex items-center gap-3">
