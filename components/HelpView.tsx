@@ -43,9 +43,11 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <br/><br/>
                 • <b>Proje Bilgisi:</b> "Yeni Proje Oluştur" ile yeni bir isim verebilir veya "Mevcut Proje Seç" ile önceki çalışmalarınıza devam edebilirsiniz.
                 <br/>
-                • <b>Koordinat Sistemi:</b> WGS84 (Coğrafi), ITRF96 (3 derece) veya ED50 (3/6 derece) sistemlerinden birini seçin. Proje bir kez oluşturulduğunda sistem değiştirilemez.
+                • <b>Koordinat Sistemi:</b> WGS84 (Enlem-Boylam), ITRF96 (3 derece) veya ED50 (3/6 derece) sistemlerinden birini seçin. Proje bir kez oluşturulduğunda sistem değiştirilemez.
                 <br/>
-                • <b>Ölçüm Süreci:</b> "Ölçümü Başlat" dediğinizde 5 saniyelik bir geri sayım başlar. Uygulama bu sürede saniyede bir konum örneği alarak bunların ortalamasını hesaplar. En doğru sonuç için cihazı nivo/jalon üzerinde veya sabit bir zeminde tutun.
+                • <b>Ölçüm Süreci:</b> "Ölçümü Başlat" dediğinizde belirlediğiniz sürede (5-30 sn) bir geri sayım başlar. Uygulama bu sürede saniyede bir konum örneği alarak bunların ortalamasını hesaplar. En doğru sonuç için cihazı nivo/jalon üzerinde veya sabit bir zeminde tutun.
+                <br/>
+                • <b>Hızlı Erişim:</b> Uygulama, ana ekrandayken GPS sinyalini arka planda hazırlamaya başlar. Üst bar üzerindeki "Sistem Hazır" rozeti, GPS'in ısındığını ve ölçüme anında geçebileceğinizi gösterir.
               </p>
             </div>
 
@@ -62,9 +64,9 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <br/>
                 • <b>Canlı Rehberlik:</b> Ekranın ortasındaki pusula benzeri gösterge size gitmeniz gereken yönü gösterir. 
                 <br/>
-                • <b>Mesafe Takibi:</b> Hedefe olan kuş uçuşu mesafeniz (metre cinsinden) anlık olarak güncellenir.
+                • <b>Mesafe Takibi:</b> Hedefe olan kuş uçuşu mesafeniz (metre cinsinden) anlık olarak güncellenir. Uygulamanın metre hassasiyetinde çalıştığını unutmayın.
                 <br/>
-                • <b>Yaklaşma Modu:</b> Hedefe 2 metreden fazla yaklaştığınızda gösterge daha hassas bir "yakın çekim" moduna geçer. Tam noktaya ulaştığınızda görsel ve dokunsal bildirim alırsınız.
+                • <b>Yaklaşma Modu:</b> Hedefe 5 metreden fazla yaklaştığınızda gösterge daha hassas bir "yakın çekim" moduna geçer. Mobil cihazların GPS kısıtları nedeniyle 2 metre ve altına ulaştığınızda <b>"Hedefe Ulaşıldı"</b> sinyali ve görsel bildirim alırsınız.
               </p>
             </div>
 

@@ -663,6 +663,71 @@ const StakeoutModule: React.FC<Props> = ({ onBack }) => {
                 )}
                 <MapUpdater center={[activePoint.lat, activePoint.lng]} />
               </MapContainer>
+
+              {/* Visual Guidance Compass Overlay */}
+              {guidance && (
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
+                  <div className="w-48 h-48 md:w-64 md:h-64 rounded-full border-2 border-white/30 bg-slate-900/10 backdrop-blur-[2px] relative flex items-center justify-center">
+                    {/* Crosshair lines */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-full h-[1px] bg-white/20"></div>
+                      <div className="h-full w-[1px] bg-white/20"></div>
+                    </div>
+
+                    {/* Target Indicator Dot */}
+                    {(() => {
+                      const maxVisualDist = guidance.totalDist < 5 ? 5 : Math.max(15, guidance.totalDist);
+                      const scale = (guidance.totalDist < 5 ? 80 : 40) / maxVisualDist;
+                      const topOffset = -guidance.forward * scale;
+                      const leftOffset = guidance.right * scale;
+                      
+                      // Clamp to circle boundary
+                      const distFromCenter = Math.sqrt(topOffset * topOffset + leftOffset * leftOffset);
+                      const maxRadius = guidance.totalDist < 5 ? 90 : 80;
+                      let finalTop = topOffset;
+                      let finalLeft = leftOffset;
+                      
+                      if (distFromCenter > maxRadius) {
+                        finalTop = (topOffset / distFromCenter) * maxRadius;
+                        finalLeft = (leftOffset / distFromCenter) * maxRadius;
+                      }
+
+                      return (
+                        <div 
+                          className={`absolute w-6 h-6 rounded-full border-2 border-white shadow-lg transition-all duration-300 flex items-center justify-center ${guidance.totalDist < 2.0 ? 'bg-emerald-500 animate-ping' : 'bg-blue-600'}`}
+                          style={{ 
+                            transform: `translate(${finalLeft}px, ${finalTop}px)`,
+                          }}
+                        >
+                          <div className="w-2 h-2 bg-white rounded-full"></div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Center Point (User) */}
+                    <div className="w-4 h-4 bg-white rounded-full border-2 border-blue-600 shadow-md z-10"></div>
+                    
+                    {/* Distance Label */}
+                    <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md px-4 py-1.5 rounded-full border border-slate-100 shadow-xl">
+                       <span className="text-[11px] font-black text-slate-900 mono-font">{guidance.totalDist.toFixed(1)}m</span>
+                    </div>
+
+                    {/* Close-up Mode Indicator */}
+                    {guidance.totalDist < 5 && (
+                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1">
+                        <div className="bg-emerald-500 text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest animate-pulse">
+                          YAKIN ÇEKİM MODU
+                        </div>
+                        {guidance.totalDist < 2.0 && (
+                          <div className="bg-emerald-600 text-white px-4 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-widest shadow-lg shadow-emerald-200 animate-bounce">
+                            HEDEFE ULAŞILDI
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="bg-white p-4 pb-6 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-20 rounded-t-[2.5rem] -mt-8">
