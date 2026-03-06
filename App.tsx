@@ -16,6 +16,7 @@ const App = () => {
   const [view, setView] = useState<ViewType>('onboarding');
   const [locations, setLocations] = useState<SavedLocation[]>([]);
   const [lastResult, setLastResult] = useState<SavedLocation | null>(null);
+  const [autoShowMap, setAutoShowMap] = useState(false);
   const [isContinuing, setIsContinuing] = useState(false);
   const [stakeoutInitialPoint, setStakeoutInitialPoint] = useState<StakeoutPoint | null>(null);
 
@@ -84,6 +85,7 @@ const App = () => {
     };
     setLocations(prev => [newLoc, ...prev]);
     setLastResult(newLoc);
+    setAutoShowMap(false);
     navigateTo('result');
   };
 
@@ -98,16 +100,9 @@ const App = () => {
   };
 
   const handleViewOnMap = (l: SavedLocation) => {
-    const sp: StakeoutPoint = {
-      id: l.id,
-      name: l.name,
-      lat: l.lat,
-      lng: l.lng,
-      altitude: l.altitude || undefined,
-      coordinateSystem: l.coordinateSystem
-    };
-    setStakeoutInitialPoint(sp);
-    navigateTo('stakeout');
+    setLastResult(l);
+    setAutoShowMap(true);
+    navigateTo('result');
   };
 
   return (
@@ -205,7 +200,7 @@ const App = () => {
         {view === 'result' && lastResult && (
           <div className="flex-1 flex flex-col animate-in h-full px-8 pt-8 overflow-hidden bg-white">
             <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full">
-              <ResultCard location={lastResult} />
+              <ResultCard location={lastResult} initialShowMap={autoShowMap} />
               <div className="mt-8 space-y-4">
                  <button onClick={() => handleNewMeasurement(true)} className="w-full py-2.5 md:py-3.5 bg-blue-600 text-white rounded-2xl font-black shadow-2xl shadow-blue-200 active:scale-95 transition-all text-[13px] uppercase tracking-widest">YENİ NOKTA EKLE</button>
                  <button onClick={resetToDashboard} className="w-full py-2.5 md:py-3.5 bg-slate-900 text-white rounded-2xl font-black text-[12px] uppercase tracking-widest transition-all">ÖLÇÜMÜ BİTİR</button>

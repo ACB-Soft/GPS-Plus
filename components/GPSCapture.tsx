@@ -358,7 +358,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
         <i className="fas fa-chevron-left text-sm"></i>
       </button>
       
-      <div className="absolute top-6 left-0 right-0 flex items-center justify-center px-20 z-10">
+      <div className="absolute top-6 left-0 right-0 flex items-center justify-center px-20 z-10 h-11">
         <h3 className="text-xl md:text-2xl font-black text-slate-900 truncate max-w-[280px] leading-tight">{folderName}</h3>
       </div>
 

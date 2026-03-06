@@ -28,10 +28,11 @@ const MapResizer = () => {
 
 interface Props {
   location: SavedLocation;
+  initialShowMap?: boolean;
 }
 
-const ResultCard: React.FC<Props> = ({ location }) => {
-  const [showMap, setShowMap] = useState(false);
+const ResultCard: React.FC<Props> = ({ location, initialShowMap = false }) => {
+  const [showMap, setShowMap] = useState(initialShowMap);
   const { x, y, labelX, labelY, zone } = convertCoordinate(location.lat, location.lng, location.coordinateSystem || 'WGS84');
   const isUTM = location.coordinateSystem && location.coordinateSystem !== 'WGS84';
   const formattedX = isUTM ? x.toFixed(0) : x.toFixed(6);
