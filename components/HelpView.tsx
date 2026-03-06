@@ -64,6 +64,8 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <br/>
                 • <b>Canlı Rehberlik:</b> Ekranın ortasındaki pusula benzeri gösterge size gitmeniz gereken yönü gösterir. 
                 <br/>
+                • <b>Ekranı Açık Tut:</b> Aplikasyon sırasında ekranın kapanmasını önlemek için güneş/ay ikonuna tıklayarak "Ekranı Açık Tut" özelliğini aktif edebilirsiniz.
+                <br/>
                 • <b>Mesafe Takibi:</b> Hedefe olan kuş uçuşu mesafeniz (metre cinsinden) anlık olarak güncellenir. Uygulamanın metre hassasiyetinde çalıştığını unutmayın.
                 <br/>
                 • <b>Yaklaşma Modu:</b> Hedefe 5 metreden fazla yaklaştığınızda gösterge daha hassas bir "yakın çekim" moduna geçer. Mobil cihazların GPS kısıtları nedeniyle 2 metre ve altına ulaştığınızda <b>"Hedefe Ulaşıldı"</b> sinyali ve görsel bildirim alırsınız.

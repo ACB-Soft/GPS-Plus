@@ -88,6 +88,36 @@ const StakeoutModule: React.FC<Props> = ({ onBack }) => {
   const [activePoint, setActivePoint] = useState<StakeoutPoint | null>(null);
   const [confirmClear, setConfirmClear] = useState<'NONE' | 'LIST' | 'MAP'>('NONE');
   const [showPermissionHelp, setShowPermissionHelp] = useState(false);
+  const [keepScreenOn, setKeepScreenOn] = useState(false);
+  const wakeLockRef = useRef<any>(null);
+
+  const requestWakeLock = async () => {
+    if ('wakeLock' in navigator) {
+      try {
+        wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+        console.log('Stakeout Wake Lock is active');
+      } catch (err: any) {
+        console.error(`${err.name}, ${err.message}`);
+      }
+    }
+  };
+
+  const releaseWakeLock = () => {
+    if (wakeLockRef.current) {
+      wakeLockRef.current.release();
+      wakeLockRef.current = null;
+      console.log('Stakeout Wake Lock released');
+    }
+  };
+
+  useEffect(() => {
+    if (keepScreenOn) {
+      requestWakeLock();
+    } else {
+      releaseWakeLock();
+    }
+    return () => releaseWakeLock();
+  }, [keepScreenOn]);
 
   useEffect(() => {
     if (confirmClear !== 'NONE') {
@@ -736,16 +766,25 @@ const StakeoutModule: React.FC<Props> = ({ onBack }) => {
                   <h3 className="text-xl font-black text-slate-900 truncate leading-tight">{activePoint.name}</h3>
                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Seçili Nokta</p>
                 </div>
-                <button 
-                  onClick={() => {
-                    const url = `https://www.google.com/maps/dir/?api=1&destination=${activePoint.lat},${activePoint.lng}`;
-                    window.open(url, '_blank');
-                  }}
-                  className="flex items-center gap-2 px-3 py-2 bg-slate-900 text-white rounded-xl active:scale-95 transition-all shadow-lg shadow-slate-200"
-                >
-                  <i className="fas fa-route text-[10px]"></i>
-                  <span className="text-[9px] font-black uppercase tracking-wider">Navigasyon</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setKeepScreenOn(!keepScreenOn)}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-lg ${keepScreenOn ? 'bg-amber-500 text-white shadow-amber-100' : 'bg-slate-100 text-slate-400 shadow-slate-100'}`}
+                    title={keepScreenOn ? "Ekranı Açık Tut Aktif" : "Ekranı Açık Tut Devre Dışı"}
+                  >
+                    <i className={`fas ${keepScreenOn ? 'fa-sun' : 'fa-moon'} text-xs`}></i>
+                  </button>
+                  <button 
+                    onClick={() => {
+                      const url = `https://www.google.com/maps/dir/?api=1&destination=${activePoint.lat},${activePoint.lng}`;
+                      window.open(url, '_blank');
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 bg-slate-900 text-white rounded-xl active:scale-95 transition-all shadow-lg shadow-slate-200"
+                  >
+                    <i className="fas fa-route text-[10px]"></i>
+                    <span className="text-[9px] font-black uppercase tracking-wider">Navigasyon</span>
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2 mb-3">
