@@ -492,25 +492,36 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
             <div className="bg-slate-50 rounded-2xl p-4 space-y-3">
               <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">Nasıl İzin Verilir?</p>
               <div className="space-y-2">
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 bg-slate-200 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">1</div>
-                  <p className="text-xs text-slate-600">Adres çubuğundaki <strong>AA</strong> veya <strong>Kilit</strong> ikonuna tıklayın.</p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 bg-slate-200 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">2</div>
-                  <p className="text-xs text-slate-600"><strong>Web Sitesi Ayarları</strong> seçeneğine girin.</p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 bg-slate-200 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">3</div>
-                  <p className="text-xs text-slate-600"><strong>Konum</strong> iznini "İzin Ver" olarak değiştirin.</p>
-                </div>
-                {isIOS() && (
-                  <div className="pt-2 border-t border-slate-200 mt-2">
+                {!isIOS() ? (
+                  <>
                     <div className="flex items-start gap-3">
-                      <div className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">!</div>
-                      <p className="text-[11px] text-slate-500 italic">iPhone kullanıyorsanız, aşağıdaki butonu kullanarak direkt uygulama ayarlarına gidebilirsiniz.</p>
+                      <div className="w-5 h-5 bg-slate-200 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">1</div>
+                      <p className="text-xs text-slate-600">Adres çubuğundaki <strong>AA</strong> veya <strong>Kilit</strong> ikonuna tıklayın.</p>
                     </div>
-                  </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-5 h-5 bg-slate-200 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">2</div>
+                      <p className="text-xs text-slate-600"><strong>Web Sitesi Ayarları</strong> seçeneğine girin.</p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-5 h-5 bg-slate-200 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">3</div>
+                      <p className="text-xs text-slate-600"><strong>Konum</strong> iznini "İzin Ver" olarak değiştirin.</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-start gap-3">
+                      <div className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">1</div>
+                      <p className="text-xs text-slate-600">iPhone <strong>Ayarlar</strong> uygulamasını açın.</p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">2</div>
+                      <p className="text-xs text-slate-600"><strong>Gizlilik ve Güvenlik</strong> {'>'} <strong>Konum Servisleri</strong> yolunu izleyin.</p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">3</div>
+                      <p className="text-xs text-slate-600"><strong>Safari Siteleri</strong>'ni bulun ve <strong>Uygulamayı Kullanırken</strong> olarak işaretleyin.</p>
+                    </div>
+                  </>
                 )}
               </div>
             </div>
@@ -518,11 +529,18 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
             <div className="flex flex-col gap-3">
               {isIOS() && (
                 <button 
-                  onClick={() => window.location.href = 'app-settings:'}
+                  onClick={() => {
+                    // iPhone'da direkt Safari ayarlarına gitmeyi dene
+                    window.location.href = 'App-Prefs:SAFARI&path=Location';
+                    // Fallback olarak genel ayarlar
+                    setTimeout(() => {
+                      window.location.href = 'app-settings:';
+                    }, 500);
+                  }}
                   className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-100"
                 >
                   <i className="fas fa-cog"></i>
-                  CİHAZ AYARLARINI AÇ
+                  AYARLARI AÇ
                 </button>
               )}
               <button 
