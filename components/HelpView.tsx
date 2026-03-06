@@ -38,7 +38,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">1</span>
                 Yeni Ölçüm Yap
               </h4>
-              <p className="text-slate-600 text-sm leading-relaxed font-medium text-justify">
+              <p className="text-slate-900 text-sm leading-relaxed font-medium text-justify">
                 Saha çalışmasına başlamak için ana ekrandaki <b>"Yeni Ölçüm Yap"</b> butonuna tıklayın. 
                 <br/><br/>
                 • <b>Proje Bilgisi:</b> "Yeni Proje Oluştur" ile yeni bir isim verebilir veya "Mevcut Proje Seç" ile önceki çalışmalarınıza devam edebilirsiniz.
@@ -55,7 +55,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">2</span>
                 Aplikasyon Yap
               </h4>
-              <p className="text-slate-600 text-sm leading-relaxed font-medium text-justify">
+              <p className="text-slate-900 text-sm leading-relaxed font-medium text-justify">
                 Kayıtlı noktaları arazide fiziksel olarak bulmak için <b>"Aplikasyon Yap"</b> modülünü kullanın.
                 <br/><br/>
                 • <b>Nokta Seçimi:</b> Proje listenizden hedeflediğiniz noktayı seçin.
@@ -74,7 +74,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">3</span>
                 Kayıtlı Projeler
               </h4>
-              <p className="text-slate-600 text-sm leading-relaxed font-medium text-justify">
+              <p className="text-slate-900 text-sm leading-relaxed font-medium text-justify">
                 Tüm saha verilerinizi <b>"Kayıtlı Projeler"</b> menüsünden yönetebilirsiniz.
                 <br/><br/>
                 • <b>Görüntüleme:</b> Noktalarınızı proje klasörleri altında gruplanmış şekilde görün.
@@ -91,7 +91,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">4</span>
                 Veri Aktar
               </h4>
-              <p className="text-slate-600 text-sm leading-relaxed font-medium text-justify">
+              <p className="text-slate-900 text-sm leading-relaxed font-medium text-justify">
                 Saha verilerinizi ofis yazılımlarına aktarmak için <b>"Veri Aktar"</b> menüsünü kullanın.
                 <br/><br/>
                 • <b>Excel (.xlsx):</b> Nokta adı, koordinatlar (X, Y, Z), hassasiyet ve tarih bilgilerini içeren detaylı tablo.
@@ -140,54 +140,54 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
         {/* Konum Teknolojisi */}
         <section className="space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-violet-200">
+            <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-amber-200">
               <i className="fas fa-satellite-dish"></i>
             </div>
             <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Konum Teknolojisi</h3>
           </div>
           
-          <div className="bg-violet-50 border border-violet-100 rounded-2xl p-6 space-y-4">
-            <p className="text-sm text-violet-900 font-medium leading-relaxed text-justify mb-4">
+          <div className="bg-amber-50 border border-amber-100 rounded-2xl p-6 space-y-4">
+            <p className="text-sm text-amber-900 font-medium leading-relaxed text-justify mb-4">
               Uygulama, en yüksek hassasiyeti sağlamak için <b>Hibrit (Karma) Konumleme</b> teknolojisini kullanır. Bu teknoloji, aşağıdaki 4 kaynağı birleştirerek çalışır:
             </p>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-white p-4 rounded-xl border border-violet-100 shadow-sm">
+            <div className="space-y-4">
+              <div className="bg-white p-4 rounded-xl border border-amber-100 shadow-sm">
                 <div className="flex items-center gap-2 mb-2">
-                  <i className="fas fa-satellite text-violet-600"></i>
-                  <h4 className="text-xs font-black text-slate-900 uppercase">1. GNSS (Uydu)</h4>
+                  <i className="fas fa-satellite text-amber-600"></i>
+                  <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">1. GNSS (Uydu)</h4>
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
+                <p className="text-sm text-slate-600 font-medium leading-relaxed">
                   GPS, GLONASS, Galileo ve BeiDou uydularından gelen sinyaller. Açık alanda en hassas (±3-5m) konum verisini sağlar.
                 </p>
               </div>
 
-              <div className="bg-white p-4 rounded-xl border border-violet-100 shadow-sm">
+              <div className="bg-white p-4 rounded-xl border border-amber-100 shadow-sm">
                 <div className="flex items-center gap-2 mb-2">
-                  <i className="fas fa-broadcast-tower text-violet-600"></i>
-                  <h4 className="text-xs font-black text-slate-900 uppercase">2. Baz İstasyonları</h4>
+                  <i className="fas fa-broadcast-tower text-amber-600"></i>
+                  <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">2. Baz İstasyonları</h4>
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
+                <p className="text-sm text-slate-600 font-medium leading-relaxed">
                   Uyduların görülemediği kapalı alanlarda veya tünellerde, telefonunuzun bağlı olduğu baz istasyonlarına göre yaklaşık konum belirler.
                 </p>
               </div>
 
-              <div className="bg-white p-4 rounded-xl border border-violet-100 shadow-sm">
+              <div className="bg-white p-4 rounded-xl border border-amber-100 shadow-sm">
                 <div className="flex items-center gap-2 mb-2">
-                  <i className="fas fa-wifi text-violet-600"></i>
-                  <h4 className="text-xs font-black text-slate-900 uppercase">3. Wi-Fi Ağları</h4>
+                  <i className="fas fa-wifi text-amber-600"></i>
+                  <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">3. Wi-Fi Ağları</h4>
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
+                <p className="text-sm text-slate-600 font-medium leading-relaxed">
                   Şehir içinde bina aralarında, çevredeki kablosuz ağların sinyal gücünü kullanarak konumu keskinleştirir (IPS).
                 </p>
               </div>
 
-              <div className="bg-white p-4 rounded-xl border border-violet-100 shadow-sm">
+              <div className="bg-white p-4 rounded-xl border border-amber-100 shadow-sm">
                 <div className="flex items-center gap-2 mb-2">
-                  <i className="fas fa-bolt text-violet-600"></i>
-                  <h4 className="text-xs font-black text-slate-900 uppercase">4. A-GPS (İnternet)</h4>
+                  <i className="fas fa-bolt text-amber-600"></i>
+                  <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">4. A-GPS (İnternet)</h4>
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
+                <p className="text-sm text-slate-600 font-medium leading-relaxed">
                   İnternet üzerinden güncel uydu yörünge verilerini (Almanak) indirerek, GPS'in saniyeler içinde kilitlenmesini (Fix) sağlar.
                 </p>
               </div>
@@ -198,17 +198,17 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
         {/* Teknik Bilgiler */}
         <section className="space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-200">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
               <i className="fas fa-microchip"></i>
             </div>
             <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Teknik Altyapı</h3>
           </div>
           
-          <div className="soft-card p-6 bg-slate-900 text-white border-none space-y-6">
+          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 space-y-6">
             <div className="space-y-4">
               <div>
-                <h4 className="text-xs font-black text-emerald-400 uppercase tracking-widest mb-1">ED50 Dönüşümü (Datum Shift)</h4>
-                <p className="text-sm text-slate-300 leading-relaxed text-justify">
+                <h4 className="text-base font-black text-blue-700 uppercase tracking-tight mb-1">ED50 Dönüşümü (Datum Shift)</h4>
+                <p className="text-sm text-blue-900 font-medium leading-relaxed text-justify">
                   WGS84 ile ED50 (European Datum 1950) arasındaki dönüşümler, Türkiye geneli için optimize edilmiş <b>7 Parametreli Helmert Dönüşümü</b> kullanılarak yapılmaktadır.
                   <br/>
                   <span className="opacity-70 text-xs block mt-1 font-mono">Parametreler: dX, dY, dZ, Rx, Ry, Rz, dS (HGM/EPSG Standartları)</span>
@@ -216,15 +216,15 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
               </div>
 
               <div>
-                <h4 className="text-xs font-black text-emerald-400 uppercase tracking-widest mb-1">ITRF96 Dönüşümü (Projeksiyon)</h4>
-                <p className="text-sm text-slate-300 leading-relaxed text-justify">
+                <h4 className="text-base font-black text-blue-700 uppercase tracking-tight mb-1">ITRF96 Dönüşümü (Projeksiyon)</h4>
+                <p className="text-sm text-blue-900 font-medium leading-relaxed text-justify">
                   ITRF96 (GRS80 Elipsoidi) koordinatları, <b>Transversal Mercator (TM)</b> projeksiyonu ile hesaplanmaktadır. 3° dilim genişliği ve dilim orta meridyenleri (DOM) otomatik belirlenir.
                 </p>
               </div>
 
               <div>
-                <h4 className="text-xs font-black text-emerald-400 uppercase tracking-widest mb-1">Düşey Datum (Yükseklik)</h4>
-                <p className="text-sm text-slate-300 leading-relaxed text-justify">
+                <h4 className="text-base font-black text-blue-700 uppercase tracking-tight mb-1">Düşey Datum (Yükseklik)</h4>
+                <p className="text-sm text-blue-900 font-medium leading-relaxed text-justify">
                   Ortometrik yükseklik (H), GPS'ten alınan Elipsoid yüksekliğinden (h), <b>TG-20 (Türkiye Geoidi 2020)</b> Hibrit Jeoid Modeli ondülasyon değeri (N) çıkarılarak hesaplanır.
                   <br/>
                   <span className="opacity-70 text-xs block mt-1 font-mono">Formül: H = h - N (TG-20)</span>
@@ -233,23 +233,14 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
               </div>
             </div>
 
-            <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50 mt-4">
-              <div className="flex gap-3">
-                <i className="fas fa-info-circle text-blue-400 mt-0.5 text-sm"></i>
-                <p className="text-xs text-slate-400 leading-relaxed text-justify">
-                  <b>Donanım Kısıtı:</b> Uygulama, santimetre hassasiyetindeki TG-20 modelini kullansa da, mobil cihazların dahili GPS alıcılarının düşey (yükseklik) hassasiyeti genellikle ±10-20 metre civarındadır. Bu nedenle görüntülenen yükseklik değeri, profesyonel GNSS alıcıları kadar hassas olmayabilir.
-                </p>
-              </div>
-            </div>
-
-            <ul className="pt-4 border-t border-white/10 space-y-3">
-              <li className="flex items-center gap-3 text-sm">
-                <i className="fas fa-check-circle text-emerald-400"></i>
-                <span className="font-medium">3° ve 6° Dilim Desteği</span>
+            <ul className="pt-4 border-t border-blue-200 space-y-3">
+              <li className="flex items-center gap-3 text-sm font-medium text-blue-900">
+                <i className="fas fa-check-circle text-blue-600"></i>
+                <span>3° ve 6° Dilim Desteği</span>
               </li>
-              <li className="flex items-center gap-3 text-sm">
-                <i className="fas fa-check-circle text-emerald-400"></i>
-                <span className="font-medium">Otomatik DOM Hesabı</span>
+              <li className="flex items-center gap-3 text-sm font-medium text-blue-900">
+                <i className="fas fa-check-circle text-blue-600"></i>
+                <span>Otomatik DOM Hesabı</span>
               </li>
             </ul>
           </div>
@@ -258,13 +249,13 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
         {/* Veri Güvenliği */}
         <section className="space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-slate-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-slate-200">
+            <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-200">
               <i className="fas fa-shield-alt"></i>
             </div>
             <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Veri Güvenliği</h3>
           </div>
-          <div className="soft-card p-5">
-            <p className="text-slate-600 text-sm leading-relaxed font-medium text-justify">
+          <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-6">
+            <p className="text-emerald-900 text-sm leading-relaxed font-medium text-justify">
               Verileriniz <b>tamamen cihazınızda</b> saklanır. Uygulama, konum verilerinizi hiçbir uzak sunucuya göndermez. İnternet bağlantısı sadece harita altlıklarını yüklemek için kullanılır. Uygulamayı sildiğinizde, cihazınızdaki veriler de silinecektir.
             </p>
           </div>
@@ -295,11 +286,11 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
           </div>
           <div className="soft-card p-6 flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Yazılım & Tasarım</p>
+              <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Yazılım & Tasarım</p>
               <p className="text-sm font-black text-slate-900">ACB_Soft Engineering</p>
             </div>
             <div className="text-right">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Sürüm</p>
+              <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Sürüm</p>
               <p className="text-sm font-black text-blue-600">{APP_VERSION}</p>
             </div>
           </div>

@@ -46,8 +46,8 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    const CURRENT_KEY = 'gps_locations_v6.4.1';
-    const OLD_KEY = 'gps_locations_v6.1.0';
+    const CURRENT_KEY = 'gps_locations_v6.4.3';
+    const OLD_KEY = 'gps_locations_v6.4.2';
     
     let saved = localStorage.getItem(CURRENT_KEY);
     if (!saved) {
@@ -62,11 +62,11 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('gps_locations_v6.4.1', JSON.stringify(locations));
+    localStorage.setItem('gps_locations_v6.4.3', JSON.stringify(locations));
   }, [locations]);
 
   const handleFinishOnboarding = () => {
-    localStorage.setItem('onboarding_v6.4.1_done', 'true');
+    localStorage.setItem('onboarding_v6.4.3_done', 'true');
     // Use replaceState so dashboard becomes the root (can't go back to onboarding)
     window.history.replaceState({ view: 'dashboard' }, '');
     setView('dashboard');

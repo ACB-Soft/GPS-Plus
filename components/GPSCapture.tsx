@@ -321,7 +321,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
               disabled={!isNewProject}
               className={`w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none text-base ${!isNewProject ? 'opacity-60 cursor-not-allowed' : ''}`}
             >
-              <option value="WGS84">Enlem-Boylam</option>
+              <option value="WGS84">WGS84 (Enlem-Boylam)</option>
               <option value="ITRF96_3">ITRF96 - 3°</option>
               <option value="ED50_3">ED50 - 3°</option>
               <option value="ED50_6">ED50 - 6°</option>

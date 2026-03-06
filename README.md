@@ -1,4 +1,4 @@
-# GPS Plus v6.4.1
+# GPS Plus v6.4.3
 
 Mobil cihazlarınız için gelişmiş konum belirleme ve GPS yönetim uygulaması.
 
