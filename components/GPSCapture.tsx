@@ -252,7 +252,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   };
 
   const StandardHeader = (title: string, subtitle: string, backTo: any) => (
-    <header className="px-8 pt-10 pb-6 flex items-center gap-5 shrink-0 bg-white w-full">
+    <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white w-full">
       <button 
         onClick={backTo === 'HOME' ? onCancel : () => setStep(backTo)} 
         className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all"
@@ -282,7 +282,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   if (step === 'SELECT_MODE') return (
     <div className="w-full flex flex-col bg-[#F8FAFC] animate-in h-full relative overflow-y-auto justify-start">
       {StandardHeader("Yeni Ölçüm Yap", "YENİ KAYIT", "HOME")}
-      <div className="w-full max-w-sm px-8 pt-8 space-y-4 mx-auto">
+      <div className="w-full max-w-sm px-8 pt-4 space-y-4 mx-auto">
         <button onClick={() => { setIsNewProject(true); setFolderName(''); setStep('FORM'); }} className="w-full py-3 md:py-4 px-5 bg-white rounded-3xl shadow-md border border-slate-100 text-left active:scale-[0.97] transition-all flex items-center gap-5">
           <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0"><i className="fas fa-folder-plus text-xl"></i></div>
           <span className="font-black text-lg text-slate-900">Yeni Proje Oluştur</span>
@@ -299,7 +299,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   if (step === 'FORM') return (
     <div className="w-full flex flex-col bg-[#F8FAFC] animate-in h-full relative overflow-y-auto justify-start">
       {StandardHeader("Proje Bilgisi", "DETAYLAR", "SELECT_MODE")}
-      <div className="w-full max-w-sm px-8 pt-8 mx-auto">
+      <div className="w-full max-w-sm px-8 pt-4 mx-auto">
         <div className="soft-card p-8 w-full space-y-6">
           <div className="space-y-2">
             <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Proje Adı</label>
@@ -353,16 +353,16 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
             setStep('FORM');
           }
         }} 
-        className="absolute left-6 md:left-8 top-10 w-11 h-11 flex items-center justify-center rounded-2xl bg-white shadow-lg border border-slate-100 text-slate-800 active:scale-90 transition-all z-20"
+        className="absolute left-6 md:left-8 top-6 w-11 h-11 flex items-center justify-center rounded-2xl bg-white shadow-lg border border-slate-100 text-slate-800 active:scale-90 transition-all z-20"
       >
         <i className="fas fa-chevron-left text-sm"></i>
       </button>
       
-      <div className="absolute top-10 left-0 right-0 flex items-center justify-center px-20 z-10">
+      <div className="absolute top-6 left-0 right-0 flex items-center justify-center px-20 z-10">
         <h3 className="text-xl md:text-2xl font-black text-slate-900 truncate max-w-[280px] leading-tight">{folderName}</h3>
       </div>
 
-      <div className="relative flex items-center justify-center flex-1 w-full max-h-[350px] mt-16">
+      <div className="relative flex items-center justify-center flex-1 w-full max-h-[350px] mt-12">
         <div className="w-48 h-48 sm:w-56 sm:h-56 md:w-72 md:h-72 rounded-[3.5rem] md:rounded-[4.5rem] border-8 border-slate-50 shadow-2xl flex items-center justify-center relative bg-white">
           <div className={`absolute inset-4 md:inset-6 border-2 rounded-[2.8rem] md:rounded-[3.8rem] ${instantAccuracy && instantAccuracy <= 10 ? 'border-emerald-100' : 'border-slate-50'}`}></div>
           {step === 'COUNTDOWN' && !waitingForSignal && <div className="scanner-line"></div>}
@@ -429,7 +429,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                   onChange={e => setAccuracyLimit(parseFloat(e.target.value))}
                   className="w-full p-3 bg-white rounded-xl font-black text-center text-lg text-slate-900 outline-none border border-slate-200 leading-none appearance-none"
                 >
-                  {[1, 2, 3, 5, 10, 20, 50, 100].map(v => <option key={v} value={v}>{v}m</option>)}
+                  {[2, 3, 5, 10, 20, 50, 100].map(v => <option key={v} value={v}>{v}m</option>)}
                 </select>
               </div>
               <div className="space-y-1">
@@ -450,7 +450,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
             <button 
               onClick={handleStartMeasurement} 
               disabled={instantAccuracy === null}
-              className="w-full py-5 md:py-6 px-5 bg-emerald-600 text-white rounded-2xl font-black text-[13px] md:text-[14px] active:scale-[0.96] disabled:bg-slate-200 transition-all uppercase tracking-[0.25em] leading-none shadow-2xl shadow-emerald-100"
+              className="w-full py-4 md:py-6 px-5 bg-emerald-600 text-white rounded-2xl font-black text-[13px] md:text-[14px] active:scale-[0.96] disabled:bg-slate-200 transition-all uppercase tracking-[0.25em] leading-none shadow-2xl shadow-emerald-100"
             >
               ÖLÇÜMÜ BAŞLAT
             </button>

@@ -8,7 +8,7 @@ import ResultCard from './components/ResultCard';
 import StakeoutModule from './components/StakeoutModule';
 import HelpView from './components/HelpView';
 import GlobalFooter from './components/GlobalFooter';
-import { SavedLocation, Coordinate } from './types';
+import { SavedLocation, Coordinate, StakeoutPoint } from './types';
 import { geoidService } from './services/GeoidService';
 
 const App = () => {
@@ -17,6 +17,7 @@ const App = () => {
   const [locations, setLocations] = useState<SavedLocation[]>([]);
   const [lastResult, setLastResult] = useState<SavedLocation | null>(null);
   const [isContinuing, setIsContinuing] = useState(false);
+  const [stakeoutInitialPoint, setStakeoutInitialPoint] = useState<StakeoutPoint | null>(null);
 
   // Navigation wrapper to sync with browser history
   const navigateTo = (newView: ViewType) => {
@@ -46,8 +47,8 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    const CURRENT_KEY = 'gps_locations_v6.5.0';
-    const OLD_KEY = 'gps_locations_v6.4.9';
+    const CURRENT_KEY = 'gps_locations_v6.5.5';
+    const OLD_KEY = 'gps_locations_v6.5.4';
     
     let saved = localStorage.getItem(CURRENT_KEY);
     if (!saved) {
@@ -62,11 +63,11 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('gps_locations_v6.5.0', JSON.stringify(locations));
+    localStorage.setItem('gps_locations_v6.5.5', JSON.stringify(locations));
   }, [locations]);
 
   const handleFinishOnboarding = () => {
-    localStorage.setItem('onboarding_v6.5.0_done', 'true');
+    localStorage.setItem('onboarding_v6.5.5_done', 'true');
     // Use replaceState so dashboard becomes the root (can't go back to onboarding)
     window.history.replaceState({ view: 'dashboard' }, '');
     setView('dashboard');
@@ -94,6 +95,19 @@ const App = () => {
   const handleNewMeasurement = (continuing: boolean) => {
     setIsContinuing(continuing);
     navigateTo('capture');
+  };
+
+  const handleViewOnMap = (l: SavedLocation) => {
+    const sp: StakeoutPoint = {
+      id: l.id,
+      name: l.name,
+      lat: l.lat,
+      lng: l.lng,
+      altitude: l.altitude || undefined,
+      coordinateSystem: l.coordinateSystem
+    };
+    setStakeoutInitialPoint(sp);
+    navigateTo('stakeout');
   };
 
   return (
@@ -125,7 +139,13 @@ const App = () => {
         )}
 
         {view === 'stakeout' && (
-          <StakeoutModule onBack={resetToDashboard} />
+          <StakeoutModule 
+            onBack={() => {
+              setStakeoutInitialPoint(null);
+              resetToDashboard();
+            }} 
+            initialPoint={stakeoutInitialPoint}
+          />
         )}
 
         {view === 'capture' && (
@@ -141,7 +161,7 @@ const App = () => {
 
         {view === 'list' && (
           <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-[#F8FAFC]">
-            <header className="px-8 pt-10 pb-6 flex items-center gap-5 shrink-0 bg-white">
+            <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white">
               <button onClick={resetToDashboard} className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all">
                 <i className="fas fa-chevron-left text-sm"></i>
               </button>
@@ -149,7 +169,7 @@ const App = () => {
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Kayıtlı Projeler</h2>
               </div>
             </header>
-            <div className="flex-1 px-8 overflow-y-auto no-scrollbar py-4">
+            <div className="flex-1 px-8 overflow-y-auto no-scrollbar pt-0 pb-4">
               <SavedLocationsList 
                 locations={locations} 
                 onDelete={(id) => setLocations(prev => prev.filter(l => l.id !== id))}
@@ -158,6 +178,7 @@ const App = () => {
                   l.folderName === oldName ? { ...l, folderName: newName } : l
                 ))}
                 onBulkDelete={(ids) => setLocations(prev => prev.filter(l => !ids.includes(l.id)))}
+                onViewOnMap={handleViewOnMap}
               />
             </div>
             <GlobalFooter />
@@ -166,7 +187,7 @@ const App = () => {
 
         {view === 'export' && (
           <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-[#F8FAFC]">
-            <header className="px-8 pt-10 pb-6 flex items-center gap-5 shrink-0 bg-white">
+            <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white">
               <button onClick={resetToDashboard} className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all">
                 <i className="fas fa-chevron-left text-sm"></i>
               </button>
@@ -174,7 +195,7 @@ const App = () => {
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Veri Aktar</h2>
               </div>
             </header>
-            <div className="flex-1 px-8 overflow-y-auto no-scrollbar py-4">
+            <div className="flex-1 px-8 overflow-y-auto no-scrollbar pt-0 pb-4">
                <ExportUnifiedView locations={locations} />
             </div>
             <GlobalFooter />
@@ -182,12 +203,12 @@ const App = () => {
         )}
 
         {view === 'result' && lastResult && (
-          <div className="flex-1 flex flex-col animate-in h-full px-8 pt-12 overflow-hidden bg-white">
+          <div className="flex-1 flex flex-col animate-in h-full px-8 pt-8 overflow-hidden bg-white">
             <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full">
               <ResultCard location={lastResult} />
               <div className="mt-8 space-y-4">
-                 <button onClick={() => handleNewMeasurement(true)} className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black shadow-2xl shadow-blue-200 active:scale-95 transition-all text-[13px] uppercase tracking-widest">YENİ NOKTA EKLE</button>
-                 <button onClick={resetToDashboard} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-[12px] uppercase tracking-widest transition-all">ÖLÇÜMÜ BİTİR</button>
+                 <button onClick={() => handleNewMeasurement(true)} className="w-full py-2.5 md:py-3.5 bg-blue-600 text-white rounded-2xl font-black shadow-2xl shadow-blue-200 active:scale-95 transition-all text-[13px] uppercase tracking-widest">YENİ NOKTA EKLE</button>
+                 <button onClick={resetToDashboard} className="w-full py-2.5 md:py-3.5 bg-slate-900 text-white rounded-2xl font-black text-[12px] uppercase tracking-widest transition-all">ÖLÇÜMÜ BİTİR</button>
               </div>
             </div>
             <GlobalFooter />

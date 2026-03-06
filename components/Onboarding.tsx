@@ -29,7 +29,7 @@ const Onboarding: React.FC<Props> = ({ onFinish }) => {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-white h-full animate-in overflow-hidden px-8 py-6 md:py-10 justify-around">
+    <div className="flex-1 flex flex-col bg-white h-full animate-in overflow-hidden px-8 py-2 md:py-6 justify-around">
       {/* Üst Kısım: Logo ve Başlık */}
       <div className="flex flex-col items-center text-center shrink-0">
         <div className="relative mb-4 md:mb-6">
@@ -75,11 +75,10 @@ const Onboarding: React.FC<Props> = ({ onFinish }) => {
         </div>
       </div>
 
-      {/* Buton Alanı */}
       <div className="w-full max-w-sm mx-auto shrink-0">
         <button 
           onClick={handlePermissionAndStart}
-          className="w-full py-5 md:py-6 px-5 bg-blue-600 text-white rounded-[1.5rem] md:rounded-[1.8rem] font-black text-[13px] md:text-[14px] uppercase tracking-[0.2em] shadow-2xl shadow-blue-600/20 active:scale-[0.97] transition-all flex items-center justify-center gap-4"
+          className="w-full py-4 md:py-5 px-5 bg-blue-600 text-white rounded-[1.5rem] md:rounded-[1.8rem] font-black text-[13px] md:text-[14px] uppercase tracking-[0.2em] shadow-2xl shadow-blue-600/20 active:scale-[0.97] transition-all flex items-center justify-center gap-4"
         >
           İZİNLERİ ONAYLA VE BAŞLA
           <i className="fas fa-arrow-right text-white/50 text-[11px]"></i>

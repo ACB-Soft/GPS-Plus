@@ -9,6 +9,7 @@ interface Props {
   onDeleteFolder: (name: string) => void;
   onRenameFolder: (oldName: string, newName: string) => void;
   onBulkDelete: (ids: string[]) => void;
+  onViewOnMap: (l: SavedLocation) => void;
 }
 
 const SavedLocationItem: React.FC<{ 
@@ -18,7 +19,8 @@ const SavedLocationItem: React.FC<{
   deletingPoint: string | null; 
   setDeletingPoint: (id: string | null) => void; 
   onDelete: (id: string) => void; 
-}> = ({ l, expanded, togglePoint, deletingPoint, setDeletingPoint, onDelete }) => {
+  onViewOnMap: (l: SavedLocation) => void;
+}> = ({ l, expanded, togglePoint, deletingPoint, setDeletingPoint, onDelete, onViewOnMap }) => {
   const geoidInfo = useOrthometricHeight(l.altitude, l.lat, l.lng);
   const orthometricHeight = geoidInfo.orthometricHeight;
 
@@ -50,7 +52,7 @@ const SavedLocationItem: React.FC<{
 
   return (
     <div className="bg-white rounded-[1.8rem] border border-slate-100 overflow-hidden shadow-sm">
-      <div className="p-5 flex items-center justify-between transition-colors">
+      <div className="p-4 flex items-center justify-between transition-colors">
         <div onClick={() => togglePoint(l.id)} className="min-w-0 flex-1 cursor-pointer select-none">
           <h5 className="text-[15px] font-black text-slate-900 truncate">{l.name}</h5>
           <p className="text-[11px] text-slate-400 font-bold uppercase tracking-tight mt-0.5">
@@ -98,13 +100,22 @@ const SavedLocationItem: React.FC<{
               <p className={`text-[14px] mono-font font-black leading-tight ${getAccuracyColor(l.accuracy)}`}>±{l.accuracy.toFixed(1)}m</p>
             </div>
           </div>
+          <div className="mt-4 pt-4 border-t border-slate-50 flex gap-2">
+            <button 
+              onClick={() => onViewOnMap(l)}
+              className="flex-1 py-2.5 bg-blue-50 text-blue-600 rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all"
+            >
+              <i className="fas fa-map-location-dot"></i>
+              Harita Üzerinde Gör
+            </button>
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-const SavedLocationsList: React.FC<Props> = ({ locations, onDelete, onDeleteFolder, onRenameFolder, onBulkDelete }) => {
+const SavedLocationsList: React.FC<Props> = ({ locations, onDelete, onDeleteFolder, onRenameFolder, onBulkDelete, onViewOnMap }) => {
   const [expanded, setExpanded] = useState<string[]>([]);
   const [expandedPoints, setExpandedPoints] = useState<string[]>([]);
   const [deletingFolder, setDeletingFolder] = useState<string | null>(null);
@@ -152,11 +163,11 @@ const SavedLocationsList: React.FC<Props> = ({ locations, onDelete, onDeleteFold
   };
 
   return (
-    <div className="space-y-5 pb-10">
+    <div className="space-y-3 pb-10">
       {Object.entries(folders).length > 0 ? (
         Object.entries(folders).map(([name, locs]) => (
           <div key={name} className="soft-card overflow-hidden">
-          <div className="py-3 md:py-4 px-5 flex items-center justify-between transition-colors">
+          <div className="py-2 md:py-3 px-5 flex items-center justify-between transition-colors">
             {editingFolder === name ? (
               <div className="flex items-center gap-2 flex-1 animate-in w-full">
                 <input 
@@ -234,7 +245,7 @@ const SavedLocationsList: React.FC<Props> = ({ locations, onDelete, onDeleteFold
               )}
             </div>
             {expanded.includes(name) && (
-              <div className="p-4 bg-slate-50/50 space-y-3 border-t border-slate-50">
+              <div className="p-3 bg-slate-50/50 space-y-2 border-t border-slate-50">
                 {locs.map(l => (
                   <SavedLocationItem 
                     key={l.id} 
@@ -244,6 +255,7 @@ const SavedLocationsList: React.FC<Props> = ({ locations, onDelete, onDeleteFold
                     deletingPoint={deletingPoint} 
                     setDeletingPoint={setDeletingPoint} 
                     onDelete={onDelete} 
+                    onViewOnMap={onViewOnMap}
                   />
                 ))}
               </div>

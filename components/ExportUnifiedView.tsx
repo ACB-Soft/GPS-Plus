@@ -26,7 +26,7 @@ const ExportUnifiedView: React.FC<Props> = ({ locations }) => {
              <select 
                value={selectedFolder}
                onChange={(e) => setSelectedFolder(e.target.value)}
-               className="w-full p-5 rounded-3xl border border-slate-200 bg-white font-bold text-slate-800 appearance-none outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm text-sm"
+               className="w-full p-4 rounded-3xl border border-slate-200 bg-white font-bold text-slate-800 appearance-none outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm text-sm"
              >
                {uniqueFolders.map(name => (
                  <option key={name} value={name}>{name} ({locations.filter(l => l.folderName === name).length} Nokta)</option>

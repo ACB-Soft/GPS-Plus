@@ -42,7 +42,7 @@ const ResultCard: React.FC<Props> = ({ location }) => {
 
   return (
     <>
-      <div className="soft-card p-6 md:p-8 border-blue-100 space-y-6 md:space-y-8 text-center animate-in relative overflow-hidden bg-white max-w-sm mx-auto">
+      <div className="soft-card p-5 md:p-6 border-blue-100 space-y-5 md:space-y-6 text-center animate-in relative overflow-hidden bg-white max-w-sm mx-auto">
         <div className="space-y-2 md:space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 rounded-full border border-emerald-100">
              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
@@ -91,7 +91,7 @@ const ResultCard: React.FC<Props> = ({ location }) => {
         
         <button 
           onClick={() => setShowMap(true)}
-          className="w-full pt-5 md:pt-6 border-t border-slate-100 flex items-center justify-center gap-3 text-[11px] font-black text-blue-600 uppercase tracking-[0.3em] active:scale-95 transition-all hover:text-blue-700"
+          className="w-full pt-4 md:pt-5 border-t border-slate-100 flex items-center justify-center gap-3 text-[11px] font-black text-blue-600 uppercase tracking-[0.3em] active:scale-95 transition-all hover:text-blue-700"
         >
           <i className="fas fa-map-marked-alt text-sm"></i>
           HARİTADA GÖR

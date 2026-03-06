@@ -18,6 +18,7 @@ L.Icon.Default.mergeOptions({
 
 interface Props {
   onBack: () => void;
+  initialPoint?: StakeoutPoint | null;
 }
 
 // Helper Components defined outside to prevent re-mounting
@@ -74,18 +75,22 @@ const BoundsUpdater = ({ points, geometries }: { points: StakeoutPoint[], geomet
   return null;
 };
 
-const StakeoutModule: React.FC<Props> = ({ onBack }) => {
-  const [view, setView] = useState<'MENU' | 'LIST' | 'MANUAL' | 'MAP' | 'ALL_MAP'>('MENU');
-  const [sourceView, setSourceView] = useState<'LIST' | 'ALL_MAP' | 'MENU'>('MENU');
+const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint }) => {
+  const [view, setView] = useState<'MENU' | 'LIST' | 'MANUAL' | 'MAP' | 'ALL_MAP'>(initialPoint ? 'MAP' : 'MENU');
+  const [sourceView, setSourceView] = useState<'LIST' | 'ALL_MAP' | 'MENU'>(initialPoint ? 'LIST' : 'MENU');
   const [points, setPoints] = useState<StakeoutPoint[]>(() => {
     const saved = localStorage.getItem('stakeout_points_v1');
-    return saved ? JSON.parse(saved) : [];
+    const existingPoints = saved ? JSON.parse(saved) : [];
+    if (initialPoint && !existingPoints.find((p: StakeoutPoint) => p.id === initialPoint.id)) {
+      return [initialPoint, ...existingPoints];
+    }
+    return existingPoints;
   });
   const [geometries, setGeometries] = useState<StakeoutGeometry[]>(() => {
     const saved = localStorage.getItem('stakeout_geometries_v1');
     return saved ? JSON.parse(saved) : [];
   });
-  const [activePoint, setActivePoint] = useState<StakeoutPoint | null>(null);
+  const [activePoint, setActivePoint] = useState<StakeoutPoint | null>(initialPoint || null);
   const [confirmClear, setConfirmClear] = useState<'NONE' | 'LIST' | 'MAP'>('NONE');
   const [showPermissionHelp, setShowPermissionHelp] = useState(false);
   const [keepScreenOn, setKeepScreenOn] = useState(false);
@@ -314,7 +319,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack }) => {
           background: white;
         }
       `}</style>
-      <header className="px-8 pt-10 pb-6 flex items-center gap-5 shrink-0 bg-white shadow-sm z-30">
+      <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white shadow-sm z-30">
         <button 
           onClick={() => {
             if (view === 'MENU') onBack();
@@ -339,9 +344,9 @@ const StakeoutModule: React.FC<Props> = ({ onBack }) => {
       <div className="flex-1 overflow-y-auto no-scrollbar relative">
         {view === 'MENU' && (
           <div className="flex-1 flex flex-col h-full overflow-hidden">
-            <div className="p-8 space-y-4 overflow-y-auto no-scrollbar">
+            <div className="p-8 pt-4 space-y-4 overflow-y-auto no-scrollbar">
               <div className="grid grid-cols-1 gap-4">
-                <button onClick={() => setView('MANUAL')} className="w-full py-3 md:py-4 px-5 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 active:scale-[0.98] transition-all">
+                <button onClick={() => setView('MANUAL')} className="w-full py-2.5 md:py-3.5 px-5 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 active:scale-[0.98] transition-all">
                   <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0">
                     <i className="fas fa-keyboard text-xl"></i>
                   </div>
@@ -351,7 +356,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack }) => {
                   </div>
                 </button>
 
-                <label className="w-full py-3 md:py-4 px-5 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 cursor-pointer active:scale-[0.98] transition-all">
+                <label className="w-full py-2.5 md:py-3.5 px-5 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 cursor-pointer active:scale-[0.98] transition-all">
                   <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shrink-0">
                     <i className="fas fa-file-import text-xl"></i>
                   </div>
@@ -362,7 +367,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack }) => {
                   <input type="file" accept=".kml,.kmz" onChange={handleKmlUpload} className="hidden" />
                 </label>
 
-                <button onClick={() => setView('LIST')} className="w-full py-3 md:py-4 px-5 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 active:scale-[0.98] transition-all">
+                <button onClick={() => setView('LIST')} className="w-full py-2.5 md:py-3.5 px-5 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 active:scale-[0.98] transition-all">
                   <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
                     <i className="fas fa-list-ul text-xl"></i>
                   </div>
@@ -377,7 +382,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack }) => {
                     if (points.length === 0 && geometries.length === 0) alert("Haritada gösterilecek veri bulunamadı.");
                     else setView('ALL_MAP');
                   }} 
-                  className="w-full py-3 md:py-4 px-5 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 active:scale-[0.98] transition-all"
+                  className="w-full py-2.5 md:py-3.5 px-5 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 active:scale-[0.98] transition-all"
                 >
                   <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center shrink-0">
                     <i className="fas fa-map-marked-alt text-xl"></i>
@@ -395,7 +400,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack }) => {
 
         {view === 'LIST' && (
           <div className="flex-1 flex flex-col h-full overflow-hidden">
-            <div className="p-8 space-y-4 overflow-y-auto no-scrollbar">
+            <div className="p-8 pt-4 space-y-4 overflow-y-auto no-scrollbar">
               {points.length === 0 ? (
                 <div className="p-12 text-center bg-white rounded-[2.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center gap-4">
                   <i className="fas fa-ghost text-3xl text-slate-200"></i>
@@ -453,7 +458,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack }) => {
                     setConfirmClear('LIST');
                   }
                 }}
-                className={`w-full py-4 text-[10px] font-black uppercase tracking-[0.3em] transition-all ${confirmClear === 'LIST' ? 'text-red-600 bg-red-50 rounded-2xl' : 'text-slate-400 hover:text-red-500'}`}
+                className={`w-full py-3 text-[10px] font-black uppercase tracking-[0.3em] transition-all ${confirmClear === 'LIST' ? 'text-red-600 bg-red-50 rounded-2xl' : 'text-slate-400 hover:text-red-500'}`}
               >
                 {confirmClear === 'LIST' ? 'EMİN MİSİNİZ? (TEKRAR TIKLAYIN)' : 'LİSTEYİ TEMİZLE'}
               </button>
@@ -464,7 +469,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack }) => {
 
         {view === 'MANUAL' && (
           <div className="flex-1 flex flex-col h-full overflow-hidden">
-            <div className="p-8 mx-auto max-w-sm w-full overflow-y-auto no-scrollbar">
+            <div className="p-8 pt-4 mx-auto max-w-sm w-full overflow-y-auto no-scrollbar">
               <div className="soft-card p-8 space-y-6">
                 <div className="space-y-2">
                   <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Nokta Adı</label>
@@ -493,7 +498,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack }) => {
                     <input type="number" value={manualY} onChange={e => setManualY(e.target.value)} placeholder="0.000" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all" />
                   </div>
                 </div>
-                <button onClick={handleAddManual} className="w-full py-3 md:py-4 px-5 bg-blue-600 text-white rounded-2xl font-black text-[13px] uppercase tracking-widest shadow-xl shadow-blue-100 active:scale-95 transition-all">
+                <button onClick={handleAddManual} className="w-full py-2.5 md:py-3.5 px-5 bg-blue-600 text-white rounded-2xl font-black text-[13px] uppercase tracking-widest shadow-xl shadow-blue-100 active:scale-95 transition-all">
                   LİSTEYE EKLE
                 </button>
               </div>
@@ -885,7 +890,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack }) => {
               {isIOS() && (
                 <button 
                   onClick={() => window.location.href = 'app-settings:'}
-                  className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-100"
+                  className="w-full py-2.5 md:py-3.5 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-100"
                 >
                   <i className="fas fa-cog"></i>
                   CİHAZ AYARLARINI AÇ
@@ -893,7 +898,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack }) => {
               )}
               <button 
                 onClick={() => setShowPermissionHelp(false)}
-                className={`w-full py-4 ${isIOS() ? 'bg-slate-100 text-slate-600' : 'bg-slate-900 text-white'} rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all`}
+                className={`w-full py-2.5 md:py-3.5 ${isIOS() ? 'bg-slate-100 text-slate-600' : 'bg-slate-900 text-white'} rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all`}
               >
                 ANLADIM
               </button>

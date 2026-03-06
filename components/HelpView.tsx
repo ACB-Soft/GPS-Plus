@@ -9,7 +9,7 @@ interface Props {
 const HelpView: React.FC<Props> = ({ onBack }) => {
   return (
     <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-[#F8FAFC]">
-      <header className="px-8 pt-10 pb-6 flex items-center gap-5 shrink-0 bg-white shadow-sm">
+      <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white shadow-sm">
         <button 
           onClick={onBack} 
           className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all"
@@ -21,7 +21,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
         </div>
       </header>
 
-      <div className="flex-1 px-8 overflow-y-auto no-scrollbar py-8 space-y-10">
+      <div className="flex-1 px-8 overflow-y-auto no-scrollbar py-4 space-y-10">
         {/* Kullanım Kılavuzu */}
         <section className="space-y-4">
           <div className="flex items-center gap-3">
@@ -33,26 +33,26 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
           
           <div className="space-y-4">
             {/* Yeni Ölçüm Yap */}
-            <div className="soft-card p-5 space-y-3">
+            <div className="soft-card p-4 space-y-3">
               <h4 className="font-black text-slate-900 text-base uppercase flex items-center gap-2">
                 <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">1</span>
                 Yeni Ölçüm Yap
               </h4>
               <p className="text-slate-900 text-sm leading-relaxed font-medium text-justify">
-                Saha çalışmasına başlamak için ana ekrandaki <b>"Yeni Ölçüm Yap"</b> butonuna tıklayın. 
+                Saha çalışmasına başlamak için ana ekrandaki <b>"Yeni Ölçüm Yap"</b> butonuna tıklayın.
                 <br/><br/>
                 • <b>Proje Bilgisi:</b> "Yeni Proje Oluştur" ile yeni bir isim verebilir veya "Mevcut Proje Seç" ile önceki çalışmalarınıza devam edebilirsiniz.
                 <br/>
-                • <b>Koordinat Sistemi:</b> WGS84 (Enlem-Boylam), ITRF96 (3 derece) veya ED50 (3/6 derece) sistemlerinden birini seçin. Proje bir kez oluşturulduğunda sistem değiştirilemez.
+                • <b>Koordinat Sistemi:</b> WGS84 (Enlem-Boylam), ITRF96 (3 derece), ED50 (3 derece) veya ED50 (6 derece) sistemlerinden birini seçin. Proje bir kez oluşturulduğunda sistem değiştirilemez.
                 <br/>
-                • <b>Ölçüm Süreci:</b> "Ölçümü Başlat" dediğinizde belirlediğiniz sürede (5-30 sn) bir geri sayım başlar. Uygulama bu sürede saniyede bir konum örneği alarak bunların ortalamasını hesaplar. En doğru sonuç için cihazı nivo/jalon üzerinde veya sabit bir zeminde tutun.
+                • <b>Ölçüm Süreci:</b> "Ölçümü Başlat" dediğinizde belirlediğiniz hassasiyette (2-100 m) ve belirlediğiniz sürede (5-30 sn) veri toplama süreci başlatılır. Uygulama bu aşamada konum örneği alarak verilerin ortalamasını hesaplar. En doğru sonuç için cihazı sabit bir zeminde ve açık bir alanda tutun.
                 <br/>
-                • <b>Hızlı Erişim:</b> Uygulama, ana ekrandayken GPS sinyalini arka planda hazırlamaya başlar. Üst bar üzerindeki "Sistem Hazır" rozeti, GPS'in ısındığını ve ölçüme anında geçebileceğinizi gösterir.
+                • <b>Hızlı Erişim:</b> Uygulama, ana ekrandayken GPS sinyalini arka planda hazırlamaya başlar. Üst bar üzerindeki "Sistem Hazır" rozeti, GPS'in ısındığını ve ölçüme geçebileceğinizi gösterir.
               </p>
             </div>
 
             {/* Aplikasyon Yap */}
-            <div className="soft-card p-5 space-y-3">
+            <div className="soft-card p-4 space-y-3">
               <h4 className="font-black text-slate-900 text-base uppercase flex items-center gap-2">
                 <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">2</span>
                 Aplikasyon Yap
@@ -62,18 +62,18 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <br/><br/>
                 • <b>Nokta Seçimi:</b> Proje listenizden hedeflediğiniz noktayı seçin.
                 <br/>
-                • <b>Canlı Rehberlik:</b> Ekranın ortasındaki pusula benzeri gösterge size gitmeniz gereken yönü gösterir. 
+                • <b>Canlı Rehberlik:</b> Ekranın ortasındaki pusula benzeri gösterge size gitmeniz gereken yönü gösterir.
                 <br/>
                 • <b>Ekranı Açık Tut:</b> Aplikasyon sırasında ekranın kapanmasını önlemek için güneş/ay ikonuna tıklayarak "Ekranı Açık Tut" özelliğini aktif edebilirsiniz.
                 <br/>
                 • <b>Mesafe Takibi:</b> Hedefe olan kuş uçuşu mesafeniz (metre cinsinden) anlık olarak güncellenir. Uygulamanın metre hassasiyetinde çalıştığını unutmayın.
                 <br/>
-                • <b>Yaklaşma Modu:</b> Hedefe 5 metreden fazla yaklaştığınızda gösterge daha hassas bir "yakın çekim" moduna geçer. Mobil cihazların GPS kısıtları nedeniyle 2 metre ve altına ulaştığınızda <b>"Hedefe Ulaşıldı"</b> sinyali ve görsel bildirim alırsınız.
+                • <b>Yaklaşma Modu:</b> Hedefe 5 metreden fazla yaklaştığınızda gösterge daha hassas bir "yakın çekim" moduna geçer. Mobil cihazların GPS kısıtları nedeniyle 2 metre ve altına ulaştığınızda "Hedefe Ulaşıldı" sinyali ve görsel bildirim alırsınız.
               </p>
             </div>
 
             {/* Kayıtlı Projeler */}
-            <div className="soft-card p-5 space-y-3">
+            <div className="soft-card p-4 space-y-3">
               <h4 className="font-black text-slate-900 text-base uppercase flex items-center gap-2">
                 <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">3</span>
                 Kayıtlı Projeler
@@ -85,12 +85,12 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <br/>
                 • <b>Detaylar:</b> Bir noktaya tıkladığınızda koordinatlarını, yüksekliğini, hassasiyetini ve harita üzerindeki konumunu görebilirsiniz.
                 <br/>
-                • <b>Düzenleme:</b> Gereksiz noktaları veya tüm proje klasörlerini silebilirsiniz.
+                • <b>Düzenleme:</b> Gereksiz noktaları veya tüm proje klasörlerini silebilirsiniz.Projelere yeniden isim verebilirsiniz.
               </p>
             </div>
 
             {/* Veri Aktar */}
-            <div className="soft-card p-5 space-y-3">
+            <div className="soft-card p-4 space-y-3">
               <h4 className="font-black text-slate-900 text-base uppercase flex items-center gap-2">
                 <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">4</span>
                 Veri Aktar
@@ -98,13 +98,13 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
               <p className="text-slate-900 text-sm leading-relaxed font-medium text-justify">
                 Saha verilerinizi ofis yazılımlarına aktarmak için <b>"Veri Aktar"</b> menüsünü kullanın.
                 <br/><br/>
-                • <b>Excel (.xlsx):</b> Nokta adı, koordinatlar (X, Y, Z), hassasiyet ve tarih bilgilerini içeren detaylı tablo.
-                <br/>
                 • <b>Google Earth (.kml):</b> Noktalarınızı uydu görüntüsü üzerinde görmek için ideal format.
+                <br/>
+                • <b>Excel (.xlsx):</b> Nokta adı, koordinatlar (X, Y, Z), hassasiyet ve tarih bilgilerini içeren detaylı tablo.
                 <br/>
                 • <b>Metin (.txt):</b> Ham veri formatında (Ad, Y, X, Z) hızlı paylaşım.
                 <br/>
-                • <b>Paylaşım:</b> Oluşturulan dosyaları WhatsApp, E-posta veya Bulut sürücülere doğrudan gönderebilirsiniz.
+                • <b>Paylaşım:</b> Oluşturulan dosyaları mobil cihazlarınız ile WhatsApp, E-posta veya Bulut sürücülere doğrudan gönderebilirsiniz.
               </p>
             </div>
           </div>
@@ -129,7 +129,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             <div className="flex gap-4">
               <i className="fas fa-mobile-alt text-amber-600 mt-1 text-lg"></i>
               <p className="text-sm text-amber-900 font-medium leading-relaxed text-justify">
-                <b>Bekleme Süresi:</b> Uygulamayı açtıktan sonra GPS sinyalinin "oturması" için 30-60 saniye beklemek hassasiyeti 1-2 metreye kadar düşürebilir.
+                <b>Bekleme Süresi:</b> Uygulamayı açtıktan sonra GPS sinyalinin "oturması" için yaklaşık 30 saniye beklemek hassasiyeti 2-5 metreye kadar düşürebilir.
               </p>
             </div>
             <div className="flex gap-4">
@@ -152,7 +152,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
           
           <div className="bg-amber-50 border border-amber-100 rounded-2xl p-6 space-y-4">
             <p className="text-sm text-amber-900 font-medium leading-relaxed text-justify mb-4">
-              Uygulama, en yüksek hassasiyeti sağlamak için <b>Hibrit (Karma) Konumleme</b> teknolojisini kullanır. Bu teknoloji, aşağıdaki 4 kaynağı birleştirerek çalışır:
+              Uygulama, en yüksek hassasiyeti sağlamak için <b>Hibrit (Karma) Konumlama</b> teknolojisini kullanır. Bu teknoloji, aşağıdaki 4 kaynağı birleştirerek çalışır:
             </p>
             
             <div className="space-y-4">
@@ -162,7 +162,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                   <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">1. GNSS (Uydu)</h4>
                 </div>
                 <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                  GPS, GLONASS, Galileo ve BeiDou uydularından gelen sinyaller. Açık alanda en hassas (±3-5m) konum verisini sağlar.
+                  GPS, GLONASS, Galileo ve BeiDou uydularından gelen sinyalleri kullanır. Açık alanda hassas (±2m) konum verisi sağlar.
                 </p>
               </div>
 
@@ -192,7 +192,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                   <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">4. A-GPS (İnternet)</h4>
                 </div>
                 <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                  İnternet üzerinden güncel uydu yörünge verilerini (Almanak) indirerek, GPS'in saniyeler içinde kilitlenmesini (Fix) sağlar.
+                  İnternet üzerinden güncel uydu yörünge verilerini (almanak) indirerek, GPS'in saniyeler içinde kilitlenmesini (Fix) sağlar.
                 </p>
               </div>
             </div>
@@ -211,42 +211,28 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
           <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 space-y-6">
             <div className="space-y-4">
               <div>
-                <h4 className="text-base font-black text-blue-700 uppercase tracking-tight mb-1">ED50 Dönüşümü (Datum Shift)</h4>
+                <h4 className="text-base font-black text-blue-700 uppercase tracking-tight mb-1">ED50 Dönüşümü</h4>
                 <p className="text-sm text-blue-900 font-medium leading-relaxed text-justify">
-                  WGS84 ile ED50 (European Datum 1950) arasındaki dönüşümler, Türkiye geneli için optimize edilmiş <b>7 Parametreli Helmert Dönüşümü</b> kullanılarak yapılmaktadır.
-                  <br/>
-                  <span className="opacity-70 text-xs block mt-1 font-mono">Parametreler: dX, dY, dZ, Rx, Ry, Rz, dS (HGM/EPSG Standartları)</span>
+                  WGS84 ile ED50 (European Datum 1950) arasındaki dönüşümler, Türkiye geneli için optimize edilmiş 7 Parametreli (dX, dY, dZ, Rx, Ry, Rz, dS "HGM/EPSG Standartları") Helmert Dönüşümü kullanılarak yapılmaktadır.
                 </p>
               </div>
 
               <div>
-                <h4 className="text-base font-black text-blue-700 uppercase tracking-tight mb-1">ITRF96 Dönüşümü (Projeksiyon)</h4>
+                <h4 className="text-base font-black text-blue-700 uppercase tracking-tight mb-1">ITRF96 Dönüşümü</h4>
                 <p className="text-sm text-blue-900 font-medium leading-relaxed text-justify">
-                  ITRF96 (GRS80 Elipsoidi) koordinatları, <b>Transversal Mercator (TM)</b> projeksiyonu ile hesaplanmaktadır. 3° dilim genişliği ve dilim orta meridyenleri (DOM) otomatik belirlenir.
+                  ITRF96 (GRS80 Elipsoidi) koordinatları, Transversal Mercator (TM) projeksiyonu ile hesaplanmaktadır. 3° dilim genişliği ve dilim orta meridyenleri (DOM) otomatik belirlenir.
                 </p>
               </div>
 
               <div>
                 <h4 className="text-base font-black text-blue-700 uppercase tracking-tight mb-1">Düşey Datum (Yükseklik)</h4>
                 <p className="text-sm text-blue-900 font-medium leading-relaxed text-justify">
-                  Ortometrik yükseklik (H), GPS'ten alınan Elipsoid yüksekliğinden (h), <b>TG-20 (Türkiye Geoidi 2020)</b> Hibrit Jeoid Modeli ondülasyon değeri (N) çıkarılarak hesaplanır.
+                  Ortometrik yükseklik (H), GPS'ten alınan Elipsoid yüksekliğinden (h), TG-20 (Türkiye Geoidi 2020) Hibrit Jeoid Modeli ondülasyon değeri (N) çıkarılarak hesaplanır.
                   <br/>
-                  <span className="opacity-70 text-xs block mt-1 font-mono">Formül: H = h - N (TG-20)</span>
                   <span className="opacity-70 text-xs block mt-1 font-mono">Çözünürlük: 5' x 5' (Yaklaşık 9km)</span>
                 </p>
               </div>
             </div>
-
-            <ul className="pt-4 border-t border-blue-200 space-y-3">
-              <li className="flex items-center gap-3 text-sm font-medium text-blue-900">
-                <i className="fas fa-check-circle text-blue-600"></i>
-                <span>3° ve 6° Dilim Desteği</span>
-              </li>
-              <li className="flex items-center gap-3 text-sm font-medium text-blue-900">
-                <i className="fas fa-check-circle text-blue-600"></i>
-                <span>Otomatik DOM Hesabı</span>
-              </li>
-            </ul>
           </div>
         </section>
 
@@ -260,7 +246,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
           </div>
           <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-6">
             <p className="text-emerald-900 text-sm leading-relaxed font-medium text-justify">
-              Verileriniz <b>tamamen cihazınızda</b> saklanır. Uygulama, konum verilerinizi hiçbir uzak sunucuya göndermez. İnternet bağlantısı sadece harita altlıklarını yüklemek için kullanılır. Uygulamayı sildiğinizde, cihazınızdaki veriler de silinecektir.
+              Verileriniz tamamen cihazınızda saklanır. Uygulama, konum verilerinizi hiçbir uzak sunucuya göndermez. Mobil cihazınızdan uygulamayı sildiğinizde veya tarayıcı önbelliğini temizlediğinizde cihazınızdaki veriler de silinecektir. Ölçüm sonrası verilerinizi yedeklemeyi unutmayın.
             </p>
           </div>
         </section>
@@ -275,7 +261,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
           </div>
           <div className="bg-rose-50 border border-rose-100 rounded-2xl p-6">
             <p className="text-sm text-rose-900 font-medium leading-relaxed text-justify">
-              Önemli Uyarı: Bu uygulama tarafından sağlanan verilerin doğruluğu ve hassasiyeti, doğrudan kullanıcının mobil cihazının donanımsal (GPS/GNSS) alıcı kapasitesine, uydu görünürlüğüne ve çevresel faktörlere bağlıdır. Uygulama, profesyonel jeodezik ekipmanların yerini tutmaz. Elde edilen verilerin kritik mühendislik projelerinde kullanılmadan önce profesyonel ekipmanlarla doğrulanması önerilir. Oluşabilecek hatalardan veya veri kayıplarından yazılım geliştiricisi sorumlu tutulamaz.
+              Bu uygulama tarafından sağlanan verilerin doğruluğu ve hassasiyeti, doğrudan kullanıcının mobil cihazının donanımsal (GPS/GNSS) alıcı kapasitesine, uydu görünürlüğüne ve çevresel faktörlere bağlıdır. Uygulama, profesyonel jeodezik ekipmanların yerini tutmaz. Elde edilen verilerin kritik mühendislik projelerinde kullanılmadan önce profesyonel ekipmanlarla doğrulanması önerilir. Oluşabilecek hatalardan veya veri kayıplarından yazılım geliştiricisi sorumlu tutulamaz.
             </p>
           </div>
         </section>
