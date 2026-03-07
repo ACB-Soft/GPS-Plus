@@ -29,9 +29,10 @@ const MapResizer = () => {
 interface Props {
   location: SavedLocation;
   initialShowMap?: boolean;
+  onCloseMap?: () => void;
 }
 
-const ResultCard: React.FC<Props> = ({ location, initialShowMap = false }) => {
+const ResultCard: React.FC<Props> = ({ location, initialShowMap = false, onCloseMap }) => {
   const [showMap, setShowMap] = useState(initialShowMap);
   const { x, y, labelX, labelY, zone } = convertCoordinate(location.lat, location.lng, location.coordinateSystem || 'WGS84');
   const isUTM = location.coordinateSystem && location.coordinateSystem !== 'WGS84';
@@ -97,13 +98,27 @@ const ResultCard: React.FC<Props> = ({ location, initialShowMap = false }) => {
           <i className="fas fa-map-marked-alt text-sm"></i>
           HARİTADA GÖR
         </button>
+
+        <button 
+          onClick={() => {
+            const url = `https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lng}`;
+            window.open(url, '_blank');
+          }}
+          className="w-full pt-4 md:pt-5 border-t border-slate-100 flex items-center justify-center gap-3 text-[11px] font-black text-emerald-600 uppercase tracking-[0.3em] active:scale-95 transition-all hover:text-emerald-700"
+        >
+          <i className="fas fa-route text-sm"></i>
+          NAVİGASYONA GÖNDER
+        </button>
       </div>
 
       {showMap && (
         <div className="fixed inset-0 z-[9999] bg-black flex flex-col animate-in fade-in">
           <div className="absolute top-6 left-6 z-[10000]">
             <button 
-              onClick={() => setShowMap(false)}
+              onClick={() => {
+                setShowMap(false);
+                if (onCloseMap) onCloseMap();
+              }}
               className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all"
             >
               <i className="fas fa-times"></i>

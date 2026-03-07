@@ -282,15 +282,17 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   if (step === 'SELECT_MODE') return (
     <div className="w-full flex flex-col bg-[#F8FAFC] animate-in h-full relative overflow-y-auto no-scrollbar">
       {StandardHeader("Yeni Ölçüm Yap", "YENİ KAYIT", "HOME")}
-      <div className="w-full max-w-sm px-8 pt-4 space-y-4 mx-auto">
-        <button onClick={() => { setIsNewProject(true); setFolderName(''); setStep('FORM'); }} className="w-full py-3 md:py-4 px-5 bg-white rounded-3xl shadow-md border border-slate-100 text-left active:scale-[0.97] transition-all flex items-center gap-5">
-          <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0"><i className="fas fa-folder-plus text-xl"></i></div>
-          <span className="font-black text-lg text-slate-900">Yeni Proje Oluştur</span>
-        </button>
-        <button onClick={() => { setIsNewProject(false); setStep('FORM'); }} className="w-full py-3 md:py-4 px-5 bg-white rounded-3xl shadow-md border border-slate-100 text-left active:scale-[0.97] transition-all flex items-center gap-5">
-          <div className="w-10 h-10 md:w-12 md:h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0"><i className="fas fa-folder-open text-xl"></i></div>
-          <span className="font-black text-lg text-slate-900">Mevcut Proje Seç</span>
-        </button>
+      <div className="w-full px-8 pt-4 mx-auto">
+        <div className="max-w-sm mx-auto w-full space-y-4">
+          <button onClick={() => { setIsNewProject(true); setFolderName(''); setStep('FORM'); }} className="w-full py-3 md:py-4 px-5 bg-white rounded-3xl shadow-md border border-slate-100 text-left active:scale-[0.97] transition-all flex items-center gap-5">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0"><i className="fas fa-folder-plus text-xl"></i></div>
+            <span className="font-black text-lg text-slate-900">Yeni Proje Oluştur</span>
+          </button>
+          <button onClick={() => { setIsNewProject(false); setStep('FORM'); }} className="w-full py-3 md:py-4 px-5 bg-white rounded-3xl shadow-md border border-slate-100 text-left active:scale-[0.97] transition-all flex items-center gap-5">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0"><i className="fas fa-folder-open text-xl"></i></div>
+            <span className="font-black text-lg text-slate-900">Mevcut Proje Seç</span>
+          </button>
+        </div>
       </div>
       <GlobalFooter showAd={true} />
     </div>
@@ -299,8 +301,9 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   if (step === 'FORM') return (
     <div className="w-full flex flex-col bg-[#F8FAFC] animate-in h-full relative overflow-y-auto no-scrollbar">
       {StandardHeader("Proje Bilgisi", "DETAYLAR", "SELECT_MODE")}
-      <div className="w-full max-w-sm px-8 pt-4 mx-auto">
-        <div className="soft-card p-8 w-full space-y-6">
+      <div className="w-full px-8 pt-4 mx-auto">
+        <div className="max-w-sm mx-auto w-full">
+          <div className="soft-card p-8 w-full space-y-6">
           <div className="space-y-2">
             <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Proje Adı</label>
             {isNewProject ? (
@@ -336,6 +339,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
             ÖLÇÜME HAZIRLAN
           </button>
         </div>
+      </div>
       </div>
       <GlobalFooter showAd={true} />
     </div>
@@ -408,7 +412,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
         </div>
       </div>
 
-      <div className="w-full max-w-sm shrink-0 pb-6">
+      <div className="w-full max-w-sm mx-auto w-full shrink-0 pb-6">
         {step === 'READY' ? (
           <div className="bg-slate-50 p-6 md:p-8 rounded-[2.5rem] border border-slate-100 space-y-4">
             <div className="space-y-1">

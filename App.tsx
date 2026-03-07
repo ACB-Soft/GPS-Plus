@@ -16,6 +16,7 @@ const App = () => {
   const [view, setView] = useState<ViewType>('onboarding');
   const [locations, setLocations] = useState<SavedLocation[]>([]);
   const [lastResult, setLastResult] = useState<SavedLocation | null>(null);
+  const [resultSource, setResultSource] = useState<'capture' | 'list'>('capture');
   const [autoShowMap, setAutoShowMap] = useState(false);
   const [isContinuing, setIsContinuing] = useState(false);
   const [stakeoutInitialPoint, setStakeoutInitialPoint] = useState<StakeoutPoint | null>(null);
@@ -86,6 +87,7 @@ const App = () => {
     setLocations(prev => [newLoc, ...prev]);
     setLastResult(newLoc);
     setAutoShowMap(false);
+    setResultSource('capture');
     navigateTo('result');
   };
 
@@ -102,6 +104,7 @@ const App = () => {
   const handleViewOnMap = (l: SavedLocation) => {
     setLastResult(l);
     setAutoShowMap(true);
+    setResultSource('list');
     navigateTo('result');
   };
 
@@ -164,10 +167,11 @@ const App = () => {
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Kayıtlı Projeler</h2>
               </div>
             </header>
-            <div className="px-8 pt-0 pb-4 max-w-sm mx-auto w-full">
-              <SavedLocationsList 
-                locations={locations} 
-                onDelete={(id) => setLocations(prev => prev.filter(l => l.id !== id))}
+            <div className="px-8 pt-0 pb-4 w-full">
+              <div className="max-w-sm mx-auto w-full">
+                <SavedLocationsList 
+                  locations={locations} 
+                  onDelete={(id) => setLocations(prev => prev.filter(l => l.id !== id))}
                 onDeleteFolder={(name) => setLocations(prev => prev.filter(l => l.folderName !== name))}
                 onRenameFolder={(oldName, newName) => setLocations(prev => prev.map(l => 
                   l.folderName === oldName ? { ...l, folderName: newName } : l
@@ -175,6 +179,7 @@ const App = () => {
                 onBulkDelete={(ids) => setLocations(prev => prev.filter(l => !ids.includes(l.id)))}
                 onViewOnMap={handleViewOnMap}
               />
+            </div>
             </div>
             <GlobalFooter showAd={true} />
           </div>
@@ -198,9 +203,13 @@ const App = () => {
         )}
 
         {view === 'result' && lastResult && (
-          <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-white">
-            <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full px-8 pt-8">
-              <ResultCard location={lastResult} initialShowMap={autoShowMap} />
+          <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-white px-8">
+            <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full pt-8">
+              <ResultCard 
+                location={lastResult} 
+                initialShowMap={autoShowMap} 
+                onCloseMap={resultSource === 'list' ? () => navigateTo('list') : undefined}
+              />
               <div className="mt-8 space-y-4">
                  <button onClick={() => handleNewMeasurement(true)} className="w-full py-2.5 md:py-3.5 bg-blue-600 text-white rounded-2xl font-black shadow-2xl shadow-blue-200 active:scale-95 transition-all text-[13px] uppercase tracking-widest">YENİ NOKTA EKLE</button>
                  <button onClick={resetToDashboard} className="w-full py-2.5 md:py-3.5 bg-slate-900 text-white rounded-2xl font-black text-[12px] uppercase tracking-widest transition-all">ÖLÇÜMÜ BİTİR</button>

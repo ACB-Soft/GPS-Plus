@@ -50,6 +50,11 @@ const SavedLocationItem: React.FC<{
     );
   };
 
+  const handleNavigate = (lat: number, lng: number) => {
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="bg-white rounded-[1.8rem] border border-slate-100 overflow-hidden shadow-sm">
       <div className="p-4 flex items-center justify-between transition-colors">
@@ -100,13 +105,20 @@ const SavedLocationItem: React.FC<{
               <p className={`text-[14px] mono-font font-black leading-tight ${getAccuracyColor(l.accuracy)}`}>±{l.accuracy.toFixed(1)}m</p>
             </div>
           </div>
-          <div className="mt-4 pt-4 border-t border-slate-50 flex gap-2">
+          <div className="mt-4 pt-4 border-t border-slate-50 flex flex-col gap-2">
             <button 
               onClick={() => onViewOnMap(l)}
-              className="flex-1 py-2.5 bg-blue-50 text-blue-600 rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all"
+              className="w-full py-2.5 bg-blue-50 text-blue-600 rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all"
             >
               <i className="fas fa-map-location-dot"></i>
               Harita Üzerinde Gör
+            </button>
+            <button 
+              onClick={() => handleNavigate(l.lat, l.lng)}
+              className="w-full py-2.5 bg-emerald-50 text-emerald-600 rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all"
+            >
+              <i className="fas fa-route"></i>
+              Navigasyona Gönder
             </button>
           </div>
         </div>
