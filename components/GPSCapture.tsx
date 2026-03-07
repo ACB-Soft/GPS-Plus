@@ -292,7 +292,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
           <span className="font-black text-lg text-slate-900">Mevcut Proje Seç</span>
         </button>
       </div>
-      <GlobalFooter />
+      <GlobalFooter showAd={true} />
     </div>
   );
 
@@ -337,7 +337,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
           </button>
         </div>
       </div>
-      <GlobalFooter />
+      <GlobalFooter showAd={true} />
     </div>
   );
 

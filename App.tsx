@@ -193,7 +193,7 @@ const App = () => {
             <div className="flex-1 px-8 overflow-y-auto no-scrollbar pt-0 pb-4">
                <ExportUnifiedView locations={locations} />
             </div>
-            <GlobalFooter />
+            <GlobalFooter showAd={true} />
           </div>
         )}
 
