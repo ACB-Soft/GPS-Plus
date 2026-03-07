@@ -215,7 +215,7 @@ const App = () => {
                  <button onClick={resetToDashboard} className="w-full py-2.5 md:py-3.5 bg-slate-900 text-white rounded-2xl font-black text-[12px] uppercase tracking-widest transition-all">ÖLÇÜMÜ BİTİR</button>
               </div>
             </div>
-            <GlobalFooter />
+            <GlobalFooter noPadding={true} />
           </div>
         )}
 

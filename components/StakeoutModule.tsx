@@ -394,7 +394,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint }) => {
                 </button>
               </div>
             </div>
-            <GlobalFooter showAd={true} />
+            <GlobalFooter showAd={true} noPadding={true} />
           </div>
         )}
 
@@ -463,7 +463,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint }) => {
                 {confirmClear === 'LIST' ? 'EMİN MİSİNİZ? (TEKRAR TIKLAYIN)' : 'LİSTEYİ TEMİZLE'}
               </button>
             </div>
-            <GlobalFooter />
+            <GlobalFooter noPadding={true} />
           </div>
         )}
 
@@ -503,7 +503,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint }) => {
                 </button>
               </div>
             </div>
-            <GlobalFooter />
+            <GlobalFooter noPadding={true} />
           </div>
         )}
 

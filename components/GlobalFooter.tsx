@@ -3,10 +3,11 @@ import { FULL_BRAND } from '../version';
 
 interface Props {
   showAd?: boolean;
+  noPadding?: boolean;
 }
 
-const GlobalFooter: React.FC<Props> = ({ showAd = false }) => (
-  <footer className="py-4 md:py-6 flex flex-col items-center mt-auto safe-bottom shrink-0 bg-transparent px-8">
+const GlobalFooter: React.FC<Props> = ({ showAd = false, noPadding = false }) => (
+  <footer className={`py-4 md:py-6 flex flex-col items-center mt-auto safe-bottom shrink-0 bg-transparent ${noPadding ? '' : 'px-8'}`}>
     {/* Reklam Alanı */}
     {showAd && (
       <div className="w-full max-w-sm mb-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
