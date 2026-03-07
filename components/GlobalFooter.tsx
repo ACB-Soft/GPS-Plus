@@ -6,10 +6,10 @@ interface Props {
 }
 
 const GlobalFooter: React.FC<Props> = ({ showAd = false }) => (
-  <footer className="py-6 md:py-8 flex flex-col items-center mt-auto safe-bottom shrink-0 bg-transparent px-8">
+  <footer className="py-4 md:py-6 flex flex-col items-center mt-auto safe-bottom shrink-0 bg-transparent px-8">
     {/* Reklam Alanı */}
     {showAd && (
-      <div className="w-full max-w-sm mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="w-full max-w-sm mb-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="w-full h-[100px] md:h-[120px] bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center relative overflow-hidden group">
           <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-white opacity-50"></div>
           <div className="relative z-10 flex flex-col items-center gap-2">

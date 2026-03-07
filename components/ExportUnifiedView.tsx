@@ -17,7 +17,7 @@ const ExportUnifiedView: React.FC<Props> = ({ locations }) => {
   const hasSelection = !!selectedFolder;
 
   return (
-    <div className="space-y-8 pb-10">
+    <div className="space-y-8 pb-10 max-w-sm mx-auto w-full">
       <div className="space-y-3">
         <h4 className="text-[10px] font-black uppercase text-slate-400 px-2 tracking-widest">Proje Seçimi</h4>
         

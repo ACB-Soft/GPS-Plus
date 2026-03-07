@@ -343,8 +343,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint }) => {
 
       <div className="flex-1 overflow-y-auto no-scrollbar relative">
         {view === 'MENU' && (
-          <div className="flex-1 flex flex-col h-full overflow-hidden">
-            <div className="p-8 pt-4 space-y-4 overflow-y-auto no-scrollbar">
+          <div className="flex-1 flex flex-col overflow-y-auto h-full no-scrollbar">
+            <div className="p-8 pt-4 space-y-4 max-w-sm mx-auto w-full">
               <div className="grid grid-cols-1 gap-4">
                 <button onClick={() => setView('MANUAL')} className="w-full py-2.5 md:py-3.5 px-5 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 active:scale-[0.98] transition-all">
                   <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0">
@@ -399,8 +399,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint }) => {
         )}
 
         {view === 'LIST' && (
-          <div className="flex-1 flex flex-col h-full overflow-hidden">
-            <div className="p-8 pt-4 space-y-4 overflow-y-auto no-scrollbar">
+          <div className="flex-1 flex flex-col overflow-y-auto h-full no-scrollbar">
+            <div className="p-8 pt-4 space-y-4 max-w-sm mx-auto w-full">
               {points.length === 0 ? (
                 <div className="p-12 text-center bg-white rounded-[2.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center gap-4">
                   <i className="fas fa-ghost text-3xl text-slate-200"></i>
@@ -463,13 +463,13 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint }) => {
                 {confirmClear === 'LIST' ? 'EMİN MİSİNİZ? (TEKRAR TIKLAYIN)' : 'LİSTEYİ TEMİZLE'}
               </button>
             </div>
-            <GlobalFooter showAd={true} />
+            <GlobalFooter />
           </div>
         )}
 
         {view === 'MANUAL' && (
-          <div className="flex-1 flex flex-col h-full overflow-hidden">
-            <div className="p-8 pt-4 mx-auto max-w-sm w-full overflow-y-auto no-scrollbar">
+          <div className="flex-1 flex flex-col overflow-y-auto h-full no-scrollbar">
+            <div className="p-8 pt-4 mx-auto max-w-sm w-full">
               <div className="soft-card p-8 space-y-6">
                 <div className="space-y-2">
                   <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Nokta Adı</label>
@@ -503,7 +503,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint }) => {
                 </button>
               </div>
             </div>
-            <GlobalFooter showAd={true} />
+            <GlobalFooter />
           </div>
         )}
 

@@ -48,8 +48,8 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    const CURRENT_KEY = 'gps_locations_v6.5.5';
-    const OLD_KEY = 'gps_locations_v6.5.4';
+    const CURRENT_KEY = 'gps_locations_v6.5.7';
+    const OLD_KEY = 'gps_locations_v6.5.6';
     
     let saved = localStorage.getItem(CURRENT_KEY);
     if (!saved) {
@@ -64,11 +64,11 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('gps_locations_v6.5.5', JSON.stringify(locations));
+    localStorage.setItem('gps_locations_v6.5.7', JSON.stringify(locations));
   }, [locations]);
 
   const handleFinishOnboarding = () => {
-    localStorage.setItem('onboarding_v6.5.5_done', 'true');
+    localStorage.setItem('onboarding_v6.5.7_done', 'true');
     // Use replaceState so dashboard becomes the root (can't go back to onboarding)
     window.history.replaceState({ view: 'dashboard' }, '');
     setView('dashboard');
@@ -117,7 +117,7 @@ const App = () => {
         )}
         
         {view === 'dashboard' && (
-          <div className="flex-1 flex flex-col overflow-y-auto h-full">
+          <div className="flex-1 flex flex-col overflow-y-auto h-full no-scrollbar">
             <Dashboard 
               onStartCapture={() => handleNewMeasurement(false)} 
               onStakeout={() => navigateTo('stakeout')}
@@ -155,7 +155,7 @@ const App = () => {
         )}
 
         {view === 'list' && (
-          <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-[#F8FAFC]">
+          <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-[#F8FAFC]">
             <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white">
               <button onClick={resetToDashboard} className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all">
                 <i className="fas fa-chevron-left text-sm"></i>
@@ -164,7 +164,7 @@ const App = () => {
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Kayıtlı Projeler</h2>
               </div>
             </header>
-            <div className="flex-1 px-8 overflow-y-auto no-scrollbar pt-0 pb-4">
+            <div className="px-8 pt-0 pb-4 max-w-sm mx-auto w-full">
               <SavedLocationsList 
                 locations={locations} 
                 onDelete={(id) => setLocations(prev => prev.filter(l => l.id !== id))}
@@ -176,12 +176,12 @@ const App = () => {
                 onViewOnMap={handleViewOnMap}
               />
             </div>
-            <GlobalFooter />
+            <GlobalFooter showAd={true} />
           </div>
         )}
 
         {view === 'export' && (
-          <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-[#F8FAFC]">
+          <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-[#F8FAFC]">
             <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white">
               <button onClick={resetToDashboard} className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all">
                 <i className="fas fa-chevron-left text-sm"></i>
@@ -190,7 +190,7 @@ const App = () => {
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Veri Aktar</h2>
               </div>
             </header>
-            <div className="flex-1 px-8 overflow-y-auto no-scrollbar pt-0 pb-4">
+            <div className="px-8 pt-0 pb-4">
                <ExportUnifiedView locations={locations} />
             </div>
             <GlobalFooter showAd={true} />
@@ -198,8 +198,8 @@ const App = () => {
         )}
 
         {view === 'result' && lastResult && (
-          <div className="flex-1 flex flex-col animate-in h-full px-8 pt-8 overflow-hidden bg-white">
-            <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full">
+          <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-white">
+            <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full px-8 pt-8">
               <ResultCard location={lastResult} initialShowMap={autoShowMap} />
               <div className="mt-8 space-y-4">
                  <button onClick={() => handleNewMeasurement(true)} className="w-full py-2.5 md:py-3.5 bg-blue-600 text-white rounded-2xl font-black shadow-2xl shadow-blue-200 active:scale-95 transition-all text-[13px] uppercase tracking-widest">YENİ NOKTA EKLE</button>

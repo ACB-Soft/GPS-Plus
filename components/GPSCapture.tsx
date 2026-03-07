@@ -280,7 +280,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   };
 
   if (step === 'SELECT_MODE') return (
-    <div className="w-full flex flex-col bg-[#F8FAFC] animate-in h-full relative overflow-y-auto justify-start">
+    <div className="w-full flex flex-col bg-[#F8FAFC] animate-in h-full relative overflow-y-auto no-scrollbar">
       {StandardHeader("Yeni Ölçüm Yap", "YENİ KAYIT", "HOME")}
       <div className="w-full max-w-sm px-8 pt-4 space-y-4 mx-auto">
         <button onClick={() => { setIsNewProject(true); setFolderName(''); setStep('FORM'); }} className="w-full py-3 md:py-4 px-5 bg-white rounded-3xl shadow-md border border-slate-100 text-left active:scale-[0.97] transition-all flex items-center gap-5">
@@ -297,7 +297,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   );
 
   if (step === 'FORM') return (
-    <div className="w-full flex flex-col bg-[#F8FAFC] animate-in h-full relative overflow-y-auto justify-start">
+    <div className="w-full flex flex-col bg-[#F8FAFC] animate-in h-full relative overflow-y-auto no-scrollbar">
       {StandardHeader("Proje Bilgisi", "DETAYLAR", "SELECT_MODE")}
       <div className="w-full max-w-sm px-8 pt-4 mx-auto">
         <div className="soft-card p-8 w-full space-y-6">
