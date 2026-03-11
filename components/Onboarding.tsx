@@ -76,7 +76,7 @@ const Onboarding: React.FC<Props> = ({ onFinish }) => {
 
         <div className="w-full flex gap-3 md:gap-4 text-left items-center p-3 md:p-4 bg-slate-50/50 rounded-[1.4rem] border border-slate-100">
           <div className="w-9 h-9 md:w-10 md:h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 shrink-0">
-            <i className="fas fa-wifi text-base md:text-lg"></i>
+            <i className="fas fa-earth-americas text-base md:text-lg"></i>
           </div>
           <div className="space-y-0.5">
             <h4 className="text-[10px] md:text-[11px] font-black text-slate-900 uppercase tracking-widest">İnternet Erişimi</h4>

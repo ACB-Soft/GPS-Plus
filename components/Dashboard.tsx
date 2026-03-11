@@ -14,16 +14,6 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
 
   return (
     <div className="flex-1 flex flex-col bg-[#F8FAFC] animate-in px-8 pt-20 md:pt-28 justify-start relative">
-      {/* System Ready Badge */}
-      {!isInIframe && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 h-12 flex items-center animate-in fade-in zoom-in duration-1000">
-          <div className="bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full flex items-center gap-2 shadow-sm">
-            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
-            <span className="text-[9px] font-black text-emerald-700 uppercase tracking-widest">Sistem Hazır</span>
-          </div>
-        </div>
-      )}
-
       {/* Loading Overlay */}
 
       {/* Dil / Bayrak - Sol Üst Köşe */}

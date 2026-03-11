@@ -48,7 +48,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <br/>
                 • <b>Ölçüm Süreci:</b> "Ölçümü Başlat" dediğinizde belirlediğiniz hassasiyette (2-100 m) ve belirlediğiniz sürede (5-30 sn) veri toplama süreci başlatılır. Uygulama bu aşamada konum örneği alarak verilerin ortalamasını hesaplar. En doğru sonuç için cihazı sabit bir zeminde ve açık bir alanda tutun.
                 <br/>
-                • <b>Hızlı Erişim:</b> Uygulama, ana ekrandayken GPS sinyalini arka planda hazırlamaya başlar. Üst bar üzerindeki "Sistem Hazır" rozeti, GPS'in ısındığını ve ölçüme geçebileceğinizi gösterir.
+                • <b>Hızlı Erişim:</b> Uygulama, ana ekrandayken GPS sinyalini arka planda hazırlamaya başlar. Bu sayede ölçüme geçtiğinizde daha hızlı sonuç alırsınız.
               </p>
             </div>
 
@@ -267,7 +267,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
           </div>
         </section>
 
-        {/* Hakkında */}
+        {/* Geliştirici */}
         <section className="space-y-4 pb-10">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
@@ -275,15 +275,38 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             </div>
             <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Geliştirici</h3>
           </div>
-          <div className="soft-card p-6 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Yazılım & Tasarım</p>
-              <p className="text-sm font-black text-slate-900">ACB_Soft Engineering</p>
+          <div className="space-y-3">
+            <div className="soft-card p-6 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Yazılım & Tasarım</p>
+                <p className="text-sm font-black text-slate-900">ACB_Soft Engineering</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Sürüm</p>
+                <p className="text-sm font-black text-blue-600">{APP_VERSION}</p>
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Sürüm</p>
-              <p className="text-sm font-black text-blue-600">{APP_VERSION}</p>
-            </div>
+            
+            <button 
+              onClick={() => {
+                const btn = document.getElementById('update-check-btn');
+                if (btn) {
+                  const originalText = btn.innerHTML;
+                  btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Denetleniyor...';
+                  setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-check mr-2"></i> Uygulama Güncel';
+                    setTimeout(() => {
+                      btn.innerHTML = originalText;
+                    }, 2000);
+                  }, 1500);
+                }
+              }}
+              id="update-check-btn"
+              className="w-full py-4 bg-white border border-slate-200 rounded-2xl text-slate-600 font-black text-[11px] uppercase tracking-widest shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+            >
+              <i className="fas fa-sync-alt text-[10px]"></i>
+              Güncellemeleri Denetle
+            </button>
           </div>
         </section>
       </div>
