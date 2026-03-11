@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { BRAND_NAME } from '../version';
 
 interface Props {
@@ -11,114 +11,15 @@ interface Props {
 
 const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, onShowExport, onShowHelp }) => {
   const isInIframe = typeof window !== 'undefined' && window.self !== window.top;
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isInstallable, setIsInstallable] = useState(false);
-  const [showIosInstallPrompt, setShowIosInstallPrompt] = useState(false);
-  const [isIos, setIsIos] = useState(false);
-
-  useEffect(() => {
-    // Detect iOS
-    const userAgent = window.navigator.userAgent.toLowerCase();
-    const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
-    setIsIos(isIosDevice);
-
-    // Check if already installed
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
-
-    if (isIosDevice && !isStandalone) {
-      setIsInstallable(true);
-    }
-
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setIsInstallable(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (isIos) {
-      setShowIosInstallPrompt(true);
-      return;
-    }
-
-    if (!deferredPrompt) return;
-    
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      setIsInstallable(false);
-    }
-    setDeferredPrompt(null);
-  };
 
   return (
     <div className="flex-1 flex flex-col bg-[#F8FAFC] animate-in px-8 pt-20 md:pt-28 justify-start relative">
-      {/* Install App Button */}
-      {!isInIframe && isInstallable && (
+      {/* System Ready Badge */}
+      {!isInIframe && (
         <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 h-12 flex items-center animate-in fade-in zoom-in duration-1000">
-          <button 
-            onClick={handleInstallClick}
-            className="bg-blue-600 hover:bg-blue-700 text-white border border-blue-500 px-4 py-1.5 rounded-full flex items-center gap-2 shadow-md active:scale-95 transition-all"
-          >
-            <i className="fas fa-download text-xs"></i>
-            <span className="text-[10px] font-black uppercase tracking-widest">Uygulamayı İndir</span>
-          </button>
-        </div>
-      )}
-
-      {/* iOS Install Prompt Modal */}
-      {showIosInstallPrompt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl relative animate-in zoom-in-95 duration-300">
-            <button 
-              onClick={() => setShowIosInstallPrompt(false)}
-              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-slate-100 text-slate-500 rounded-full hover:bg-slate-200 transition-colors"
-            >
-              <i className="fas fa-times"></i>
-            </button>
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner">
-                <i className="fab fa-apple text-3xl"></i>
-              </div>
-              <h3 className="text-xl font-black text-slate-800 mb-2">Uygulamayı Yükle</h3>
-              <p className="text-slate-600 text-sm">
-                iOS cihazınızda uygulamayı ana ekrana eklemek için aşağıdaki adımları izleyin:
-              </p>
-            </div>
-            
-            <div className="bg-slate-50 rounded-2xl p-4 space-y-4 border border-slate-100">
-              <div className="flex items-start gap-4">
-                <div className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center shrink-0 text-blue-600 border border-slate-200">
-                  <span className="font-bold text-sm">1</span>
-                </div>
-                <p className="text-sm text-slate-700 pt-1.5">
-                  Tarayıcının alt menüsündeki <i className="fas fa-share-square mx-1 text-blue-500"></i> <strong>Paylaş</strong> butonuna dokunun.
-                </p>
-              </div>
-              <div className="flex items-start gap-4">
-                <div className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center shrink-0 text-blue-600 border border-slate-200">
-                  <span className="font-bold text-sm">2</span>
-                </div>
-                <p className="text-sm text-slate-700 pt-1.5">
-                  Açılan menüden <i className="far fa-plus-square mx-1 text-slate-500"></i> <strong>Ana Ekrana Ekle</strong> seçeneğini seçin.
-                </p>
-              </div>
-            </div>
-            
-            <button 
-              onClick={() => setShowIosInstallPrompt(false)}
-              className="w-full mt-6 py-3 bg-slate-900 text-white rounded-xl font-bold shadow-md active:scale-95 transition-all"
-            >
-              Anladım
-            </button>
+          <div className="bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full flex items-center gap-2 shadow-sm">
+            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+            <span className="text-[9px] font-black text-emerald-700 uppercase tracking-widest">Sistem Hazır</span>
           </div>
         </div>
       )}

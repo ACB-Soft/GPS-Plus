@@ -9,7 +9,8 @@ if (container) {
   root.render(<App />);
 }
 
-// Service Worker Registration
+// Service Worker Registration disabled
+/*
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').then(registration => {
@@ -19,3 +20,4 @@ if ('serviceWorker' in navigator) {
     });
   });
 }
+*/
