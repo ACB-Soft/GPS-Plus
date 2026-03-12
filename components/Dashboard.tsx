@@ -7,21 +7,19 @@ interface Props {
   onShowList: () => void;
   onShowExport: () => void;
   onShowHelp: () => void;
-  darkMode: boolean;
-  onToggleDarkMode: () => void;
 }
 
-const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, onShowExport, onShowHelp, darkMode, onToggleDarkMode }) => {
+const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, onShowExport, onShowHelp }) => {
   const isInIframe = typeof window !== 'undefined' && window.self !== window.top;
 
   return (
-    <div className="flex-1 flex flex-col bg-[#F8FAFC] dark:bg-slate-950 animate-in px-8 pt-20 md:pt-28 justify-start relative transition-colors duration-300">
+    <div className="flex-1 flex flex-col bg-[#F8FAFC] animate-in px-8 pt-20 md:pt-28 justify-start relative">
       {/* Loading Overlay */}
 
       {/* Dil / Bayrak - Sol Üst Köşe */}
       <div className="absolute top-6 left-8 z-20">
         <button 
-          className="w-12 h-12 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center shadow-xl border border-blue-100 dark:border-slate-700 active:scale-90 transition-all hover:bg-blue-50 dark:hover:bg-slate-700 overflow-hidden"
+          className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-xl border border-blue-100 active:scale-90 transition-all hover:bg-blue-50 overflow-hidden"
           title="Dil Değiştir"
         >
           <div className="w-8 h-6 rounded-md overflow-hidden flex items-center justify-center shadow-sm">
@@ -36,37 +34,48 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
         </button>
       </div>
 
-      {/* Tema & Yardım Butonları - Sağ Üst Köşe */}
-      <div className="absolute top-6 right-8 z-20 flex items-center gap-3">
-        {/* Tema Değiştirici */}
+      {/* Üst Butonlar - Sağ Üst Köşe */}
+      <div className="absolute top-6 right-8 z-20 flex items-center gap-2">
+        {/* Ayarlar Butonu (Pasif) */}
         <button 
-          onClick={onToggleDarkMode}
-          className="w-12 h-12 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center shadow-xl border border-blue-100 dark:border-slate-700 text-slate-600 dark:text-amber-400 active:scale-90 transition-all hover:bg-blue-50 dark:hover:bg-slate-700 group"
-          title={darkMode ? "Aydınlık Mod" : "Koyu Mod"}
+          disabled
+          className="w-12 h-12 bg-white/50 rounded-2xl flex items-center justify-center border border-slate-100 text-slate-300 cursor-not-allowed"
+          title="Ayarlar (Yakında)"
         >
-          <i className={`fas ${darkMode ? 'fa-sun' : 'fa-moon'} text-xl`}></i>
+          <i className="fas fa-cog text-lg"></i>
         </button>
 
-        {/* Yardım Butonu */}
+        {/* Dark Mode Butonu (Pasif) */}
+        <button 
+          disabled
+          className="w-12 h-12 bg-white/50 rounded-2xl flex items-center justify-center border border-slate-100 text-slate-300 cursor-not-allowed"
+          title="Gece Modu (Yakında)"
+        >
+          <i className="fas fa-moon text-lg"></i>
+        </button>
+
+        {/* Yardım Butonu (Glow Efektli) */}
         <div className="relative">
           <div className="absolute inset-0 bg-blue-400 rounded-2xl blur-xl opacity-20 animate-pulse"></div>
           <button 
             onClick={onShowHelp}
-            className="relative w-12 h-12 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center shadow-xl border border-blue-100 dark:border-slate-700 text-blue-600 dark:text-blue-400 active:scale-90 transition-all hover:bg-blue-50 dark:hover:bg-slate-700 group"
+            className="relative w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-xl border border-blue-100 text-blue-600 active:scale-90 transition-all hover:bg-blue-50 group"
           >
             <i className="fas fa-question text-xl font-black group-hover:text-amber-500 transition-colors stroke-current stroke-2" style={{ WebkitTextStroke: '1px' }}></i>
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-600 rounded-full border-2 border-white dark:border-slate-800 animate-bounce"></div>
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-600 rounded-full border-2 border-white animate-bounce"></div>
           </button>
         </div>
       </div>
 
-      {/* Header */}
+      {/* Header - Logo kaldırıldı, metinler merkezlendi ve üst girinti artırıldı */}
       <header className="flex flex-col items-center shrink-0 mb-10 md:mb-16">
-        <p className="text-sm md:text-base font-black text-slate-900 dark:text-slate-400 uppercase tracking-[0.2em] mb-4 leading-tight text-center w-full max-w-sm">
+        {/* Açıklama Metni - Siyah Renk, Merkezlenmiş */}
+        <p className="text-sm md:text-base font-black text-slate-900 uppercase tracking-[0.2em] mb-4 leading-tight text-center w-full max-w-sm">
           Mobil cihazlarınız için <br /> Konum Belirleme Uygulaması
         </p>
         
-        <h1 className="text-5xl md:text-6xl font-black text-[#2563eb] dark:text-blue-500 tracking-tighter leading-none text-center">
+        {/* Ana Başlık - #2563eb Mavi Renk */}
+        <h1 className="text-5xl md:text-6xl font-black text-[#2563eb] tracking-tighter leading-none text-center">
           {BRAND_NAME}
         </h1>
       </header>
