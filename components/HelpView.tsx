@@ -267,6 +267,42 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
           </div>
         </section>
 
+        {/* Veri Kaynakları */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-200">
+              <i className="fas fa-database"></i>
+            </div>
+            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Veri Kaynakları & Lisanslar</h3>
+          </div>
+          <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-6 space-y-4">
+            <p className="text-emerald-900 text-sm leading-relaxed font-medium text-justify">
+              Uygulamada kullanılan tüm veriler kamuya açık, telif gerektirmeyen veya açık kaynak lisanslı (ODbL, Creative Commons vb.) kaynaklardan derlenmiştir:
+            </p>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2">
+                <i className="fas fa-check-circle text-emerald-600 mt-1 text-xs"></i>
+                <p className="text-xs text-emerald-800 font-medium"><b>Uydu Sinyalleri:</b> GPS, GLONASS, Galileo ve Buydou uydularının kamuya açık sivil sinyalleri.</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <i className="fas fa-check-circle text-emerald-600 mt-1 text-xs"></i>
+                <p className="text-xs text-emerald-800 font-medium"><b>Harita Altlıkları:</b> Google Maps uydu görüntüleri (API üzerinden) ve kamuya açık coğrafi servisler.</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <i className="fas fa-check-circle text-emerald-600 mt-1 text-xs"></i>
+                <p className="text-xs text-emerald-800 font-medium"><b>Jeoid Modeli:</b> TG-20 (Türkiye Geoidi 2020) - HGM tarafından paylaşılan açık veriler.</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <i className="fas fa-check-circle text-emerald-600 mt-1 text-xs"></i>
+                <p className="text-xs text-emerald-800 font-medium"><b>Dönüşüm Parametreleri:</b> EPSG ve HGM standartlarında yayınlanan matematiksel formüller.</p>
+              </div>
+            </div>
+            <p className="text-[10px] text-emerald-700 italic leading-tight border-t border-emerald-200 pt-3">
+              * Verilerimiz arasında telif hakkı ihlali barındıran herhangi bir kaynak bulunmamaktadır.
+            </p>
+          </div>
+        </section>
+
         {/* Geliştirici */}
         <section className="space-y-4 pb-10">
           <div className="flex items-center gap-3">

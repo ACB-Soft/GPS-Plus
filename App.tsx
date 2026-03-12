@@ -40,7 +40,9 @@ const App = () => {
       if (event.state && event.state.view) {
         setView(event.state.view);
       } else {
-        setView('onboarding');
+        // If no state, check if onboarding is done to decide where to go
+        const onboardingDone = localStorage.getItem('onboarding_v6.6.0_done') === 'true';
+        setView(onboardingDone ? 'dashboard' : 'onboarding');
       }
     };
 
@@ -49,8 +51,8 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    const CURRENT_KEY = 'gps_locations_v6.5.8';
-    const OLD_KEY = 'gps_locations_v6.5.7';
+    const CURRENT_KEY = 'gps_locations_v6.6.0';
+    const OLD_KEY = 'gps_locations_v6.5.9';
     
     let saved = localStorage.getItem(CURRENT_KEY);
     if (!saved) {
@@ -65,11 +67,11 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('gps_locations_v6.5.8', JSON.stringify(locations));
+    localStorage.setItem('gps_locations_v6.6.0', JSON.stringify(locations));
   }, [locations]);
 
   const handleFinishOnboarding = () => {
-    localStorage.setItem('onboarding_v6.5.8_done', 'true');
+    localStorage.setItem('onboarding_v6.6.0_done', 'true');
     // Use replaceState so dashboard becomes the root (can't go back to onboarding)
     window.history.replaceState({ view: 'dashboard' }, '');
     setView('dashboard');

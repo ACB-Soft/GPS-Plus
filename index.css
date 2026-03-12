@@ -31,23 +31,23 @@
   }
 
   body { 
-    @apply bg-slate-100 m-0 p-0 overflow-hidden h-[100dvh] w-screen text-slate-900 antialiased fixed flex items-center justify-center font-sans;
+    @apply bg-slate-100 dark:bg-slate-950 m-0 p-0 overflow-hidden h-[100dvh] w-screen text-slate-900 dark:text-slate-100 antialiased fixed flex items-center justify-center font-sans transition-colors duration-300;
   }
 
   #root { 
-    @apply h-full w-full max-w-[540px] bg-white flex flex-col overflow-hidden shadow-[0_0_60px_rgba(0,0,0,0.07)];
+    @apply h-full w-full max-w-[540px] bg-white dark:bg-slate-900 flex flex-col overflow-hidden shadow-[0_0_60px_rgba(0,0,0,0.07)] transition-colors duration-300;
   }
 
   @media (min-width: 768px) {
     #root {
-      @apply h-[94%] rounded-[3rem] border-[10px] border-slate-50;
+      @apply h-[94%] rounded-[3rem] border-[10px] border-slate-50 dark:border-slate-800;
     }
   }
 }
 
 @layer components {
   .soft-card { 
-    @apply bg-white rounded-[2rem] border border-slate-100/90 shadow-[0_12px_30px_-10px_rgba(15,23,42,0.06)];
+    @apply bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-100/90 dark:border-slate-700/50 shadow-[0_12px_30px_-10px_rgba(15,23,42,0.06)] transition-colors duration-300;
   }
 
   .no-scrollbar::-webkit-scrollbar { display: none; }
