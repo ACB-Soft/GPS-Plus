@@ -34,16 +34,37 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
         </button>
       </div>
 
-      {/* Yardım Butonu - Sağ Üst Köşe (Glow Efektli) */}
-      <div className="absolute top-6 right-8 z-20">
-        <div className="absolute inset-0 bg-blue-400 rounded-2xl blur-xl opacity-20 animate-pulse"></div>
+      {/* Üst Butonlar - Sağ Üst Köşe */}
+      <div className="absolute top-6 right-8 z-20 flex items-center gap-2">
+        {/* Ayarlar Butonu (Pasif) */}
         <button 
-          onClick={onShowHelp}
-          className="relative w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-xl border border-blue-100 text-blue-600 active:scale-90 transition-all hover:bg-blue-50 group"
+          disabled
+          className="w-12 h-12 bg-white/50 rounded-2xl flex items-center justify-center border border-slate-100 text-slate-300 cursor-not-allowed"
+          title="Ayarlar (Yakında)"
         >
-          <i className="fas fa-question text-xl font-black group-hover:text-amber-500 transition-colors stroke-current stroke-2" style={{ WebkitTextStroke: '1px' }}></i>
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-600 rounded-full border-2 border-white animate-bounce"></div>
+          <i className="fas fa-cog text-lg"></i>
         </button>
+
+        {/* Dark Mode Butonu (Pasif) */}
+        <button 
+          disabled
+          className="w-12 h-12 bg-white/50 rounded-2xl flex items-center justify-center border border-slate-100 text-slate-300 cursor-not-allowed"
+          title="Gece Modu (Yakında)"
+        >
+          <i className="fas fa-moon text-lg"></i>
+        </button>
+
+        {/* Yardım Butonu (Glow Efektli) */}
+        <div className="relative">
+          <div className="absolute inset-0 bg-blue-400 rounded-2xl blur-xl opacity-20 animate-pulse"></div>
+          <button 
+            onClick={onShowHelp}
+            className="relative w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-xl border border-blue-100 text-blue-600 active:scale-90 transition-all hover:bg-blue-50 group"
+          >
+            <i className="fas fa-question text-xl font-black group-hover:text-amber-500 transition-colors stroke-current stroke-2" style={{ WebkitTextStroke: '1px' }}></i>
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-600 rounded-full border-2 border-white animate-bounce"></div>
+          </button>
+        </div>
       </div>
 
       {/* Header - Logo kaldırıldı, metinler merkezlendi ve üst girinti artırıldı */}
