@@ -120,6 +120,20 @@ const SettingsView: React.FC<Props> = ({ settings, onUpdateSettings, onBack }) =
 
               <div className="h-[1px] bg-slate-100 w-full"></div>
 
+              {/* Sesli/Titreşimli Uyarı */}
+              <div className="flex items-center justify-between py-1">
+                <div>
+                  <p className="font-black text-slate-900 text-xs uppercase tracking-tight">Sesli/Titreşimli Uyarı</p>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Hedefe ulaşıldığında bildir</p>
+                </div>
+                <button 
+                  onClick={() => handleUpdate('alertsEnabled', !settings.alertsEnabled)}
+                  className={`w-12 h-7 rounded-full relative transition-all duration-300 ${settings.alertsEnabled ? 'bg-blue-600' : 'bg-slate-200'}`}
+                >
+                  <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 ${settings.alertsEnabled ? 'left-6' : 'left-1'}`}></div>
+                </button>
+              </div>
+
               {/* Ekran Her Zaman Açık - BURAYA TAŞINDI */}
               <div className="flex items-center justify-between py-1">
                 <div>

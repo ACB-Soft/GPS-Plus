@@ -327,27 +327,6 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <p className="text-sm font-black text-blue-600">{APP_VERSION}</p>
               </div>
             </div>
-            
-            <button 
-              onClick={() => {
-                const btn = document.getElementById('update-check-btn');
-                if (btn) {
-                  const originalText = btn.innerHTML;
-                  btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Denetleniyor...';
-                  setTimeout(() => {
-                    btn.innerHTML = '<i class="fas fa-check mr-2"></i> Uygulama Güncel';
-                    setTimeout(() => {
-                      btn.innerHTML = originalText;
-                    }, 2000);
-                  }, 1500);
-                }
-              }}
-              id="update-check-btn"
-              className="w-full py-4 bg-white border border-slate-200 rounded-2xl text-slate-600 font-black text-[11px] uppercase tracking-widest shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-            >
-              <i className="fas fa-sync-alt text-[10px]"></i>
-              Güncellemeleri Denetle
-            </button>
           </div>
         </section>
       </div>
