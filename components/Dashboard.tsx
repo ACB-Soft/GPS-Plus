@@ -34,24 +34,24 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
         </button>
       </div>
 
-      {/* Üst Butonlar - Sağ Üst Köşe */}
-      <div className="absolute top-6 right-8 z-20 flex items-center gap-2">
+      {/* Üst Buton Grubu - Sağ Üst Köşe */}
+      <div className="absolute top-6 right-8 z-20 flex items-center gap-3">
         {/* Ayarlar Butonu (Pasif) */}
         <button 
-          disabled
-          className="w-12 h-12 bg-white/50 rounded-2xl flex items-center justify-center border border-slate-100 text-slate-300 cursor-not-allowed"
+          className="w-12 h-12 bg-white/80 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg border border-slate-100 text-slate-400 cursor-not-allowed opacity-60"
           title="Ayarlar (Yakında)"
+          disabled
         >
-          <i className="fas fa-cog text-lg"></i>
+          <i className="fas fa-cog text-xl"></i>
         </button>
 
-        {/* Dark Mode Butonu (Pasif) */}
+        {/* Karanlık Mod Butonu (Pasif) */}
         <button 
+          className="w-12 h-12 bg-white/80 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg border border-slate-100 text-slate-400 cursor-not-allowed opacity-60"
+          title="Karanlık Mod (Yakında)"
           disabled
-          className="w-12 h-12 bg-white/50 rounded-2xl flex items-center justify-center border border-slate-100 text-slate-300 cursor-not-allowed"
-          title="Gece Modu (Yakında)"
         >
-          <i className="fas fa-moon text-lg"></i>
+          <i className="fas fa-moon text-xl"></i>
         </button>
 
         {/* Yardım Butonu (Glow Efektli) */}

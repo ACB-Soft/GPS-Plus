@@ -270,36 +270,41 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
         {/* Veri Kaynakları */}
         <section className="space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-200">
+            <div className="w-10 h-10 bg-slate-700 rounded-xl flex items-center justify-center text-white shadow-lg shadow-slate-200">
               <i className="fas fa-database"></i>
             </div>
-            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Veri Kaynakları & Lisanslar</h3>
+            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Veri Kaynakları</h3>
           </div>
-          <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-6 space-y-4">
-            <p className="text-emerald-900 text-sm leading-relaxed font-medium text-justify">
-              Uygulamada kullanılan tüm veriler kamuya açık, telif gerektirmeyen veya açık kaynak lisanslı (ODbL, Creative Commons vb.) kaynaklardan derlenmiştir:
+          
+          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 space-y-4">
+            <p className="text-sm text-slate-900 font-medium leading-relaxed text-justify">
+              Uygulamada kullanılan tüm veriler ve kütüphaneler açık kaynaklı veya telif gerektirmeyen kaynaklardan sağlanmaktadır:
             </p>
-            <div className="space-y-2">
-              <div className="flex items-start gap-2">
-                <i className="fas fa-check-circle text-emerald-600 mt-1 text-xs"></i>
-                <p className="text-xs text-emerald-800 font-medium"><b>Uydu Sinyalleri:</b> GPS, GLONASS, Galileo ve Buydou uydularının kamuya açık sivil sinyalleri.</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <i className="fas fa-check-circle text-emerald-600 mt-1 text-xs"></i>
-                <p className="text-xs text-emerald-800 font-medium"><b>Harita Altlıkları:</b> Google Maps uydu görüntüleri (API üzerinden) ve kamuya açık coğrafi servisler.</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <i className="fas fa-check-circle text-emerald-600 mt-1 text-xs"></i>
-                <p className="text-xs text-emerald-800 font-medium"><b>Jeoid Modeli:</b> TG-20 (Türkiye Geoidi 2020) - HGM tarafından paylaşılan açık veriler.</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <i className="fas fa-check-circle text-emerald-600 mt-1 text-xs"></i>
-                <p className="text-xs text-emerald-800 font-medium"><b>Dönüşüm Parametreleri:</b> EPSG ve HGM standartlarında yayınlanan matematiksel formüller.</p>
-              </div>
+            
+            <ul className="space-y-3">
+              <li className="flex gap-3 text-sm text-slate-700 font-medium">
+                <i className="fas fa-check-circle text-emerald-500 mt-1"></i>
+                <span><b>Konum Bilgisi:</b> Cihazınızın yerleşik GPS/GNSS alıcısı ve tarayıcı Geolocation API (W3C Standartları).</span>
+              </li>
+              <li className="flex gap-3 text-sm text-slate-700 font-medium">
+                <i className="fas fa-check-circle text-emerald-500 mt-1"></i>
+                <span><b>Harita Altlığı:</b> Leaflet.js kütüphanesi ve OpenStreetMap / Google Uydu Görüntüleri (API üzerinden sağlanan kamuya açık katmanlar).</span>
+              </li>
+              <li className="flex gap-3 text-sm text-slate-700 font-medium">
+                <i className="fas fa-check-circle text-emerald-500 mt-1"></i>
+                <span><b>Jeoid Modeli:</b> TG-20 (Türkiye Geoidi 2020) katsayıları (Bilimsel kullanım amaçlı açık veriler).</span>
+              </li>
+              <li className="flex gap-3 text-sm text-slate-700 font-medium">
+                <i className="fas fa-check-circle text-emerald-500 mt-1"></i>
+                <span><b>İkonlar & Fontlar:</b> FontAwesome (Free) ve Google Fonts (Inter, JetBrains Mono).</span>
+              </li>
+            </ul>
+
+            <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+              <p className="text-xs text-emerald-800 font-bold text-center italic">
+                * Bu uygulamada kullanılan tüm veriler telif hakkı gerektirmeyen, kamuya açık veya lisanslı açık kaynaklı verilerdir.
+              </p>
             </div>
-            <p className="text-[10px] text-emerald-700 italic leading-tight border-t border-emerald-200 pt-3">
-              * Verilerimiz arasında telif hakkı ihlali barındıran herhangi bir kaynak bulunmamaktadır.
-            </p>
           </div>
         </section>
 
