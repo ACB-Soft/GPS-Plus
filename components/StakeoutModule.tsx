@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, Circle, Polyline, Polygon } from 'react-leaflet';
 import L from 'leaflet';
-import { StakeoutPoint, Coordinate, StakeoutGeometry } from '../types';
+import { StakeoutPoint, Coordinate, StakeoutGeometry, AppSettings } from '../types';
 import { parseKML } from '../utils/KmlParser';
 import { convertCoordinate, convertToWGS84 } from '../utils/CoordinateUtils';
 import { isIOS } from '../utils/browser';
@@ -19,6 +19,7 @@ L.Icon.Default.mergeOptions({
 interface Props {
   onBack: () => void;
   initialPoint?: StakeoutPoint | null;
+  settings: AppSettings;
 }
 
 // Helper Components defined outside to prevent re-mounting
@@ -75,7 +76,7 @@ const BoundsUpdater = ({ points, geometries }: { points: StakeoutPoint[], geomet
   return null;
 };
 
-const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint }) => {
+const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => {
   const [view, setView] = useState<'MENU' | 'LIST' | 'MANUAL' | 'MAP' | 'ALL_MAP'>(initialPoint ? 'MAP' : 'MENU');
   const [sourceView, setSourceView] = useState<'LIST' | 'ALL_MAP' | 'MENU'>(initialPoint ? 'LIST' : 'MENU');
   const [points, setPoints] = useState<StakeoutPoint[]>(() => {
@@ -93,8 +94,37 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint }) => {
   const [activePoint, setActivePoint] = useState<StakeoutPoint | null>(initialPoint || null);
   const [confirmClear, setConfirmClear] = useState<'NONE' | 'LIST' | 'MAP'>('NONE');
   const [showPermissionHelp, setShowPermissionHelp] = useState(false);
-  const [keepScreenOn, setKeepScreenOn] = useState(false);
+  const [keepScreenOn, setKeepScreenOn] = useState(settings.screenAlwaysOn);
+  const [targetReached, setTargetReached] = useState(false);
   const wakeLockRef = useRef<any>(null);
+
+  const triggerAlert = () => {
+    if (!settings.alertsEnabled) return;
+    
+    // Vibration
+    if ('vibrate' in navigator) {
+      navigator.vibrate([300, 100, 300]);
+    }
+    
+    // Sound
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(1200, audioCtx.currentTime); // High pitch for target
+      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.4);
+    } catch (e) {
+      console.warn('Audio alert failed', e);
+    }
+  };
 
   const requestWakeLock = async () => {
     if ('wakeLock' in navigator) {
@@ -301,6 +331,15 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint }) => {
   };
 
   const guidance = calculateGuidance();
+
+  useEffect(() => {
+    if (guidance && guidance.totalDist < 2.0 && !targetReached) {
+      setTargetReached(true);
+      triggerAlert();
+    } else if (guidance && guidance.totalDist >= 2.0) {
+      setTargetReached(false);
+    }
+  }, [guidance?.totalDist, targetReached]);
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#F8FAFC]">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Coordinate, SavedLocation } from '../types';
+import { Coordinate, SavedLocation, AppSettings } from '../types';
 import { convertToMSL } from './GeoidUtils';
 import GlobalFooter from './GlobalFooter';
 import { isIOS } from '../utils/browser';
@@ -9,9 +9,10 @@ interface Props {
   onCancel: () => void;
   isContinuing?: boolean;
   existingLocations: SavedLocation[];
+  settings: AppSettings;
 }
 
-const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = false, existingLocations }) => {
+const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = false, existingLocations, settings }) => {
   const [step, setStep] = useState<'SELECT_MODE' | 'FORM' | 'READY' | 'COUNTDOWN'>(isContinuing ? 'READY' : 'SELECT_MODE');
   const [isNewProject, setIsNewProject] = useState(!isContinuing);
   const [folderName, setFolderName] = useState(localStorage.getItem('last_folder_name') || '');
@@ -23,13 +24,13 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
         const proj = existingLocations.find(l => l.folderName === savedFolder);
         if (proj && proj.coordinateSystem) return proj.coordinateSystem;
      }
-     return 'WGS84';
+     return settings.defaultCoordinateSystem;
   };
 
   const [coordinateSystem, setCoordinateSystem] = useState(getInitialSystem());
-  const [accuracyLimit, setAccuracyLimit] = useState(5.0);
-  const [measurementDuration, setMeasurementDuration] = useState(5);
-  const [seconds, setSeconds] = useState(5);
+  const [accuracyLimit, setAccuracyLimit] = useState(settings.defaultAccuracyLimit);
+  const [measurementDuration, setMeasurementDuration] = useState(settings.defaultMeasurementDuration);
+  const [seconds, setSeconds] = useState(settings.defaultMeasurementDuration);
   const [sampleCount, setSampleCount] = useState(0);
   const [instantAccuracy, setInstantAccuracy] = useState<number | null>(null);
   const [waitingForSignal, setWaitingForSignal] = useState(true);
@@ -170,6 +171,34 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
     };
   }, [step]); // Removed waitingForSignal from deps to avoid infinite loop
 
+  const triggerAlert = () => {
+    if (!settings.alertsEnabled) return;
+    
+    // Vibration
+    if ('vibrate' in navigator) {
+      navigator.vibrate([200, 100, 200]);
+    }
+    
+    // Sound
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.3);
+    } catch (e) {
+      console.warn('Audio alert failed', e);
+    }
+  };
+
   const processSamples = useCallback(() => {
     let samples = [...samplesRef.current];
     if (samples.length === 0 && lastPositionRef.current) {
@@ -195,9 +224,10 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       timestamp: Date.now()
     };
 
+    triggerAlert();
     onComplete(avg, folderName, pointName, '', coordinateSystem);
     releaseWakeLock();
-  }, [folderName, pointName, coordinateSystem, onComplete]);
+  }, [folderName, pointName, coordinateSystem, onComplete, settings.alertsEnabled]);
 
   // Ref to track accuracy validity without triggering effect re-runs
   const isAccuracyOkRef = useRef(false);
@@ -228,7 +258,9 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   }, [step, seconds, processSamples]);
 
   const handleStartMeasurement = () => {
-    requestWakeLock();
+    if (settings.screenAlwaysOn) {
+      requestWakeLock();
+    }
     // Start with the last known position as the first sample
     if (lastPositionRef.current) {
       const p = lastPositionRef.current;

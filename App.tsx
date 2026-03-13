@@ -7,12 +7,13 @@ import ExportUnifiedView from './components/ExportUnifiedView';
 import ResultCard from './components/ResultCard';
 import StakeoutModule from './components/StakeoutModule';
 import HelpView from './components/HelpView';
+import SettingsView from './components/SettingsView';
 import GlobalFooter from './components/GlobalFooter';
-import { SavedLocation, Coordinate, StakeoutPoint } from './types';
+import { SavedLocation, Coordinate, StakeoutPoint, AppSettings } from './types';
 import { geoidService } from './services/GeoidService';
 
 const App = () => {
-  type ViewType = 'onboarding' | 'dashboard' | 'capture' | 'list' | 'export' | 'result' | 'stakeout' | 'help';
+  type ViewType = 'onboarding' | 'dashboard' | 'capture' | 'list' | 'export' | 'result' | 'stakeout' | 'help' | 'settings';
   const [view, setView] = useState<ViewType>('onboarding');
   const [locations, setLocations] = useState<SavedLocation[]>([]);
   const [lastResult, setLastResult] = useState<SavedLocation | null>(null);
@@ -20,6 +21,22 @@ const App = () => {
   const [autoShowMap, setAutoShowMap] = useState(false);
   const [isContinuing, setIsContinuing] = useState(false);
   const [stakeoutInitialPoint, setStakeoutInitialPoint] = useState<StakeoutPoint | null>(null);
+
+  const [settings, setSettings] = useState<AppSettings>(() => {
+    const saved = localStorage.getItem('app_settings_v1');
+    if (saved) return JSON.parse(saved);
+    return {
+      defaultCoordinateSystem: 'WGS84',
+      defaultAccuracyLimit: 5.0,
+      defaultMeasurementDuration: 5,
+      alertsEnabled: true,
+      screenAlwaysOn: false
+    };
+  });
+
+  useEffect(() => {
+    localStorage.setItem('app_settings_v1', JSON.stringify(settings));
+  }, [settings]);
 
   // Navigation wrapper to sync with browser history
   const navigateTo = (newView: ViewType) => {
@@ -133,6 +150,7 @@ const App = () => {
               onShowList={() => navigateTo('list')}
               onShowExport={() => navigateTo('export')}
               onShowHelp={() => navigateTo('help')}
+              onShowSettings={() => navigateTo('settings')}
             />
             <GlobalFooter showAd={true} />
           </div>
@@ -142,6 +160,14 @@ const App = () => {
           <HelpView onBack={resetToDashboard} />
         )}
 
+        {view === 'settings' && (
+          <SettingsView 
+            settings={settings} 
+            onUpdateSettings={setSettings} 
+            onBack={resetToDashboard} 
+          />
+        )}
+
         {view === 'stakeout' && (
           <StakeoutModule 
             onBack={() => {
@@ -149,6 +175,7 @@ const App = () => {
               resetToDashboard();
             }} 
             initialPoint={stakeoutInitialPoint}
+            settings={settings}
           />
         )}
 
@@ -159,6 +186,7 @@ const App = () => {
               onComplete={handleGPSComplete}
               onCancel={resetToDashboard}
               isContinuing={isContinuing}
+              settings={settings}
             />
           </div>
         )}

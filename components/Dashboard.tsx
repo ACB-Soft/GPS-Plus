@@ -7,9 +7,17 @@ interface Props {
   onShowList: () => void;
   onShowExport: () => void;
   onShowHelp: () => void;
+  onShowSettings: () => void;
 }
 
-const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, onShowExport, onShowHelp }) => {
+const Dashboard: React.FC<Props> = ({ 
+  onStartCapture, 
+  onStakeout, 
+  onShowList, 
+  onShowExport, 
+  onShowHelp,
+  onShowSettings
+}) => {
   const isInIframe = typeof window !== 'undefined' && window.self !== window.top;
 
   return (
@@ -36,13 +44,13 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
 
       {/* Üst Buton Grubu - Sağ Üst Köşe */}
       <div className="absolute top-6 right-8 z-20 flex items-center gap-3">
-        {/* Ayarlar Butonu (Pasif) */}
+        {/* Ayarlar Butonu */}
         <button 
-          className="w-12 h-12 bg-white/80 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg border border-slate-100 text-slate-400 cursor-not-allowed opacity-60"
-          title="Ayarlar (Yakında)"
-          disabled
+          onClick={onShowSettings}
+          className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-xl border border-blue-100 text-blue-600 active:scale-90 transition-all hover:bg-blue-50 group"
+          title="Ayarlar"
         >
-          <i className="fas fa-cog text-xl"></i>
+          <i className="fas fa-cog text-xl group-hover:rotate-90 transition-transform"></i>
         </button>
 
         {/* Karanlık Mod Butonu (Pasif) */}
