@@ -581,7 +581,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
               )}
               <button 
                 onClick={() => setShowPermissionHelp(false)}
-                className={`w-full py-4 ${isIOS() ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400' : 'bg-slate-900 dark:bg-slate-800 text-white'} rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all`}
+                className={`w-full py-4 ${isIOS() ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400' : 'bg-blue-600 dark:bg-slate-800 text-white'} rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all`}
               >
                 ANLADIM
               </button>

@@ -18,14 +18,16 @@ const Dashboard: React.FC<Props> = ({
   onShowHelp,
   onShowSettings
 }) => {
+  const isInIframe = typeof window !== 'undefined' && window.self !== window.top;
+
   return (
-    <div className="flex-1 flex flex-col bg-[var(--bg-app)] animate-in px-8 pt-20 md:pt-28 justify-start relative">
+    <div className="flex-1 flex flex-col bg-[#F8FAFC] animate-in px-8 pt-20 md:pt-28 justify-start relative">
       {/* Loading Overlay */}
 
       {/* Dil / Bayrak - Sol Üst Köşe */}
       <div className="absolute top-6 left-8 z-20">
         <button 
-          className="w-12 h-12 bg-[var(--bg-card)] rounded-2xl flex items-center justify-center shadow-xl border border-[var(--border-color)] active:scale-90 transition-all hover:bg-blue-50 dark:hover:bg-blue-900/20 overflow-hidden"
+          className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-xl border border-blue-100 active:scale-90 transition-all hover:bg-blue-50 overflow-hidden"
           title="Dil Değiştir"
         >
           <div className="w-8 h-6 rounded-md overflow-hidden flex items-center justify-center shadow-sm">
@@ -45,7 +47,7 @@ const Dashboard: React.FC<Props> = ({
         {/* Ayarlar Butonu */}
         <button 
           onClick={onShowSettings}
-          className="w-12 h-12 bg-[var(--bg-card)] rounded-2xl flex items-center justify-center shadow-xl border border-[var(--border-color)] text-blue-600 dark:text-blue-400 active:scale-90 transition-all hover:bg-blue-50 dark:hover:bg-blue-900/20 group"
+          className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-xl border border-blue-100 text-blue-600 active:scale-90 transition-all hover:bg-blue-50 group"
           title="Ayarlar"
         >
           <i className="fas fa-cog text-xl group-hover:rotate-90 transition-transform"></i>
@@ -56,10 +58,10 @@ const Dashboard: React.FC<Props> = ({
           <div className="absolute inset-0 bg-blue-400 rounded-2xl blur-xl opacity-20 animate-pulse"></div>
           <button 
             onClick={onShowHelp}
-            className="relative w-12 h-12 bg-[var(--bg-card)] rounded-2xl flex items-center justify-center shadow-xl border border-[var(--border-color)] text-blue-600 dark:text-blue-400 active:scale-90 transition-all hover:bg-blue-50 dark:hover:bg-blue-900/20 group"
+            className="relative w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-xl border border-blue-100 text-blue-600 active:scale-90 transition-all hover:bg-blue-50 group"
           >
             <i className="fas fa-question text-xl font-black group-hover:text-amber-500 transition-colors stroke-current stroke-2" style={{ WebkitTextStroke: '1px' }}></i>
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-600 rounded-full border-2 border-white dark:border-slate-800 animate-bounce"></div>
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-600 rounded-full border-2 border-white animate-bounce"></div>
           </button>
         </div>
       </div>
@@ -67,12 +69,12 @@ const Dashboard: React.FC<Props> = ({
       {/* Header - Logo kaldırıldı, metinler merkezlendi ve üst girinti artırıldı */}
       <header className="flex flex-col items-center shrink-0 mb-10 md:mb-16">
         {/* Açıklama Metni - Siyah Renk, Merkezlenmiş */}
-        <p className="text-sm md:text-base font-black text-[var(--text-main)] uppercase tracking-[0.2em] mb-4 leading-tight text-center w-full max-w-sm">
+        <p className="text-sm md:text-base font-black text-slate-900 uppercase tracking-[0.2em] mb-4 leading-tight text-center w-full max-w-sm">
           Mobil cihazlarınız için <br /> Konum Belirleme Uygulaması
         </p>
         
         {/* Ana Başlık - #2563eb Mavi Renk */}
-        <h1 className="text-5xl md:text-6xl font-black text-[#2563eb] dark:text-blue-400 tracking-tighter leading-none text-center">
+        <h1 className="text-5xl md:text-6xl font-black text-[#2563eb] tracking-tighter leading-none text-center">
           {BRAND_NAME}
         </h1>
       </header>

@@ -806,16 +806,16 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
               )}
             </div>
 
-            <div className="bg-white p-4 pb-6 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-20 rounded-t-[2.5rem] -mt-8">
+            <div className="bg-[var(--bg-card)] p-4 pb-6 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-20 rounded-t-[2.5rem] -mt-8 border-t border-[var(--border-color)]">
               <div className="mb-3 flex items-center justify-between gap-4">
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-xl font-black text-slate-900 truncate leading-tight">{activePoint.name}</h3>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Seçili Nokta</p>
+                  <h3 className="text-xl font-black text-[var(--text-main)] truncate leading-tight">{activePoint.name}</h3>
+                  <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Seçili Nokta</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button 
                     onClick={() => setKeepScreenOn(!keepScreenOn)}
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-lg ${keepScreenOn ? 'bg-amber-500 text-white shadow-amber-100' : 'bg-slate-100 text-slate-400 shadow-slate-100'}`}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-lg ${keepScreenOn ? 'bg-amber-500 text-white shadow-amber-100 dark:shadow-none' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 shadow-slate-100 dark:shadow-none'}`}
                     title={keepScreenOn ? "Ekranı Açık Tut Aktif" : "Ekranı Açık Tut Devre Dışı"}
                   >
                     <i className={`fas ${keepScreenOn ? 'fa-sun' : 'fa-moon'} text-xs`}></i>
@@ -825,7 +825,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
                       const url = `https://www.google.com/maps/dir/?api=1&destination=${activePoint.lat},${activePoint.lng}`;
                       window.open(url, '_blank');
                     }}
-                    className="flex items-center gap-2 px-3 py-2 bg-slate-900 text-white rounded-xl active:scale-95 transition-all shadow-lg shadow-slate-200"
+                    className="flex items-center gap-2 px-3 py-2 bg-blue-600 dark:bg-slate-800 text-white rounded-xl active:scale-95 transition-all shadow-lg shadow-blue-100 dark:shadow-none"
                   >
                     <i className="fas fa-route text-[10px]"></i>
                     <span className="text-[9px] font-black uppercase tracking-wider">Navigasyon</span>
@@ -834,25 +834,25 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
               </div>
 
               <div className="grid grid-cols-2 gap-2 mb-3">
-                <div className="bg-emerald-50/50 p-3 rounded-2xl border border-emerald-100/50">
-                  <div className="text-xl font-black text-emerald-600 mono-font leading-none">
+                <div className="bg-emerald-50/50 dark:bg-emerald-900/10 p-3 rounded-2xl border border-emerald-100/50 dark:border-emerald-900/20">
+                  <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 mono-font leading-none">
                     {userPos ? `±${userPos.accuracy.toFixed(1)}` : '---'}
                     <span className="text-[10px] ml-1">m</span>
                   </div>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Hassasiyet</p>
+                  <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Hassasiyet</p>
                 </div>
-                <div className="bg-blue-50/50 p-3 rounded-2xl border border-blue-100/50">
-                  <div className="text-xl font-black text-blue-600 mono-font leading-none">
+                <div className="bg-blue-50/50 dark:bg-blue-900/10 p-3 rounded-2xl border border-blue-100/50 dark:border-blue-900/20">
+                  <div className="text-xl font-black text-blue-600 dark:text-blue-400 mono-font leading-none">
                     {guidance ? guidance.totalDist.toFixed(1) : '---'}
                     <span className="text-[10px] ml-1">m</span>
                   </div>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Mesafe</p>
+                  <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Mesafe</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                  <div className="text-[8px] font-black text-slate-400 uppercase mb-0.5">
+                <div className="bg-slate-50 dark:bg-slate-900/40 p-3 rounded-2xl border border-slate-100 dark:border-slate-800">
+                  <div className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase mb-0.5">
                     {heading !== null ? 'İLERİ / GERİ' : 'KUZEY / GÜNEY'}
                   </div>
                   <div className={`text-base font-black mono-font ${guidance && (heading !== null ? guidance.forward : guidance.north) > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
@@ -863,8 +863,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
                     </span>
                   </div>
                 </div>
-                <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                  <div className="text-[8px] font-black text-slate-400 uppercase mb-0.5">
+                <div className="bg-slate-50 dark:bg-slate-900/40 p-3 rounded-2xl border border-slate-100 dark:border-slate-800">
+                  <div className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase mb-0.5">
                     {heading !== null ? 'SAĞ / SOL' : 'DOĞU / BATI'}
                   </div>
                   <div className={`text-base font-black mono-font ${guidance && (heading !== null ? guidance.right : guidance.east) > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
@@ -889,38 +889,38 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
 
       {showPermissionHelp && (
         <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in">
-          <div className="bg-white rounded-[2.5rem] w-full max-w-sm p-8 shadow-2xl space-y-6">
-            <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto">
+          <div className="bg-[var(--bg-card)] rounded-[2.5rem] w-full max-w-sm p-8 shadow-2xl space-y-6 border border-[var(--border-color)]">
+            <div className="w-16 h-16 bg-rose-50 dark:bg-rose-900/20 rounded-2xl flex items-center justify-center mx-auto">
               <i className="fas fa-location-dot text-rose-500 text-2xl"></i>
             </div>
             
             <div className="text-center space-y-2">
-              <h3 className="text-xl font-black text-slate-900">Konum İzni Gerekli</h3>
-              <p className="text-slate-500 text-sm leading-relaxed">
+              <h3 className="text-xl font-black text-[var(--text-main)]">Konum İzni Gerekli</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
                 Aplikasyon yapabilmek için tarayıcınızın konum erişimine izin vermeniz gerekiyor.
               </p>
             </div>
 
-            <div className="bg-slate-50 rounded-2xl p-4 space-y-3">
-              <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">Nasıl İzin Verilir?</p>
+            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-4 space-y-3 border border-slate-100 dark:border-slate-800">
+              <p className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-center">Nasıl İzin Verilir?</p>
               <div className="space-y-2">
                 <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 bg-slate-200 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">1</div>
-                  <p className="text-xs text-slate-600">Adres çubuğundaki <strong>AA</strong> veya <strong>Kilit</strong> ikonuna tıklayın.</p>
+                  <div className="w-5 h-5 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold text-slate-600 dark:text-slate-300">1</div>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">Adres çubuğundaki <strong>AA</strong> veya <strong>Kilit</strong> ikonuna tıklayın.</p>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 bg-slate-200 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">2</div>
-                  <p className="text-xs text-slate-600"><strong>Web Sitesi Ayarları</strong> seçeneğine girin.</p>
+                  <div className="w-5 h-5 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold text-slate-600 dark:text-slate-300">2</div>
+                  <p className="text-xs text-slate-600 dark:text-slate-400"><strong>Web Sitesi Ayarları</strong> seçeneğine girin.</p>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 bg-slate-200 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">3</div>
-                  <p className="text-xs text-slate-600"><strong>Konum</strong> iznini "İzin Ver" olarak değiştirin.</p>
+                  <div className="w-5 h-5 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold text-slate-600 dark:text-slate-300">3</div>
+                  <p className="text-xs text-slate-600 dark:text-slate-400"><strong>Konum</strong> iznini "İzin Ver" olarak değiştirin.</p>
                 </div>
                 {isIOS() && (
-                  <div className="pt-2 border-t border-slate-200 mt-2">
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-800 mt-2">
                     <div className="flex items-start gap-3">
-                      <div className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">!</div>
-                      <p className="text-[11px] text-slate-500 italic">iPhone kullanıyorsanız, aşağıdaki butonu kullanarak direkt uygulama ayarlarına gidebilirsiniz.</p>
+                      <div className="w-5 h-5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">!</div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 italic">iPhone kullanıyorsanız, aşağıdaki butonu kullanarak direkt uygulama ayarlarına gidebilirsiniz.</p>
                     </div>
                   </div>
                 )}
@@ -931,7 +931,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
               {isIOS() && (
                 <button 
                   onClick={() => window.location.href = 'app-settings:'}
-                  className="w-full py-2.5 md:py-3.5 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-100"
+                  className="w-full py-2.5 md:py-3.5 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-100 dark:shadow-none"
                 >
                   <i className="fas fa-cog"></i>
                   CİHAZ AYARLARINI AÇ
@@ -939,7 +939,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
               )}
               <button 
                 onClick={() => setShowPermissionHelp(false)}
-                className={`w-full py-2.5 md:py-3.5 ${isIOS() ? 'bg-slate-100 text-slate-600' : 'bg-slate-900 text-white'} rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all`}
+                className={`w-full py-2.5 md:py-3.5 ${isIOS() ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400' : 'bg-blue-600 dark:bg-slate-800 text-white'} rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all`}
               >
                 ANLADIM
               </button>

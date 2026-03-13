@@ -21,7 +21,6 @@ const App = () => {
   const [autoShowMap, setAutoShowMap] = useState(false);
   const [isContinuing, setIsContinuing] = useState(false);
   const [stakeoutInitialPoint, setStakeoutInitialPoint] = useState<StakeoutPoint | null>(null);
-  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const [settings, setSettings] = useState<AppSettings>(() => {
     const saved = localStorage.getItem('app_settings_v1');
@@ -31,22 +30,9 @@ const App = () => {
       defaultAccuracyLimit: 5.0,
       defaultMeasurementDuration: 5,
       alertsEnabled: true,
-      screenAlwaysOn: false,
-      darkMode: false
+      screenAlwaysOn: false
     };
   });
-
-  const updateSettings = (newSettings: AppSettings) => {
-    if (newSettings.darkMode !== settings.darkMode) {
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setSettings(newSettings);
-        setTimeout(() => setIsTransitioning(false), 800);
-      }, 300);
-    } else {
-      setSettings(newSettings);
-    }
-  };
 
   useEffect(() => {
     localStorage.setItem('app_settings_v1', JSON.stringify(settings));
@@ -83,8 +69,8 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    const CURRENT_KEY = 'gps_locations_v6.5.9';
-    const OLD_KEY = 'gps_locations_v6.5.8';
+    const CURRENT_KEY = 'gps_locations_v6.7.0';
+    const OLD_KEY = 'gps_locations_v6.5.9';
     
     let saved = localStorage.getItem(CURRENT_KEY);
     if (!saved) {
@@ -99,11 +85,11 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('gps_locations_v6.5.9', JSON.stringify(locations));
+    localStorage.setItem('gps_locations_v6.7.0', JSON.stringify(locations));
   }, [locations]);
 
   const handleFinishOnboarding = () => {
-    localStorage.setItem('onboarding_v6.5.9_done', 'true');
+    localStorage.setItem('onboarding_v6.7.0_done', 'true');
     // Use replaceState so dashboard becomes the root (can't go back to onboarding)
     window.history.replaceState({ view: 'dashboard' }, '');
     setView('dashboard');
@@ -146,18 +132,9 @@ const App = () => {
   };
 
   return (
-    <div id="root" className={`h-full font-sans overflow-hidden flex flex-col ${settings.darkMode ? 'dark' : ''}`}>
+    <div className="h-full bg-white font-sans text-slate-900 overflow-hidden flex flex-col">
       <div className="flex-1 flex flex-col relative overflow-hidden h-full">
         
-        {isTransitioning && (
-          <div className="absolute inset-0 z-[9999] bg-slate-900/80 backdrop-blur-md flex items-center justify-center animate-in">
-            <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-2xl flex flex-col items-center gap-4 border border-white/20">
-              <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-              <p className="font-black text-slate-900 dark:text-white text-sm uppercase tracking-widest">Lütfen Bekleyin...</p>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Görünüm Ayarlanıyor</p>
-            </div>
-          </div>
-        )}
         {view === 'onboarding' && (
           <div className="flex-1 flex flex-col overflow-y-auto h-full">
             <Onboarding onFinish={handleFinishOnboarding} />
@@ -186,7 +163,7 @@ const App = () => {
         {view === 'settings' && (
           <SettingsView 
             settings={settings} 
-            onUpdateSettings={updateSettings} 
+            onUpdateSettings={setSettings} 
             onBack={resetToDashboard} 
           />
         )}

@@ -35,13 +35,13 @@
 }
 
 #root.dark {
-  --bg-app: #020617;
-  --bg-card: #0F172A;
-  --bg-header: #0F172A;
-  --text-main: #F8FAFC;
-  --text-muted: #94A3B8;
-  --border-color: #1E293B;
-  --card-shadow: 0 12px 40px -10px rgba(0,0,0,0.4);
+  --bg-app: #111827;
+  --bg-card: #1F2937;
+  --bg-header: #1F2937;
+  --text-main: #F9FAFB;
+  --text-muted: #9CA3AF;
+  --border-color: #374151;
+  --card-shadow: 0 12px 40px -10px rgba(0,0,0,0.5);
 }
 
 @layer base {
