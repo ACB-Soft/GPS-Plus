@@ -342,23 +342,25 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
   }, [guidance?.totalDist, targetReached]);
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#F8FAFC]">
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-[var(--bg-app)]">
       <style>{`
         .custom-leaflet-popup .leaflet-popup-content-wrapper {
           padding: 0;
           overflow: hidden;
           border-radius: 1.5rem;
           box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+          background: var(--bg-card);
+          color: var(--text-main);
         }
         .custom-leaflet-popup .leaflet-popup-content {
           margin: 0;
           width: auto !important;
         }
         .custom-leaflet-popup .leaflet-popup-tip {
-          background: white;
+          background: var(--bg-card);
         }
       `}</style>
-      <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white shadow-sm z-30">
+      <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-[var(--bg-card)] shadow-sm z-30 border-b border-[var(--border-color)]">
         <button 
           onClick={() => {
             if (view === 'MENU') onBack();
@@ -366,12 +368,12 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
             else if (view === 'ALL_MAP') setView('MENU');
             else setView('MENU');
           }} 
-          className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all"
+          className="w-12 h-12 bg-[var(--bg-card)] rounded-2xl flex items-center justify-center shadow-md border border-[var(--border-color)] text-[var(--text-main)] active:scale-90 transition-all"
         >
           <i className="fas fa-chevron-left text-sm"></i>
         </button>
         <div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">
+          <h2 className="text-2xl font-black text-[var(--text-main)] tracking-tight leading-none">
             {view === 'MENU' ? 'Aplikasyon Yap' : 
              view === 'LIST' ? 'Nokta Listesi' : 
              view === 'MANUAL' ? 'Manuel Ekle' : 
@@ -385,34 +387,34 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
           <div className="flex-1 flex flex-col overflow-y-auto h-full no-scrollbar px-8">
             <div className="py-8 pt-4 space-y-4 max-w-sm mx-auto w-full">
               <div className="grid grid-cols-1 gap-4">
-                <button onClick={() => setView('MANUAL')} className="w-full py-2.5 md:py-3.5 px-5 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 active:scale-[0.98] transition-all">
-                  <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0">
+                <button onClick={() => setView('MANUAL')} className="w-full py-2.5 md:py-3.5 px-5 bg-[var(--bg-card)] rounded-3xl shadow-sm border border-[var(--border-color)] flex items-center gap-5 active:scale-[0.98] transition-all">
+                  <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center shrink-0">
                     <i className="fas fa-keyboard text-xl"></i>
                   </div>
                   <div className="text-left">
-                    <span className="font-black text-slate-900 block">Manuel Koordinat Ekle</span>
-                    <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">El ile Giriş</span>
+                    <span className="font-black text-[var(--text-main)] block">Manuel Koordinat Ekle</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">El ile Giriş</span>
                   </div>
                 </button>
 
-                <label className="w-full py-2.5 md:py-3.5 px-5 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 cursor-pointer active:scale-[0.98] transition-all">
-                  <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shrink-0">
+                <label className="w-full py-2.5 md:py-3.5 px-5 bg-[var(--bg-card)] rounded-3xl shadow-sm border border-[var(--border-color)] flex items-center gap-5 cursor-pointer active:scale-[0.98] transition-all">
+                  <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center shrink-0">
                     <i className="fas fa-file-import text-xl"></i>
                   </div>
                   <div className="text-left">
-                    <span className="font-black text-slate-900 block">KML / KMZ Yükle</span>
-                    <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Dosyadan Aktar</span>
+                    <span className="font-black text-[var(--text-main)] block">KML / KMZ Yükle</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Dosyadan Aktar</span>
                   </div>
                   <input type="file" accept=".kml,.kmz" onChange={handleKmlUpload} className="hidden" />
                 </label>
 
-                <button onClick={() => setView('LIST')} className="w-full py-2.5 md:py-3.5 px-5 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 active:scale-[0.98] transition-all">
-                  <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
+                <button onClick={() => setView('LIST')} className="w-full py-2.5 md:py-3.5 px-5 bg-[var(--bg-card)] rounded-3xl shadow-sm border border-[var(--border-color)] flex items-center gap-5 active:scale-[0.98] transition-all">
+                  <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center shrink-0">
                     <i className="fas fa-list-ul text-xl"></i>
                   </div>
                   <div className="text-left">
-                    <span className="font-black text-slate-900 block">Nokta Listesini Gör</span>
-                    <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">{points.length} Nokta Hazır</span>
+                    <span className="font-black text-[var(--text-main)] block">Nokta Listesini Gör</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">{points.length} Nokta Hazır</span>
                   </div>
                 </button>
 
@@ -421,14 +423,14 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
                     if (points.length === 0 && geometries.length === 0) alert("Haritada gösterilecek veri bulunamadı.");
                     else setView('ALL_MAP');
                   }} 
-                  className="w-full py-2.5 md:py-3.5 px-5 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 active:scale-[0.98] transition-all"
+                  className="w-full py-2.5 md:py-3.5 px-5 bg-[var(--bg-card)] rounded-3xl shadow-sm border border-[var(--border-color)] flex items-center gap-5 active:scale-[0.98] transition-all"
                 >
-                  <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center shrink-0">
+                  <div className="w-12 h-12 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-2xl flex items-center justify-center shrink-0">
                     <i className="fas fa-map-marked-alt text-xl"></i>
                   </div>
                   <div className="text-left">
-                    <span className="font-black text-slate-900 block">Harita Üzerinde Gör</span>
-                    <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">{points.length} Nokta, {geometries.length} Geometri</span>
+                    <span className="font-black text-[var(--text-main)] block">Harita Üzerinde Gör</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">{points.length} Nokta, {geometries.length} Geometri</span>
                   </div>
                 </button>
               </div>
@@ -441,24 +443,24 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
           <div className="flex-1 flex flex-col overflow-y-auto h-full no-scrollbar px-8">
             <div className="py-8 pt-4 space-y-4 max-w-sm mx-auto w-full">
               {points.length === 0 ? (
-                <div className="p-12 text-center bg-white rounded-[2.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center gap-4">
-                  <i className="fas fa-ghost text-3xl text-slate-200"></i>
-                  <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Liste Boş</p>
+                <div className="p-12 text-center bg-[var(--bg-card)] rounded-[2.5rem] border-2 border-dashed border-[var(--border-color)] flex flex-col items-center gap-4">
+                  <i className="fas fa-ghost text-3xl text-slate-200 dark:text-slate-700"></i>
+                  <p className="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest text-xs">Liste Boş</p>
                 </div>
               ) : (
                 points.map(p => (
-                  <div key={p.id} className="soft-card py-3 md:py-4 px-5 flex items-center justify-between group">
+                  <div key={p.id} className="soft-card py-3 md:py-4 px-5 flex items-center justify-between group bg-[var(--bg-card)] border-[var(--border-color)]">
                     <div className="flex items-center gap-4 flex-1">
                       <div>
-                        <h4 className="font-black text-slate-800">{p.name}</h4>
+                        <h4 className="font-black text-[var(--text-main)]">{p.name}</h4>
                         <div className="flex flex-col">
-                          <p className="text-[10px] font-bold text-slate-400 mono-font">
+                          <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mono-font">
                             {p.coordinateSystem === 'WGS84' ? `Boy: ${p.originalX?.toFixed(6)}` : `Y: ${p.originalY?.toFixed(3)}`}
                           </p>
-                          <p className="text-[10px] font-bold text-slate-400 mono-font">
+                          <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mono-font">
                             {p.coordinateSystem === 'WGS84' ? `Enl: ${p.originalY?.toFixed(6)}` : `X: ${p.originalX?.toFixed(3)}`}
                           </p>
-                          <p className="text-[8px] font-black text-blue-500 uppercase tracking-tighter">
+                          <p className="text-[8px] font-black text-blue-500 dark:text-blue-400 uppercase tracking-tighter">
                             {p.coordinateSystem?.replace('_', ' ')}
                           </p>
                         </div>
@@ -477,7 +479,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
                       </button>
                       <button 
                         onClick={() => setPoints(prev => prev.filter(pt => pt.id !== p.id))}
-                        className="w-10 h-10 flex items-center justify-center text-slate-300 hover:text-red-500 transition-colors"
+                        className="w-10 h-10 flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-red-500 transition-colors"
                       >
                         <i className="fas fa-trash-can text-xs"></i>
                       </button>
@@ -497,7 +499,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
                     setConfirmClear('LIST');
                   }
                 }}
-                className={`w-full py-3 text-[10px] font-black uppercase tracking-[0.3em] transition-all ${confirmClear === 'LIST' ? 'text-red-600 bg-red-50 rounded-2xl' : 'text-slate-400 hover:text-red-500'}`}
+                className={`w-full py-3 text-[10px] font-black uppercase tracking-[0.3em] transition-all ${confirmClear === 'LIST' ? 'text-red-600 bg-red-50 dark:bg-red-900/20 rounded-2xl' : 'text-slate-400 dark:text-slate-500 hover:text-red-500'}`}
               >
                 {confirmClear === 'LIST' ? 'EMİN MİSİNİZ? (TEKRAR TIKLAYIN)' : 'LİSTEYİ TEMİZLE'}
               </button>
@@ -509,14 +511,14 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
         {view === 'MANUAL' && (
           <div className="flex-1 flex flex-col overflow-y-auto h-full no-scrollbar px-8">
             <div className="py-8 pt-4 mx-auto max-w-sm w-full">
-              <div className="soft-card p-8 space-y-6">
+              <div className="soft-card p-8 space-y-6 bg-[var(--bg-card)] border-[var(--border-color)]">
                 <div className="space-y-2">
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Nokta Adı</label>
-                  <input type="text" value={manualName} onChange={e => setManualName(e.target.value)} placeholder="Örn: P1" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all" />
+                  <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">Nokta Adı</label>
+                  <input type="text" value={manualName} onChange={e => setManualName(e.target.value)} placeholder="Örn: P1" className="w-full p-4 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-[var(--text-main)] outline-none focus:border-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Koordinat Sistemi</label>
-                  <select value={manualSystem} onChange={e => setManualSystem(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none">
+                  <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">Koordinat Sistemi</label>
+                  <select value={manualSystem} onChange={e => setManualSystem(e.target.value)} className="w-full p-4 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-[var(--text-main)] outline-none appearance-none">
                     <option value="WGS84">WGS84 (Enlem-Boylam)</option>
                     <option value="ITRF96_3">ITRF96 - 3°</option>
                     <option value="ED50_3">ED50 - 3°</option>
@@ -525,19 +527,19 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">
+                    <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">
                       {manualSystem === 'WGS84' ? 'Boylam (X)' : 'Sağa (Y)'}
                     </label>
-                    <input type="number" value={manualX} onChange={e => setManualX(e.target.value)} placeholder="0.000" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all" />
+                    <input type="number" value={manualX} onChange={e => setManualX(e.target.value)} placeholder="0.000" className="w-full p-4 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-[var(--text-main)] outline-none focus:border-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">
+                    <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">
                       {manualSystem === 'WGS84' ? 'Enlem (Y)' : 'Yukarı (X)'}
                     </label>
-                    <input type="number" value={manualY} onChange={e => setManualY(e.target.value)} placeholder="0.000" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all" />
+                    <input type="number" value={manualY} onChange={e => setManualY(e.target.value)} placeholder="0.000" className="w-full p-4 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-[var(--text-main)] outline-none focus:border-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all" />
                   </div>
                 </div>
-                <button onClick={handleAddManual} className="w-full py-2.5 md:py-3.5 px-5 bg-blue-600 text-white rounded-2xl font-black text-[13px] uppercase tracking-widest shadow-xl shadow-blue-100 active:scale-95 transition-all">
+                <button onClick={handleAddManual} className="w-full py-2.5 md:py-3.5 px-5 bg-blue-600 text-white rounded-2xl font-black text-[13px] uppercase tracking-widest shadow-xl shadow-blue-100 dark:shadow-none active:scale-95 transition-all">
                   LİSTEYE EKLE
                 </button>
               </div>
@@ -655,8 +657,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
                 <BoundsUpdater points={points} geometries={geometries} />
               </MapContainer>
             </div>
-            <div className="absolute bottom-0 left-0 right-0 z-20 px-8 py-4 bg-white/95 backdrop-blur-md shadow-[0_-10px_30px_rgba(0,0,0,0.1)] border-t border-slate-100 flex items-center justify-between">
-               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            <div className="absolute bottom-0 left-0 right-0 z-20 px-8 py-4 bg-[var(--bg-card)]/95 backdrop-blur-md shadow-[0_-10px_30px_rgba(0,0,0,0.1)] border-t border-[var(--border-color)] flex items-center justify-between">
+               <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                  {points.length} Nokta, {geometries.length} Geometri
                </p>
                <button 
@@ -672,7 +674,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
                      setConfirmClear('MAP');
                    }
                  }}
-                 className={`px-3 py-1.5 text-[9px] font-black rounded-lg uppercase tracking-wider border transition-all active:scale-95 ${confirmClear === 'MAP' ? 'bg-red-600 text-white border-red-600' : 'bg-red-50 text-red-600 border-red-100'}`}
+                 className={`px-3 py-1.5 text-[9px] font-black rounded-lg uppercase tracking-wider border transition-all active:scale-95 ${confirmClear === 'MAP' ? 'bg-red-600 text-white border-red-600' : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-100 dark:border-red-900/30'}`}
                >
                  {confirmClear === 'MAP' ? 'EMİN MİSİNİZ?' : 'EKRANI TEMİZLE'}
                </button>
@@ -782,8 +784,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
                     <div className="w-4 h-4 bg-white rounded-full border-2 border-blue-600 shadow-md z-10"></div>
                     
                     {/* Distance Label */}
-                    <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md px-4 py-1.5 rounded-full border border-slate-100 shadow-xl">
-                       <span className="text-[11px] font-black text-slate-900 mono-font">{guidance.totalDist.toFixed(1)}m</span>
+                    <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-4 py-1.5 rounded-full border border-slate-100 dark:border-slate-800 shadow-xl">
+                       <span className="text-[11px] font-black text-slate-900 dark:text-white mono-font">{guidance.totalDist.toFixed(1)}m</span>
                     </div>
 
                     {/* Close-up Mode Indicator */}
@@ -793,7 +795,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
                           YAKIN ÇEKİM MODU
                         </div>
                         {guidance.totalDist < 2.0 && (
-                          <div className="bg-emerald-600 text-white px-4 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-widest shadow-lg shadow-emerald-200 animate-bounce">
+                          <div className="bg-emerald-600 text-white px-4 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-widest shadow-lg shadow-emerald-200 dark:shadow-none animate-bounce">
                             HEDEFE ULAŞILDI
                           </div>
                         )}

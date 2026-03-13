@@ -41,4 +41,5 @@ export interface AppSettings {
   defaultMeasurementDuration: number;
   alertsEnabled: boolean;
   screenAlwaysOn: boolean;
+  darkMode: boolean;
 }

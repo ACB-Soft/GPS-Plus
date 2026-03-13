@@ -29,7 +29,7 @@ const Onboarding: React.FC<Props> = ({ onFinish }) => {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-white h-full animate-in overflow-hidden px-8 py-2 md:py-6 justify-around">
+    <div className="flex-1 flex flex-col bg-[var(--bg-app)] h-full animate-in overflow-hidden px-8 py-2 md:py-6 justify-around">
       {/* Üst Kısım: Logo ve Başlık */}
       <div className="flex flex-col items-center text-center shrink-0">
         <div className="relative mb-4 md:mb-6">
@@ -40,7 +40,7 @@ const Onboarding: React.FC<Props> = ({ onFinish }) => {
         </div>
         
         <div className="space-y-2 md:space-y-3">
-          <p className="text-slate-900 font-black text-[12px] md:text-[14px] uppercase tracking-[0.18em] leading-tight max-w-[260px] mx-auto opacity-80">
+          <p className="text-[var(--text-main)] font-black text-[12px] md:text-[14px] uppercase tracking-[0.18em] leading-tight max-w-[260px] mx-auto opacity-80">
             Mobil Cihazlarınız için<br/>Konum Belirleme Uygulaması
           </p>
           <h1 className="text-5xl md:text-6xl font-black text-blue-600 tracking-tighter leading-none">
@@ -50,37 +50,37 @@ const Onboarding: React.FC<Props> = ({ onFinish }) => {
       </div>
 
       <div className="flex flex-col items-center w-full max-w-sm mx-auto space-y-2.5 md:space-y-3">
-        <div className="w-full flex gap-3 md:gap-4 text-left items-center p-3 md:p-4 bg-slate-50/50 rounded-[1.4rem] border border-slate-100">
-          <div className="w-9 h-9 md:w-10 md:h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 shrink-0">
+        <div className="w-full flex gap-3 md:gap-4 text-left items-center p-3 md:p-4 bg-[var(--bg-card)] rounded-[1.4rem] border border-[var(--border-color)]">
+          <div className="w-9 h-9 md:w-10 md:h-10 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
             <i className="fas fa-location-crosshairs text-base md:text-lg"></i>
           </div>
           <div className="space-y-0.5">
-            <h4 className="text-[10px] md:text-[11px] font-black text-slate-900 uppercase tracking-widest">Konum Erişimi</h4>
-            <p className="text-[11px] md:text-[12px] text-slate-500 font-bold leading-tight">
+            <h4 className="text-[10px] md:text-[11px] font-black text-[var(--text-main)] uppercase tracking-widest">Konum Erişimi</h4>
+            <p className="text-[11px] md:text-[12px] text-slate-500 dark:text-slate-400 font-bold leading-tight">
               GPS verilerini kullanarak konum ve yükseklik bilgisi üretmek için gereklidir.
             </p>
           </div>
         </div>
 
-        <div className="w-full flex gap-3 md:gap-4 text-left items-center p-3 md:p-4 bg-slate-50/50 rounded-[1.4rem] border border-slate-100">
-          <div className="w-9 h-9 md:w-10 md:h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 shrink-0">
+        <div className="w-full flex gap-3 md:gap-4 text-left items-center p-3 md:p-4 bg-[var(--bg-card)] rounded-[1.4rem] border border-[var(--border-color)]">
+          <div className="w-9 h-9 md:w-10 md:h-10 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
             <i className="fas fa-database text-base md:text-lg"></i>
           </div>
           <div className="space-y-0.5">
-            <h4 className="text-[10px] md:text-[11px] font-black text-slate-900 uppercase tracking-widest">Dosya Erişimi</h4>
-            <p className="text-[11px] md:text-[12px] text-slate-500 font-bold leading-tight">
+            <h4 className="text-[10px] md:text-[11px] font-black text-[var(--text-main)] uppercase tracking-widest">Dosya Erişimi</h4>
+            <p className="text-[11px] md:text-[12px] text-slate-500 dark:text-slate-400 font-bold leading-tight">
               Verileri içeri ve dışarı aktarmak için gereklidir. Verileriniz sadece yerel cihazınızda depolanır.
             </p>
           </div>
         </div>
 
-        <div className="w-full flex gap-3 md:gap-4 text-left items-center p-3 md:p-4 bg-slate-50/50 rounded-[1.4rem] border border-slate-100">
-          <div className="w-9 h-9 md:w-10 md:h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 shrink-0">
+        <div className="w-full flex gap-3 md:gap-4 text-left items-center p-3 md:p-4 bg-[var(--bg-card)] rounded-[1.4rem] border border-[var(--border-color)]">
+          <div className="w-9 h-9 md:w-10 md:h-10 bg-amber-50 dark:bg-amber-900/20 rounded-xl flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
             <i className="fas fa-earth-americas text-base md:text-lg"></i>
           </div>
           <div className="space-y-0.5">
-            <h4 className="text-[10px] md:text-[11px] font-black text-slate-900 uppercase tracking-widest">İnternet Erişimi</h4>
-            <p className="text-[11px] md:text-[12px] text-slate-500 font-bold leading-tight">
+            <h4 className="text-[10px] md:text-[11px] font-black text-[var(--text-main)] uppercase tracking-widest">İnternet Erişimi</h4>
+            <p className="text-[11px] md:text-[12px] text-slate-500 dark:text-slate-400 font-bold leading-tight">
               Uydu görüntüsü altlıklarının yüklenebilmesi için gereklidir.
             </p>
           </div>
@@ -90,7 +90,7 @@ const Onboarding: React.FC<Props> = ({ onFinish }) => {
       <div className="w-full max-w-sm mx-auto shrink-0">
         <button 
           onClick={handlePermissionAndStart}
-          className="w-full py-4 md:py-5 px-5 bg-blue-600 text-white rounded-[1.5rem] md:rounded-[1.8rem] font-black text-[13px] md:text-[14px] uppercase tracking-[0.2em] shadow-2xl shadow-blue-600/20 active:scale-[0.97] transition-all flex items-center justify-center gap-4"
+          className="w-full py-4 md:py-5 px-5 bg-blue-600 text-white rounded-[1.5rem] md:rounded-[1.8rem] font-black text-[13px] md:text-[14px] uppercase tracking-[0.2em] shadow-2xl shadow-blue-600/20 dark:shadow-none active:scale-[0.97] transition-all flex items-center justify-center gap-4"
         >
           İZİNLERİ ONAYLA VE BAŞLA
           <i className="fas fa-arrow-right text-white/50 text-[11px]"></i>
