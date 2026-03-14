@@ -1,4 +1,4 @@
-export const APP_VERSION = "v6.7.0";
+export const APP_VERSION = "v6.7.2";
 export const BRAND_NAME = "GPS Plus";
 export const DEVELOPER = "ACB_Soft";
 export const FULL_BRAND = `${DEVELOPER} ${BRAND_NAME} ${APP_VERSION}`;

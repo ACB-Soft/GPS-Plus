@@ -24,26 +24,6 @@
   --color-blue-900: #1e3a8a;
 }
 
-:root {
-  --bg-app: #F8FAFC;
-  --bg-card: #FFFFFF;
-  --bg-header: #FFFFFF;
-  --text-main: #0F172A;
-  --text-muted: #64748B;
-  --border-color: #F1F5F9;
-  --card-shadow: 0 12px 30px -10px rgba(15,23,42,0.06);
-}
-
-#root.dark {
-  --bg-app: #111827;
-  --bg-card: #1F2937;
-  --bg-header: #1F2937;
-  --text-main: #F9FAFB;
-  --text-muted: #9CA3AF;
-  --border-color: #374151;
-  --card-shadow: 0 12px 40px -10px rgba(0,0,0,0.5);
-}
-
 @layer base {
   * {
     box-sizing: border-box;
@@ -51,13 +31,12 @@
   }
 
   body { 
-    @apply bg-slate-100 m-0 p-0 overflow-hidden h-[100dvh] w-screen text-slate-900 antialiased fixed flex items-center justify-center font-sans;
+    @apply bg-slate-200 m-0 p-0 overflow-hidden h-[100dvh] w-screen text-slate-900 antialiased fixed flex items-center justify-center font-sans;
+    color-scheme: light !important;
   }
 
   #root { 
-    @apply h-full w-full max-w-[540px] flex flex-col overflow-hidden shadow-[0_0_60px_rgba(0,0,0,0.07)] transition-colors duration-300;
-    background-color: var(--bg-app);
-    color: var(--text-main);
+    @apply h-full w-full max-w-[540px] bg-slate-200 flex flex-col overflow-hidden shadow-[0_0_60px_rgba(0,0,0,0.07)];
   }
 
   @media (min-width: 768px) {
@@ -69,10 +48,7 @@
 
 @layer components {
   .soft-card { 
-    @apply rounded-[2rem] border transition-all duration-300;
-    background-color: var(--bg-card);
-    border-color: var(--border-color);
-    box-shadow: var(--card-shadow);
+    @apply bg-white rounded-[2rem] border border-slate-100/90 shadow-[0_12px_30px_-10px_rgba(15,23,42,0.06)];
   }
 
   .no-scrollbar::-webkit-scrollbar { display: none; }

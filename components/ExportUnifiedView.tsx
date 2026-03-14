@@ -19,14 +19,14 @@ const ExportUnifiedView: React.FC<Props> = ({ locations }) => {
   return (
     <div className="space-y-8 pb-10 max-w-sm mx-auto w-full">
       <div className="space-y-3">
-        <h4 className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 px-2 tracking-widest">Proje Seçimi</h4>
+        <h4 className="text-[10px] font-black uppercase text-slate-400 px-2 tracking-widest">Proje Seçimi</h4>
         
         {uniqueFolders.length > 0 ? (
           <div className="relative">
              <select 
                value={selectedFolder}
                onChange={(e) => setSelectedFolder(e.target.value)}
-               className="w-full p-4 rounded-3xl border border-[var(--border-color)] bg-[var(--bg-card)] font-bold text-[var(--text-main)] appearance-none outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/20 transition-all shadow-sm text-sm"
+               className="w-full p-4 rounded-3xl border border-slate-200 bg-white font-bold text-slate-800 appearance-none outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm text-sm"
              >
                {uniqueFolders.map(name => (
                  <option key={name} value={name}>{name} ({locations.filter(l => l.folderName === name).length} Nokta)</option>
@@ -37,18 +37,18 @@ const ExportUnifiedView: React.FC<Props> = ({ locations }) => {
              </div>
           </div>
         ) : (
-          <div className="p-8 text-center bg-slate-50 dark:bg-slate-900/20 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800">
-            <p className="text-[11px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-widest">Kayıtlı Proje Bulunamadı</p>
+          <div className="p-8 text-center bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Kayıtlı Proje Bulunamadı</p>
           </div>
         )}
       </div>
 
-      <div className="space-y-4 border-t border-[var(--border-color)] pt-8">
+      <div className="space-y-4 border-t border-slate-100 pt-8">
         <button 
           onClick={() => downloadKML(getFiltered())} 
           disabled={!hasSelection} 
           className={`w-full py-3 md:py-4 px-5 text-white rounded-3xl font-bold text-xs uppercase flex items-center gap-5 transition-all duration-300 shadow-xl ${
-            hasSelection ? 'bg-indigo-600 shadow-indigo-200 dark:shadow-none' : 'bg-slate-300 dark:bg-slate-800 opacity-40 grayscale cursor-not-allowed shadow-none'
+            hasSelection ? 'bg-indigo-600 shadow-indigo-200' : 'bg-slate-300 opacity-40 grayscale cursor-not-allowed shadow-none'
           }`}
         >
           <i className="fas fa-earth-europe text-xl"></i>
@@ -59,7 +59,7 @@ const ExportUnifiedView: React.FC<Props> = ({ locations }) => {
           onClick={() => downloadExcel(getFiltered())} 
           disabled={!hasSelection} 
           className={`w-full py-3 md:py-4 px-5 text-white rounded-3xl font-bold text-xs uppercase flex items-center gap-5 transition-all duration-300 shadow-xl ${
-            hasSelection ? 'bg-emerald-600 shadow-emerald-200 dark:shadow-none' : 'bg-slate-300 dark:bg-slate-800 opacity-40 grayscale cursor-not-allowed shadow-none'
+            hasSelection ? 'bg-emerald-600 shadow-emerald-200' : 'bg-slate-300 opacity-40 grayscale cursor-not-allowed shadow-none'
           }`}
         >
           <i className="fas fa-file-excel text-xl"></i>
@@ -70,7 +70,7 @@ const ExportUnifiedView: React.FC<Props> = ({ locations }) => {
           onClick={() => downloadTXT(getFiltered())} 
           disabled={!hasSelection} 
           className={`w-full py-3 md:py-4 px-5 text-white rounded-3xl font-bold text-xs uppercase flex items-center gap-5 transition-all duration-300 shadow-xl ${
-            hasSelection ? 'bg-sky-600 shadow-sky-200 dark:shadow-none' : 'bg-slate-300 dark:bg-slate-800 opacity-40 grayscale cursor-not-allowed shadow-none'
+            hasSelection ? 'bg-sky-600 shadow-sky-200' : 'bg-slate-300 opacity-40 grayscale cursor-not-allowed shadow-none'
           }`}
         >
           <i className="fas fa-file-lines text-xl"></i>
