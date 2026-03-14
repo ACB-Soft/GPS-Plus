@@ -21,7 +21,7 @@ const Dashboard: React.FC<Props> = ({
   const isInIframe = typeof window !== 'undefined' && window.self !== window.top;
 
   return (
-    <div className="flex-1 flex flex-col bg-slate-200 animate-in px-8 pt-20 md:pt-28 justify-start relative">
+    <div className="flex-1 flex flex-col bg-[#F8FAFC] animate-in px-8 pt-20 md:pt-28 justify-start relative">
       {/* Loading Overlay */}
 
       {/* Dil / Bayrak - Sol Üst Köşe */}

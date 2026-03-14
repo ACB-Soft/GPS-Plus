@@ -15,16 +15,16 @@ const SettingsView: React.FC<Props> = ({ settings, onUpdateSettings, onBack }) =
   };
 
   return (
-    <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-slate-200">
-      <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white shadow-sm">
+    <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-[var(--bg-app)]">
+      <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-[var(--bg-header)] shadow-sm border-b border-[var(--border-color)]">
         <button 
           onClick={onBack} 
-          className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all"
+          className="w-12 h-12 bg-[var(--bg-card)] rounded-2xl flex items-center justify-center shadow-md border border-[var(--border-color)] text-[var(--text-main)] active:scale-90 transition-all"
         >
           <i className="fas fa-chevron-left text-sm"></i>
         </button>
         <div>
-          <h2 className="text-xl font-black text-slate-900 tracking-tight leading-none">Ayarlar</h2>
+          <h2 className="text-xl font-black text-[var(--text-main)] tracking-tight leading-none">Ayarlar</h2>
         </div>
       </header>
 
@@ -34,16 +34,16 @@ const SettingsView: React.FC<Props> = ({ settings, onUpdateSettings, onBack }) =
           {/* Uygulama Bilgisi - EN ÜSTE TAŞINDI */}
           <section className="space-y-3">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
+              <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-100 dark:shadow-indigo-900/20">
                 <i className="fas fa-info-circle text-sm"></i>
               </div>
-              <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">Uygulama Bilgisi</h3>
+              <h3 className="text-base font-black text-[var(--text-main)] uppercase tracking-tight">Uygulama Bilgisi</h3>
             </div>
 
             <div className="soft-card p-5 space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mevcut Sürüm</p>
-                <p className="text-xs font-black text-blue-600">{APP_VERSION}</p>
+                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Mevcut Sürüm</p>
+                <p className="text-xs font-black text-blue-600 dark:text-blue-400">{APP_VERSION}</p>
               </div>
               
               <button 
@@ -72,20 +72,20 @@ const SettingsView: React.FC<Props> = ({ settings, onUpdateSettings, onBack }) =
           {/* Ölçüm Ayarları */}
           <section className="space-y-3">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-100">
+              <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-100 dark:shadow-blue-900/20">
                 <i className="fas fa-sliders text-sm"></i>
               </div>
-              <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">Ölçüm Ayarları</h3>
+              <h3 className="text-base font-black text-[var(--text-main)] uppercase tracking-tight">Ölçüm Ayarları</h3>
             </div>
 
             <div className="soft-card p-5 space-y-5">
               {/* Varsayılan Koordinat Sistemi */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Varsayılan Koordinat Sistemi</label>
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">Varsayılan Koordinat Sistemi</label>
                 <select 
                   value={settings.defaultCoordinateSystem} 
                   onChange={e => handleUpdate('defaultCoordinateSystem', e.target.value)}
-                  className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none text-sm"
+                  className="w-full p-3.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-[var(--text-main)] outline-none appearance-none text-sm"
                 >
                   <option value="WGS84">WGS84 (Enlem-Boylam)</option>
                   <option value="ITRF96_3">ITRF96 - 3°</option>
@@ -96,11 +96,11 @@ const SettingsView: React.FC<Props> = ({ settings, onUpdateSettings, onBack }) =
 
               {/* Varsayılan Hassasiyet Limiti */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Varsayılan Hassasiyet Limiti (Metre)</label>
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">Varsayılan Hassasiyet Limiti (Metre)</label>
                 <select 
                   value={settings.defaultAccuracyLimit} 
                   onChange={e => handleUpdate('defaultAccuracyLimit', parseFloat(e.target.value))}
-                  className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none text-sm"
+                  className="w-full p-3.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-[var(--text-main)] outline-none appearance-none text-sm"
                 >
                   {[2, 3, 5, 10, 20, 50, 100].map(v => <option key={v} value={v}>{v} Metre</option>)}
                 </select>
@@ -108,22 +108,38 @@ const SettingsView: React.FC<Props> = ({ settings, onUpdateSettings, onBack }) =
 
               {/* Varsayılan Ölçüm Süresi */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Varsayılan Ölçüm Süresi (Saniye)</label>
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">Varsayılan Ölçüm Süresi (Saniye)</label>
                 <select 
                   value={settings.defaultMeasurementDuration} 
                   onChange={e => handleUpdate('defaultMeasurementDuration', parseInt(e.target.value))}
-                  className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none text-sm"
+                  className="w-full p-3.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-[var(--text-main)] outline-none appearance-none text-sm"
                 >
                   {[5, 10, 15, 20, 30].map(v => <option key={v} value={v}>{v} Saniye</option>)}
                 </select>
               </div>
 
-              <div className="h-[1px] bg-slate-100 w-full"></div>
+              <div className="h-[1px] bg-slate-100 dark:bg-slate-800 w-full"></div>
+
+              {/* Karanlık Tema */}
+              <div className="flex items-center justify-between py-1">
+                <div>
+                  <p className="font-black text-[var(--text-main)] text-xs uppercase tracking-tight">Karanlık Tema</p>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Gece kullanımı için optimize et</p>
+                </div>
+                <button 
+                  onClick={() => handleUpdate('darkMode', !settings.darkMode)}
+                  className={`w-12 h-7 rounded-full relative transition-all duration-300 ${settings.darkMode ? 'bg-indigo-600' : 'bg-slate-200'}`}
+                >
+                  <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 ${settings.darkMode ? 'left-6' : 'left-1'}`}></div>
+                </button>
+              </div>
+
+              <div className="h-[1px] bg-slate-100 dark:bg-slate-800 w-full"></div>
 
               {/* Sesli/Titreşimli Uyarı */}
               <div className="flex items-center justify-between py-1">
                 <div>
-                  <p className="font-black text-slate-900 text-xs uppercase tracking-tight">Sesli/Titreşimli Uyarı</p>
+                  <p className="font-black text-[var(--text-main)] text-xs uppercase tracking-tight">Sesli/Titreşimli Uyarı</p>
                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Hedefe ulaşıldığında bildir</p>
                 </div>
                 <button 
@@ -137,7 +153,7 @@ const SettingsView: React.FC<Props> = ({ settings, onUpdateSettings, onBack }) =
               {/* Ekran Her Zaman Açık - BURAYA TAŞINDI */}
               <div className="flex items-center justify-between py-1">
                 <div>
-                  <p className="font-black text-slate-900 text-xs uppercase tracking-tight">Ekran Her Zaman Açık</p>
+                  <p className="font-black text-[var(--text-main)] text-xs uppercase tracking-tight">Ekran Her Zaman Açık</p>
                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Ölçüm sırasında kapanmasın</p>
                 </div>
                 <button 

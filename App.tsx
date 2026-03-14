@@ -69,8 +69,8 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    const CURRENT_KEY = 'gps_locations_v6.5.9';
-    const OLD_KEY = 'gps_locations_v6.5.8';
+    const CURRENT_KEY = 'gps_locations_v6.7.0';
+    const OLD_KEY = 'gps_locations_v6.5.9';
     
     let saved = localStorage.getItem(CURRENT_KEY);
     if (!saved) {
@@ -85,11 +85,11 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('gps_locations_v6.5.9', JSON.stringify(locations));
+    localStorage.setItem('gps_locations_v6.7.0', JSON.stringify(locations));
   }, [locations]);
 
   const handleFinishOnboarding = () => {
-    localStorage.setItem('onboarding_v6.5.9_done', 'true');
+    localStorage.setItem('onboarding_v6.7.0_done', 'true');
     // Use replaceState so dashboard becomes the root (can't go back to onboarding)
     window.history.replaceState({ view: 'dashboard' }, '');
     setView('dashboard');
@@ -132,11 +132,11 @@ const App = () => {
   };
 
   return (
-    <div className="h-full bg-slate-200 font-sans text-slate-900 overflow-hidden flex flex-col">
+    <div className="h-full bg-white font-sans text-slate-900 overflow-hidden flex flex-col">
       <div className="flex-1 flex flex-col relative overflow-hidden h-full">
         
         {view === 'onboarding' && (
-          <div className="flex-1 flex flex-col overflow-y-auto h-full bg-slate-200">
+          <div className="flex-1 flex flex-col overflow-y-auto h-full">
             <Onboarding onFinish={handleFinishOnboarding} />
             <GlobalFooter />
           </div>
@@ -192,7 +192,7 @@ const App = () => {
         )}
 
         {view === 'list' && (
-          <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-slate-200">
+          <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-[#F8FAFC]">
             <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white">
               <button onClick={resetToDashboard} className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all">
                 <i className="fas fa-chevron-left text-sm"></i>
@@ -220,7 +220,7 @@ const App = () => {
         )}
 
         {view === 'export' && (
-          <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-slate-200">
+          <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-[#F8FAFC]">
             <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white">
               <button onClick={resetToDashboard} className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all">
                 <i className="fas fa-chevron-left text-sm"></i>
@@ -237,7 +237,7 @@ const App = () => {
         )}
 
         {view === 'result' && lastResult && (
-          <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-slate-200 px-8">
+          <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-white px-8">
             <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full pt-8">
               <ResultCard 
                 location={lastResult} 
