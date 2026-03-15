@@ -19,8 +19,6 @@ const ExportUnifiedView: React.FC<Props> = ({ locations }) => {
   return (
     <div className="space-y-8 pb-10 max-w-sm mx-auto w-full">
       <div className="space-y-3">
-        <h4 className="text-[10px] font-black uppercase text-slate-400 px-2 tracking-widest">Proje Seçimi</h4>
-        
         {uniqueFolders.length > 0 ? (
           <div className="relative">
              <select 

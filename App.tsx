@@ -69,8 +69,8 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    const CURRENT_KEY = 'gps_locations_v6.6.2';
-    const OLD_KEY = 'gps_locations_v6.6.1';
+    const CURRENT_KEY = 'gps_locations_v6.6.4';
+    const OLD_KEY = 'gps_locations_v6.6.3';
     
     let saved = localStorage.getItem(CURRENT_KEY);
     if (!saved) {
@@ -85,11 +85,11 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('gps_locations_v6.6.2', JSON.stringify(locations));
+    localStorage.setItem('gps_locations_v6.6.4', JSON.stringify(locations));
   }, [locations]);
 
   const handleFinishOnboarding = () => {
-    localStorage.setItem('onboarding_v6.6.2_done', 'true');
+    localStorage.setItem('onboarding_v6.6.4_done', 'true');
     // Use replaceState so dashboard becomes the root (can't go back to onboarding)
     window.history.replaceState({ view: 'dashboard' }, '');
     setView('dashboard');
@@ -192,7 +192,7 @@ const App = () => {
         )}
 
         {view === 'list' && (
-          <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-[#F8FAFC]">
+          <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-[#F8FAFC]">
             <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white">
               <button onClick={resetToDashboard} className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all">
                 <i className="fas fa-chevron-left text-sm"></i>
@@ -201,7 +201,7 @@ const App = () => {
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Kayıtlı Projeler</h2>
               </div>
             </header>
-            <div className="px-8 pt-0 pb-4 w-full">
+            <div className="flex-1 overflow-y-auto no-scrollbar px-8 pt-0 pb-4 w-full">
               <div className="max-w-sm mx-auto w-full">
                 <SavedLocationsList 
                   locations={locations} 
@@ -220,7 +220,7 @@ const App = () => {
         )}
 
         {view === 'export' && (
-          <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-[#F8FAFC]">
+          <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-[#F8FAFC]">
             <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white">
               <button onClick={resetToDashboard} className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all">
                 <i className="fas fa-chevron-left text-sm"></i>
@@ -229,7 +229,7 @@ const App = () => {
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Veri Aktar</h2>
               </div>
             </header>
-            <div className="px-8 pt-0 pb-4">
+            <div className="flex-1 overflow-y-auto no-scrollbar px-8 pt-0 pb-4">
                <ExportUnifiedView locations={locations} />
             </div>
             <GlobalFooter showAd={true} />
