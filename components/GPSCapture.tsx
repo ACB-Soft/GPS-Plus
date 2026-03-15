@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Coordinate, SavedLocation, AppSettings } from '../types';
 import { convertToMSL } from './GeoidUtils';
 import GlobalFooter from './GlobalFooter';
+import AdBanner from './AdBanner';
 import { isIOS } from '../utils/browser';
 
 interface Props {
@@ -325,10 +326,13 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
               <div className="w-10 h-10 md:w-12 md:h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0"><i className="fas fa-folder-open text-xl"></i></div>
               <span className="font-black text-lg text-slate-900">Mevcut Proje Seç</span>
             </button>
+            <div className="pt-4">
+              <AdBanner />
+            </div>
           </div>
         </div>
       </div>
-      <GlobalFooter showAd={true} />
+      <GlobalFooter />
     </div>
   );
 
@@ -373,11 +377,14 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
             >
               ÖLÇÜME HAZIRLAN
             </button>
+            <div className="pt-4">
+              <AdBanner />
+            </div>
           </div>
         </div>
       </div>
       </div>
-      <GlobalFooter showAd={true} />
+      <GlobalFooter />
     </div>
   );
 

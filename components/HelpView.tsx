@@ -1,5 +1,6 @@
 import React from 'react';
 import GlobalFooter from './GlobalFooter';
+import AdBanner from './AdBanner';
 import { APP_VERSION } from '../version';
 
 interface Props {
@@ -329,6 +330,10 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             </div>
           </div>
         </section>
+
+        <div className="pb-10">
+          <AdBanner />
+        </div>
       </div>
       </div>
       

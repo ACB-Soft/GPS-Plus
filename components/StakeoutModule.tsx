@@ -7,6 +7,7 @@ import { convertCoordinate, convertToWGS84 } from '../utils/CoordinateUtils';
 import { isIOS } from '../utils/browser';
 import JSZip from 'jszip';
 import GlobalFooter from './GlobalFooter';
+import AdBanner from './AdBanner';
 
 // Leaflet icon fix
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -433,9 +434,12 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
                     </div>
                   </button>
                 </div>
+                <div className="pt-4">
+                  <AdBanner />
+                </div>
               </div>
             </div>
-            <GlobalFooter showAd={true} noPadding={true} />
+            <GlobalFooter noPadding={true} />
           </div>
         )}
 
@@ -504,6 +508,9 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
                 >
                   {confirmClear === 'LIST' ? 'EMİN MİSİNİZ? (TEKRAR TIKLAYIN)' : 'LİSTEYİ TEMİZLE'}
                 </button>
+                <div className="pt-4">
+                  <AdBanner />
+                </div>
               </div>
             </div>
             <GlobalFooter noPadding={true} />
@@ -545,6 +552,9 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
                   <button onClick={handleAddManual} className="w-full py-2.5 md:py-3.5 px-5 bg-blue-600 text-white rounded-2xl font-black text-[13px] uppercase tracking-widest shadow-xl shadow-blue-100 active:scale-95 transition-all">
                     LİSTEYE EKLE
                   </button>
+                  <div className="pt-4">
+                    <AdBanner />
+                  </div>
                 </div>
               </div>
             </div>

@@ -9,6 +9,7 @@ import StakeoutModule from './components/StakeoutModule';
 import HelpView from './components/HelpView';
 import SettingsView from './components/SettingsView';
 import GlobalFooter from './components/GlobalFooter';
+import AdBanner from './components/AdBanner';
 import { SavedLocation, Coordinate, StakeoutPoint, AppSettings } from './types';
 import { geoidService } from './services/GeoidService';
 
@@ -153,8 +154,9 @@ const App = () => {
                 onShowHelp={() => navigateTo('help')}
                 onShowSettings={() => navigateTo('settings')}
               />
+              <AdBanner />
             </div>
-            <GlobalFooter showAd={true} />
+            <GlobalFooter />
           </div>
         )}
 
@@ -215,9 +217,12 @@ const App = () => {
                 onBulkDelete={(ids) => setLocations(prev => prev.filter(l => !ids.includes(l.id)))}
                 onViewOnMap={handleViewOnMap}
               />
+              <div className="mt-8">
+                <AdBanner />
+              </div>
             </div>
             </div>
-            <GlobalFooter showAd={true} />
+            <GlobalFooter />
           </div>
         )}
 
@@ -233,8 +238,11 @@ const App = () => {
             </header>
             <div className="flex-1 overflow-y-auto no-scrollbar px-8 pt-0 pb-4">
                <ExportUnifiedView locations={locations} />
+               <div className="mt-8">
+                 <AdBanner />
+               </div>
             </div>
-            <GlobalFooter showAd={true} />
+            <GlobalFooter />
           </div>
         )}
 
@@ -251,9 +259,12 @@ const App = () => {
                    <button onClick={() => handleNewMeasurement(true)} className="w-full py-2.5 md:py-3.5 bg-blue-600 text-white rounded-2xl font-black shadow-2xl shadow-blue-200 active:scale-95 transition-all text-[13px] uppercase tracking-widest">YENİ NOKTA EKLE</button>
                    <button onClick={resetToDashboard} className="w-full py-2.5 md:py-3.5 bg-slate-900 text-white rounded-2xl font-black text-[12px] uppercase tracking-widest transition-all">ÖLÇÜMÜ BİTİR</button>
                 </div>
+                <div className="mt-8">
+                  <AdBanner />
+                </div>
               </div>
             </div>
-            <GlobalFooter noPadding={true} />
+            <GlobalFooter />
           </div>
         )}
 

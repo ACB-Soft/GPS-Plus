@@ -1,5 +1,6 @@
 import React from 'react';
 import GlobalFooter from './GlobalFooter';
+import AdBanner from './AdBanner';
 import { APP_VERSION } from '../version';
 import { AppSettings } from '../types';
 
@@ -150,6 +151,9 @@ const SettingsView: React.FC<Props> = ({ settings, onUpdateSettings, onBack }) =
             </div>
           </section>
 
+          <div className="pb-10">
+            <AdBanner />
+          </div>
         </div>
       </div>
       
