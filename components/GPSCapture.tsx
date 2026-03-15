@@ -284,15 +284,15 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   };
 
   const StandardHeader = (title: string, subtitle: string, backTo: any) => (
-    <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-[var(--bg-app)] w-full">
+    <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white w-full">
       <button 
         onClick={backTo === 'HOME' ? onCancel : () => setStep(backTo)} 
-        className="w-12 h-12 bg-[var(--bg-card)] rounded-2xl flex items-center justify-center shadow-md border border-[var(--border-color)] text-[var(--text-main)] active:scale-90 transition-all"
+        className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all"
       >
         <i className="fas fa-chevron-left text-sm"></i>
       </button>
       <div>
-        <h2 className="text-2xl font-black text-[var(--text-main)] tracking-tight leading-none">{title}</h2>
+        <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">{title}</h2>
       </div>
     </header>
   );
@@ -305,24 +305,24 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   };
   
   const getAccuracyBg = (acc: number | null) => {
-     if (acc === null) return "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800";
-     if (acc <= 10) return "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-900/30";
-     if (acc <= 20) return "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-900/30";
-     return "bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-900/30";
+     if (acc === null) return "bg-slate-50 border-slate-200";
+     if (acc <= 10) return "bg-emerald-50 border-emerald-200";
+     if (acc <= 20) return "bg-amber-50 border-amber-200";
+     return "bg-rose-50 border-rose-200";
   };
 
   if (step === 'SELECT_MODE') return (
-    <div className="w-full flex flex-col bg-[var(--bg-app)] animate-in h-full relative overflow-y-auto no-scrollbar">
+    <div className="w-full flex flex-col bg-slate-200 animate-in h-full relative overflow-y-auto no-scrollbar">
       {StandardHeader("Yeni Ölçüm Yap", "YENİ KAYIT", "HOME")}
       <div className="w-full px-8 pt-4 mx-auto">
         <div className="max-w-sm mx-auto w-full space-y-4">
-          <button onClick={() => { setIsNewProject(true); setFolderName(''); setStep('FORM'); }} className="w-full py-3 md:py-4 px-5 bg-[var(--bg-card)] rounded-3xl shadow-md border border-[var(--border-color)] text-left active:scale-[0.97] transition-all flex items-center gap-5">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center shrink-0"><i className="fas fa-folder-plus text-xl"></i></div>
-            <span className="font-black text-lg text-[var(--text-main)]">Yeni Proje Oluştur</span>
+          <button onClick={() => { setIsNewProject(true); setFolderName(''); setStep('FORM'); }} className="w-full py-3 md:py-4 px-5 bg-white rounded-3xl shadow-md border border-slate-100 text-left active:scale-[0.97] transition-all flex items-center gap-5">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0"><i className="fas fa-folder-plus text-xl"></i></div>
+            <span className="font-black text-lg text-slate-900">Yeni Proje Oluştur</span>
           </button>
-          <button onClick={() => { setIsNewProject(false); setStep('FORM'); }} className="w-full py-3 md:py-4 px-5 bg-[var(--bg-card)] rounded-3xl shadow-md border border-[var(--border-color)] text-left active:scale-[0.97] transition-all flex items-center gap-5">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center shrink-0"><i className="fas fa-folder-open text-xl"></i></div>
-            <span className="font-black text-lg text-[var(--text-main)]">Mevcut Proje Seç</span>
+          <button onClick={() => { setIsNewProject(false); setStep('FORM'); }} className="w-full py-3 md:py-4 px-5 bg-white rounded-3xl shadow-md border border-slate-100 text-left active:scale-[0.97] transition-all flex items-center gap-5">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0"><i className="fas fa-folder-open text-xl"></i></div>
+            <span className="font-black text-lg text-slate-900">Mevcut Proje Seç</span>
           </button>
         </div>
       </div>
@@ -331,17 +331,17 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   );
 
   if (step === 'FORM') return (
-    <div className="w-full flex flex-col bg-[var(--bg-app)] animate-in h-full relative overflow-y-auto no-scrollbar">
+    <div className="w-full flex flex-col bg-slate-200 animate-in h-full relative overflow-y-auto no-scrollbar">
       {StandardHeader("Proje Bilgisi", "DETAYLAR", "SELECT_MODE")}
       <div className="w-full px-8 pt-4 mx-auto">
         <div className="max-w-sm mx-auto w-full">
           <div className="soft-card p-8 w-full space-y-6">
           <div className="space-y-2">
-            <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">Proje Adı</label>
+            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Proje Adı</label>
             {isNewProject ? (
-              <input type="text" placeholder="Örn: Saha Çalışması A" value={folderName} onChange={e => setFolderName(e.target.value)} className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-[var(--text-main)] outline-none focus:border-blue-600 focus:bg-[var(--bg-card)] transition-all text-base" />
+              <input type="text" placeholder="Örn: Saha Çalışması A" value={folderName} onChange={e => setFolderName(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all text-base" />
             ) : (
-              <select value={folderName} onChange={e => setFolderName(e.target.value)} className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-[var(--text-main)] outline-none appearance-none text-base">
+              <select value={folderName} onChange={e => setFolderName(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none text-base">
                 <option value="">Seçiniz...</option>
                 {Array.from(new Set(existingLocations.map(l => l.folderName))).map(n => <option key={n} value={n}>{n}</option>)}
               </select>
@@ -349,12 +349,12 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
           </div>
           
           <div className="space-y-2">
-            <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">Koordinat Sistemi</label>
+            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Koordinat Sistemi</label>
             <select 
               value={coordinateSystem} 
               onChange={e => setCoordinateSystem(e.target.value)} 
               disabled={!isNewProject}
-              className={`w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-[var(--text-main)] outline-none appearance-none text-base ${!isNewProject ? 'opacity-60 cursor-not-allowed' : ''}`}
+              className={`w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none text-base ${!isNewProject ? 'opacity-60 cursor-not-allowed' : ''}`}
             >
               <option value="WGS84">WGS84 (Enlem-Boylam)</option>
               <option value="ITRF96_3">ITRF96 - 3°</option>
@@ -366,7 +366,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
           <button 
             disabled={!folderName.trim()}
             onClick={() => { localStorage.setItem('last_folder_name', folderName); setStep('READY'); }} 
-            className="w-full py-3 md:py-4 px-5 bg-blue-600 text-white rounded-2xl font-black text-[13px] uppercase tracking-[0.2em] active:scale-95 disabled:opacity-30 transition-all shadow-xl shadow-blue-100 dark:shadow-none"
+            className="w-full py-3 md:py-4 px-5 bg-blue-600 text-white rounded-2xl font-black text-[13px] uppercase tracking-[0.2em] active:scale-95 disabled:opacity-30 transition-all shadow-xl shadow-blue-100"
           >
             ÖLÇÜME HAZIRLAN
           </button>
@@ -378,7 +378,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   );
 
   return (
-    <div className="w-full flex flex-col items-center justify-around p-8 bg-[var(--bg-app)] h-full text-center relative animate-in overflow-hidden">
+    <div className="w-full flex flex-col items-center justify-around p-8 bg-slate-200 h-full text-center relative animate-in overflow-hidden">
       <button 
         onClick={() => {
           if (step === 'COUNTDOWN') {
@@ -389,25 +389,25 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
             setStep('FORM');
           }
         }} 
-        className="absolute left-6 md:left-8 top-6 w-11 h-11 flex items-center justify-center rounded-2xl bg-[var(--bg-card)] shadow-lg border border-[var(--border-color)] text-[var(--text-main)] active:scale-90 transition-all z-20"
+        className="absolute left-6 md:left-8 top-6 w-11 h-11 flex items-center justify-center rounded-2xl bg-white shadow-lg border border-slate-100 text-slate-800 active:scale-90 transition-all z-20"
       >
         <i className="fas fa-chevron-left text-sm"></i>
       </button>
       
       <div className="absolute top-6 left-0 right-0 flex items-center justify-center px-20 z-10 h-11">
-        <h3 className="text-xl md:text-2xl font-black text-[var(--text-main)] truncate max-w-[280px] leading-tight">{folderName}</h3>
+        <h3 className="text-xl md:text-2xl font-black text-slate-900 truncate max-w-[280px] leading-tight">{folderName}</h3>
       </div>
 
       <div className="relative flex items-center justify-center flex-1 w-full max-h-[350px] mt-12">
-        <div className="w-48 h-48 sm:w-56 sm:h-56 md:w-72 md:h-72 rounded-[3.5rem] md:rounded-[4.5rem] border-8 border-slate-50 dark:border-slate-900 shadow-2xl flex items-center justify-center relative bg-[var(--bg-card)]">
-          <div className={`absolute inset-4 md:inset-6 border-2 rounded-[2.8rem] md:rounded-[3.8rem] ${instantAccuracy && instantAccuracy <= 10 ? 'border-emerald-100 dark:border-emerald-900/30' : 'border-slate-50 dark:border-slate-900/30'}`}></div>
+        <div className="w-48 h-48 sm:w-56 sm:h-56 md:w-72 md:h-72 rounded-[3.5rem] md:rounded-[4.5rem] border-8 border-slate-50 shadow-2xl flex items-center justify-center relative bg-white">
+          <div className={`absolute inset-4 md:inset-6 border-2 rounded-[2.8rem] md:rounded-[3.8rem] ${instantAccuracy && instantAccuracy <= 10 ? 'border-emerald-100' : 'border-slate-50'}`}></div>
           {step === 'COUNTDOWN' && !waitingForSignal && <div className="scanner-line"></div>}
           
-          <span className="text-7xl md:text-9xl font-black text-[var(--text-main)] mono-font z-10 tracking-tighter leading-none">
+          <span className="text-7xl md:text-9xl font-black text-slate-900 mono-font z-10 tracking-tighter leading-none">
             {waitingForSignal ? (
               <div className="flex flex-col items-center gap-4">
-                <i className="fas fa-satellite fa-spin text-blue-600 dark:text-blue-400 text-4xl md:text-5xl"></i>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400 animate-pulse">Sinyal Bekleniyor</span>
+                <i className="fas fa-satellite fa-spin text-blue-600 text-4xl md:text-5xl"></i>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 animate-pulse">Sinyal Bekleniyor</span>
               </div>
             ) : (
               step === 'COUNTDOWN' ? seconds : <i className={`fas fa-satellite-dish text-5xl md:text-7xl transition-all duration-700 ${getAccuracyColor(instantAccuracy)}`}></i>
@@ -423,13 +423,13 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
 
           {captureError && (
             <div className="absolute -bottom-24 left-0 right-0 animate-in slide-in-from-top-2 flex flex-col items-center gap-2 z-30">
-              <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/30 px-4 py-2 rounded-xl flex items-center gap-3 shadow-sm">
+              <div className="bg-rose-50 border border-rose-100 px-4 py-2 rounded-xl flex items-center gap-3 shadow-sm">
                 <i className="fas fa-exclamation-circle text-rose-500 text-xs"></i>
-                <span className="text-[10px] font-bold text-rose-700 dark:text-rose-400 uppercase tracking-wider">{captureError}</span>
+                <span className="text-[10px] font-bold text-rose-700 uppercase tracking-wider">{captureError}</span>
               </div>
               <button 
                 onClick={startGPSWarmup}
-                className="px-4 py-2 bg-[var(--bg-card)] border border-[var(--border-color)] shadow-sm rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 active:scale-95 transition-all"
+                className="px-4 py-2 bg-white border border-slate-200 shadow-sm rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-600 active:scale-95 transition-all"
               >
                 <i className="fas fa-rotate-right mr-2"></i>
                 Tekrar Dene
@@ -446,37 +446,37 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
 
       <div className="w-full max-w-sm mx-auto w-full shrink-0 pb-6">
         {step === 'READY' ? (
-          <div className="bg-slate-50 dark:bg-slate-900/50 p-6 md:p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 space-y-4">
+          <div className="bg-slate-50 p-6 md:p-8 rounded-[2.5rem] border border-slate-100 space-y-4">
             <div className="space-y-1">
-              <label className="text-[10px] md:text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] leading-tight block h-6 flex flex-col justify-center">
+              <label className="text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] leading-tight block h-6 flex flex-col justify-center">
                 <span>Nokta İsmi</span>
               </label>
-              <input type="text" value={pointName} onChange={e => setPointName(e.target.value)} className="w-full p-3 bg-[var(--bg-card)] rounded-xl font-black text-center text-lg text-[var(--text-main)] outline-none border border-[var(--border-color)] leading-none" />
+              <input type="text" value={pointName} onChange={e => setPointName(e.target.value)} className="w-full p-3 bg-white rounded-xl font-black text-center text-lg text-slate-900 outline-none border border-slate-200 leading-none" />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-[10px] md:text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] leading-tight block h-6 flex flex-col justify-center">
+                <label className="text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] leading-tight block h-6 flex flex-col justify-center">
                   <span>Hassasiyet</span>
                   <span>Limiti (m)</span>
                 </label>
                 <select 
                   value={accuracyLimit} 
                   onChange={e => setAccuracyLimit(parseFloat(e.target.value))}
-                  className="w-full p-3 bg-[var(--bg-card)] rounded-xl font-black text-center text-lg text-[var(--text-main)] outline-none border border-[var(--border-color)] leading-none appearance-none"
+                  className="w-full p-3 bg-white rounded-xl font-black text-center text-lg text-slate-900 outline-none border border-slate-200 leading-none appearance-none"
                 >
                   {[2, 3, 5, 10, 20, 50, 100].map(v => <option key={v} value={v}>{v}m</option>)}
                 </select>
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] md:text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] leading-tight block h-6 flex flex-col justify-center">
+                <label className="text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] leading-tight block h-6 flex flex-col justify-center">
                   <span>Ölçüm</span>
                   <span>Süresi (sn)</span>
                 </label>
                 <select 
                   value={measurementDuration} 
                   onChange={e => setMeasurementDuration(parseInt(e.target.value))}
-                  className="w-full p-3 bg-[var(--bg-card)] rounded-xl font-black text-center text-lg text-[var(--text-main)] outline-none border border-[var(--border-color)] leading-none appearance-none"
+                  className="w-full p-3 bg-white rounded-xl font-black text-center text-lg text-slate-900 outline-none border border-slate-200 leading-none appearance-none"
                 >
                   {[5, 10, 15, 20, 30].map(v => <option key={v} value={v}>{v}sn</option>)}
                 </select>
@@ -486,7 +486,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
             <button 
               onClick={handleStartMeasurement} 
               disabled={instantAccuracy === null}
-              className="w-full py-4 md:py-6 px-5 bg-emerald-600 text-white rounded-2xl font-black text-[13px] md:text-[14px] active:scale-[0.96] disabled:bg-slate-200 dark:disabled:bg-slate-800 transition-all uppercase tracking-[0.25em] leading-none shadow-2xl shadow-emerald-100 dark:shadow-none"
+              className="w-full py-4 md:py-6 px-5 bg-emerald-600 text-white rounded-2xl font-black text-[13px] md:text-[14px] active:scale-[0.96] disabled:bg-slate-200 transition-all uppercase tracking-[0.25em] leading-none shadow-2xl shadow-emerald-100"
             >
               ÖLÇÜMÜ BAŞLAT
             </button>
@@ -495,15 +495,15 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
           <div className="space-y-2 py-4">
             {instantAccuracy !== null && instantAccuracy > accuracyLimit ? (
               <div className="animate-pulse space-y-2">
-                <p className="font-black text-amber-600 dark:text-amber-400 text-[12px] md:text-[13px] uppercase tracking-[0.2em] leading-none">Hassasiyet Bekleniyor...</p>
-                <p className="text-slate-400 dark:text-slate-500 text-[10px] font-bold leading-tight uppercase tracking-widest px-4">
+                <p className="font-black text-amber-600 text-[12px] md:text-[13px] uppercase tracking-[0.2em] leading-none">Hassasiyet Bekleniyor...</p>
+                <p className="text-slate-400 text-[10px] font-bold leading-tight uppercase tracking-widest px-4">
                   Mevcut hassasiyet (±{instantAccuracy.toFixed(1)}m),<br/>belirlenen {accuracyLimit}m limitinden yüksek.
                 </p>
               </div>
             ) : (
               <div className="animate-pulse space-y-2">
-                <p className="font-black text-emerald-600 dark:text-emerald-400 text-[12px] md:text-[13px] uppercase tracking-[0.3em] leading-none">{sampleCount} KONUM ÖRNEĞİ</p>
-                <p className="text-slate-400 dark:text-slate-500 text-[11px] md:text-[12px] font-bold leading-none uppercase tracking-widest">SABİT TUTUN</p>
+                <p className="font-black text-emerald-600 text-[12px] md:text-[13px] uppercase tracking-[0.3em] leading-none">{sampleCount} KONUM ÖRNEĞİ</p>
+                <p className="text-slate-400 text-[11px] md:text-[12px] font-bold leading-none uppercase tracking-widest">SABİT TUTUN</p>
               </div>
             )}
           </div>
@@ -513,49 +513,49 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
 
       {showPermissionHelp && (
         <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in">
-          <div className="bg-[var(--bg-card)] rounded-[2.5rem] w-full max-w-sm p-8 shadow-2xl space-y-6">
-            <div className="w-16 h-16 bg-rose-50 dark:bg-rose-900/20 rounded-2xl flex items-center justify-center mx-auto">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-sm p-8 shadow-2xl space-y-6">
+            <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto">
               <i className="fas fa-location-dot text-rose-500 text-2xl"></i>
             </div>
             
             <div className="text-center space-y-2">
-              <h3 className="text-xl font-black text-[var(--text-main)]">Konum İzni Gerekli</h3>
+              <h3 className="text-xl font-black text-slate-900">Konum İzni Gerekli</h3>
               <p className="text-slate-500 text-sm leading-relaxed">
                 Ölçüm yapabilmek için tarayıcınızın konum erişimine izin vermeniz gerekiyor.
               </p>
             </div>
 
-            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-4 space-y-3">
-              <p className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-center">Nasıl İzin Verilir?</p>
+            <div className="bg-slate-50 rounded-2xl p-4 space-y-3">
+              <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">Nasıl İzin Verilir?</p>
               <div className="space-y-2">
                 {!isIOS() ? (
                   <>
                     <div className="flex items-start gap-3">
-                      <div className="w-5 h-5 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold text-[var(--text-main)]">1</div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">Adres çubuğundaki <strong>AA</strong> veya <strong>Kilit</strong> ikonuna tıklayın.</p>
+                      <div className="w-5 h-5 bg-slate-200 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">1</div>
+                      <p className="text-xs text-slate-600">Adres çubuğundaki <strong>AA</strong> veya <strong>Kilit</strong> ikonuna tıklayın.</p>
                     </div>
                     <div className="flex items-start gap-3">
-                      <div className="w-5 h-5 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold text-[var(--text-main)]">2</div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400"><strong>Web Sitesi Ayarları</strong> seçeneğine girin.</p>
+                      <div className="w-5 h-5 bg-slate-200 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">2</div>
+                      <p className="text-xs text-slate-600"><strong>Web Sitesi Ayarları</strong> seçeneğine girin.</p>
                     </div>
                     <div className="flex items-start gap-3">
-                      <div className="w-5 h-5 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold text-[var(--text-main)]">3</div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400"><strong>Konum</strong> iznini "İzin Ver" olarak değiştirin.</p>
+                      <div className="w-5 h-5 bg-slate-200 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">3</div>
+                      <p className="text-xs text-slate-600"><strong>Konum</strong> iznini "İzin Ver" olarak değiştirin.</p>
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="flex items-start gap-3">
-                      <div className="w-5 h-5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">1</div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">iPhone <strong>Ayarlar</strong> uygulamasını açın.</p>
+                      <div className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">1</div>
+                      <p className="text-xs text-slate-600">iPhone <strong>Ayarlar</strong> uygulamasını açın.</p>
                     </div>
                     <div className="flex items-start gap-3">
-                      <div className="w-5 h-5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">2</div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400"><strong>Gizlilik ve Güvenlik</strong> {'>'} <strong>Konum Servisleri</strong> yolunu izleyin.</p>
+                      <div className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">2</div>
+                      <p className="text-xs text-slate-600"><strong>Gizlilik ve Güvenlik</strong> {'>'} <strong>Konum Servisleri</strong> yolunu izleyin.</p>
                     </div>
                     <div className="flex items-start gap-3">
-                      <div className="w-5 h-5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">3</div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400"><strong>Safari Siteleri</strong>'ni bulun ve <strong>Uygulamayı Kullanırken</strong> olarak işaretleyin.</p>
+                      <div className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold">3</div>
+                      <p className="text-xs text-slate-600"><strong>Safari Siteleri</strong>'ni bulun ve <strong>Uygulamayı Kullanırken</strong> olarak işaretleyin.</p>
                     </div>
                   </>
                 )}
@@ -573,7 +573,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                       window.location.href = 'app-settings:';
                     }, 500);
                   }}
-                  className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-100 dark:shadow-none"
+                  className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-100"
                 >
                   <i className="fas fa-cog"></i>
                   AYARLARI AÇ
@@ -581,7 +581,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
               )}
               <button 
                 onClick={() => setShowPermissionHelp(false)}
-                className={`w-full py-4 ${isIOS() ? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400' : 'bg-blue-600 dark:bg-slate-800 text-white'} rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all`}
+                className={`w-full py-4 ${isIOS() ? 'bg-slate-100 text-slate-600' : 'bg-slate-900 text-white'} rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all`}
               >
                 ANLADIM
               </button>
