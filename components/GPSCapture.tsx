@@ -312,18 +312,20 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   };
 
   if (step === 'SELECT_MODE') return (
-    <div className="w-full flex flex-col bg-[#F8FAFC] animate-in h-full relative overflow-y-auto no-scrollbar">
+    <div className="w-full flex flex-col bg-[#F8FAFC] animate-in h-full relative overflow-hidden">
       {StandardHeader("Yeni Ölçüm Yap", "YENİ KAYIT", "HOME")}
-      <div className="w-full px-8 pt-4 mx-auto">
-        <div className="max-w-sm mx-auto w-full space-y-4">
-          <button onClick={() => { setIsNewProject(true); setFolderName(''); setStep('FORM'); }} className="w-full py-3 md:py-4 px-5 bg-white rounded-3xl shadow-md border border-slate-100 text-left active:scale-[0.97] transition-all flex items-center gap-5">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0"><i className="fas fa-folder-plus text-xl"></i></div>
-            <span className="font-black text-lg text-slate-900">Yeni Proje Oluştur</span>
-          </button>
-          <button onClick={() => { setIsNewProject(false); setStep('FORM'); }} className="w-full py-3 md:py-4 px-5 bg-white rounded-3xl shadow-md border border-slate-100 text-left active:scale-[0.97] transition-all flex items-center gap-5">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0"><i className="fas fa-folder-open text-xl"></i></div>
-            <span className="font-black text-lg text-slate-900">Mevcut Proje Seç</span>
-          </button>
+      <div className="flex-1 overflow-y-auto no-scrollbar">
+        <div className="w-full px-8 pt-4 mx-auto">
+          <div className="max-w-sm mx-auto w-full space-y-4">
+            <button onClick={() => { setIsNewProject(true); setFolderName(''); setStep('FORM'); }} className="w-full py-3 md:py-4 px-5 bg-white rounded-3xl shadow-md border border-slate-100 text-left active:scale-[0.97] transition-all flex items-center gap-5">
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0"><i className="fas fa-folder-plus text-xl"></i></div>
+              <span className="font-black text-lg text-slate-900">Yeni Proje Oluştur</span>
+            </button>
+            <button onClick={() => { setIsNewProject(false); setStep('FORM'); }} className="w-full py-3 md:py-4 px-5 bg-white rounded-3xl shadow-md border border-slate-100 text-left active:scale-[0.97] transition-all flex items-center gap-5">
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0"><i className="fas fa-folder-open text-xl"></i></div>
+              <span className="font-black text-lg text-slate-900">Mevcut Proje Seç</span>
+            </button>
+          </div>
         </div>
       </div>
       <GlobalFooter showAd={true} />
@@ -331,45 +333,47 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   );
 
   if (step === 'FORM') return (
-    <div className="w-full flex flex-col bg-[#F8FAFC] animate-in h-full relative overflow-y-auto no-scrollbar">
+    <div className="w-full flex flex-col bg-[#F8FAFC] animate-in h-full relative overflow-hidden">
       {StandardHeader("Proje Bilgisi", "DETAYLAR", "SELECT_MODE")}
-      <div className="w-full px-8 pt-4 mx-auto">
-        <div className="max-w-sm mx-auto w-full">
-          <div className="soft-card p-8 w-full space-y-6">
-          <div className="space-y-2">
-            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Proje Adı</label>
-            {isNewProject ? (
-              <input type="text" placeholder="Örn: Saha Çalışması A" value={folderName} onChange={e => setFolderName(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all text-base" />
-            ) : (
-              <select value={folderName} onChange={e => setFolderName(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none text-base">
-                <option value="">Seçiniz...</option>
-                {Array.from(new Set(existingLocations.map(l => l.folderName))).map(n => <option key={n} value={n}>{n}</option>)}
+      <div className="flex-1 overflow-y-auto no-scrollbar">
+        <div className="w-full px-8 pt-4 mx-auto">
+          <div className="max-w-sm mx-auto w-full">
+            <div className="soft-card p-8 w-full space-y-6">
+            <div className="space-y-2">
+              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Proje Adı</label>
+              {isNewProject ? (
+                <input type="text" placeholder="Örn: Saha Çalışması A" value={folderName} onChange={e => setFolderName(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all text-base" />
+              ) : (
+                <select value={folderName} onChange={e => setFolderName(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none text-base">
+                  <option value="">Seçiniz...</option>
+                  {Array.from(new Set(existingLocations.map(l => l.folderName))).map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              )}
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Koordinat Sistemi</label>
+              <select 
+                value={coordinateSystem} 
+                onChange={e => setCoordinateSystem(e.target.value)} 
+                disabled={!isNewProject}
+                className={`w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none text-base ${!isNewProject ? 'opacity-60 cursor-not-allowed' : ''}`}
+              >
+                <option value="WGS84">WGS84 (Enlem-Boylam)</option>
+                <option value="ITRF96_3">ITRF96 - 3°</option>
+                <option value="ED50_3">ED50 - 3°</option>
+                <option value="ED50_6">ED50 - 6°</option>
               </select>
-            )}
-          </div>
-          
-          <div className="space-y-2">
-            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Koordinat Sistemi</label>
-            <select 
-              value={coordinateSystem} 
-              onChange={e => setCoordinateSystem(e.target.value)} 
-              disabled={!isNewProject}
-              className={`w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none text-base ${!isNewProject ? 'opacity-60 cursor-not-allowed' : ''}`}
+            </div>
+  
+            <button 
+              disabled={!folderName.trim()}
+              onClick={() => { localStorage.setItem('last_folder_name', folderName); setStep('READY'); }} 
+              className="w-full py-3 md:py-4 px-5 bg-blue-600 text-white rounded-2xl font-black text-[13px] uppercase tracking-[0.2em] active:scale-95 disabled:opacity-30 transition-all shadow-xl shadow-blue-100"
             >
-              <option value="WGS84">WGS84 (Enlem-Boylam)</option>
-              <option value="ITRF96_3">ITRF96 - 3°</option>
-              <option value="ED50_3">ED50 - 3°</option>
-              <option value="ED50_6">ED50 - 6°</option>
-            </select>
+              ÖLÇÜME HAZIRLAN
+            </button>
           </div>
-
-          <button 
-            disabled={!folderName.trim()}
-            onClick={() => { localStorage.setItem('last_folder_name', folderName); setStep('READY'); }} 
-            className="w-full py-3 md:py-4 px-5 bg-blue-600 text-white rounded-2xl font-black text-[13px] uppercase tracking-[0.2em] active:scale-95 disabled:opacity-30 transition-all shadow-xl shadow-blue-100"
-          >
-            ÖLÇÜME HAZIRLAN
-          </button>
         </div>
       </div>
       </div>

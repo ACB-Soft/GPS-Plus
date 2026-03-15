@@ -7,12 +7,12 @@ interface Props {
 }
 
 const GlobalFooter: React.FC<Props> = ({ showAd = false, noPadding = false }) => (
-  <footer className={`py-4 md:py-6 flex flex-col items-center mt-auto safe-bottom shrink-0 bg-transparent ${noPadding ? '' : 'px-8'}`}>
+  <footer className={`py-4 md:py-6 flex flex-col items-center mt-auto safe-bottom shrink-0 bg-[#F8FAFC] ${noPadding ? '' : 'px-8'}`}>
     {/* Reklam Alanı */}
     {showAd && (
       <div className="w-full max-w-sm mb-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="w-full h-[100px] md:h-[120px] bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-white opacity-50"></div>
+        <div className="w-full h-[100px] md:h-[120px] bg-[#F8FAFC] border-2 border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#F8FAFC] to-white opacity-50"></div>
           <div className="relative z-10 flex flex-col items-center gap-2">
             <div className="px-2 py-0.5 bg-slate-200 rounded text-[8px] font-black text-slate-500 uppercase tracking-widest">Sponsorlu</div>
             <i className="fas fa-rectangle-ad text-slate-300 text-2xl group-hover:scale-110 transition-transform"></i>
@@ -27,7 +27,7 @@ const GlobalFooter: React.FC<Props> = ({ showAd = false, noPadding = false }) =>
       </div>
     )}
 
-    <p className="text-[10px] md:text-[11px] font-black text-slate-500 uppercase tracking-[0.5em] text-center w-full">
+    <p className="text-[10px] md:text-[11px] font-black text-slate-300 uppercase tracking-[0.5em] text-center w-full">
       {FULL_BRAND}
     </p>
   </footer>

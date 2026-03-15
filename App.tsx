@@ -143,15 +143,17 @@ const App = () => {
         )}
         
         {view === 'dashboard' && (
-          <div className="flex-1 flex flex-col overflow-y-auto h-full no-scrollbar">
-            <Dashboard 
-              onStartCapture={() => handleNewMeasurement(false)} 
-              onStakeout={() => navigateTo('stakeout')}
-              onShowList={() => navigateTo('list')}
-              onShowExport={() => navigateTo('export')}
-              onShowHelp={() => navigateTo('help')}
-              onShowSettings={() => navigateTo('settings')}
-            />
+          <div className="flex-1 flex flex-col h-full overflow-hidden">
+            <div className="flex-1 overflow-y-auto no-scrollbar">
+              <Dashboard 
+                onStartCapture={() => handleNewMeasurement(false)} 
+                onStakeout={() => navigateTo('stakeout')}
+                onShowList={() => navigateTo('list')}
+                onShowExport={() => navigateTo('export')}
+                onShowHelp={() => navigateTo('help')}
+                onShowSettings={() => navigateTo('settings')}
+              />
+            </div>
             <GlobalFooter showAd={true} />
           </div>
         )}
@@ -237,16 +239,18 @@ const App = () => {
         )}
 
         {view === 'result' && lastResult && (
-          <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-[#F8FAFC] px-8">
-            <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full pt-8">
-              <ResultCard 
-                location={lastResult} 
-                initialShowMap={autoShowMap} 
-                onCloseMap={resultSource === 'list' ? () => navigateTo('list') : undefined}
-              />
-              <div className="mt-8 space-y-4">
-                 <button onClick={() => handleNewMeasurement(true)} className="w-full py-2.5 md:py-3.5 bg-blue-600 text-white rounded-2xl font-black shadow-2xl shadow-blue-200 active:scale-95 transition-all text-[13px] uppercase tracking-widest">YENİ NOKTA EKLE</button>
-                 <button onClick={resetToDashboard} className="w-full py-2.5 md:py-3.5 bg-slate-900 text-white rounded-2xl font-black text-[12px] uppercase tracking-widest transition-all">ÖLÇÜMÜ BİTİR</button>
+          <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-[#F8FAFC]">
+            <div className="flex-1 overflow-y-auto no-scrollbar px-8">
+              <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full pt-8">
+                <ResultCard 
+                  location={lastResult} 
+                  initialShowMap={autoShowMap} 
+                  onCloseMap={resultSource === 'list' ? () => navigateTo('list') : undefined}
+                />
+                <div className="mt-8 space-y-4">
+                   <button onClick={() => handleNewMeasurement(true)} className="w-full py-2.5 md:py-3.5 bg-blue-600 text-white rounded-2xl font-black shadow-2xl shadow-blue-200 active:scale-95 transition-all text-[13px] uppercase tracking-widest">YENİ NOKTA EKLE</button>
+                   <button onClick={resetToDashboard} className="w-full py-2.5 md:py-3.5 bg-slate-900 text-white rounded-2xl font-black text-[12px] uppercase tracking-widest transition-all">ÖLÇÜMÜ BİTİR</button>
+                </div>
               </div>
             </div>
             <GlobalFooter noPadding={true} />
