@@ -7,14 +7,12 @@ import ExportUnifiedView from './components/ExportUnifiedView';
 import ResultCard from './components/ResultCard';
 import StakeoutModule from './components/StakeoutModule';
 import HelpView from './components/HelpView';
-import SettingsView from './components/SettingsView';
 import GlobalFooter from './components/GlobalFooter';
-import AdBanner from './components/AdBanner';
-import { SavedLocation, Coordinate, StakeoutPoint, AppSettings } from './types';
+import { SavedLocation, Coordinate, StakeoutPoint } from './types';
 import { geoidService } from './services/GeoidService';
 
 const App = () => {
-  type ViewType = 'onboarding' | 'dashboard' | 'capture' | 'list' | 'export' | 'result' | 'stakeout' | 'help' | 'settings';
+  type ViewType = 'onboarding' | 'dashboard' | 'capture' | 'list' | 'export' | 'result' | 'stakeout' | 'help';
   const [view, setView] = useState<ViewType>('onboarding');
   const [locations, setLocations] = useState<SavedLocation[]>([]);
   const [lastResult, setLastResult] = useState<SavedLocation | null>(null);
@@ -22,22 +20,6 @@ const App = () => {
   const [autoShowMap, setAutoShowMap] = useState(false);
   const [isContinuing, setIsContinuing] = useState(false);
   const [stakeoutInitialPoint, setStakeoutInitialPoint] = useState<StakeoutPoint | null>(null);
-
-  const [settings, setSettings] = useState<AppSettings>(() => {
-    const saved = localStorage.getItem('app_settings_v1');
-    if (saved) return JSON.parse(saved);
-    return {
-      defaultCoordinateSystem: 'WGS84',
-      defaultAccuracyLimit: 5.0,
-      defaultMeasurementDuration: 5,
-      alertsEnabled: true,
-      screenAlwaysOn: false
-    };
-  });
-
-  useEffect(() => {
-    localStorage.setItem('app_settings_v1', JSON.stringify(settings));
-  }, [settings]);
 
   // Navigation wrapper to sync with browser history
   const navigateTo = (newView: ViewType) => {
@@ -58,10 +40,7 @@ const App = () => {
       if (event.state && event.state.view) {
         setView(event.state.view);
       } else {
-        // If we are at the root (no state), we should be at dashboard or onboarding
-        // But the user wants to exit on dashboard back press.
-        // In browser, if we are at the first history entry, back press exits.
-        setView('dashboard');
+        setView('onboarding');
       }
     };
 
@@ -70,8 +49,8 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    const CURRENT_KEY = 'gps_locations_v6.6.5';
-    const OLD_KEY = 'gps_locations_v6.6.4';
+    const CURRENT_KEY = 'gps_locations_v6.5.8';
+    const OLD_KEY = 'gps_locations_v6.5.7';
     
     let saved = localStorage.getItem(CURRENT_KEY);
     if (!saved) {
@@ -86,11 +65,11 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('gps_locations_v6.6.5', JSON.stringify(locations));
+    localStorage.setItem('gps_locations_v6.5.8', JSON.stringify(locations));
   }, [locations]);
 
   const handleFinishOnboarding = () => {
-    localStorage.setItem('onboarding_v6.6.5_done', 'true');
+    localStorage.setItem('onboarding_v6.5.8_done', 'true');
     // Use replaceState so dashboard becomes the root (can't go back to onboarding)
     window.history.replaceState({ view: 'dashboard' }, '');
     setView('dashboard');
@@ -114,10 +93,7 @@ const App = () => {
 
   const resetToDashboard = () => {
     setIsContinuing(false);
-    // When going back to dashboard, we want to "reset" history as requested
-    // so that dashboard is the root.
-    window.history.replaceState({ view: 'dashboard' }, '');
-    setView('dashboard');
+    navigateTo('dashboard');
   };
 
   const handleNewMeasurement = (continuing: boolean) => {
@@ -144,32 +120,20 @@ const App = () => {
         )}
         
         {view === 'dashboard' && (
-          <div className="flex-1 flex flex-col h-full overflow-hidden">
-            <div className="flex-1 overflow-y-auto no-scrollbar">
-              <Dashboard 
-                onStartCapture={() => handleNewMeasurement(false)} 
-                onStakeout={() => navigateTo('stakeout')}
-                onShowList={() => navigateTo('list')}
-                onShowExport={() => navigateTo('export')}
-                onShowHelp={() => navigateTo('help')}
-                onShowSettings={() => navigateTo('settings')}
-              />
-              <AdBanner />
-            </div>
-            <GlobalFooter />
+          <div className="flex-1 flex flex-col overflow-y-auto h-full no-scrollbar">
+            <Dashboard 
+              onStartCapture={() => handleNewMeasurement(false)} 
+              onStakeout={() => navigateTo('stakeout')}
+              onShowList={() => navigateTo('list')}
+              onShowExport={() => navigateTo('export')}
+              onShowHelp={() => navigateTo('help')}
+            />
+            <GlobalFooter showAd={true} />
           </div>
         )}
 
         {view === 'help' && (
           <HelpView onBack={resetToDashboard} />
-        )}
-
-        {view === 'settings' && (
-          <SettingsView 
-            settings={settings} 
-            onUpdateSettings={setSettings} 
-            onBack={resetToDashboard} 
-          />
         )}
 
         {view === 'stakeout' && (
@@ -179,7 +143,6 @@ const App = () => {
               resetToDashboard();
             }} 
             initialPoint={stakeoutInitialPoint}
-            settings={settings}
           />
         )}
 
@@ -190,14 +153,13 @@ const App = () => {
               onComplete={handleGPSComplete}
               onCancel={resetToDashboard}
               isContinuing={isContinuing}
-              settings={settings}
             />
           </div>
         )}
 
         {view === 'list' && (
-          <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-[#F8FAFC]">
-            <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-[#F8FAFC]">
+          <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-[#F8FAFC]">
+            <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white">
               <button onClick={resetToDashboard} className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all">
                 <i className="fas fa-chevron-left text-sm"></i>
               </button>
@@ -205,7 +167,7 @@ const App = () => {
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Kayıtlı Projeler</h2>
               </div>
             </header>
-            <div className="flex-1 overflow-y-auto no-scrollbar px-8 pt-0 pb-4 w-full">
+            <div className="px-8 pt-0 pb-4 w-full">
               <div className="max-w-sm mx-auto w-full">
                 <SavedLocationsList 
                   locations={locations} 
@@ -217,18 +179,15 @@ const App = () => {
                 onBulkDelete={(ids) => setLocations(prev => prev.filter(l => !ids.includes(l.id)))}
                 onViewOnMap={handleViewOnMap}
               />
-              <div className="mt-8">
-                <AdBanner />
-              </div>
             </div>
             </div>
-            <GlobalFooter />
+            <GlobalFooter showAd={true} />
           </div>
         )}
 
         {view === 'export' && (
-          <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-[#F8FAFC]">
-            <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-[#F8FAFC]">
+          <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-[#F8FAFC]">
+            <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white">
               <button onClick={resetToDashboard} className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all">
                 <i className="fas fa-chevron-left text-sm"></i>
               </button>
@@ -236,35 +195,27 @@ const App = () => {
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Veri Aktar</h2>
               </div>
             </header>
-            <div className="flex-1 overflow-y-auto no-scrollbar px-8 pt-0 pb-4">
+            <div className="px-8 pt-0 pb-4">
                <ExportUnifiedView locations={locations} />
-               <div className="mt-8">
-                 <AdBanner />
-               </div>
             </div>
-            <GlobalFooter />
+            <GlobalFooter showAd={true} />
           </div>
         )}
 
         {view === 'result' && lastResult && (
-          <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-[#F8FAFC]">
-            <div className="flex-1 overflow-y-auto no-scrollbar px-8">
-              <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full pt-8">
-                <ResultCard 
-                  location={lastResult} 
-                  initialShowMap={autoShowMap} 
-                  onCloseMap={resultSource === 'list' ? () => navigateTo('list') : undefined}
-                />
-                <div className="mt-8 space-y-4">
-                   <button onClick={() => handleNewMeasurement(true)} className="w-full py-2.5 md:py-3.5 bg-blue-600 text-white rounded-2xl font-black shadow-2xl shadow-blue-200 active:scale-95 transition-all text-[13px] uppercase tracking-widest">YENİ NOKTA EKLE</button>
-                   <button onClick={resetToDashboard} className="w-full py-2.5 md:py-3.5 bg-slate-900 text-white rounded-2xl font-black text-[12px] uppercase tracking-widest transition-all">ÖLÇÜMÜ BİTİR</button>
-                </div>
-                <div className="mt-8">
-                  <AdBanner />
-                </div>
+          <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-white px-8">
+            <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full pt-8">
+              <ResultCard 
+                location={lastResult} 
+                initialShowMap={autoShowMap} 
+                onCloseMap={resultSource === 'list' ? () => navigateTo('list') : undefined}
+              />
+              <div className="mt-8 space-y-4">
+                 <button onClick={() => handleNewMeasurement(true)} className="w-full py-2.5 md:py-3.5 bg-blue-600 text-white rounded-2xl font-black shadow-2xl shadow-blue-200 active:scale-95 transition-all text-[13px] uppercase tracking-widest">YENİ NOKTA EKLE</button>
+                 <button onClick={resetToDashboard} className="w-full py-2.5 md:py-3.5 bg-slate-900 text-white rounded-2xl font-black text-[12px] uppercase tracking-widest transition-all">ÖLÇÜMÜ BİTİR</button>
               </div>
             </div>
-            <GlobalFooter />
+            <GlobalFooter noPadding={true} />
           </div>
         )}
 

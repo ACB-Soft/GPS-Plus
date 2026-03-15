@@ -44,7 +44,7 @@ const ResultCard: React.FC<Props> = ({ location, initialShowMap = false, onClose
 
   return (
     <>
-      <div className="soft-card p-5 md:p-6 border-blue-100 space-y-5 md:space-y-6 text-center animate-in relative overflow-hidden bg-[#F8FAFC] max-w-sm mx-auto">
+      <div className="soft-card p-5 md:p-6 border-blue-100 space-y-5 md:space-y-6 text-center animate-in relative overflow-hidden bg-white max-w-sm mx-auto">
         <div className="space-y-2 md:space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 rounded-full border border-emerald-100">
              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
@@ -112,7 +112,7 @@ const ResultCard: React.FC<Props> = ({ location, initialShowMap = false, onClose
       </div>
 
       {showMap && (
-        <div className="fixed inset-0 z-[9999] bg-[#F8FAFC] flex flex-col animate-in fade-in">
+        <div className="fixed inset-0 z-[9999] bg-black flex flex-col animate-in fade-in">
           <div className="absolute top-6 left-6 z-[10000]">
             <button 
               onClick={() => {
@@ -134,7 +134,7 @@ const ResultCard: React.FC<Props> = ({ location, initialShowMap = false, onClose
             attributionControl={false}
           >
             <TileLayer
-              url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+              url="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
               attribution='&copy; Google'
               maxZoom={22}
               maxNativeZoom={20}

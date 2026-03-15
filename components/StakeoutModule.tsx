@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, Circle, Polyline, Polygon } from 'react-leaflet';
 import L from 'leaflet';
-import { StakeoutPoint, Coordinate, StakeoutGeometry, AppSettings } from '../types';
+import { StakeoutPoint, Coordinate, StakeoutGeometry } from '../types';
 import { parseKML } from '../utils/KmlParser';
 import { convertCoordinate, convertToWGS84 } from '../utils/CoordinateUtils';
 import { isIOS } from '../utils/browser';
 import JSZip from 'jszip';
 import GlobalFooter from './GlobalFooter';
-import AdBanner from './AdBanner';
 
 // Leaflet icon fix
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -20,7 +19,6 @@ L.Icon.Default.mergeOptions({
 interface Props {
   onBack: () => void;
   initialPoint?: StakeoutPoint | null;
-  settings: AppSettings;
 }
 
 // Helper Components defined outside to prevent re-mounting
@@ -77,7 +75,7 @@ const BoundsUpdater = ({ points, geometries }: { points: StakeoutPoint[], geomet
   return null;
 };
 
-const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => {
+const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint }) => {
   const [view, setView] = useState<'MENU' | 'LIST' | 'MANUAL' | 'MAP' | 'ALL_MAP'>(initialPoint ? 'MAP' : 'MENU');
   const [sourceView, setSourceView] = useState<'LIST' | 'ALL_MAP' | 'MENU'>(initialPoint ? 'LIST' : 'MENU');
   const [points, setPoints] = useState<StakeoutPoint[]>(() => {
@@ -95,37 +93,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
   const [activePoint, setActivePoint] = useState<StakeoutPoint | null>(initialPoint || null);
   const [confirmClear, setConfirmClear] = useState<'NONE' | 'LIST' | 'MAP'>('NONE');
   const [showPermissionHelp, setShowPermissionHelp] = useState(false);
-  const [keepScreenOn, setKeepScreenOn] = useState(settings.screenAlwaysOn);
-  const [targetReached, setTargetReached] = useState(false);
+  const [keepScreenOn, setKeepScreenOn] = useState(false);
   const wakeLockRef = useRef<any>(null);
-
-  const triggerAlert = () => {
-    if (!settings.alertsEnabled) return;
-    
-    // Vibration
-    if ('vibrate' in navigator) {
-      navigator.vibrate([300, 100, 300]);
-    }
-    
-    // Sound
-    try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-      
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(1200, audioCtx.currentTime); // High pitch for target
-      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-      
-      oscillator.start();
-      oscillator.stop(audioCtx.currentTime + 0.4);
-    } catch (e) {
-      console.warn('Audio alert failed', e);
-    }
-  };
 
   const requestWakeLock = async () => {
     if ('wakeLock' in navigator) {
@@ -333,15 +302,6 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
 
   const guidance = calculateGuidance();
 
-  useEffect(() => {
-    if (guidance && guidance.totalDist < 2.0 && !targetReached) {
-      setTargetReached(true);
-      triggerAlert();
-    } else if (guidance && guidance.totalDist >= 2.0) {
-      setTargetReached(false);
-    }
-  }, [guidance?.totalDist, targetReached]);
-
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#F8FAFC]">
       <style>{`
@@ -359,7 +319,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
           background: white;
         }
       `}</style>
-      <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-[#F8FAFC] shadow-sm z-30">
+      <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white shadow-sm z-30">
         <button 
           onClick={() => {
             if (view === 'MENU') onBack();
@@ -381,181 +341,166 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
         </div>
       </header>
 
-      <div className="flex-1 overflow-hidden relative flex flex-col">
+      <div className="flex-1 overflow-y-auto no-scrollbar relative">
         {view === 'MENU' && (
-          <div className="flex-1 flex flex-col h-full overflow-hidden">
-            <div className="flex-1 overflow-y-auto no-scrollbar px-8">
-              <div className="py-8 pt-4 space-y-4 max-w-sm mx-auto w-full">
-                <div className="grid grid-cols-1 gap-4">
-                  <button onClick={() => setView('MANUAL')} className="w-full py-2.5 md:py-3.5 px-5 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 active:scale-[0.98] transition-all">
-                    <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0">
-                      <i className="fas fa-keyboard text-xl"></i>
-                    </div>
-                    <div className="text-left">
-                      <span className="font-black text-slate-900 block">Manuel Koordinat Ekle</span>
-                      <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">El ile Giriş</span>
-                    </div>
-                  </button>
-  
-                  <label className="w-full py-2.5 md:py-3.5 px-5 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 cursor-pointer active:scale-[0.98] transition-all">
-                    <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shrink-0">
-                      <i className="fas fa-file-import text-xl"></i>
-                    </div>
-                    <div className="text-left">
-                      <span className="font-black text-slate-900 block">KML / KMZ Yükle</span>
-                      <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Dosyadan Aktar</span>
-                    </div>
-                    <input type="file" accept=".kml,.kmz" onChange={handleKmlUpload} className="hidden" />
-                  </label>
-  
-                  <button onClick={() => setView('LIST')} className="w-full py-2.5 md:py-3.5 px-5 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 active:scale-[0.98] transition-all">
-                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
-                      <i className="fas fa-list-ul text-xl"></i>
-                    </div>
-                    <div className="text-left">
-                      <span className="font-black text-slate-900 block">Nokta Listesini Gör</span>
-                      <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">{points.length} Nokta Hazır</span>
-                    </div>
-                  </button>
-  
-                  <button 
-                    onClick={() => {
-                      if (points.length === 0 && geometries.length === 0) alert("Haritada gösterilecek veri bulunamadı.");
-                      else setView('ALL_MAP');
-                    }} 
-                    className="w-full py-2.5 md:py-3.5 px-5 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 active:scale-[0.98] transition-all"
-                  >
-                    <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center shrink-0">
-                      <i className="fas fa-map-marked-alt text-xl"></i>
-                    </div>
-                    <div className="text-left">
-                      <span className="font-black text-slate-900 block">Harita Üzerinde Gör</span>
-                      <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">{points.length} Nokta, {geometries.length} Geometri</span>
-                    </div>
-                  </button>
-                </div>
-                <div className="pt-4">
-                  <AdBanner />
-                </div>
+          <div className="flex-1 flex flex-col overflow-y-auto h-full no-scrollbar px-8">
+            <div className="py-8 pt-4 space-y-4 max-w-sm mx-auto w-full">
+              <div className="grid grid-cols-1 gap-4">
+                <button onClick={() => setView('MANUAL')} className="w-full py-2.5 md:py-3.5 px-5 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 active:scale-[0.98] transition-all">
+                  <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0">
+                    <i className="fas fa-keyboard text-xl"></i>
+                  </div>
+                  <div className="text-left">
+                    <span className="font-black text-slate-900 block">Manuel Koordinat Ekle</span>
+                    <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">El ile Giriş</span>
+                  </div>
+                </button>
+
+                <label className="w-full py-2.5 md:py-3.5 px-5 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 cursor-pointer active:scale-[0.98] transition-all">
+                  <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shrink-0">
+                    <i className="fas fa-file-import text-xl"></i>
+                  </div>
+                  <div className="text-left">
+                    <span className="font-black text-slate-900 block">KML / KMZ Yükle</span>
+                    <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Dosyadan Aktar</span>
+                  </div>
+                  <input type="file" accept=".kml,.kmz" onChange={handleKmlUpload} className="hidden" />
+                </label>
+
+                <button onClick={() => setView('LIST')} className="w-full py-2.5 md:py-3.5 px-5 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 active:scale-[0.98] transition-all">
+                  <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
+                    <i className="fas fa-list-ul text-xl"></i>
+                  </div>
+                  <div className="text-left">
+                    <span className="font-black text-slate-900 block">Nokta Listesini Gör</span>
+                    <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">{points.length} Nokta Hazır</span>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    if (points.length === 0 && geometries.length === 0) alert("Haritada gösterilecek veri bulunamadı.");
+                    else setView('ALL_MAP');
+                  }} 
+                  className="w-full py-2.5 md:py-3.5 px-5 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 active:scale-[0.98] transition-all"
+                >
+                  <div className="w-12 h-12 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center shrink-0">
+                    <i className="fas fa-map-marked-alt text-xl"></i>
+                  </div>
+                  <div className="text-left">
+                    <span className="font-black text-slate-900 block">Harita Üzerinde Gör</span>
+                    <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">{points.length} Nokta, {geometries.length} Geometri</span>
+                  </div>
+                </button>
               </div>
             </div>
-            <GlobalFooter noPadding={true} />
+            <GlobalFooter showAd={true} noPadding={true} />
           </div>
         )}
 
         {view === 'LIST' && (
-          <div className="flex-1 flex flex-col h-full overflow-hidden">
-            <div className="flex-1 overflow-y-auto no-scrollbar px-8">
-              <div className="py-8 pt-4 space-y-4 max-w-sm mx-auto w-full">
-                {points.length === 0 ? (
-                  <div className="p-12 text-center bg-white rounded-[2.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center gap-4">
-                    <i className="fas fa-ghost text-3xl text-slate-200"></i>
-                    <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Liste Boş</p>
-                  </div>
-                ) : (
-                  points.map(p => (
-                    <div key={p.id} className="soft-card py-3 md:py-4 px-5 flex items-center justify-between group">
-                      <div className="flex items-center gap-4 flex-1">
-                        <div>
-                          <h4 className="font-black text-slate-800">{p.name}</h4>
-                          <div className="flex flex-col">
-                            <p className="text-[10px] font-bold text-slate-400 mono-font">
-                              {p.coordinateSystem === 'WGS84' ? `Boy: ${p.originalX?.toFixed(6)}` : `Y: ${p.originalY?.toFixed(3)}`}
-                            </p>
-                            <p className="text-[10px] font-bold text-slate-400 mono-font">
-                              {p.coordinateSystem === 'WGS84' ? `Enl: ${p.originalY?.toFixed(6)}` : `X: ${p.originalX?.toFixed(3)}`}
-                            </p>
-                            <p className="text-[8px] font-black text-blue-500 uppercase tracking-tighter">
-                              {p.coordinateSystem?.replace('_', ' ')}
-                            </p>
-                          </div>
+          <div className="flex-1 flex flex-col overflow-y-auto h-full no-scrollbar px-8">
+            <div className="py-8 pt-4 space-y-4 max-w-sm mx-auto w-full">
+              {points.length === 0 ? (
+                <div className="p-12 text-center bg-white rounded-[2.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center gap-4">
+                  <i className="fas fa-ghost text-3xl text-slate-200"></i>
+                  <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Liste Boş</p>
+                </div>
+              ) : (
+                points.map(p => (
+                  <div key={p.id} className="soft-card py-3 md:py-4 px-5 flex items-center justify-between group">
+                    <div className="flex items-center gap-4 flex-1">
+                      <div>
+                        <h4 className="font-black text-slate-800">{p.name}</h4>
+                        <div className="flex flex-col">
+                          <p className="text-[10px] font-bold text-slate-400 mono-font">
+                            {p.coordinateSystem === 'WGS84' ? `Boy: ${p.originalX?.toFixed(6)}` : `Y: ${p.originalY?.toFixed(3)}`}
+                          </p>
+                          <p className="text-[10px] font-bold text-slate-400 mono-font">
+                            {p.coordinateSystem === 'WGS84' ? `Enl: ${p.originalY?.toFixed(6)}` : `X: ${p.originalX?.toFixed(3)}`}
+                          </p>
+                          <p className="text-[8px] font-black text-blue-500 uppercase tracking-tighter">
+                            {p.coordinateSystem?.replace('_', ' ')}
+                          </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => { 
-                            setSourceView('LIST');
-                            setActivePoint(p); 
-                            setView('MAP'); 
-                          }}
-                          className="px-4 py-2 bg-blue-600 text-white text-[10px] font-black rounded-xl uppercase tracking-widest active:scale-95 transition-all"
-                        >
-                          GİT
-                        </button>
-                        <button 
-                          onClick={() => setPoints(prev => prev.filter(pt => pt.id !== p.id))}
-                          className="w-10 h-10 flex items-center justify-center text-slate-300 hover:text-red-500 transition-colors"
-                        >
-                          <i className="fas fa-trash-can text-xs"></i>
-                        </button>
-                      </div>
                     </div>
-                  ))
-                )}
-                <button 
-                  onClick={() => { 
-                    if (confirmClear === 'LIST') {
-                      localStorage.removeItem('stakeout_points_v1');
-                      localStorage.removeItem('stakeout_geometries_v1');
-                      setPoints([]); 
-                      setGeometries([]); 
-                      setConfirmClear('NONE');
-                    } else {
-                      setConfirmClear('LIST');
-                    }
-                  }}
-                  className={`w-full py-3 text-[10px] font-black uppercase tracking-[0.3em] transition-all ${confirmClear === 'LIST' ? 'text-red-600 bg-red-50 rounded-2xl' : 'text-slate-400 hover:text-red-500'}`}
-                >
-                  {confirmClear === 'LIST' ? 'EMİN MİSİNİZ? (TEKRAR TIKLAYIN)' : 'LİSTEYİ TEMİZLE'}
-                </button>
-                <div className="pt-4">
-                  <AdBanner />
-                </div>
-              </div>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => { 
+                          setSourceView('LIST');
+                          setActivePoint(p); 
+                          setView('MAP'); 
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white text-[10px] font-black rounded-xl uppercase tracking-widest active:scale-95 transition-all"
+                      >
+                        GİT
+                      </button>
+                      <button 
+                        onClick={() => setPoints(prev => prev.filter(pt => pt.id !== p.id))}
+                        className="w-10 h-10 flex items-center justify-center text-slate-300 hover:text-red-500 transition-colors"
+                      >
+                        <i className="fas fa-trash-can text-xs"></i>
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+              <button 
+                onClick={() => { 
+                  if (confirmClear === 'LIST') {
+                    localStorage.removeItem('stakeout_points_v1');
+                    localStorage.removeItem('stakeout_geometries_v1');
+                    setPoints([]); 
+                    setGeometries([]); 
+                    setConfirmClear('NONE');
+                  } else {
+                    setConfirmClear('LIST');
+                  }
+                }}
+                className={`w-full py-3 text-[10px] font-black uppercase tracking-[0.3em] transition-all ${confirmClear === 'LIST' ? 'text-red-600 bg-red-50 rounded-2xl' : 'text-slate-400 hover:text-red-500'}`}
+              >
+                {confirmClear === 'LIST' ? 'EMİN MİSİNİZ? (TEKRAR TIKLAYIN)' : 'LİSTEYİ TEMİZLE'}
+              </button>
             </div>
             <GlobalFooter noPadding={true} />
           </div>
         )}
 
         {view === 'MANUAL' && (
-          <div className="flex-1 flex flex-col h-full overflow-hidden">
-            <div className="flex-1 overflow-y-auto no-scrollbar px-8">
-              <div className="py-8 pt-4 mx-auto max-w-sm w-full">
-                <div className="soft-card p-8 space-y-6">
+          <div className="flex-1 flex flex-col overflow-y-auto h-full no-scrollbar px-8">
+            <div className="py-8 pt-4 mx-auto max-w-sm w-full">
+              <div className="soft-card p-8 space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Nokta Adı</label>
+                  <input type="text" value={manualName} onChange={e => setManualName(e.target.value)} placeholder="Örn: P1" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Koordinat Sistemi</label>
+                  <select value={manualSystem} onChange={e => setManualSystem(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none">
+                    <option value="WGS84">WGS84 (Enlem-Boylam)</option>
+                    <option value="ITRF96_3">ITRF96 - 3°</option>
+                    <option value="ED50_3">ED50 - 3°</option>
+                    <option value="ED50_6">ED50 - 6°</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Nokta Adı</label>
-                    <input type="text" value={manualName} onChange={e => setManualName(e.target.value)} placeholder="Örn: P1" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all" />
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">
+                      {manualSystem === 'WGS84' ? 'Boylam (X)' : 'Sağa (Y)'}
+                    </label>
+                    <input type="number" value={manualX} onChange={e => setManualX(e.target.value)} placeholder="0.000" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Koordinat Sistemi</label>
-                    <select value={manualSystem} onChange={e => setManualSystem(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none">
-                      <option value="WGS84">WGS84 (Enlem-Boylam)</option>
-                      <option value="ITRF96_3">ITRF96 - 3°</option>
-                      <option value="ED50_3">ED50 - 3°</option>
-                      <option value="ED50_6">ED50 - 6°</option>
-                    </select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">
-                        {manualSystem === 'WGS84' ? 'Boylam (X)' : 'Sağa (Y)'}
-                      </label>
-                      <input type="number" value={manualX} onChange={e => setManualX(e.target.value)} placeholder="0.000" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">
-                        {manualSystem === 'WGS84' ? 'Enlem (Y)' : 'Yukarı (X)'}
-                      </label>
-                      <input type="number" value={manualY} onChange={e => setManualY(e.target.value)} placeholder="0.000" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all" />
-                    </div>
-                  </div>
-                  <button onClick={handleAddManual} className="w-full py-2.5 md:py-3.5 px-5 bg-blue-600 text-white rounded-2xl font-black text-[13px] uppercase tracking-widest shadow-xl shadow-blue-100 active:scale-95 transition-all">
-                    LİSTEYE EKLE
-                  </button>
-                  <div className="pt-4">
-                    <AdBanner />
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">
+                      {manualSystem === 'WGS84' ? 'Enlem (Y)' : 'Yukarı (X)'}
+                    </label>
+                    <input type="number" value={manualY} onChange={e => setManualY(e.target.value)} placeholder="0.000" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all" />
                   </div>
                 </div>
+                <button onClick={handleAddManual} className="w-full py-2.5 md:py-3.5 px-5 bg-blue-600 text-white rounded-2xl font-black text-[13px] uppercase tracking-widest shadow-xl shadow-blue-100 active:scale-95 transition-all">
+                  LİSTEYE EKLE
+                </button>
               </div>
             </div>
             <GlobalFooter noPadding={true} />
@@ -574,7 +519,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
                 attributionControl={false}
               >
                 <TileLayer
-                  url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+                  url="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
                   attribution='&copy; Google'
                   maxZoom={22}
                   maxNativeZoom={20}
@@ -671,7 +616,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
                 <BoundsUpdater points={points} geometries={geometries} />
               </MapContainer>
             </div>
-            <div className="absolute bottom-0 left-0 right-0 z-20 px-8 py-4 bg-[#F8FAFC]/95 backdrop-blur-md shadow-[0_-10px_30px_rgba(0,0,0,0.1)] border-t border-slate-100 flex items-center justify-between">
+            <div className="absolute bottom-0 left-0 right-0 z-20 px-8 py-4 bg-white/95 backdrop-blur-md shadow-[0_-10px_30px_rgba(0,0,0,0.1)] border-t border-slate-100 flex items-center justify-between">
                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                  {points.length} Nokta, {geometries.length} Geometri
                </p>
@@ -708,7 +653,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
                 attributionControl={false}
               >
                 <TileLayer
-                  url="https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+                  url="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
                   attribution='&copy; Google'
                   maxZoom={22}
                   maxNativeZoom={20}
@@ -820,7 +765,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
               )}
             </div>
 
-            <div className="bg-[#F8FAFC] p-4 pb-6 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-20 rounded-t-[2.5rem] -mt-8">
+            <div className="bg-white p-4 pb-6 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-20 rounded-t-[2.5rem] -mt-8">
               <div className="mb-3 flex items-center justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <h3 className="text-xl font-black text-slate-900 truncate leading-tight">{activePoint.name}</h3>
@@ -832,7 +777,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
                     className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-lg ${keepScreenOn ? 'bg-amber-500 text-white shadow-amber-100' : 'bg-slate-100 text-slate-400 shadow-slate-100'}`}
                     title={keepScreenOn ? "Ekranı Açık Tut Aktif" : "Ekranı Açık Tut Devre Dışı"}
                   >
-                    <i className={`fas fa-lightbulb text-xs`}></i>
+                    <i className={`fas ${keepScreenOn ? 'fa-sun' : 'fa-moon'} text-xs`}></i>
                   </button>
                   <button 
                     onClick={() => {

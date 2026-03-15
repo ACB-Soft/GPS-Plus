@@ -7,17 +7,9 @@ interface Props {
   onShowList: () => void;
   onShowExport: () => void;
   onShowHelp: () => void;
-  onShowSettings: () => void;
 }
 
-const Dashboard: React.FC<Props> = ({ 
-  onStartCapture, 
-  onStakeout, 
-  onShowList, 
-  onShowExport, 
-  onShowHelp,
-  onShowSettings
-}) => {
+const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, onShowExport, onShowHelp }) => {
   const isInIframe = typeof window !== 'undefined' && window.self !== window.top;
 
   return (
@@ -42,28 +34,16 @@ const Dashboard: React.FC<Props> = ({
         </button>
       </div>
 
-      {/* Üst Buton Grubu - Sağ Üst Köşe */}
-      <div className="absolute top-6 right-8 z-20 flex items-center gap-3">
-        {/* Ayarlar Butonu */}
+      {/* Yardım Butonu - Sağ Üst Köşe (Glow Efektli) */}
+      <div className="absolute top-6 right-8 z-20">
+        <div className="absolute inset-0 bg-blue-400 rounded-2xl blur-xl opacity-20 animate-pulse"></div>
         <button 
-          onClick={onShowSettings}
-          className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-xl border border-blue-100 text-blue-600 active:scale-90 transition-all hover:bg-blue-50 group"
-          title="Ayarlar"
+          onClick={onShowHelp}
+          className="relative w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-xl border border-blue-100 text-blue-600 active:scale-90 transition-all hover:bg-blue-50 group"
         >
-          <i className="fas fa-cog text-xl group-hover:rotate-90 transition-transform"></i>
+          <i className="fas fa-question text-xl font-black group-hover:text-amber-500 transition-colors stroke-current stroke-2" style={{ WebkitTextStroke: '1px' }}></i>
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-600 rounded-full border-2 border-white animate-bounce"></div>
         </button>
-
-        {/* Yardım Butonu (Glow Efektli) */}
-        <div className="relative">
-          <div className="absolute inset-0 bg-blue-400 rounded-2xl blur-xl opacity-20 animate-pulse"></div>
-          <button 
-            onClick={onShowHelp}
-            className="relative w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-xl border border-blue-100 text-blue-600 active:scale-90 transition-all hover:bg-blue-50 group"
-          >
-            <i className="fas fa-question text-xl font-black group-hover:text-amber-500 transition-colors stroke-current stroke-2" style={{ WebkitTextStroke: '1px' }}></i>
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-600 rounded-full border-2 border-white animate-bounce"></div>
-          </button>
-        </div>
       </div>
 
       {/* Header - Logo kaldırıldı, metinler merkezlendi ve üst girinti artırıldı */}

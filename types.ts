@@ -34,12 +34,3 @@ export interface StakeoutGeometry {
   coordinates: { lat: number; lng: number; altitude?: number }[];
   color?: string;
 }
-
-export interface AppSettings {
-  defaultCoordinateSystem: string;
-  defaultAccuracyLimit: number;
-  defaultMeasurementDuration: number;
-  alertsEnabled: boolean;
-  screenAlwaysOn: boolean;
-  darkMode: boolean;
-}

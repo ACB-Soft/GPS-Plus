@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Coordinate, SavedLocation, AppSettings } from '../types';
+import { Coordinate, SavedLocation } from '../types';
 import { convertToMSL } from './GeoidUtils';
 import GlobalFooter from './GlobalFooter';
-import AdBanner from './AdBanner';
 import { isIOS } from '../utils/browser';
 
 interface Props {
@@ -10,10 +9,9 @@ interface Props {
   onCancel: () => void;
   isContinuing?: boolean;
   existingLocations: SavedLocation[];
-  settings: AppSettings;
 }
 
-const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = false, existingLocations, settings }) => {
+const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = false, existingLocations }) => {
   const [step, setStep] = useState<'SELECT_MODE' | 'FORM' | 'READY' | 'COUNTDOWN'>(isContinuing ? 'READY' : 'SELECT_MODE');
   const [isNewProject, setIsNewProject] = useState(!isContinuing);
   const [folderName, setFolderName] = useState(localStorage.getItem('last_folder_name') || '');
@@ -25,13 +23,13 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
         const proj = existingLocations.find(l => l.folderName === savedFolder);
         if (proj && proj.coordinateSystem) return proj.coordinateSystem;
      }
-     return settings.defaultCoordinateSystem;
+     return 'WGS84';
   };
 
   const [coordinateSystem, setCoordinateSystem] = useState(getInitialSystem());
-  const [accuracyLimit, setAccuracyLimit] = useState(settings.defaultAccuracyLimit);
-  const [measurementDuration, setMeasurementDuration] = useState(settings.defaultMeasurementDuration);
-  const [seconds, setSeconds] = useState(settings.defaultMeasurementDuration);
+  const [accuracyLimit, setAccuracyLimit] = useState(5.0);
+  const [measurementDuration, setMeasurementDuration] = useState(5);
+  const [seconds, setSeconds] = useState(5);
   const [sampleCount, setSampleCount] = useState(0);
   const [instantAccuracy, setInstantAccuracy] = useState<number | null>(null);
   const [waitingForSignal, setWaitingForSignal] = useState(true);
@@ -172,34 +170,6 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
     };
   }, [step]); // Removed waitingForSignal from deps to avoid infinite loop
 
-  const triggerAlert = () => {
-    if (!settings.alertsEnabled) return;
-    
-    // Vibration
-    if ('vibrate' in navigator) {
-      navigator.vibrate([200, 100, 200]);
-    }
-    
-    // Sound
-    try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-      
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
-      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-      
-      oscillator.start();
-      oscillator.stop(audioCtx.currentTime + 0.3);
-    } catch (e) {
-      console.warn('Audio alert failed', e);
-    }
-  };
-
   const processSamples = useCallback(() => {
     let samples = [...samplesRef.current];
     if (samples.length === 0 && lastPositionRef.current) {
@@ -225,10 +195,9 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       timestamp: Date.now()
     };
 
-    triggerAlert();
     onComplete(avg, folderName, pointName, '', coordinateSystem);
     releaseWakeLock();
-  }, [folderName, pointName, coordinateSystem, onComplete, settings.alertsEnabled]);
+  }, [folderName, pointName, coordinateSystem, onComplete]);
 
   // Ref to track accuracy validity without triggering effect re-runs
   const isAccuracyOkRef = useRef(false);
@@ -259,9 +228,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   }, [step, seconds, processSamples]);
 
   const handleStartMeasurement = () => {
-    if (settings.screenAlwaysOn) {
-      requestWakeLock();
-    }
+    requestWakeLock();
     // Start with the last known position as the first sample
     if (lastPositionRef.current) {
       const p = lastPositionRef.current;
@@ -285,7 +252,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   };
 
   const StandardHeader = (title: string, subtitle: string, backTo: any) => (
-    <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-[#F8FAFC] w-full">
+    <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white w-full">
       <button 
         onClick={backTo === 'HOME' ? onCancel : () => setStep(backTo)} 
         className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all"
@@ -313,78 +280,68 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   };
 
   if (step === 'SELECT_MODE') return (
-    <div className="w-full flex flex-col bg-[#F8FAFC] animate-in h-full relative overflow-hidden">
+    <div className="w-full flex flex-col bg-[#F8FAFC] animate-in h-full relative overflow-y-auto no-scrollbar">
       {StandardHeader("Yeni Ölçüm Yap", "YENİ KAYIT", "HOME")}
-      <div className="flex-1 overflow-y-auto no-scrollbar">
-        <div className="w-full px-8 pt-4 mx-auto">
-          <div className="max-w-sm mx-auto w-full space-y-4">
-            <button onClick={() => { setIsNewProject(true); setFolderName(''); setStep('FORM'); }} className="w-full py-3 md:py-4 px-5 bg-white rounded-3xl shadow-md border border-slate-100 text-left active:scale-[0.97] transition-all flex items-center gap-5">
-              <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0"><i className="fas fa-folder-plus text-xl"></i></div>
-              <span className="font-black text-lg text-slate-900">Yeni Proje Oluştur</span>
-            </button>
-            <button onClick={() => { setIsNewProject(false); setStep('FORM'); }} className="w-full py-3 md:py-4 px-5 bg-white rounded-3xl shadow-md border border-slate-100 text-left active:scale-[0.97] transition-all flex items-center gap-5">
-              <div className="w-10 h-10 md:w-12 md:h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0"><i className="fas fa-folder-open text-xl"></i></div>
-              <span className="font-black text-lg text-slate-900">Mevcut Proje Seç</span>
-            </button>
-            <div className="pt-4">
-              <AdBanner />
-            </div>
-          </div>
+      <div className="w-full px-8 pt-4 mx-auto">
+        <div className="max-w-sm mx-auto w-full space-y-4">
+          <button onClick={() => { setIsNewProject(true); setFolderName(''); setStep('FORM'); }} className="w-full py-3 md:py-4 px-5 bg-white rounded-3xl shadow-md border border-slate-100 text-left active:scale-[0.97] transition-all flex items-center gap-5">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0"><i className="fas fa-folder-plus text-xl"></i></div>
+            <span className="font-black text-lg text-slate-900">Yeni Proje Oluştur</span>
+          </button>
+          <button onClick={() => { setIsNewProject(false); setStep('FORM'); }} className="w-full py-3 md:py-4 px-5 bg-white rounded-3xl shadow-md border border-slate-100 text-left active:scale-[0.97] transition-all flex items-center gap-5">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0"><i className="fas fa-folder-open text-xl"></i></div>
+            <span className="font-black text-lg text-slate-900">Mevcut Proje Seç</span>
+          </button>
         </div>
       </div>
-      <GlobalFooter />
+      <GlobalFooter showAd={true} />
     </div>
   );
 
   if (step === 'FORM') return (
-    <div className="w-full flex flex-col bg-[#F8FAFC] animate-in h-full relative overflow-hidden">
+    <div className="w-full flex flex-col bg-[#F8FAFC] animate-in h-full relative overflow-y-auto no-scrollbar">
       {StandardHeader("Proje Bilgisi", "DETAYLAR", "SELECT_MODE")}
-      <div className="flex-1 overflow-y-auto no-scrollbar">
-        <div className="w-full px-8 pt-4 mx-auto">
-          <div className="max-w-sm mx-auto w-full">
-            <div className="soft-card p-8 w-full space-y-6">
-            <div className="space-y-2">
-              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Proje Adı</label>
-              {isNewProject ? (
-                <input type="text" placeholder="Örn: Saha Çalışması A" value={folderName} onChange={e => setFolderName(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all text-base" />
-              ) : (
-                <select value={folderName} onChange={e => setFolderName(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none text-base">
-                  <option value="">Seçiniz...</option>
-                  {Array.from(new Set(existingLocations.map(l => l.folderName))).map(n => <option key={n} value={n}>{n}</option>)}
-                </select>
-              )}
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Koordinat Sistemi</label>
-              <select 
-                value={coordinateSystem} 
-                onChange={e => setCoordinateSystem(e.target.value)} 
-                disabled={!isNewProject}
-                className={`w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none text-base ${!isNewProject ? 'opacity-60 cursor-not-allowed' : ''}`}
-              >
-                <option value="WGS84">WGS84 (Enlem-Boylam)</option>
-                <option value="ITRF96_3">ITRF96 - 3°</option>
-                <option value="ED50_3">ED50 - 3°</option>
-                <option value="ED50_6">ED50 - 6°</option>
+      <div className="w-full px-8 pt-4 mx-auto">
+        <div className="max-w-sm mx-auto w-full">
+          <div className="soft-card p-8 w-full space-y-6">
+          <div className="space-y-2">
+            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Proje Adı</label>
+            {isNewProject ? (
+              <input type="text" placeholder="Örn: Saha Çalışması A" value={folderName} onChange={e => setFolderName(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all text-base" />
+            ) : (
+              <select value={folderName} onChange={e => setFolderName(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none text-base">
+                <option value="">Seçiniz...</option>
+                {Array.from(new Set(existingLocations.map(l => l.folderName))).map(n => <option key={n} value={n}>{n}</option>)}
               </select>
-            </div>
-  
-            <button 
-              disabled={!folderName.trim()}
-              onClick={() => { localStorage.setItem('last_folder_name', folderName); setStep('READY'); }} 
-              className="w-full py-3 md:py-4 px-5 bg-blue-600 text-white rounded-2xl font-black text-[13px] uppercase tracking-[0.2em] active:scale-95 disabled:opacity-30 transition-all shadow-xl shadow-blue-100"
-            >
-              ÖLÇÜME HAZIRLAN
-            </button>
-            <div className="pt-4">
-              <AdBanner />
-            </div>
+            )}
           </div>
+          
+          <div className="space-y-2">
+            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Koordinat Sistemi</label>
+            <select 
+              value={coordinateSystem} 
+              onChange={e => setCoordinateSystem(e.target.value)} 
+              disabled={!isNewProject}
+              className={`w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none text-base ${!isNewProject ? 'opacity-60 cursor-not-allowed' : ''}`}
+            >
+              <option value="WGS84">WGS84 (Enlem-Boylam)</option>
+              <option value="ITRF96_3">ITRF96 - 3°</option>
+              <option value="ED50_3">ED50 - 3°</option>
+              <option value="ED50_6">ED50 - 6°</option>
+            </select>
+          </div>
+
+          <button 
+            disabled={!folderName.trim()}
+            onClick={() => { localStorage.setItem('last_folder_name', folderName); setStep('READY'); }} 
+            className="w-full py-3 md:py-4 px-5 bg-blue-600 text-white rounded-2xl font-black text-[13px] uppercase tracking-[0.2em] active:scale-95 disabled:opacity-30 transition-all shadow-xl shadow-blue-100"
+          >
+            ÖLÇÜME HAZIRLAN
+          </button>
         </div>
       </div>
       </div>
-      <GlobalFooter />
+      <GlobalFooter showAd={true} />
     </div>
   );
 

@@ -1,6 +1,5 @@
 import React from 'react';
 import GlobalFooter from './GlobalFooter';
-import AdBanner from './AdBanner';
 import { APP_VERSION } from '../version';
 
 interface Props {
@@ -10,7 +9,7 @@ interface Props {
 const HelpView: React.FC<Props> = ({ onBack }) => {
   return (
     <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-[#F8FAFC]">
-      <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-[#F8FAFC] shadow-sm">
+      <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white shadow-sm">
         <button 
           onClick={onBack} 
           className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all"
@@ -66,7 +65,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <br/>
                 • <b>Canlı Rehberlik:</b> Ekranın ortasındaki pusula benzeri gösterge size gitmeniz gereken yönü gösterir.
                 <br/>
-                • <b>Ekranı Açık Tut:</b> Aplikasyon sırasında ekranın kapanmasını önlemek için ampul ikonuna tıklayarak "Ekranı Açık Tut" özelliğini aktif edebilirsiniz.
+                • <b>Ekranı Açık Tut:</b> Aplikasyon sırasında ekranın kapanmasını önlemek için güneş/ay ikonuna tıklayarak "Ekranı Açık Tut" özelliğini aktif edebilirsiniz.
                 <br/>
                 • <b>Mesafe Takibi:</b> Hedefe olan kuş uçuşu mesafeniz (metre cinsinden) anlık olarak güncellenir. Uygulamanın metre hassasiyetinde çalıştığını unutmayın.
                 <br/>
@@ -268,60 +267,23 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
           </div>
         </section>
 
-        {/* Veri Kaynakları */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-slate-700 rounded-xl flex items-center justify-center text-white shadow-lg shadow-slate-200">
-              <i className="fas fa-database"></i>
-            </div>
-            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Veri Kaynakları</h3>
-          </div>
-          
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 space-y-4">
-            <p className="text-sm text-slate-900 font-medium leading-relaxed text-justify">
-              Uygulamada kullanılan tüm veriler ve kütüphaneler açık kaynaklı veya telif gerektirmeyen kaynaklardan sağlanmaktadır:
-            </p>
-            
-            <ul className="space-y-3">
-              <li className="flex gap-3 text-sm text-slate-700 font-medium">
-                <i className="fas fa-check-circle text-emerald-500 mt-1"></i>
-                <span><b>Konum Bilgisi:</b> Cihazınızın yerleşik GPS/GNSS alıcısı ve tarayıcı Geolocation API (W3C Standartları).</span>
-              </li>
-              <li className="flex gap-3 text-sm text-slate-700 font-medium">
-                <i className="fas fa-check-circle text-emerald-500 mt-1"></i>
-                <span><b>Harita Altlığı:</b> Leaflet.js kütüphanesi ve OpenStreetMap / Google Uydu Görüntüleri (API üzerinden sağlanan kamuya açık katmanlar).</span>
-              </li>
-              <li className="flex gap-3 text-sm text-slate-700 font-medium">
-                <i className="fas fa-check-circle text-emerald-500 mt-1"></i>
-                <span><b>Jeoid Modeli:</b> TG-20 (Türkiye Geoidi 2020) katsayıları (Bilimsel kullanım amaçlı açık veriler).</span>
-              </li>
-              <li className="flex gap-3 text-sm text-slate-700 font-medium">
-                <i className="fas fa-check-circle text-emerald-500 mt-1"></i>
-                <span><b>İkonlar & Fontlar:</b> FontAwesome (Free) ve Google Fonts (Inter, JetBrains Mono).</span>
-              </li>
-            </ul>
-
-            <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-              <p className="text-xs text-emerald-800 font-bold text-center italic">
-                * Bu uygulamada kullanılan tüm veriler telif hakkı gerektirmeyen, kamuya açık veya lisanslı açık kaynaklı verilerdir.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Geliştirici */}
+        {/* Hakkında */}
         <section className="space-y-4 pb-10">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-              <i className="fas fa-code"></i>
+              <i className="fas fa-info-circle"></i>
             </div>
-            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Geliştirici</h3>
+            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Hakkında</h3>
           </div>
-          <div className="space-y-3">
-            <div className="soft-card p-6 flex items-center justify-between">
+          <div className="soft-card p-6 space-y-4">
+            <p className="text-sm text-slate-600 font-medium leading-relaxed text-justify">
+              <b>GPS Plus</b>, saha mühendisleri ve haritacılar için geliştirilmiş, yüksek hassasiyetli bir konum belirleme ve aplikasyon aracıdır. Karmaşık koordinat dönüşümlerini ve geoid hesaplamalarını mobil cihazınıza taşıyarak saha çalışmalarınızı kolaylaştırmayı hedefler.
+            </p>
+            <div className="h-px bg-slate-100 w-full"></div>
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Yazılım & Tasarım</p>
-                <p className="text-sm font-black text-slate-900">ACB_Soft Engineering</p>
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Geliştirici</p>
+                <p className="text-sm font-black text-slate-900">ACB_Soft Engineering & Consultancy</p>
               </div>
               <div className="text-right">
                 <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Sürüm</p>
@@ -330,10 +292,6 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             </div>
           </div>
         </section>
-
-        <div className="pb-10">
-          <AdBanner />
-        </div>
       </div>
       </div>
       

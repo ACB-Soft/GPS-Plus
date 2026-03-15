@@ -29,7 +29,7 @@ const Onboarding: React.FC<Props> = ({ onFinish }) => {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-[#F8FAFC] h-full animate-in overflow-hidden px-8 py-2 md:py-6 justify-around">
+    <div className="flex-1 flex flex-col bg-white h-full animate-in overflow-hidden px-8 py-2 md:py-6 justify-around">
       {/* Üst Kısım: Logo ve Başlık */}
       <div className="flex flex-col items-center text-center shrink-0">
         <div className="relative mb-4 md:mb-6">
