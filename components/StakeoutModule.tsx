@@ -358,7 +358,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings }) => 
           background: white;
         }
       `}</style>
-      <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white shadow-sm z-30">
+      <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-[#F8FAFC] shadow-sm z-30">
         <button 
           onClick={() => {
             if (view === 'MENU') onBack();

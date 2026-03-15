@@ -284,7 +284,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   };
 
   const StandardHeader = (title: string, subtitle: string, backTo: any) => (
-    <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white w-full">
+    <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-[#F8FAFC] w-full">
       <button 
         onClick={backTo === 'HOME' ? onCancel : () => setStep(backTo)} 
         className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all"
@@ -312,7 +312,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   };
 
   if (step === 'SELECT_MODE') return (
-    <div className="w-full flex flex-col bg-slate-200 animate-in h-full relative overflow-y-auto no-scrollbar">
+    <div className="w-full flex flex-col bg-[#F8FAFC] animate-in h-full relative overflow-y-auto no-scrollbar">
       {StandardHeader("Yeni Ölçüm Yap", "YENİ KAYIT", "HOME")}
       <div className="w-full px-8 pt-4 mx-auto">
         <div className="max-w-sm mx-auto w-full space-y-4">
@@ -331,7 +331,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   );
 
   if (step === 'FORM') return (
-    <div className="w-full flex flex-col bg-slate-200 animate-in h-full relative overflow-y-auto no-scrollbar">
+    <div className="w-full flex flex-col bg-[#F8FAFC] animate-in h-full relative overflow-y-auto no-scrollbar">
       {StandardHeader("Proje Bilgisi", "DETAYLAR", "SELECT_MODE")}
       <div className="w-full px-8 pt-4 mx-auto">
         <div className="max-w-sm mx-auto w-full">
@@ -378,7 +378,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   );
 
   return (
-    <div className="w-full flex flex-col items-center justify-around p-8 bg-slate-200 h-full text-center relative animate-in overflow-hidden">
+    <div className="w-full flex flex-col items-center justify-around p-8 bg-white h-full text-center relative animate-in overflow-hidden">
       <button 
         onClick={() => {
           if (step === 'COUNTDOWN') {

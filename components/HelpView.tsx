@@ -9,7 +9,7 @@ interface Props {
 const HelpView: React.FC<Props> = ({ onBack }) => {
   return (
     <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-[#F8FAFC]">
-      <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white shadow-sm">
+      <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-[#F8FAFC] shadow-sm">
         <button 
           onClick={onBack} 
           className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all"

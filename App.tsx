@@ -69,8 +69,8 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    const CURRENT_KEY = 'gps_locations_v6.6.4';
-    const OLD_KEY = 'gps_locations_v6.6.3';
+    const CURRENT_KEY = 'gps_locations_v6.6.5';
+    const OLD_KEY = 'gps_locations_v6.6.4';
     
     let saved = localStorage.getItem(CURRENT_KEY);
     if (!saved) {
@@ -85,11 +85,11 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('gps_locations_v6.6.4', JSON.stringify(locations));
+    localStorage.setItem('gps_locations_v6.6.5', JSON.stringify(locations));
   }, [locations]);
 
   const handleFinishOnboarding = () => {
-    localStorage.setItem('onboarding_v6.6.4_done', 'true');
+    localStorage.setItem('onboarding_v6.6.5_done', 'true');
     // Use replaceState so dashboard becomes the root (can't go back to onboarding)
     window.history.replaceState({ view: 'dashboard' }, '');
     setView('dashboard');
@@ -193,7 +193,7 @@ const App = () => {
 
         {view === 'list' && (
           <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-[#F8FAFC]">
-            <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white">
+            <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-[#F8FAFC]">
               <button onClick={resetToDashboard} className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all">
                 <i className="fas fa-chevron-left text-sm"></i>
               </button>
@@ -221,7 +221,7 @@ const App = () => {
 
         {view === 'export' && (
           <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-[#F8FAFC]">
-            <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-white">
+            <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-[#F8FAFC]">
               <button onClick={resetToDashboard} className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all">
                 <i className="fas fa-chevron-left text-sm"></i>
               </button>
@@ -237,7 +237,7 @@ const App = () => {
         )}
 
         {view === 'result' && lastResult && (
-          <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-white px-8">
+          <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-[#F8FAFC] px-8">
             <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full pt-8">
               <ResultCard 
                 location={lastResult} 
