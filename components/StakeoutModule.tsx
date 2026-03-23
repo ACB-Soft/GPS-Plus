@@ -8,13 +8,6 @@ import { isIOS } from '../utils/browser';
 import JSZip from 'jszip';
 import GlobalFooter from './GlobalFooter';
 
-// Leaflet icon fix
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: '/images/marker-icon-2x.png',
-  iconUrl: '/images/marker-icon.png',
-  shadowUrl: '/images/marker-shadow.png',
-});
 
 interface Props {
   onBack: () => void;
@@ -785,7 +778,15 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   </React.Fragment>
                 ))}
 
-                <Marker position={[activePoint.lat, activePoint.lng]} />
+                <Marker 
+                  position={[activePoint.lat, activePoint.lng]} 
+                  icon={L.divIcon({
+                    className: 'custom-marker',
+                    html: `<div style="width: 12px; height: 12px; background: ${activePoint.color || '#3b82f6'}; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.3);"></div>`,
+                    iconSize: [12, 12],
+                    iconAnchor: [6, 6]
+                  })}
+                />
                 {userPos && (
                   <>
                     <Circle 

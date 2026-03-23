@@ -5,15 +5,6 @@ import { SavedLocation } from '../types';
 import { convertCoordinate } from '../utils/CoordinateUtils';
 import { useOrthometricHeight } from '../hooks/useGeoid';
 
-// Leaflet icon fix
-if (typeof window !== 'undefined') {
-  delete (L.Icon.Default.prototype as any)._getIconUrl;
-  L.Icon.Default.mergeOptions({
-    iconRetinaUrl: '/images/marker-icon-2x.png',
-    iconUrl: '/images/marker-icon.png',
-    shadowUrl: '/images/marker-shadow.png',
-  });
-}
 
 // Map rendering fix for modals
 const MapResizer = () => {
@@ -150,7 +141,15 @@ const ResultCard: React.FC<Props> = ({ location, initialShowMap = false, onClose
               maxZoom={22}
               maxNativeZoom={localStorage.getItem('default_map_provider') === 'OpenTopoMap' ? 17 : 20}
             />
-            <Marker position={[location.lat, location.lng]} />
+            <Marker 
+              position={[location.lat, location.lng]} 
+              icon={L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="width: 12px; height: 12px; background: #3b82f6; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.3);"></div>`,
+                iconSize: [12, 12],
+                iconAnchor: [6, 6]
+              })}
+            />
             <Circle 
               center={[location.lat, location.lng]} 
               radius={location.accuracy} 

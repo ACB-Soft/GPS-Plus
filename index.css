@@ -88,10 +88,6 @@
   50% { transform: translateY(-4px); }
 }
 
-.animate-bounce-subtle {
-  animation: bounce-subtle 2s ease-in-out infinite;
-}
-
 .leaflet-tooltip.custom-tooltip {
   background-color: rgba(15, 23, 42, 0.9);
   border: none;
