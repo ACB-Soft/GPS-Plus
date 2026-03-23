@@ -134,9 +134,9 @@ const App = () => {
   }, [view]);
 
   useEffect(() => {
-    const CURRENT_KEY = 'gps_locations_v7.8.8';
-    const PREV_KEY = 'gps_locations_v7.8.0';
-    const OLD_KEY = 'gps_locations_v7.6.4';
+    const CURRENT_KEY = 'gps_locations_v5.0.0';
+    const PREV_KEY = 'gps_locations_v7.8.8';
+    const OLD_KEY = 'gps_locations_v7.8.0';
     
     let saved = localStorage.getItem(CURRENT_KEY);
     if (!saved) {
@@ -157,11 +157,11 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('gps_locations_v7.8.8', JSON.stringify(locations));
+    localStorage.setItem('gps_locations_v5.0.0', JSON.stringify(locations));
   }, [locations]);
 
   const handleFinishOnboarding = () => {
-    localStorage.setItem('onboarding_v7.8.8_done', 'true');
+    localStorage.setItem('onboarding_v5.0.0_done', 'true');
     navigateTo('dashboard');
   };
 
