@@ -1,36 +1,28 @@
-{
-  "name": "gps-plus",
-  "private": true,
-  "version": "7.8.8",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "tsc --noEmit",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@fontsource/jetbrains-mono": "^5.2.8",
-    "@fontsource/plus-jakarta-sans": "^5.2.8",
-    "@fortawesome/fontawesome-free": "^7.2.0",
-    "@tailwindcss/vite": "^4.0.0-beta.8",
-    "@types/leaflet": "^1.9.21",
-    "jszip": "^3.10.1",
-    "leaflet": "^1.9.4",
-    "lucide-react": "^0.576.0",
-    "motion": "^12.34.5",
-    "proj4": "^2.20.2",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "react-leaflet": "^5.0.0",
-    "tailwindcss": "^4.0.0-beta.8",
-    "xlsx": "^0.18.5"
-  },
-  "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@types/proj4": "^2.5.6",
-    "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
-  }
-}
+import path from 'path';
+import { defineConfig, loadEnv } from 'vite';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
+
+export default defineConfig(({ mode }) => {
+    const env = loadEnv(mode, '.', '');
+    return {
+      base: './',
+      server: {
+        port: 3000,
+        host: '0.0.0.0',
+      },
+      plugins: [
+        react(),
+        tailwindcss(),
+      ],
+      define: {
+        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+      },
+      resolve: {
+        alias: {
+          '@': path.resolve(__dirname, '.'),
+        }
+      }
+    };
+});

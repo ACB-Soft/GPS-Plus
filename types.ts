@@ -1,12 +1,45 @@
-import React from 'react';
-import { createRoot } from 'react-dom/client';
-import 'leaflet/dist/leaflet.css';
-import App from './App';
-
-const container = document.getElementById('root');
-if (container) {
-  const root = createRoot(container);
-  root.render(<App />);
+// Shared interfaces for GPS coordinates and saved location data
+export interface Coordinate {
+  lat: number;
+  lng: number;
+  accuracy: number;
+  altitude: number | null;
+  timestamp: number;
 }
 
-// Service Worker Registration disabled
+export interface SavedLocation extends Coordinate {
+  id: string;
+  name: string;
+  folderName: string;
+  description?: string;
+  coordinateSystem?: string;
+}
+
+export interface StakeoutPoint {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  altitude?: number;
+  coordinateSystem?: string;
+  originalX?: number;
+  originalY?: number;
+  color?: string;
+}
+
+export interface StakeoutGeometry {
+  id: string;
+  name: string;
+  type: 'LineString' | 'Polygon';
+  coordinates: { lat: number; lng: number; altitude?: number }[];
+  color?: string;
+}
+
+export interface AppSettings {
+  defaultCoordinateSystem: string;
+  defaultAccuracyLimit: number;
+  defaultMeasurementDuration: number;
+  alertsEnabled: boolean;
+  screenAlwaysOn: boolean;
+  mapProvider: string;
+}
