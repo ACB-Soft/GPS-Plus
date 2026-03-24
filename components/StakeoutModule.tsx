@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, Circle, Polyline, Polygon, Tooltip, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { StakeoutPoint, Coordinate, StakeoutGeometry, AppSettings } from '../types';
+import { getAccuracyColor, getAccuracyBg } from '../utils/StyleUtils';
 import { parseKML } from '../utils/KmlParser';
 import { convertCoordinate, convertToWGS84 } from '../utils/CoordinateUtils';
 import { isIOS } from '../utils/browser';
@@ -897,8 +898,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
               </div>
 
               <div className="grid grid-cols-2 gap-2 mb-3">
-                <div className="bg-emerald-100/50 p-3 rounded-2xl border border-emerald-200/50">
-                  <div className="text-xl font-black text-emerald-600 mono-font leading-none">
+                <div className={`p-3 rounded-2xl border transition-colors duration-500 ${getAccuracyBg(userPos?.accuracy || null)}`}>
+                  <div className={`text-xl font-black mono-font leading-none ${getAccuracyColor(userPos?.accuracy || null)}`}>
                     {userPos ? `±${userPos.accuracy.toFixed(1)}` : '---'}
                     <span className="text-[10px] ml-1">m</span>
                   </div>

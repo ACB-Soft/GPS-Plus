@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { SavedLocation } from '../types';
 import { convertCoordinate } from '../utils/CoordinateUtils';
+import { getAccuracyColor } from '../utils/StyleUtils';
 import { useOrthometricHeight } from '../hooks/useGeoid';
 
 interface Props {
@@ -23,12 +24,6 @@ const SavedLocationItem: React.FC<{
 }> = ({ l, expanded, togglePoint, deletingPoint, setDeletingPoint, onDelete, onViewOnMap }) => {
   const geoidInfo = useOrthometricHeight(l.altitude, l.lat, l.lng);
   const orthometricHeight = geoidInfo.orthometricHeight;
-
-  const getAccuracyColor = (accuracy: number) => {
-    if (accuracy <= 10) return 'text-emerald-600';
-    if (accuracy <= 20) return 'text-amber-600';
-    return 'text-rose-600';
-  };
 
   const renderCoordinates = (l: SavedLocation) => {
     const { x, y, labelX, labelY } = convertCoordinate(l.lat, l.lng, l.coordinateSystem || 'WGS84');

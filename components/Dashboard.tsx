@@ -71,13 +71,10 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
           title="Dil Değiştir"
         >
           <div className="w-8 h-6 rounded-md overflow-hidden flex items-center justify-center shadow-sm bg-white">
-            <img 
-              src={`${import.meta.env.BASE_URL}Flag_of_Turkey.svg`} 
-              alt="Türk Bayrağı" 
-              className="w-full h-full object-cover"
-              style={{ objectPosition: '35% 50%' }}
-              referrerPolicy="no-referrer"
-            />
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -30000 90000 60000" className="w-full h-full object-cover" style={{ objectPosition: '35% 50%' }}>
+              <path fill="#e30a17" d="m0-30000h90000v60000H0z"/>
+              <path fill="#fff" d="m41750 0 13568-4408-8386 11541V-7133l8386 11541zm925 8021a15000 15000 0 1 1 0-16042 12000 12000 0 1 0 0 16042z"/>
+            </svg>
           </div>
         </button>
       </div>
