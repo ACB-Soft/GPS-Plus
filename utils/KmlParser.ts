@@ -23,8 +23,11 @@ export const parseKML = (text: string): { points: StakeoutPoint[], geometries: S
 
   // Use getElementsByTagNameNS to find Placemarks regardless of namespace prefix
   const placemarks = xmlDoc.getElementsByTagNameNS("*", "Placemark");
-  const points: StakeoutPoint[] = [];
-  const geometries: StakeoutGeometry[] = [];
+  const styles = xmlDoc.getElementsByTagNameNS("*", "Style");
+  const styleMaps = xmlDoc.getElementsByTagNameNS("*", "StyleMap");
+  
+  const styleColorMap: { [id: string]: string } = {};
+  const styleIconMap: { [id: string]: string } = {};
 
   const kmlColorToCss = (kmlColor: string): string => {
     if (!kmlColor || kmlColor.length !== 8) return '#3b82f6'; // Default blue
@@ -36,14 +39,106 @@ export const parseKML = (text: string): { points: StakeoutPoint[], geometries: S
     return `#${rr}${gg}${bb}${aa}`;
   };
 
+  // Parse shared styles
+  for (let i = 0; i < styles.length; i++) {
+    const style = styles[i];
+    const id = style.getAttribute("id");
+    if (id) {
+      // Color
+      const lineStyle = style.getElementsByTagNameNS("*", "LineStyle")[0];
+      const polyStyle = style.getElementsByTagNameNS("*", "PolyStyle")[0];
+      const colorTag = (lineStyle || polyStyle)?.getElementsByTagNameNS("*", "color")[0];
+      if (colorTag?.textContent) {
+        styleColorMap[id] = kmlColorToCss(colorTag.textContent.trim());
+      }
+      
+      // Icon
+      const iconStyle = style.getElementsByTagNameNS("*", "IconStyle")[0];
+      const iconHref = iconStyle?.getElementsByTagNameNS("*", "Icon")[0]?.getElementsByTagNameNS("*", "href")[0]?.textContent;
+      if (iconHref) {
+        styleIconMap[id] = iconHref.trim();
+      }
+    }
+  }
+
+  // Parse style maps (simple implementation: pick the first pair's style)
+  for (let i = 0; i < styleMaps.length; i++) {
+    const sm = styleMaps[i];
+    const id = sm.getAttribute("id");
+    if (id) {
+      const pairs = sm.getElementsByTagNameNS("*", "Pair");
+      for (let j = 0; j < pairs.length; j++) {
+        const key = pairs[j].getElementsByTagNameNS("*", "key")[0]?.textContent;
+        if (key === "normal") {
+          const styleUrl = pairs[j].getElementsByTagNameNS("*", "styleUrl")[0]?.textContent;
+          if (styleUrl) {
+            const styleId = styleUrl.replace(/^#/, "");
+            if (styleColorMap[styleId]) {
+              styleColorMap[id] = styleColorMap[styleId];
+            }
+            if (styleIconMap[styleId]) {
+              styleIconMap[id] = styleIconMap[styleId];
+            }
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  const points: StakeoutPoint[] = [];
+  const geometries: StakeoutGeometry[] = [];
+
   const getStyleColor = (pm: Element): string | undefined => {
-    // Try to find inline color first
+    // 1. Try to find inline style first
+    const inlineStyle = pm.getElementsByTagNameNS("*", "Style")[0];
+    if (inlineStyle) {
+      const lineStyle = inlineStyle.getElementsByTagNameNS("*", "LineStyle")[0];
+      const polyStyle = inlineStyle.getElementsByTagNameNS("*", "PolyStyle")[0];
+      const colorTag = (lineStyle || polyStyle)?.getElementsByTagNameNS("*", "color")[0];
+      if (colorTag?.textContent) {
+        return kmlColorToCss(colorTag.textContent.trim());
+      }
+    }
+
+    // 2. Try to find referenced styleUrl
+    const styleUrl = pm.getElementsByTagNameNS("*", "styleUrl")[0]?.textContent;
+    if (styleUrl) {
+      const styleId = styleUrl.replace(/^#/, "");
+      if (styleColorMap[styleId]) {
+        return styleColorMap[styleId];
+      }
+    }
+
+    // 3. Fallback to nested styles directly in Placemark (legacy/simple KML)
     const lineStyle = pm.getElementsByTagNameNS("*", "LineStyle")[0];
     const polyStyle = pm.getElementsByTagNameNS("*", "PolyStyle")[0];
     const colorTag = (lineStyle || polyStyle)?.getElementsByTagNameNS("*", "color")[0];
     if (colorTag?.textContent) {
       return kmlColorToCss(colorTag.textContent.trim());
     }
+
+    return undefined;
+  };
+
+  const getStyleIcon = (pm: Element): string | undefined => {
+    // 1. Try to find inline style first
+    const inlineStyle = pm.getElementsByTagNameNS("*", "Style")[0];
+    if (inlineStyle) {
+      const iconStyle = inlineStyle.getElementsByTagNameNS("*", "IconStyle")[0];
+      const iconHref = iconStyle?.getElementsByTagNameNS("*", "Icon")[0]?.getElementsByTagNameNS("*", "href")[0]?.textContent;
+      if (iconHref) return iconHref.trim();
+    }
+
+    // 2. Try to find referenced styleUrl
+    const styleUrl = pm.getElementsByTagNameNS("*", "styleUrl")[0]?.textContent;
+    if (styleUrl) {
+      const styleId = styleUrl.replace(/^#/, "");
+      if (styleIconMap[styleId]) {
+        return styleIconMap[styleId];
+      }
+    }
+
     return undefined;
   };
 
@@ -78,6 +173,7 @@ export const parseKML = (text: string): { points: StakeoutPoint[], geometries: S
     if (!name) name = `Nesne ${i + 1}`;
     
     const color = getStyleColor(pm);
+    const iconUrl = getStyleIcon(pm);
     
     // Check for Points (could be multiple in MultiGeometry)
     const pointElements = pm.getElementsByTagNameNS("*", "Point");
@@ -95,7 +191,8 @@ export const parseKML = (text: string): { points: StakeoutPoint[], geometries: S
             coordinateSystem: 'WGS84',
             originalX: coords[0].lng,
             originalY: coords[0].lat,
-            color
+            color,
+            iconUrl
           });
         }
       }

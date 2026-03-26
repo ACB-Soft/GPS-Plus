@@ -25,6 +25,7 @@ export interface StakeoutPoint {
   originalX?: number;
   originalY?: number;
   color?: string;
+  iconUrl?: string;
 }
 
 export interface StakeoutGeometry {
