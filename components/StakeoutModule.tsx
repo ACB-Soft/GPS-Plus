@@ -51,7 +51,7 @@ const MapCenterer = ({ trigger }: { trigger: { pos: [number, number], time: numb
   const map = useMap();
   useEffect(() => {
     if (trigger) {
-      map.setView(trigger.pos, 19);
+      map.setView(trigger.pos, 17);
     }
   }, [trigger, map]);
   return null;
