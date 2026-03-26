@@ -267,14 +267,26 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
       try {
         const zip = new JSZip();
         const contents = await zip.loadAsync(file);
-        const kmlFile = Object.keys(contents.files).find(name => name.toLowerCase().endsWith('.kml'));
+        const kmlFiles = Object.keys(contents.files).filter(name => name.toLowerCase().endsWith('.kml'));
         
-        if (kmlFile) {
-          const kmlText = await contents.files[kmlFile].async('string');
-          const result = parseKML(kmlText);
-          setPoints(prev => [...prev, ...result.points]);
-          setGeometries(prev => [...prev, ...result.geometries]);
-          showToast("KML/KMZ dosya yüklendi", "success");
+        if (kmlFiles.length > 0) {
+          let totalPoints: StakeoutPoint[] = [];
+          let totalGeometries: StakeoutGeometry[] = [];
+          
+          for (const kmlFileName of kmlFiles) {
+            const kmlText = await contents.files[kmlFileName].async('string');
+            const result = parseKML(kmlText);
+            totalPoints = [...totalPoints, ...result.points];
+            totalGeometries = [...totalGeometries, ...result.geometries];
+          }
+          
+          if (totalPoints.length > 0 || totalGeometries.length > 0) {
+            setPoints(prev => [...prev, ...totalPoints]);
+            setGeometries(prev => [...prev, ...totalGeometries]);
+            showToast(`${totalPoints.length} nokta ve ${totalGeometries.length} geometri yüklendi`, "success");
+          } else {
+            showToast("KML dosyaları içerisinde veri bulunamadı.", "info");
+          }
         } else {
           showToast("KMZ dosyası içerisinde KML bulunamadı.", "error");
         }

@@ -1,9 +1,28 @@
 import { StakeoutPoint, StakeoutGeometry } from '../types';
 
 export const parseKML = (text: string): { points: StakeoutPoint[], geometries: StakeoutGeometry[] } => {
+  // Pre-process text to fix common XML namespace issues
+  // Some KML files use xsi:schemaLocation without declaring the xsi namespace
+  let processedText = text;
+  
+  // If xsi prefix is used but not defined, we can either define it or just strip the schemaLocation
+  if (processedText.includes('xsi:') && !processedText.includes('xmlns:xsi')) {
+    // Try to inject it into the first tag (usually <kml or <Document)
+    processedText = processedText.replace(/(<[a-zA-Z0-9:]+)/, '$1 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"');
+  }
+
   const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(text, "text/xml");
-  const placemarks = xmlDoc.getElementsByTagName("Placemark");
+  const xmlDoc = parser.parseFromString(processedText, "text/xml");
+  
+  // Check for parsing errors
+  const errorNode = xmlDoc.getElementsByTagName("parsererror")[0];
+  if (errorNode) {
+    console.error("KML Parsing Error:", errorNode.textContent);
+    // Try to fix common XML issues if possible, or just return empty
+  }
+
+  // Use getElementsByTagNameNS to find Placemarks regardless of namespace prefix
+  const placemarks = xmlDoc.getElementsByTagNameNS("*", "Placemark");
   const points: StakeoutPoint[] = [];
   const geometries: StakeoutGeometry[] = [];
 
@@ -19,9 +38,9 @@ export const parseKML = (text: string): { points: StakeoutPoint[], geometries: S
 
   const getStyleColor = (pm: Element): string | undefined => {
     // Try to find inline color first
-    const lineStyle = pm.getElementsByTagName("LineStyle")[0];
-    const polyStyle = pm.getElementsByTagName("PolyStyle")[0];
-    const colorTag = (lineStyle || polyStyle)?.getElementsByTagName("color")[0];
+    const lineStyle = pm.getElementsByTagNameNS("*", "LineStyle")[0];
+    const polyStyle = pm.getElementsByTagNameNS("*", "PolyStyle")[0];
+    const colorTag = (lineStyle || polyStyle)?.getElementsByTagNameNS("*", "color")[0];
     if (colorTag?.textContent) {
       return kmlColorToCss(colorTag.textContent.trim());
     }
@@ -29,8 +48,10 @@ export const parseKML = (text: string): { points: StakeoutPoint[], geometries: S
   };
 
   const parseCoords = (coordsText: string): { lat: number, lng: number, altitude?: number }[] => {
-    return coordsText.trim().split(/\s+/).map(coordStr => {
-      const parts = coordStr.split(",");
+    // KML coordinates are: lng,lat,alt (alt is optional)
+    // They can be separated by spaces, tabs, or newlines
+    return coordsText.trim().split(/[\s\n\r]+/).map(coordStr => {
+      const parts = coordStr.split(",").map(p => p.trim());
       if (parts.length >= 2) {
         const lng = parseFloat(parts[0]);
         const lat = parseFloat(parts[1]);
@@ -45,19 +66,29 @@ export const parseKML = (text: string): { points: StakeoutPoint[], geometries: S
 
   for (let i = 0; i < placemarks.length; i++) {
     const pm = placemarks[i];
-    const name = pm.getElementsByTagName("name")[0]?.textContent || `Nesne ${i + 1}`;
+    // Find the immediate name child of the Placemark to avoid picking up names from children geometries
+    let name = "";
+    for (let j = 0; j < pm.childNodes.length; j++) {
+      const node = pm.childNodes[j];
+      if (node.nodeType === 1 && (node.nodeName === "name" || node.nodeName.endsWith(":name"))) {
+        name = node.textContent || "";
+        break;
+      }
+    }
+    if (!name) name = `Nesne ${i + 1}`;
+    
     const color = getStyleColor(pm);
     
-    // Check for Point
-    const point = pm.getElementsByTagName("Point")[0];
-    if (point) {
-      const coordsText = point.getElementsByTagName("coordinates")[0]?.textContent;
+    // Check for Points (could be multiple in MultiGeometry)
+    const pointElements = pm.getElementsByTagNameNS("*", "Point");
+    for (let j = 0; j < pointElements.length; j++) {
+      const coordsText = pointElements[j].getElementsByTagNameNS("*", "coordinates")[0]?.textContent;
       if (coordsText) {
         const coords = parseCoords(coordsText);
         if (coords.length > 0) {
           points.push({
-            id: `kml-pt-${Date.now()}-${i}`,
-            name,
+            id: `kml-pt-${Date.now()}-${i}-${j}`,
+            name: pointElements.length > 1 ? `${name} (${j + 1})` : name,
             lat: coords[0].lat,
             lng: coords[0].lng,
             altitude: coords[0].altitude,
@@ -70,16 +101,16 @@ export const parseKML = (text: string): { points: StakeoutPoint[], geometries: S
       }
     }
 
-    // Check for LineString
-    const line = pm.getElementsByTagName("LineString")[0];
-    if (line) {
-      const coordsText = line.getElementsByTagName("coordinates")[0]?.textContent;
+    // Check for LineStrings
+    const lineElements = pm.getElementsByTagNameNS("*", "LineString");
+    for (let j = 0; j < lineElements.length; j++) {
+      const coordsText = lineElements[j].getElementsByTagNameNS("*", "coordinates")[0]?.textContent;
       if (coordsText) {
         const coords = parseCoords(coordsText);
         if (coords.length > 0) {
           geometries.push({
-            id: `kml-line-${Date.now()}-${i}`,
-            name,
+            id: `kml-line-${Date.now()}-${i}-${j}`,
+            name: lineElements.length > 1 ? `${name} (Çizgi ${j + 1})` : name,
             type: 'LineString',
             coordinates: coords,
             color
@@ -88,16 +119,16 @@ export const parseKML = (text: string): { points: StakeoutPoint[], geometries: S
       }
     }
 
-    // Check for Polygon
-    const poly = pm.getElementsByTagName("Polygon")[0];
-    if (poly) {
-      const coordsText = poly.getElementsByTagName("coordinates")[0]?.textContent;
+    // Check for Polygons
+    const polyElements = pm.getElementsByTagNameNS("*", "Polygon");
+    for (let j = 0; j < polyElements.length; j++) {
+      const coordsText = polyElements[j].getElementsByTagNameNS("*", "coordinates")[0]?.textContent;
       if (coordsText) {
         const coords = parseCoords(coordsText);
         if (coords.length > 0) {
           geometries.push({
-            id: `kml-poly-${Date.now()}-${i}`,
-            name,
+            id: `kml-poly-${Date.now()}-${i}-${j}`,
+            name: polyElements.length > 1 ? `${name} (Alan ${j + 1})` : name,
             type: 'Polygon',
             coordinates: coords,
             color
