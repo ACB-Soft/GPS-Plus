@@ -262,11 +262,14 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
     if (!file) return;
 
     const fileName = file.name.toLowerCase();
+    const isKmz = fileName.endsWith('.kmz') || file.type === 'application/vnd.google-earth.kmz' || file.type === 'application/zip' || file.type === 'application/x-zip-compressed';
     
-    if (fileName.endsWith('.kmz')) {
+    if (isKmz) {
       try {
         const zip = new JSZip();
-        const contents = await zip.loadAsync(file);
+        // Using arrayBuffer() is more robust on some mobile browsers
+        const arrayBuffer = await file.arrayBuffer();
+        const contents = await zip.loadAsync(arrayBuffer);
         const kmlFiles = Object.keys(contents.files).filter(name => name.toLowerCase().endsWith('.kml'));
         
         if (kmlFiles.length > 0) {
@@ -469,7 +472,12 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                       <span className="font-black text-slate-900 block">KML / KMZ Yükle</span>
                       <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Dosyadan Aktar</span>
                     </div>
-                    <input type="file" accept=".kml,.kmz" onChange={handleKmlUpload} className="hidden" />
+                      <input 
+                        type="file" 
+                        accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz,application/zip,application/x-zip-compressed,application/octet-stream" 
+                        onChange={handleKmlUpload} 
+                        className="hidden" 
+                      />
                   </label>
   
                   <button onClick={() => onNavigate('LIST')} className="w-full py-2.5 md:py-3.5 px-5 bg-slate-100 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 active:scale-[0.98] transition-all">
