@@ -47,6 +47,29 @@ const MapUpdater = ({ center }: { center: [number, number] }) => {
   return null;
 };
 
+const MapCenterer = ({ trigger }: { trigger: { pos: [number, number], time: number } | null }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (trigger) {
+      map.setView(trigger.pos, 19);
+    }
+  }, [trigger, map]);
+  return null;
+};
+
+const NorthLocker = ({ isLocked }: { isLocked: boolean }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (isLocked) {
+      // Leaflet standard doesn't have setBearing, but we can reset any rotation if a plugin was used
+      // or just ensure we stay at 0. For standard Leaflet, we just set the view with current center/zoom
+      // to "reset" if any external rotation happened, but usually we just handle the UI state.
+      (map as any).setBearing?.(0);
+    }
+  }, [isLocked, map]);
+  return null;
+};
+
 const getTileLayer = (provider: string) => {
   switch (provider) {
     case 'Google Hybrid':
@@ -79,6 +102,11 @@ const ZoomTracker = ({ onZoomChange }: { onZoomChange: (zoom: number) => void })
       onZoomChange(map.getZoom());
     },
   });
+
+  useEffect(() => {
+    onZoomChange(map.getZoom());
+  }, [map, onZoomChange]);
+
   return null;
 };
 
@@ -109,7 +137,9 @@ const BoundsUpdater = ({ points, geometries }: { points: StakeoutPoint[], geomet
 
 const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, currentStep, onNavigate }) => {
   const [view, setView] = useState<'MENU' | 'LIST' | 'MANUAL' | 'MAP' | 'ALL_MAP'>((currentStep as any) || (initialPoint ? 'MAP' : 'MENU'));
-  const [allMapZoom, setAllMapZoom] = useState(19);
+  const [allMapZoom, setAllMapZoom] = useState(0);
+  const [allMapCenterTrigger, setAllMapCenterTrigger] = useState<{ pos: [number, number], time: number } | null>(null);
+  const [isNorthLocked, setIsNorthLocked] = useState(true);
 
   useEffect(() => {
     if (currentStep && currentStep !== view) {
@@ -628,6 +658,23 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
         {view === 'ALL_MAP' && (
           <div className="flex flex-col h-full relative">
             <div className="flex-1 relative z-10">
+              <button 
+                onClick={() => setIsNorthLocked(!isNorthLocked)}
+                className={`absolute top-4 right-4 z-[1000] w-12 h-12 rounded-2xl backdrop-blur-md shadow-xl flex items-center justify-center transition-all active:scale-90 ${isNorthLocked ? 'bg-blue-600 text-white' : 'bg-white/90 text-slate-600'}`}
+              >
+                <div className="relative">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className={isNorthLocked ? 'animate-pulse' : ''}>
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                    <path d="M12 4L15 12H9L12 4Z" fill={isNorthLocked ? 'white' : '#ef4444'} />
+                    <path d="M12 20L9 12H15L12 20Z" fill="currentColor" opacity="0.5" />
+                  </svg>
+                  {isNorthLocked && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full flex items-center justify-center">
+                      <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
+                    </div>
+                  )}
+                </div>
+              </button>
               <MapContainer 
                 center={[userPos?.lat || 39, userPos?.lng || 35]} 
                 zoom={19} 
@@ -697,9 +744,14 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     iconSize: [12, 12],
                     iconAnchor: [6, 6]
                   })}>
-                    {allMapZoom >= 17 && (
+                    {allMapZoom >= 14 && (
                       <Tooltip permanent direction="top" offset={[0, -10]} className="custom-tooltip">
-                        <span className="font-black text-[10px] uppercase tracking-tighter">{p.name}</span>
+                        <span 
+                          className="font-black uppercase tracking-tighter"
+                          style={{ fontSize: `${Math.min(10, allMapZoom - 8)}px` }}
+                        >
+                          {p.name}
+                        </span>
                       </Tooltip>
                     )}
                     <Popup closeButton={false} className="custom-leaflet-popup">
@@ -738,29 +790,45 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                 )}
                 <BoundsUpdater points={points} geometries={geometries} />
                 <ZoomTracker onZoomChange={setAllMapZoom} />
+                <MapCenterer trigger={allMapCenterTrigger} />
+                <NorthLocker isLocked={isNorthLocked} />
               </MapContainer>
             </div>
             <div className="absolute bottom-0 left-0 right-0 z-20 px-8 py-4 bg-slate-200/95 backdrop-blur-md shadow-[0_-10px_30px_rgba(0,0,0,0.1)] border-t border-slate-100 flex items-center justify-between">
                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                  {points.length} Nokta, {geometries.length} Geometri
                </p>
-               <button 
-                 onClick={() => {
-                   if (confirmClear === 'MAP') {
-                     localStorage.removeItem('stakeout_points_v1');
-                     localStorage.removeItem('stakeout_geometries_v1');
-                     setPoints([]);
-                     setGeometries([]);
-                     setConfirmClear('NONE');
-                     window.history.back();
-                   } else {
-                     setConfirmClear('MAP');
-                   }
-                 }}
-                 className={`px-3 py-1.5 text-[9px] font-black rounded-lg uppercase tracking-wider border transition-all active:scale-95 ${confirmClear === 'MAP' ? 'bg-red-600 text-white border-red-600' : 'bg-red-50 text-red-600 border-red-100'}`}
-               >
-                 {confirmClear === 'MAP' ? 'EMİN MİSİNİZ?' : 'EKRANI TEMİZLE'}
-               </button>
+               <div className="flex items-center gap-2">
+                 <button 
+                   onClick={() => {
+                     if (userPos) {
+                       setAllMapCenterTrigger({ pos: [userPos.lat, userPos.lng], time: Date.now() });
+                     } else {
+                       showToast('Konumunuz henüz alınamadı', 'info');
+                     }
+                   }}
+                   className="px-3 py-1.5 text-[9px] font-black rounded-lg uppercase tracking-wider border bg-blue-50 text-blue-600 border-blue-100 transition-all active:scale-95"
+                 >
+                   KONUMUMU BUL
+                 </button>
+                 <button 
+                   onClick={() => {
+                     if (confirmClear === 'MAP') {
+                       localStorage.removeItem('stakeout_points_v1');
+                       localStorage.removeItem('stakeout_geometries_v1');
+                       setPoints([]);
+                       setGeometries([]);
+                       setConfirmClear('NONE');
+                       window.history.back();
+                     } else {
+                       setConfirmClear('MAP');
+                     }
+                   }}
+                   className={`px-3 py-1.5 text-[9px] font-black rounded-lg uppercase tracking-wider border transition-all active:scale-95 ${confirmClear === 'MAP' ? 'bg-red-600 text-white border-red-600' : 'bg-red-50 text-red-600 border-red-100'}`}
+                 >
+                   {confirmClear === 'MAP' ? 'EMİN MİSİNİZ?' : 'EKRANI TEMİZLE'}
+                 </button>
+               </div>
             </div>
           </div>
         )}
