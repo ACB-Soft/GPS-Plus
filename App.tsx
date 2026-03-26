@@ -9,6 +9,7 @@ import StakeoutModule from './components/StakeoutModule';
 import HelpView from './components/HelpView';
 import SettingsView from './components/SettingsView';
 import GlobalFooter from './components/GlobalFooter';
+import Header from './components/Header';
 import { SavedLocation, Coordinate, StakeoutPoint, AppSettings } from './types';
 import { geoidService } from './services/GeoidService';
 
@@ -274,14 +275,7 @@ const App = () => {
 
         {view === 'list' && (
           <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-slate-200">
-            <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-slate-200 shadow-sm z-30">
-              <button onClick={() => window.history.back()} className="w-12 h-12 bg-slate-200 rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all">
-                <i className="fas fa-chevron-left text-sm"></i>
-              </button>
-              <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Kayıtlı Projeler</h2>
-              </div>
-            </header>
+            <Header title="Kayıtlı Projeler" />
             <div className="px-8 pt-4 pb-4 w-full">
               <div className="max-w-sm mx-auto w-full">
                 <SavedLocationsList 
@@ -302,14 +296,7 @@ const App = () => {
 
         {view === 'export' && (
           <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-slate-200">
-            <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-slate-200 shadow-sm z-30">
-              <button onClick={() => window.history.back()} className="w-12 h-12 bg-slate-200 rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all">
-                <i className="fas fa-chevron-left text-sm"></i>
-              </button>
-              <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Veri Aktar</h2>
-              </div>
-            </header>
+            <Header title="Veri Aktar" />
             <div className="px-8 pt-4 pb-4">
                <ExportUnifiedView locations={locations} />
             </div>

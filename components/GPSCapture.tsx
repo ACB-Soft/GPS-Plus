@@ -3,6 +3,7 @@ import { Coordinate, SavedLocation } from '../types';
 import { convertToMSL } from './GeoidUtils';
 import { getAccuracyColor, getAccuracyBg } from '../utils/StyleUtils';
 import GlobalFooter from './GlobalFooter';
+import Header from './Header';
 
 interface Props {
   onComplete: (coord: Coordinate, folderName: string, pointName: string, description: string, coordinateSystem: string) => void;
@@ -283,23 +284,9 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
     onNavigate('COUNTDOWN');
   };
 
-  const StandardHeader = (title: string, subtitle: string, backTo: any) => (
-    <header className="px-6 pt-5 pb-5 flex items-center gap-5 shrink-0 bg-slate-200 w-full shadow-sm z-30">
-      <button 
-        onClick={() => window.history.back()} 
-        className="w-12 h-12 bg-slate-200 rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all"
-      >
-        <i className="fas fa-chevron-left text-sm"></i>
-      </button>
-      <div>
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">{title}</h2>
-      </div>
-    </header>
-  );
-
   if (step === 'SELECT_MODE') return (
     <div className="w-full flex flex-col bg-slate-200 animate-in h-full relative overflow-y-auto no-scrollbar">
-      {StandardHeader("Yeni Ölçüm Yap", "YENİ KAYIT", "HOME")}
+      <Header title="Yeni Ölçüm Yap" />
       
       <div className="w-full px-6 pt-4 mx-auto">
         <div className="max-w-sm mx-auto w-full space-y-4">
@@ -319,7 +306,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
 
   if (step === 'FORM') return (
     <div className="w-full flex flex-col bg-slate-200 animate-in h-full relative overflow-y-auto no-scrollbar">
-      {StandardHeader("Proje Bilgisi", "DETAYLAR", "SELECT_MODE")}
+      <Header title="Proje Bilgisi" />
 
       <div className="w-full px-6 pt-4 mx-auto">
         <div className="max-w-sm mx-auto w-full">

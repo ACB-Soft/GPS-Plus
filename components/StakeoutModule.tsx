@@ -8,6 +8,7 @@ import { convertCoordinate, convertToWGS84 } from '../utils/CoordinateUtils';
 import { isIOS } from '../utils/browser';
 import JSZip from 'jszip';
 import GlobalFooter from './GlobalFooter';
+import Header from './Header';
 
 
 interface Props {
@@ -422,22 +423,12 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
           background: white;
         }
       `}</style>
-      <header className="px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-slate-200 shadow-sm z-30">
-        <button 
-          onClick={() => window.history.back()} 
-          className="w-12 h-12 bg-slate-200 rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all"
-        >
-          <i className="fas fa-chevron-left text-sm"></i>
-        </button>
-        <div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">
-            {view === 'MENU' ? 'Aplikasyon Yap' : 
-             view === 'LIST' ? 'Nokta Listesi' : 
-             view === 'MANUAL' ? 'Manuel Ekle' : 
-             view === 'ALL_MAP' ? 'Tüm Noktalar' : 'Aplikasyon Ekranı'}
-          </h2>
-        </div>
-      </header>
+      <Header 
+        title={view === 'MENU' ? 'Aplikasyon Yap' : 
+               view === 'LIST' ? 'Nokta Listesi' : 
+               view === 'MANUAL' ? 'Manuel Ekle' : 
+               view === 'ALL_MAP' ? 'Tüm Noktalar' : 'Aplikasyon Ekranı'} 
+      />
 
       {/* Toast Notification */}
       {toast && (
@@ -914,8 +905,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
               )}
             </div>
 
-            <div className="bg-slate-200 p-4 pb-6 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-20 rounded-t-[2.5rem] -mt-8">
-              <div className="mb-3 flex items-center justify-between gap-4">
+            <div className="bg-slate-200 p-3 pb-4 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-20 rounded-t-[2rem] -mt-6">
+              <div className="mb-2 flex items-center justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <h3 className="text-xl font-black text-slate-900 truncate leading-tight">{activePoint.name}</h3>
                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Seçili Nokta</p>
@@ -934,25 +925,25 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                <div className={`p-3 rounded-2xl border transition-colors duration-500 ${getAccuracyBg(userPos?.accuracy || null)}`}>
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <div className={`p-2 rounded-2xl border transition-colors duration-500 ${getAccuracyBg(userPos?.accuracy || null)}`}>
                   <div className={`text-xl font-black mono-font leading-none ${getAccuracyColor(userPos?.accuracy || null)}`}>
                     {userPos ? `±${userPos.accuracy.toFixed(1)}` : '---'}
                     <span className="text-[10px] ml-1">m</span>
                   </div>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Hassasiyet</p>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Hassasiyet</p>
                 </div>
-                <div className="bg-blue-100/50 p-3 rounded-2xl border border-blue-200/50">
+                <div className="bg-blue-100/50 p-2 rounded-2xl border border-blue-200/50">
                   <div className="text-xl font-black text-blue-600 mono-font leading-none">
                     {guidance ? guidance.totalDist.toFixed(1) : '---'}
                     <span className="text-[10px] ml-1">m</span>
                   </div>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Mesafe</p>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Mesafe</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                <div className="bg-slate-100 p-3 rounded-2xl border border-slate-200">
+                <div className="bg-slate-100 p-2 rounded-2xl border border-slate-200">
                   <div className="text-[8px] font-black text-slate-400 uppercase mb-0.5">
                     {heading !== null ? 'İLERİ / GERİ' : 'KUZEY / GÜNEY'}
                   </div>
@@ -964,7 +955,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     </span>
                   </div>
                 </div>
-                <div className="bg-slate-100 p-3 rounded-2xl border border-slate-200">
+                <div className="bg-slate-100 p-2 rounded-2xl border border-slate-200">
                   <div className="text-[8px] font-black text-slate-400 uppercase mb-0.5">
                     {heading !== null ? 'SAĞ / SOL' : 'DOĞU / BATI'}
                   </div>
@@ -979,7 +970,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
               </div>
               
               {!heading && (
-                <p className="mt-3 text-[8px] text-center text-slate-400 font-bold uppercase tracking-widest animate-pulse">
+                <p className="mt-1.5 text-[8px] text-center text-slate-400 font-bold uppercase tracking-widest animate-pulse">
                   Pusula verisi bekleniyor... (K/G/D/B modu)
                 </p>
               )}
