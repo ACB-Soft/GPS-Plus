@@ -704,7 +704,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                       />
                     )}
                     {/* Vertices for snapping */}
-                    {g.coordinates.map((c, idx) => (
+                    {allMapZoom > 17 && g.coordinates.map((c, idx) => (
                       <Circle
                         key={`${g.id}-v-${idx}`}
                         center={[c.lat, c.lng]}
