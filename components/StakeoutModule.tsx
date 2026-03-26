@@ -57,19 +57,6 @@ const MapCenterer = ({ trigger }: { trigger: { pos: [number, number], time: numb
   return null;
 };
 
-const NorthLocker = ({ isLocked }: { isLocked: boolean }) => {
-  const map = useMap();
-  useEffect(() => {
-    if (isLocked) {
-      // Leaflet standard doesn't have setBearing, but we can reset any rotation if a plugin was used
-      // or just ensure we stay at 0. For standard Leaflet, we just set the view with current center/zoom
-      // to "reset" if any external rotation happened, but usually we just handle the UI state.
-      (map as any).setBearing?.(0);
-    }
-  }, [isLocked, map]);
-  return null;
-};
-
 const getTileLayer = (provider: string) => {
   switch (provider) {
     case 'Google Hybrid':
@@ -112,24 +99,17 @@ const ZoomTracker = ({ onZoomChange }: { onZoomChange: (zoom: number) => void })
 
 const BoundsUpdater = ({ points, geometries }: { points: StakeoutPoint[], geometries: StakeoutGeometry[] }) => {
   const map = useMap();
-  const prevDataRef = useRef<string>("");
+  const hasFittedRef = useRef<boolean>(false);
 
   useEffect(() => {
-    const currentData = JSON.stringify({ 
-      p: points.map(p => ({ id: p.id, lat: p.lat, lng: p.lng })), 
-      g: geometries.map(g => ({ id: g.id, coords: g.coordinates.map(c => ({ lat: c.lat, lng: c.lng })) })) 
-    });
+    const allCoords: [number, number][] = [];
+    points.forEach(p => allCoords.push([p.lat, p.lng]));
+    geometries.forEach(g => g.coordinates.forEach(c => allCoords.push([c.lat, c.lng])));
 
-    if (prevDataRef.current !== currentData) {
-      const allCoords: [number, number][] = [];
-      points.forEach(p => allCoords.push([p.lat, p.lng]));
-      geometries.forEach(g => g.coordinates.forEach(c => allCoords.push([c.lat, c.lng])));
-
-      if (allCoords.length > 0) {
-        const bounds = L.latLngBounds(allCoords);
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 19 });
-      }
-      prevDataRef.current = currentData;
+    if (allCoords.length > 0 && !hasFittedRef.current) {
+      const bounds = L.latLngBounds(allCoords);
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
+      hasFittedRef.current = true;
     }
   }, [points, geometries, map]);
   return null;
@@ -139,7 +119,6 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
   const [view, setView] = useState<'MENU' | 'LIST' | 'MANUAL' | 'MAP' | 'ALL_MAP'>((currentStep as any) || (initialPoint ? 'MAP' : 'MENU'));
   const [allMapZoom, setAllMapZoom] = useState(0);
   const [allMapCenterTrigger, setAllMapCenterTrigger] = useState<{ pos: [number, number], time: number } | null>(null);
-  const [isNorthLocked, setIsNorthLocked] = useState(true);
 
   useEffect(() => {
     if (currentStep && currentStep !== view) {
@@ -658,23 +637,6 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
         {view === 'ALL_MAP' && (
           <div className="flex flex-col h-full relative">
             <div className="flex-1 relative z-10">
-              <button 
-                onClick={() => setIsNorthLocked(!isNorthLocked)}
-                className={`absolute top-4 right-4 z-[1000] w-12 h-12 rounded-2xl backdrop-blur-md shadow-xl flex items-center justify-center transition-all active:scale-90 ${isNorthLocked ? 'bg-blue-600 text-white' : 'bg-white/90 text-slate-600'}`}
-              >
-                <div className="relative">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className={isNorthLocked ? 'animate-pulse' : ''}>
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                    <path d="M12 4L15 12H9L12 4Z" fill={isNorthLocked ? 'white' : '#ef4444'} />
-                    <path d="M12 20L9 12H15L12 20Z" fill="currentColor" opacity="0.5" />
-                  </svg>
-                  {isNorthLocked && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full flex items-center justify-center">
-                      <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
-                    </div>
-                  )}
-                </div>
-              </button>
               <MapContainer 
                 center={[userPos?.lat || 39, userPos?.lng || 35]} 
                 zoom={19} 
@@ -791,7 +753,6 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                 <BoundsUpdater points={points} geometries={geometries} />
                 <ZoomTracker onZoomChange={setAllMapZoom} />
                 <MapCenterer trigger={allMapCenterTrigger} />
-                <NorthLocker isLocked={isNorthLocked} />
               </MapContainer>
             </div>
             <div className="absolute bottom-0 left-0 right-0 z-20 px-8 py-4 bg-slate-200/95 backdrop-blur-md shadow-[0_-10px_30px_rgba(0,0,0,0.1)] border-t border-slate-100 flex items-center justify-between">
@@ -799,18 +760,6 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                  {points.length} Nokta, {geometries.length} Geometri
                </p>
                <div className="flex items-center gap-2">
-                 <button 
-                   onClick={() => {
-                     if (userPos) {
-                       setAllMapCenterTrigger({ pos: [userPos.lat, userPos.lng], time: Date.now() });
-                     } else {
-                       showToast('Konumunuz henüz alınamadı', 'info');
-                     }
-                   }}
-                   className="px-3 py-1.5 text-[9px] font-black rounded-lg uppercase tracking-wider border bg-blue-50 text-blue-600 border-blue-100 transition-all active:scale-95"
-                 >
-                   KONUMUMU BUL
-                 </button>
                  <button 
                    onClick={() => {
                      if (confirmClear === 'MAP') {
