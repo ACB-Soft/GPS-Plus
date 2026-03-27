@@ -16,7 +16,7 @@ const Header: React.FC<HeaderProps> = ({ title, onBack, sticky = false }) => {
   };
 
   return (
-    <header className={`px-8 pt-6 pb-6 flex items-center gap-5 shrink-0 bg-slate-200 shadow-sm z-30 ${sticky ? 'sticky top-0' : ''}`}>
+    <header className={`px-8 pt-4 pb-2 flex items-center gap-5 shrink-0 bg-slate-200 shadow-sm z-30 ${sticky ? 'sticky top-0' : ''}`}>
       <button 
         onClick={handleBack} 
         className="w-12 h-12 bg-slate-200 rounded-2xl flex items-center justify-center shadow-md border border-slate-100 text-slate-800 active:scale-90 transition-all"
