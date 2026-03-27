@@ -285,6 +285,9 @@ const App = () => {
                 onRenameFolder={(oldName, newName) => setLocations(prev => prev.map(l => 
                   l.folderName === oldName ? { ...l, folderName: newName } : l
                 ))}
+                onRenamePoint={(id, newName) => setLocations(prev => prev.map(l => 
+                  l.id === id ? { ...l, name: newName } : l
+                ))}
                 onBulkDelete={(ids) => setLocations(prev => prev.filter(l => !ids.includes(l.id)))}
                 onViewOnMap={handleViewOnMap}
               />

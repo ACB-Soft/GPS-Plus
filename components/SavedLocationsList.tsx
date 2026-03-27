@@ -9,6 +9,7 @@ interface Props {
   onDelete: (id: string) => void;
   onDeleteFolder: (name: string) => void;
   onRenameFolder: (oldName: string, newName: string) => void;
+  onRenamePoint: (id: string, newName: string) => void;
   onBulkDelete: (ids: string[]) => void;
   onViewOnMap: (l: SavedLocation) => void;
 }
@@ -20,10 +21,25 @@ const SavedLocationItem: React.FC<{
   deletingPoint: string | null; 
   setDeletingPoint: (id: string | null) => void; 
   onDelete: (id: string) => void; 
+  onRenamePoint: (id: string, newName: string) => void;
   onViewOnMap: (l: SavedLocation) => void;
-}> = ({ l, expanded, togglePoint, deletingPoint, setDeletingPoint, onDelete, onViewOnMap }) => {
+}> = ({ l, expanded, togglePoint, deletingPoint, setDeletingPoint, onDelete, onRenamePoint, onViewOnMap }) => {
   const geoidInfo = useOrthometricHeight(l.altitude, l.lat, l.lng);
   const orthometricHeight = geoidInfo.orthometricHeight;
+  const [isEditing, setIsEditing] = useState(false);
+  const [newName, setNewName] = useState(l.name);
+
+  const handleSave = () => {
+    if (newName.trim() && newName !== l.name) {
+      onRenamePoint(l.id, newName.trim());
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setNewName(l.name);
+    setIsEditing(false);
+  };
 
   const renderCoordinates = (l: SavedLocation) => {
     const { x, y, labelX, labelY } = convertCoordinate(l.lat, l.lng, l.coordinateSystem || 'WGS84');
@@ -53,13 +69,51 @@ const SavedLocationItem: React.FC<{
   return (
     <div className="bg-slate-100 rounded-[1.8rem] border border-slate-100 overflow-hidden shadow-sm">
       <div className="p-4 flex items-center justify-between transition-colors">
-        <div onClick={() => togglePoint(l.id)} className="min-w-0 flex-1 cursor-pointer select-none">
-          <h5 className="text-[15px] font-black text-slate-900 truncate">{l.name}</h5>
-          <p className="text-[11px] text-slate-400 font-bold uppercase tracking-tight mt-0.5">
-            {expanded ? 'Detayları Gizle' : 'Koordinatları Gör'}
-          </p>
-        </div>
-        <div className="pl-4 border-l border-slate-100 ml-4">
+        {isEditing ? (
+          <div className="flex-1 flex items-center gap-2 animate-in">
+            <input 
+              type="text" 
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              className="flex-1 p-2 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:border-blue-500"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSave();
+                if (e.key === 'Escape') handleCancel();
+              }}
+            />
+            <button 
+              onClick={handleSave}
+              className="w-8 h-8 bg-emerald-600 text-white rounded-lg flex items-center justify-center shadow-lg shadow-emerald-600/20 active:scale-90 transition-all shrink-0"
+            >
+              <i className="fas fa-check text-xs"></i>
+            </button>
+            <button 
+              onClick={handleCancel}
+              className="w-8 h-8 bg-slate-200 text-slate-500 rounded-lg flex items-center justify-center active:scale-90 transition-all shrink-0"
+            >
+              <i className="fas fa-times text-xs"></i>
+            </button>
+          </div>
+        ) : (
+          <div onClick={() => togglePoint(l.id)} className="min-w-0 flex-1 cursor-pointer select-none">
+            <h5 className="text-[15px] font-black text-slate-900 truncate">{l.name}</h5>
+            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-tight mt-0.5">
+              {expanded ? 'Detayları Gizle' : 'Koordinatları Gör'}
+            </p>
+          </div>
+        )}
+        <div className="pl-4 border-l border-slate-100 ml-4 flex items-center gap-1">
+          {!isEditing && deletingPoint !== l.id && (
+            <button 
+              onClick={() => setIsEditing(true)} 
+              className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-blue-500 hover:bg-blue-100 rounded-xl transition-colors active:scale-90"
+              title="Noktayı Düzenle"
+              type="button"
+            >
+              <i className="fas fa-pen text-xs"></i>
+            </button>
+          )}
           {deletingPoint === l.id ? (
             <div className="flex items-center gap-2 animate-in">
               <button 
@@ -122,7 +176,7 @@ const SavedLocationItem: React.FC<{
   );
 };
 
-const SavedLocationsList: React.FC<Props> = ({ locations, onDelete, onDeleteFolder, onRenameFolder, onBulkDelete, onViewOnMap }) => {
+const SavedLocationsList: React.FC<Props> = ({ locations, onDelete, onDeleteFolder, onRenameFolder, onRenamePoint, onBulkDelete, onViewOnMap }) => {
   const [expanded, setExpanded] = useState<string[]>([]);
   const [expandedPoints, setExpandedPoints] = useState<string[]>([]);
   const [deletingFolder, setDeletingFolder] = useState<string | null>(null);
@@ -262,6 +316,7 @@ const SavedLocationsList: React.FC<Props> = ({ locations, onDelete, onDeleteFold
                     deletingPoint={deletingPoint} 
                     setDeletingPoint={setDeletingPoint} 
                     onDelete={onDelete} 
+                    onRenamePoint={onRenamePoint}
                     onViewOnMap={onViewOnMap}
                   />
                 ))}

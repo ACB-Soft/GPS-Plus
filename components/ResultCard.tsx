@@ -33,16 +33,18 @@ const ResultCard: React.FC<Props> = ({ location, initialShowMap = false, onClose
   const geoidInfo = useOrthometricHeight(location.altitude, location.lat, location.lng);
   const orthometricHeight = geoidInfo.orthometricHeight;
 
-  const getMapUrl = () => {
+  const getMapProviderInfo = () => {
     const provider = localStorage.getItem('default_map_provider') || 'Google Hybrid';
     switch (provider) {
-      case 'Google Hybrid': return "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}";
-      case 'Google Satellite': return "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}";
-      case 'OpenTopoMap': return "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png";
+      case 'Google Hybrid': return { url: "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", maxNativeZoom: 20 };
+      case 'Google Satellite': return { url: "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", maxNativeZoom: 20 };
+      case 'OpenTopoMap': return { url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", maxNativeZoom: 17 };
       case 'Google Roadmap':
-      default: return "https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}";
+      default: return { url: "https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", maxNativeZoom: 20 };
     }
   };
+
+  const mapInfo = getMapProviderInfo();
 
   return (
     <>
@@ -129,17 +131,17 @@ const ResultCard: React.FC<Props> = ({ location, initialShowMap = false, onClose
           
           <MapContainer 
             center={[location.lat, location.lng]} 
-            zoom={19} 
+            zoom={mapInfo.maxNativeZoom} 
             maxZoom={22}
             style={{ height: '100%', width: '100%' }}
             zoomControl={false}
             attributionControl={false}
           >
             <TileLayer
-              url={getMapUrl()}
+              url={mapInfo.url}
               attribution={localStorage.getItem('default_map_provider') === 'OpenTopoMap' ? '&copy; OpenTopoMap' : '&copy; Google'}
               maxZoom={22}
-              maxNativeZoom={localStorage.getItem('default_map_provider') === 'OpenTopoMap' ? 17 : 20}
+              maxNativeZoom={mapInfo.maxNativeZoom}
             />
             <Marker 
               position={[location.lat, location.lng]} 

@@ -63,23 +63,27 @@ const getTileLayer = (provider: string) => {
     case 'Google Hybrid':
       return {
         url: "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
-        attribution: '&copy; Google'
+        attribution: '&copy; Google',
+        maxNativeZoom: 20
       };
     case 'Google Satellite':
       return {
         url: "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
-        attribution: '&copy; Google'
+        attribution: '&copy; Google',
+        maxNativeZoom: 20
       };
     case 'OpenTopoMap':
       return {
         url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
-        attribution: '&copy; OpenTopoMap contributors'
+        attribution: '&copy; OpenTopoMap contributors',
+        maxNativeZoom: 17
       };
     case 'Google Roadmap':
     default:
       return {
         url: "https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
-        attribution: '&copy; Google'
+        attribution: '&copy; Google',
+        maxNativeZoom: 20
       };
   }
 };
@@ -640,7 +644,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   url={getTileLayer(settings.mapProvider).url}
                   attribution={getTileLayer(settings.mapProvider).attribution}
                   maxZoom={22}
-                  maxNativeZoom={20}
+                  maxNativeZoom={getTileLayer(settings.mapProvider).maxNativeZoom}
                 />
                 
                 {geometries.map(g => (
@@ -778,7 +782,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
             <div className="flex-1 relative z-10">
               <MapContainer 
                 center={[activePoint.lat, activePoint.lng]} 
-                zoom={19} 
+                zoom={getTileLayer(settings.mapProvider).maxNativeZoom} 
                 maxZoom={22}
                 style={{ height: '100%', width: '100%' }}
                 zoomControl={false}
@@ -788,7 +792,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   url={getTileLayer(settings.mapProvider).url}
                   attribution={getTileLayer(settings.mapProvider).attribution}
                   maxZoom={22}
-                  maxNativeZoom={20}
+                  maxNativeZoom={getTileLayer(settings.mapProvider).maxNativeZoom}
                 />
                 
                 {geometries.map(g => (

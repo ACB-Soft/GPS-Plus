@@ -153,7 +153,7 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
         {/* Kayıtlı Ölçümler */}
         <button 
           onClick={onShowList}
-          className="w-full py-3 md:py-4 px-5 bg-amber-500 text-white rounded-xl md:rounded-2xl shadow-lg shadow-amber-500/30 active:scale-[0.98] transition-all flex items-center justify-between group relative overflow-hidden border border-white/10"
+          className="w-full py-3 md:py-4 px-5 bg-cyan-500 text-white rounded-xl md:rounded-2xl shadow-lg shadow-cyan-500/30 active:scale-[0.98] transition-all flex items-center justify-between group relative overflow-hidden border border-white/10"
         >
           <div className="relative z-10 flex items-center gap-3">
             <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/30">
