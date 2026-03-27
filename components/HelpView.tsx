@@ -23,14 +23,14 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
           </div>
           
           <div className="space-y-4">
-            {/* Yeni Ölçüm Yap */}
+            {/* Ölçüm Yap */}
             <div className="soft-card p-4 space-y-3 border-l-4 border-l-indigo-500">
               <h4 className="font-black text-slate-900 text-base uppercase flex items-center gap-2">
                 <span className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs">1</span>
-                Yeni Ölçüm Yap
+                Ölçüm Yap
               </h4>
               <p className="text-slate-700 text-sm leading-relaxed font-medium text-justify">
-                Saha çalışmasına başlamak için ana ekrandaki <b>"Yeni Ölçüm Yap"</b> butonuna tıklayın.
+                Saha çalışmasına başlamak için ana ekrandaki <b>"Ölçüm Yap"</b> butonuna tıklayın.
                 <br/><br/>
                 • <b>Proje Bilgisi:</b> "Yeni Proje Oluştur" ile yeni bir isim verebilir veya "Mevcut Proje Seç" ile önceki çalışmalarınıza devam edebilirsiniz.
                 <br/>

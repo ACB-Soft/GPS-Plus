@@ -286,7 +286,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
 
   if (step === 'SELECT_MODE') return (
     <div className="w-full flex flex-col bg-slate-200 animate-in h-full relative overflow-y-auto no-scrollbar">
-      <Header title="Yeni Ölçüm Yap" />
+      <Header title="Ölçüm Yap" />
       
       <div className="w-full px-6 pt-4 mx-auto">
         <div className="max-w-sm mx-auto w-full space-y-4">
