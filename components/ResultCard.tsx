@@ -73,9 +73,9 @@ const ResultCard: React.FC<Props> = ({ location, initialShowMap = false, onClose
               <div className="text-[9px] md:text-[10px] text-slate-400 font-black uppercase mb-1 leading-none">{labelX}</div>
               <div className="text-[14px] md:text-[16px] font-bold text-slate-900 mono-font leading-none">{formattedX}</div>
             </div>
-            <div className="bg-indigo-50/50 p-4 md:p-5 rounded-2xl md:rounded-3xl border border-indigo-100 text-left shadow-sm">
-              <div className="text-[9px] md:text-[10px] text-indigo-500 font-black uppercase mb-1 leading-none">Yükseklik</div>
-              <div className="text-xl md:text-2xl font-black text-indigo-600 mono-font leading-none">{orthometricHeight !== null ? Math.round(orthometricHeight) : '---'}<span className="text-[10px] ml-1">m</span></div>
+            <div className="bg-blue-50/50 p-4 md:p-5 rounded-2xl md:rounded-3xl border border-blue-100 text-left shadow-sm">
+              <div className="text-[9px] md:text-[10px] text-blue-500 font-black uppercase mb-1 leading-none">Yükseklik</div>
+              <div className="text-xl md:text-2xl font-black text-blue-600 mono-font leading-none">{orthometricHeight !== null ? Math.round(orthometricHeight) : '---'}<span className="text-[10px] ml-1">m</span></div>
             </div>
             <div className={`p-4 md:p-5 rounded-2xl md:rounded-3xl border text-left transition-colors shadow-sm ${
               location.accuracy <= 10 ? 'bg-emerald-50/50 border-emerald-100' : 
@@ -95,7 +95,7 @@ const ResultCard: React.FC<Props> = ({ location, initialShowMap = false, onClose
         
         <button 
           onClick={() => setShowMap(true)}
-          className="w-full pt-4 md:pt-5 border-t border-slate-100 flex items-center justify-center gap-3 text-[11px] font-black text-indigo-600 uppercase tracking-[0.3em] active:scale-95 transition-all hover:text-indigo-700"
+          className="w-full pt-4 md:pt-5 border-t border-slate-100 flex items-center justify-center gap-3 text-[11px] font-black text-blue-600 uppercase tracking-[0.3em] active:scale-95 transition-all hover:text-blue-700"
         >
           <i className="fas fa-map-marked-alt text-sm"></i>
           HARİTADA GÖR

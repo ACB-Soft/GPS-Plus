@@ -275,7 +275,7 @@ const App = () => {
 
         {view === 'list' && (
           <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-slate-200">
-            <Header title="Kayıtlı Projeler" />
+            <Header title="Kayıtlı Ölçümler" />
             <div className="px-8 pt-4 pb-4 w-full">
               <div className="max-w-sm mx-auto w-full">
                 <SavedLocationsList 
@@ -315,7 +315,7 @@ const App = () => {
               <div className="mt-8 space-y-4">
                  <button 
                    onClick={() => handleNewMeasurement(true)} 
-                   className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-2xl shadow-indigo-200 active:scale-95 transition-all text-[13px] uppercase tracking-[0.2em] leading-none"
+                   className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black shadow-2xl shadow-blue-200 active:scale-95 transition-all text-[13px] uppercase tracking-[0.2em] leading-none"
                  >
                    YENİ NOKTA EKLE
                  </button>
