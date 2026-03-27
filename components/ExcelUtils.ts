@@ -19,8 +19,8 @@ export const downloadExcel = (locations: SavedLocation[]) => {
   }
 
   const isWGS84 = projectSystem === 'WGS84';
-  const headerX = isWGS84 ? "Boylam" : "Sağa (Y)";
-  const headerY = isWGS84 ? "Enlem" : "Yukarı (X)";
+  const header1 = isWGS84 ? "Enlem" : "Sağa (Y)";
+  const header2 = isWGS84 ? "Boylam" : "Yukarı (X)";
 
   const dataRows = locations.map(loc => {
     const { x, y } = convertCoordinate(loc.lat, loc.lng, loc.coordinateSystem || 'WGS84');
@@ -31,10 +31,15 @@ export const downloadExcel = (locations: SavedLocation[]) => {
     
     const correctedH = getCorrectedHeight(loc.lat, loc.lng, loc.altitude);
     
+    // WGS84 ise valY (Enlem) önce gelir, valX (Boylam) sonra.
+    // UTM ise valX (Sağa Y) önce gelir, valY (Yukarı X) sonra.
+    const firstVal = isWGS84 ? valY : valX;
+    const secondVal = isWGS84 ? valX : valY;
+
     return [
       loc.name,
-      valX,
-      valY,
+      firstVal,
+      secondVal,
       correctedH !== null ? Math.round(correctedH) : '---',
       loc.accuracy.toFixed(2),
       new Date(loc.timestamp).toLocaleString('tr-TR')
@@ -47,7 +52,7 @@ export const downloadExcel = (locations: SavedLocation[]) => {
     ["Proje Adı:", projectName],
     ["Proje Koordinat Sistemi:", projectSystem],
     [], 
-    ["Nokta İsmi", headerX, headerY, "Yükseklik (m)", "Hassasiyet (m)", "Tarih"],
+    ["Nokta İsmi", header1, header2, "Yükseklik (m)", "Hassasiyet (m)", "Tarih"],
     ...dataRows
   ];
 

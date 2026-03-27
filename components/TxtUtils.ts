@@ -18,14 +18,14 @@ export const downloadTXT = (locations: SavedLocation[]) => {
   }
 
   const isWGS84 = projectSystem === 'WGS84';
-  const headerX = isWGS84 ? "Boylam" : "Sağa (Y)";
-  const headerY = isWGS84 ? "Enlem" : "Yukarı (X)";
+  const header1 = isWGS84 ? "Enlem" : "Sağa (Y)";
+  const header2 = isWGS84 ? "Boylam" : "Yukarı (X)";
 
   let content = `"${FULL_BRAND}" tarafindan olusturuldu.\n\n`;
   content += `Proje Adi:\t${projectName}\n`;
   content += `Proje Koordinat Sistemi:\t${projectSystem}\n\n`;
   
-  content += `Nokta\t${headerX}\t${headerY}\tYukseklik(m)\n`;
+  content += `Nokta\t${header1}\t${header2}\tYukseklik(m)\n`;
   content += "----------------------------------------------------------------\n";
 
   locations.forEach(loc => {
@@ -38,7 +38,12 @@ export const downloadTXT = (locations: SavedLocation[]) => {
     
     const correctedH = getCorrectedHeight(loc.lat, loc.lng, loc.altitude);
     
-    content += `${loc.name}\t${valX}\t${valY}\t${correctedH !== null ? Math.round(correctedH) : '---'}\n`;
+    // WGS84 ise valY (Enlem) önce gelir, valX (Boylam) sonra.
+    // UTM ise valX (Sağa Y) önce gelir, valY (Yukarı X) sonra.
+    const firstVal = isWGS84 ? valY : valX;
+    const secondVal = isWGS84 ? valX : valY;
+    
+    content += `${loc.name}\t${firstVal}\t${secondVal}\t${correctedH !== null ? Math.round(correctedH) : '---'}\n`;
   });
 
   const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
