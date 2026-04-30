@@ -3,6 +3,7 @@ import { SavedLocation } from '../types';
 import { convertCoordinate } from '../utils/CoordinateUtils';
 import { FULL_BRAND } from '../version';
 import { getCorrectedHeight } from './GeoidUtils';
+import { geoidService } from '../services/GeoidService';
 
 export const downloadExcel = (locations: SavedLocation[]) => {
   if (locations.length === 0) {
@@ -22,6 +23,10 @@ export const downloadExcel = (locations: SavedLocation[]) => {
   const header1 = isWGS84 ? "Enlem" : "Sağa (Y)";
   const header2 = isWGS84 ? "Boylam" : "Yukarı (X)";
 
+  // iOS Tespiti
+  const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  const isIOS = /iPad|iPhone|iPod/.test(userAgent) || (typeof navigator !== 'undefined' && (navigator as any).platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
+
   const dataRows = locations.map(loc => {
     const { x, y } = convertCoordinate(loc.lat, loc.lng, loc.coordinateSystem || 'WGS84');
     
@@ -31,7 +36,16 @@ export const downloadExcel = (locations: SavedLocation[]) => {
     
     const correctedH = getCorrectedHeight(loc.lat, loc.lng, loc.altitude);
     const orthometricH = correctedH !== null ? correctedH.toFixed(1) : '---';
-    const ellipsoidalH = loc.altitude !== null ? loc.altitude.toFixed(1) : '---';
+    
+    // iOS cihazlarda ham veri (loc.altitude) ortometrik (MSL) olduğu için 
+    // elipsoid yüksekliği hesaplanırken EGM96 ondülasyonu eklenmelidir.
+    let ellipVal = loc.altitude;
+    if (isIOS && loc.altitude !== null) {
+      const egm96Undulation = geoidService.getUndulation(loc.lat, loc.lng, 'EGM96');
+      ellipVal = loc.altitude + egm96Undulation;
+    }
+    
+    const ellipsoidalH = ellipVal !== null ? ellipVal.toFixed(1) : '---';
     const accuracy = loc.accuracy.toFixed(1);
     const duration = (loc.measurementDuration || 0).toString();
 
