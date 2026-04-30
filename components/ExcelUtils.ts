@@ -25,20 +25,20 @@ export const downloadExcel = (locations: SavedLocation[]) => {
   const dataRows = locations.map(loc => {
     const { x, y } = convertCoordinate(loc.lat, loc.lng, loc.coordinateSystem || 'WGS84');
     
-    // Değerleri 2 basamağa yuvarla
-    const val1 = isWGS84 ? parseFloat(y.toFixed(6)) : parseFloat(x.toFixed(2));
-    const val2 = isWGS84 ? parseFloat(x.toFixed(6)) : parseFloat(y.toFixed(2));
+    // WGS84 ise 6 basamak, değilse (UTM vb.) 1 basamak (virgülden sonra sıfır olsa bile gösterilir)
+    const val1 = isWGS84 ? y.toFixed(6) : x.toFixed(1);
+    const val2 = isWGS84 ? x.toFixed(6) : y.toFixed(1);
     
     const correctedH = getCorrectedHeight(loc.lat, loc.lng, loc.altitude);
-    const orthometricH = correctedH !== null ? parseFloat(correctedH.toFixed(2)) : '---';
-    const ellipsoidalH = loc.altitude !== null ? parseFloat(loc.altitude.toFixed(2)) : '---';
-    const accuracy = parseFloat(loc.accuracy.toFixed(2));
-    const duration = loc.measurementDuration || 0;
+    const orthometricH = correctedH !== null ? correctedH.toFixed(2) : '---';
+    const ellipsoidalH = loc.altitude !== null ? loc.altitude.toFixed(2) : '---';
+    const accuracy = loc.accuracy.toFixed(2);
+    const duration = (loc.measurementDuration || 0).toString();
 
     return [
       loc.name,
-      isWGS84 ? val1 : val1, // Sağa (Y)
-      isWGS84 ? val2 : val2, // Yukarı (X)
+      val1, // Sağa (Y) veya Enlem
+      val2, // Yukarı (X) veya Boylam
       orthometricH,
       ellipsoidalH,
       accuracy,
