@@ -24,24 +24,25 @@ export const downloadExcel = (locations: SavedLocation[]) => {
 
   const dataRows = locations.map(loc => {
     const { x, y } = convertCoordinate(loc.lat, loc.lng, loc.coordinateSystem || 'WGS84');
-    const isUTM = loc.coordinateSystem && loc.coordinateSystem !== 'WGS84';
     
-    const valX = isUTM ? Math.round(x) : parseFloat(x.toFixed(6));
-    const valY = isUTM ? Math.round(y) : parseFloat(y.toFixed(6));
+    // Değerleri 2 basamağa yuvarla
+    const val1 = isWGS84 ? parseFloat(y.toFixed(6)) : parseFloat(x.toFixed(2));
+    const val2 = isWGS84 ? parseFloat(x.toFixed(6)) : parseFloat(y.toFixed(2));
     
     const correctedH = getCorrectedHeight(loc.lat, loc.lng, loc.altitude);
-    
-    // WGS84 ise valY (Enlem) önce gelir, valX (Boylam) sonra.
-    // UTM ise valX (Sağa Y) önce gelir, valY (Yukarı X) sonra.
-    const firstVal = isWGS84 ? valY : valX;
-    const secondVal = isWGS84 ? valX : valY;
+    const orthometricH = correctedH !== null ? parseFloat(correctedH.toFixed(2)) : '---';
+    const ellipsoidalH = loc.altitude !== null ? parseFloat(loc.altitude.toFixed(2)) : '---';
+    const accuracy = parseFloat(loc.accuracy.toFixed(2));
+    const duration = loc.measurementDuration || 0;
 
     return [
       loc.name,
-      firstVal,
-      secondVal,
-      correctedH !== null ? Math.round(correctedH) : '---',
-      loc.accuracy.toFixed(2),
+      isWGS84 ? val1 : val1, // Sağa (Y)
+      isWGS84 ? val2 : val2, // Yukarı (X)
+      orthometricH,
+      ellipsoidalH,
+      accuracy,
+      duration,
       new Date(loc.timestamp).toLocaleString('tr-TR')
     ];
   });
@@ -52,7 +53,7 @@ export const downloadExcel = (locations: SavedLocation[]) => {
     ["Proje Adı:", projectName],
     ["Proje Koordinat Sistemi:", projectSystem],
     [], 
-    ["Nokta İsmi", header1, header2, "Yükseklik (m)", "Hassasiyet (m)", "Tarih"],
+    ["Nokta İsmi", header1, header2, "Yükseklik (m)", "Elipsoidal Yükseklik (m)", "Hassasiyet (m)", "Gözlem Süresi (sn)", "Tarih"],
     ...dataRows
   ];
 
@@ -60,10 +61,12 @@ export const downloadExcel = (locations: SavedLocation[]) => {
   
   const wscols = [
     { wch: 15 }, // Nokta İsmi
-    { wch: 18 }, // X / Boylam
-    { wch: 18 }, // Y / Enlem
+    { wch: 18 }, // Sağa (Y) / Enlem
+    { wch: 18 }, // Yukarı (X) / Boylam
     { wch: 15 }, // Yükseklik
+    { wch: 20 }, // Elipsoidal Yükseklik
     { wch: 15 }, // Hassasiyet
+    { wch: 18 }, // Gözlem Süresi
     { wch: 20 }, // Tarih
   ];
   worksheet['!cols'] = wscols;

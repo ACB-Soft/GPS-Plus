@@ -57,7 +57,7 @@ const Onboarding: React.FC<Props> = ({ onFinish }) => {
           <div className="space-y-0.5">
             <h4 className="text-[10px] md:text-[11px] font-black text-slate-900 uppercase tracking-widest">Konum Erişimi</h4>
             <p className="text-[11px] md:text-[12px] text-slate-500 font-bold leading-tight">
-              GPS verilerini kullanarak konum ve yükseklik bilgisi üretmek için gereklidir.
+              GPS verilerini kullanarak konum bilgisi üretmek için gereklidir.
             </p>
           </div>
         </div>

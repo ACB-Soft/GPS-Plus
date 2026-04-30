@@ -6,7 +6,7 @@ import GlobalFooter from './GlobalFooter';
 import Header from './Header';
 
 interface Props {
-  onComplete: (coord: Coordinate, folderName: string, pointName: string, description: string, coordinateSystem: string) => void;
+  onComplete: (coord: Coordinate, folderName: string, pointName: string, description: string, coordinateSystem: string, duration: number) => void;
   onCancel: () => void;
   isContinuing?: boolean;
   existingLocations: SavedLocation[];
@@ -228,9 +228,9 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       }
     }
 
-    onComplete(avg, folderName, pointName, '', coordinateSystem);
+    onComplete(avg, folderName, pointName, '', coordinateSystem, measurementDuration);
     releaseWakeLock();
-  }, [folderName, pointName, coordinateSystem, onComplete]);
+  }, [folderName, pointName, coordinateSystem, measurementDuration, onComplete]);
 
   // Ref to track accuracy validity without triggering effect re-runs
   const isAccuracyOkRef = useRef(false);

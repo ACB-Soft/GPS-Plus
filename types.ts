@@ -13,6 +13,7 @@ export interface SavedLocation extends Coordinate {
   folderName: string;
   description?: string;
   coordinateSystem?: string;
+  measurementDuration?: number;
 }
 
 export interface StakeoutPoint {
