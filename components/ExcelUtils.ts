@@ -30,9 +30,9 @@ export const downloadExcel = (locations: SavedLocation[]) => {
     const val2 = isWGS84 ? x.toFixed(6) : y.toFixed(1);
     
     const correctedH = getCorrectedHeight(loc.lat, loc.lng, loc.altitude);
-    const orthometricH = correctedH !== null ? correctedH.toFixed(2) : '---';
-    const ellipsoidalH = loc.altitude !== null ? loc.altitude.toFixed(2) : '---';
-    const accuracy = loc.accuracy.toFixed(2);
+    const orthometricH = correctedH !== null ? correctedH.toFixed(1) : '---';
+    const ellipsoidalH = loc.altitude !== null ? loc.altitude.toFixed(1) : '---';
+    const accuracy = loc.accuracy.toFixed(1);
     const duration = (loc.measurementDuration || 0).toString();
 
     return [
