@@ -154,13 +154,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
           setWaitingForSignal(false);
           setCaptureError(null);
           if (step === 'COUNTDOWN') {
-            samplesRef.current.push({
-              lat: pos.coords.latitude, lng: pos.coords.longitude,
-              accuracy: pos.coords.accuracy, 
-              altitude: pos.coords.altitude, 
-              altitudeAccuracy: pos.coords.altitudeAccuracy,
-              timestamp: Date.now()
-            });
+            // Sadece güncel hassasiyeti ve konumu güncelle, örnek kaydını interval yapacak
             setSampleCount(samplesRef.current.length);
           }
         },
@@ -298,7 +292,21 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
     
     if (step === 'COUNTDOWN' && !waitingForSignal) {
       timer = setInterval(() => {
-        // Only decrement if accuracy is within limits
+        // Her saniye o anki en taze konumu kaydet (1Hz Sampling)
+        if (lastPositionRef.current) {
+          const p = lastPositionRef.current;
+          samplesRef.current.push({
+            lat: p.coords.latitude, 
+            lng: p.coords.longitude,
+            accuracy: p.coords.accuracy, 
+            altitude: p.coords.altitude, 
+            altitudeAccuracy: p.coords.altitudeAccuracy,
+            timestamp: Date.now()
+          });
+          setSampleCount(samplesRef.current.length);
+        }
+
+        // Sadece hassasiyet uygunsa geri sayımı ilerlet
         if (isAccuracyOkRef.current) {
           setSeconds(prev => prev > 0 ? prev - 1 : 0);
         }
