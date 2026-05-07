@@ -183,6 +183,41 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
   const medY = getMedian(allY);
   const medZ = getMedian(allZ);
 
+  // --- Kümeleme (Clustering) Mantığı (Basitleştirilmiş DBSCAN/Centroid) ---
+  const getClusteredMean = () => {
+    if (validSamples.length === 0) return { x: 0, y: 0, z: 0, count: 0 };
+    
+    // Yarıçap (Epsilon): Hassasiyet limitinin yarısı veya min 1m
+    const epsilon = Math.max(accuracyLimit / 2, 1.0); 
+    
+    // Her nokta için komşu sayısını bul
+    const neighbors = validSamples.map(p1 => {
+      const cluster = validSamples.filter(p2 => 
+        Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2)) <= epsilon
+      );
+      return cluster;
+    });
+
+    // En geniş/yoğun kümeyi seç
+    let bestCluster = neighbors[0] || [];
+    for (const cluster of neighbors) {
+      if (cluster.length > bestCluster.length) {
+        bestCluster = cluster;
+      }
+    }
+
+    if (bestCluster.length === 0) return { x: 0, y: 0, z: 0, count: 0 };
+
+    const cX = bestCluster.reduce((a, b) => a + b.x, 0) / bestCluster.length;
+    const cY = bestCluster.reduce((a, b) => a + b.y, 0) / bestCluster.length;
+    const cZArr = bestCluster.filter(s => s.z !== null).map(s => s.z as number);
+    const cZ = cZArr.length > 0 ? cZArr.reduce((a, b) => a + b, 0) / cZArr.length : 0;
+
+    return { x: cX, y: cY, z: cZ, count: bestCluster.length };
+  };
+
+  const statsCluster = getClusteredMean();
+
   const dataRows = location.samples.map((s, idx) => {
     const { x, y } = convertCoordinate(s.lat, s.lng, sys);
     const val1 = isWGS84 ? s.lat.toFixed(8) : x.toFixed(3);
@@ -229,6 +264,7 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
     ["Yöntem", header1, header2, "Yükseklik (m)", "Kullanılan Veri"],
     ["Aritmetik Ortalama", isWGS84 ? statsAll.x.toFixed(8) : statsAll.x.toFixed(3), isWGS84 ? statsAll.y.toFixed(8) : statsAll.y.toFixed(3), statsAll.z.toFixed(3), `${statsAll.count} / ${location.samples.length}`],
     ["Medyan Değerler", isWGS84 ? medX.toFixed(8) : medX.toFixed(3), isWGS84 ? medY.toFixed(8) : medY.toFixed(3), medZ.toFixed(3), `${location.samples.length} / ${location.samples.length}`],
+    ["Kümeleme (Yoğunluk)", isWGS84 ? statsCluster.x.toFixed(8) : statsCluster.x.toFixed(3), isWGS84 ? statsCluster.y.toFixed(8) : statsCluster.y.toFixed(3), statsCluster.z.toFixed(3), `${statsCluster.count} / ${location.samples.length}`],
     ["1-Sigma Filtreli (68%)", isWGS84 ? statsS1.x.toFixed(8) : statsS1.x.toFixed(3), isWGS84 ? statsS1.y.toFixed(8) : statsS1.y.toFixed(3), statsS1.z.toFixed(3), `${statsS1.count} / ${location.samples.length}`],
     ["2-Sigma Filtreli (95%)", isWGS84 ? statsS2.x.toFixed(8) : statsS2.x.toFixed(3), isWGS84 ? statsS2.y.toFixed(8) : statsS2.y.toFixed(3), statsS2.z.toFixed(3), `${statsS2.count} / ${location.samples.length}`],
     ["3-Sigma Filtreli (99%)", isWGS84 ? statsS3.x.toFixed(8) : statsS3.x.toFixed(3), isWGS84 ? statsS3.y.toFixed(8) : statsS3.y.toFixed(3), statsS3.z.toFixed(3), `${statsS3.count} / ${location.samples.length}`],
