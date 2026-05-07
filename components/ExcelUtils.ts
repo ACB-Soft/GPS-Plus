@@ -162,14 +162,12 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
   const medZ = getMedian(validSamples.filter(s => s.z !== null).map(s => s.z as number));
 
   // --- Kümeleme (Clustering) Mantığı ---
-  const getClusteredMean = () => {
+  const getClusteredMean = (epsilonValue: number) => {
     if (validSamples.length === 0) return { x: 0, y: 0, z: 0, count: 0 };
-    
-    const epsilon = Math.max(accuracyLimit / 2, 1.0); 
     
     const neighbors = validSamples.map(p1 => {
       const cluster = validSamples.filter(p2 => 
-        Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2)) <= epsilon
+        Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2)) <= epsilonValue
       );
       return cluster;
     });
@@ -184,7 +182,9 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
     return getMean(bestCluster);
   };
 
-  const statsCluster = getClusteredMean();
+  const dynamicEpsilon = Math.max(accuracyLimit / 2, 1.0);
+  const statsClusterDynamic = getClusteredMean(dynamicEpsilon);
+  const statsClusterFixed = getClusteredMean(1.0);
 
   const dataRows = location.samples.map((s, idx) => {
     const { x, y } = convertCoordinate(s.lat, s.lng, sys);
@@ -224,7 +224,8 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
     ["Yöntem", header1, header2, "Yükseklik (m)", "Kullanılan Veri"],
     ["Aritmetik Ortalama", isWGS84 ? statsAll.x.toFixed(8) : statsAll.x.toFixed(3), isWGS84 ? statsAll.y.toFixed(8) : statsAll.y.toFixed(3), statsAll.z.toFixed(3), `${statsAll.count} / ${location.samples.length}`],
     ["Medyan Değerler", isWGS84 ? medX.toFixed(8) : medX.toFixed(3), isWGS84 ? medY.toFixed(8) : medY.toFixed(3), medZ.toFixed(3), `${validSamples.length} / ${location.samples.length}`],
-    ["Kümeleme (Yoğunluk)", isWGS84 ? statsCluster.x.toFixed(8) : statsCluster.x.toFixed(3), isWGS84 ? statsCluster.y.toFixed(8) : statsCluster.y.toFixed(3), statsCluster.z.toFixed(3), `${statsCluster.count} / ${location.samples.length}`],
+    [`Kümeleme (Dinamik - Eps: ${dynamicEpsilon.toFixed(2)}m)`, isWGS84 ? statsClusterDynamic.x.toFixed(8) : statsClusterDynamic.x.toFixed(3), isWGS84 ? statsClusterDynamic.y.toFixed(8) : statsClusterDynamic.y.toFixed(3), statsClusterDynamic.z.toFixed(3), `${statsClusterDynamic.count} / ${location.samples.length}`],
+    ["Kümeleme (Sabit - Eps: 1.00m)", isWGS84 ? statsClusterFixed.x.toFixed(8) : statsClusterFixed.x.toFixed(3), isWGS84 ? statsClusterFixed.y.toFixed(8) : statsClusterFixed.y.toFixed(3), statsClusterFixed.z.toFixed(3), `${statsClusterFixed.count} / ${location.samples.length}`],
   ];
 
   const worksheet = XLSX.utils.aoa_to_sheet(ws_data);
