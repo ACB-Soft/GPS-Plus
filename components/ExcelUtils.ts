@@ -102,3 +102,60 @@ export const downloadExcel = (locations: SavedLocation[]) => {
   
   XLSX.writeFile(workbook, fileName);
 };
+
+export const downloadTechnicalReport = (location: SavedLocation) => {
+  if (!location.samples || location.samples.length === 0) {
+    alert("Bu noktaya ait ham veri (örneklem) bulunamadı. Teknik rapor sadece yeni ölçülen noktalar için oluşturulabilir.");
+    return;
+  }
+
+  const sys = location.coordinateSystem || 'WGS84';
+  const isWGS84 = sys === 'WGS84';
+  const header1 = isWGS84 ? "Enlem" : "Sağa (Y)";
+  const header2 = isWGS84 ? "Boylam" : "Yukarı (X)";
+
+  const dataRows = location.samples.map((s, idx) => {
+    const { x, y } = convertCoordinate(s.lat, s.lng, sys);
+    const val1 = isWGS84 ? s.lat.toFixed(8) : x.toFixed(3);
+    const val2 = isWGS84 ? s.lng.toFixed(8) : y.toFixed(3);
+    
+    return [
+      idx + 1,
+      new Date(s.timestamp).toLocaleTimeString('tr-TR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      val1,
+      val2,
+      s.altitude !== null ? s.altitude.toFixed(3) : '---',
+      s.accuracy.toFixed(3),
+      s.altitudeAccuracy !== null ? s.altitudeAccuracy.toFixed(3) : '---'
+    ];
+  });
+
+  const ws_data = [
+    ["TEKNİK ÖLÇÜM RAPORU"],
+    ["Nokta Adı:", location.name],
+    ["Proje Adı:", location.folderName],
+    ["Koordinat Sistemi:", sys],
+    ["Ölçüm Süresi:", `${location.measurementDuration || 0} sn`],
+    ["Toplam Örnek Sayısı:", location.samples.length],
+    [],
+    ["No", "Saat", header1, header2, "Yükseklik (m)", "Hassasiyet (m)", "Dikey Hass. (m)"],
+    ...dataRows
+  ];
+
+  const worksheet = XLSX.utils.aoa_to_sheet(ws_data);
+  worksheet['!cols'] = [
+    { wch: 6 },  // No
+    { wch: 12 }, // Saat
+    { wch: 20 }, // Val1
+    { wch: 20 }, // Val2
+    { wch: 15 }, // Yükseklik
+    { wch: 15 }, // Hassasiyet
+    { wch: 15 }, // Dikey Hass
+  ];
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Ham Veriler");
+  
+  const fileName = `Teknik_Rapor_${location.name}.xlsx`;
+  XLSX.writeFile(workbook, fileName);
+};

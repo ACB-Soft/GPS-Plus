@@ -166,7 +166,7 @@ const App = () => {
     navigateTo('dashboard');
   };
 
-  const handleGPSComplete = (coord: Coordinate, folderName: string, pointName: string, description: string, coordinateSystem: string, duration: number) => {
+  const handleGPSComplete = (coord: Coordinate, folderName: string, pointName: string, description: string, coordinateSystem: string, duration: number, samples: Coordinate[]) => {
     const newLoc: SavedLocation = {
       ...coord,
       id: Date.now().toString(),
@@ -174,7 +174,8 @@ const App = () => {
       folderName: folderName,
       description: description,
       coordinateSystem: coordinateSystem,
-      measurementDuration: duration
+      measurementDuration: duration,
+      samples: samples
     };
     setLocations(prev => [newLoc, ...prev]);
     setLastResult(newLoc);
