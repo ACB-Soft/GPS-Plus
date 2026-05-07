@@ -4,6 +4,7 @@ export interface Coordinate {
   lng: number;
   accuracy: number;
   altitude: number | null;
+  altitudeAccuracy: number | null;
   timestamp: number;
 }
 

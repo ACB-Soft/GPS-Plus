@@ -151,7 +151,10 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
           if (step === 'COUNTDOWN' && !waitingForSignal) {
             samplesRef.current.push({
               lat: pos.coords.latitude, lng: pos.coords.longitude,
-              accuracy: pos.coords.accuracy, altitude: pos.coords.altitude, timestamp: Date.now()
+              accuracy: pos.coords.accuracy, 
+              altitude: pos.coords.altitude, 
+              altitudeAccuracy: pos.coords.altitudeAccuracy,
+              timestamp: Date.now()
             });
             setSampleCount(samplesRef.current.length);
           }
@@ -186,6 +189,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
         lng: p.coords.longitude, 
         accuracy: p.coords.accuracy, 
         altitude: p.coords.altitude, 
+        altitudeAccuracy: p.coords.altitudeAccuracy,
         timestamp: Date.now() 
       });
     }
@@ -199,6 +203,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       lng: samples.reduce((a, b) => a + b.lng, 0) / samples.length,
       accuracy: samples.reduce((a, b) => a + b.accuracy, 0) / samples.length,
       altitude: samples.reduce((a, b) => a + (b.altitude || 0), 0) / samples.length,
+      altitudeAccuracy: samples.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / samples.length,
       timestamp: Date.now()
     };
 
@@ -270,6 +275,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
         lng: p.coords.longitude, 
         accuracy: p.coords.accuracy, 
         altitude: p.coords.altitude, 
+        altitudeAccuracy: p.coords.altitudeAccuracy,
         timestamp: Date.now()
       }];
       setSampleCount(1);
@@ -455,7 +461,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                       onChange={e => setMeasurementDuration(parseInt(e.target.value))}
                       className="w-full p-2.5 bg-slate-200 rounded-xl font-black text-center text-lg text-slate-900 outline-none border border-slate-200 leading-none appearance-none"
                     >
-                      {[5, 10, 15, 20, 30].map(v => <option key={v} value={v}>{v}sn</option>)}
+                      {[5, 10, 15, 20, 30, 50, 100].map(v => <option key={v} value={v}>{v}sn</option>)}
                     </select>
                   </div>
                 </div>

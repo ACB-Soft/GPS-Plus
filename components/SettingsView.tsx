@@ -174,7 +174,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                   onChange={(e) => setMeasurementDuration(e.target.value)}
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
-                  {[5, 10, 15, 20, 30].map(v => <option key={v} value={v}>{v} saniye</option>)}
+                  {[5, 10, 15, 20, 30, 50, 100].map(v => <option key={v} value={v}>{v} saniye</option>)}
                 </select>
               </div>
             </div>
