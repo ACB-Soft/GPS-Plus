@@ -53,10 +53,7 @@ export const downloadExcel = (locations: SavedLocation[]) => {
       undulationVal = (ellipVal - correctedH).toFixed(2);
     }
 
-    const hAccuracy = loc.accuracy.toFixed(2);
-    const vAccuracy = loc.altitudeAccuracy !== null && loc.altitudeAccuracy !== undefined 
-      ? loc.altitudeAccuracy.toFixed(2) 
-      : '---'; 
+    const accuracy = loc.accuracy.toFixed(2);
     const duration = (loc.measurementDuration || 0).toString();
 
     return [
@@ -66,8 +63,7 @@ export const downloadExcel = (locations: SavedLocation[]) => {
       orthometricH,
       ellipsoidalH,
       undulationVal,
-      hAccuracy,
-      vAccuracy,
+      accuracy,
       duration,
       new Date(loc.timestamp).toLocaleString('tr-TR')
     ];
@@ -79,7 +75,7 @@ export const downloadExcel = (locations: SavedLocation[]) => {
     ["Proje Adı:", projectName],
     ["Proje Koordinat Sistemi:", projectSystem],
     [], 
-    ["Nokta İsmi", header1, header2, "Yükseklik (m)", "Elipsoidal Yükseklik (m)", "Ondülasyon (m)", "Yatay Hass. (m)", "Dikey Hass. (m)", "Gözlem Süresi (sn)", "Tarih"],
+    ["Nokta İsmi", header1, header2, "Yükseklik (m)", "Elipsoidal Yükseklik (m)", "Ondülasyon (m)", "Hassasiyet (m)", "Gözlem Süresi (sn)", "Tarih"],
     ...dataRows
   ];
 
@@ -92,8 +88,7 @@ export const downloadExcel = (locations: SavedLocation[]) => {
     { wch: 15 }, // Yükseklik
     { wch: 20 }, // Elipsoidal Yükseklik
     { wch: 15 }, // Ondülasyon
-    { wch: 15 }, // Yatay Hass.
-    { wch: 15 }, // Dikey Hass.
+    { wch: 15 }, // Hassasiyet
     { wch: 18 }, // Gözlem Süresi
     { wch: 20 }, // Tarih
   ];

@@ -203,12 +203,19 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       window.history.back();
       return;
     }
+    const validAltitudes = samples.filter(s => s.altitude !== null);
+    const validAltAccuracies = samples.filter(s => s.altitudeAccuracy !== null);
+
     const avg = {
       lat: samples.reduce((a, b) => a + b.lat, 0) / samples.length,
       lng: samples.reduce((a, b) => a + b.lng, 0) / samples.length,
       accuracy: samples.reduce((a, b) => a + b.accuracy, 0) / samples.length,
-      altitude: samples.reduce((a, b) => a + (b.altitude || 0), 0) / samples.length,
-      altitudeAccuracy: samples.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / samples.length,
+      altitude: validAltitudes.length > 0 
+        ? validAltitudes.reduce((a, b) => a + (b.altitude || 0), 0) / validAltitudes.length 
+        : null,
+      altitudeAccuracy: validAltAccuracies.length > 0
+        ? validAltAccuracies.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / validAltAccuracies.length
+        : null,
       timestamp: Date.now()
     };
 
