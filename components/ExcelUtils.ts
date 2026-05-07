@@ -114,20 +114,79 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
   const header1 = isWGS84 ? "Enlem" : "Sağa (Y)";
   const header2 = isWGS84 ? "Boylam" : "Yukarı (X)";
 
+  // --- İstatistiksel Ön Hazırlık ---
+  const accuracyLimit = location.accuracyLimit || 5.0;
+  
+  // Önce hassas verileri filtrele (Daha sonra sigma hesaplaması için temel)
+  const validSamples = location.samples.map((s, idx) => {
+    const { x, y } = convertCoordinate(s.lat, s.lng, sys);
+    return { 
+      idx, 
+      x: isWGS84 ? s.lat : x, 
+      y: isWGS84 ? s.lng : y, 
+      z: s.altitude,
+      raw: s
+    };
+  });
+
+  // Aritmetik Ortalama (Hassasiyete bakılmaksızın tümü)
+  const allX = validSamples.map(s => s.x);
+  const allY = validSamples.map(s => s.y);
+  const allZ = validSamples.filter(s => s.z !== null).map(s => s.z as number);
+  
+  const avgX = allX.reduce((a, b) => a + b, 0) / allX.length;
+  const avgY = allY.reduce((a, b) => a + b, 0) / allY.length;
+  const avgZ = allZ.length > 0 ? allZ.reduce((a, b) => a + b, 0) / allZ.length : 0;
+
+  // Sigma Hesaplama (Mesafe bazlı)
+  const distances = validSamples.map(s => Math.sqrt(Math.pow(s.x - avgX, 2) + Math.pow(s.y - avgY, 2)));
+  const sumSqDist = distances.reduce((a, b) => a + Math.pow(b, 2), 0);
+  const sigma = Math.sqrt(sumSqDist / validSamples.length) || 0.00000001; // Bölme hatası olmasın
+
+  // Filtreleme Fonksiyonu
+  const getFilteredMean = (sigmaMultiplier: number | null) => {
+    let filtered = validSamples;
+    
+    // Önce hassasiyet sınırı (Eğer sigmaMultiplier varsa accuracy de elenir)
+    if (sigmaMultiplier !== null) {
+      filtered = filtered.filter(s => s.raw.accuracy <= accuracyLimit);
+    }
+
+    if (sigmaMultiplier !== null) {
+      filtered = filtered.filter((s, idx) => distances[s.idx] <= sigmaMultiplier * sigma);
+    }
+
+    if (filtered.length === 0) return { x: 0, y: 0, z: 0, count: 0 };
+    
+    const fX = filtered.reduce((a, b) => a + b.x, 0) / filtered.length;
+    const fY = filtered.reduce((a, b) => a + b.y, 0) / filtered.length;
+    const fZArr = filtered.filter(s => s.z !== null).map(s => s.z as number);
+    const fZ = fZArr.length > 0 ? fZArr.reduce((a, b) => a + b, 0) / fZArr.length : 0;
+    
+    return { x: fX, y: fY, z: fZ, count: filtered.length };
+  };
+
+  const statsAll = { x: avgX, y: avgY, z: avgZ, count: validSamples.length };
+  const statsS1 = getFilteredMean(1);
+  const statsS2 = getFilteredMean(2);
+  const statsS3 = getFilteredMean(3);
+
   const dataRows = location.samples.map((s, idx) => {
     const { x, y } = convertCoordinate(s.lat, s.lng, sys);
     const val1 = isWGS84 ? s.lat.toFixed(8) : x.toFixed(3);
     const val2 = isWGS84 ? s.lng.toFixed(8) : y.toFixed(3);
     
-    // Durum belirleme
+    const dist = distances[idx];
     let status = "Kullanıldı";
-    if (location.usedSampleIndices && !location.usedSampleIndices.includes(idx)) {
-      const limit = location.accuracyLimit || 5.0;
-      if (s.accuracy > limit) {
-        status = `Düşük Hass. (> ${limit}m)`;
-      } else {
-        status = "Elendi (Sigma)";
-      }
+
+    if (s.accuracy > accuracyLimit) {
+      status = `Düşük Hass. (> ${accuracyLimit}m)`;
+    } else if (dist > 3 * sigma) {
+      status = "Elendi (Sigma 3+)";
+    } else if (dist > 2 * sigma) {
+      status = "Elendi (Sigma 2)";
+    } else if (dist > 1 * sigma) {
+      status = "Elendi (Sigma 1)";
     }
 
     return [
@@ -148,11 +207,18 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
     ["Proje Adı:", location.folderName],
     ["Koordinat Sistemi:", sys],
     ["Ölçüm Süresi:", `${location.measurementDuration || 0} sn`],
-    ["Hassasiyet Eşiği:", `${location.accuracyLimit || '---'} m`],
+    ["Hassasiyet Eşiği:", `${accuracyLimit} m`],
     ["Toplam Örnek Sayısı:", location.samples.length],
     [],
     ["No", "Saat", header1, header2, "Yükseklik (m)", "Hassasiyet (m)", "Dikey Hass. (m)", "Durum"],
-    ...dataRows
+    ...dataRows,
+    [],
+    ["İSTATİSTİKSEL HESAPLAMA ÖZETİ"],
+    ["Yöntem", header1, header2, "Yükseklik (m)", "Kullanılan Veri"],
+    ["Aritmetik Ortalama", isWGS84 ? statsAll.x.toFixed(8) : statsAll.x.toFixed(3), isWGS84 ? statsAll.y.toFixed(8) : statsAll.y.toFixed(3), statsAll.z.toFixed(3), `${statsAll.count} / ${location.samples.length}`],
+    ["1-Sigma Filtreli (68%)", isWGS84 ? statsS1.x.toFixed(8) : statsS1.x.toFixed(3), isWGS84 ? statsS1.y.toFixed(8) : statsS1.y.toFixed(3), statsS1.z.toFixed(3), `${statsS1.count} / ${location.samples.length}`],
+    ["2-Sigma Filtreli (95%)", isWGS84 ? statsS2.x.toFixed(8) : statsS2.x.toFixed(3), isWGS84 ? statsS2.y.toFixed(8) : statsS2.y.toFixed(3), statsS2.z.toFixed(3), `${statsS2.count} / ${location.samples.length}`],
+    ["3-Sigma Filtreli (99%)", isWGS84 ? statsS3.x.toFixed(8) : statsS3.x.toFixed(3), isWGS84 ? statsS3.y.toFixed(8) : statsS3.y.toFixed(3), statsS3.z.toFixed(3), `${statsS3.count} / ${location.samples.length}`],
   ];
 
   const worksheet = XLSX.utils.aoa_to_sheet(ws_data);
