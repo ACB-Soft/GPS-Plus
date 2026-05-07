@@ -166,7 +166,7 @@ const App = () => {
     navigateTo('dashboard');
   };
 
-  const handleGPSComplete = (coord: Coordinate, folderName: string, pointName: string, description: string, coordinateSystem: string, duration: number, samples: Coordinate[], usedIndices: number[]) => {
+  const handleGPSComplete = (coord: Coordinate, folderName: string, pointName: string, description: string, coordinateSystem: string, duration: number, samples: Coordinate[], usedIndices: number[], accLimit: number) => {
     const newLoc: SavedLocation = {
       ...coord,
       id: Date.now().toString(),
@@ -176,7 +176,8 @@ const App = () => {
       coordinateSystem: coordinateSystem,
       measurementDuration: duration,
       samples: samples,
-      usedSampleIndices: usedIndices
+      usedSampleIndices: usedIndices,
+      accuracyLimit: accLimit
     };
     setLocations(prev => [newLoc, ...prev]);
     setLastResult(newLoc);

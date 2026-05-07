@@ -6,7 +6,7 @@ import GlobalFooter from './GlobalFooter';
 import Header from './Header';
 
 interface Props {
-  onComplete: (coord: Coordinate, folderName: string, pointName: string, description: string, coordinateSystem: string, duration: number, samples: Coordinate[], usedIndices: number[]) => void;
+  onComplete: (coord: Coordinate, folderName: string, pointName: string, description: string, coordinateSystem: string, duration: number, samples: Coordinate[], usedIndices: number[], accuracyLimit: number) => void;
   onCancel: () => void;
   isContinuing?: boolean;
   existingLocations: SavedLocation[];
@@ -282,7 +282,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       }
     }
 
-    onComplete(avg, folderName, pointName, '', coordinateSystem, measurementDuration, samples, usedIndices);
+    onComplete(avg, folderName, pointName, '', coordinateSystem, measurementDuration, samples, usedIndices, accuracyLimit);
     releaseWakeLock();
   }, [folderName, pointName, coordinateSystem, measurementDuration, onComplete, accuracyLimit]);
 

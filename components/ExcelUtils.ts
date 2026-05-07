@@ -122,10 +122,9 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
     // Durum belirleme
     let status = "Kullanıldı";
     if (location.usedSampleIndices && !location.usedSampleIndices.includes(idx)) {
-      // Neden kullanılmadığını tahmin et (Hassasiyet mi Outlier mı?)
-      // Not: Bu mantık GPSCapture ile paralel olmalı
-      if (s.accuracy > 20) { // Genelde 20 varsayılan limit, ancak tam değer burada yok
-        status = "Düşük Hass.";
+      const limit = location.accuracyLimit || 5.0;
+      if (s.accuracy > limit) {
+        status = `Düşük Hass. (> ${limit}m)`;
       } else {
         status = "Elendi (Sigma)";
       }
@@ -138,6 +137,7 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
       val2,
       s.altitude !== null ? s.altitude.toFixed(3) : '---',
       s.accuracy.toFixed(3),
+      s.altitudeAccuracy !== null ? s.altitudeAccuracy.toFixed(3) : '---',
       status
     ];
   });
@@ -148,9 +148,10 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
     ["Proje Adı:", location.folderName],
     ["Koordinat Sistemi:", sys],
     ["Ölçüm Süresi:", `${location.measurementDuration || 0} sn`],
+    ["Hassasiyet Eşiği:", `${location.accuracyLimit || '---'} m`],
     ["Toplam Örnek Sayısı:", location.samples.length],
     [],
-    ["No", "Saat", header1, header2, "Yükseklik (m)", "Hassasiyet (m)", "Durum"],
+    ["No", "Saat", header1, header2, "Yükseklik (m)", "Hassasiyet (m)", "Dikey Hass. (m)", "Durum"],
     ...dataRows
   ];
 
@@ -163,6 +164,7 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
     { wch: 15 }, // Yükseklik
     { wch: 15 }, // Hassasiyet
     { wch: 15 }, // Dikey Hass
+    { wch: 20 }, // Durum
   ];
 
   const workbook = XLSX.utils.book_new();
