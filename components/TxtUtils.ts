@@ -32,9 +32,9 @@ export const downloadTXT = (locations: SavedLocation[]) => {
     const { x, y } = convertCoordinate(loc.lat, loc.lng, loc.coordinateSystem || 'WGS84');
     const isUTM = loc.coordinateSystem && loc.coordinateSystem !== 'WGS84';
     
-    // UTM ise virgülden sonra basamak gösterme (tam sayı), WGS84 ise 6 basamak
-    const valX = isUTM ? x.toFixed(0) : x.toFixed(6);
-    const valY = isUTM ? y.toFixed(0) : y.toFixed(6);
+    // UTM ise 2 basamak, WGS84 ise 6 basamak
+    const valX = isUTM ? x.toFixed(2) : x.toFixed(6);
+    const valY = isUTM ? y.toFixed(2) : y.toFixed(6);
     
     const correctedH = getCorrectedHeight(loc.lat, loc.lng, loc.altitude);
     
@@ -43,7 +43,7 @@ export const downloadTXT = (locations: SavedLocation[]) => {
     const firstVal = isWGS84 ? valY : valX;
     const secondVal = isWGS84 ? valX : valY;
     
-    content += `${loc.name}\t${firstVal}\t${secondVal}\t${correctedH !== null ? Math.round(correctedH) : '---'}\n`;
+    content += `${loc.name}\t${firstVal}\t${secondVal}\t${correctedH !== null ? correctedH.toFixed(2) : '---'}\n`;
   });
 
   const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
