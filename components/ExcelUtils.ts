@@ -119,6 +119,18 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
     const val1 = isWGS84 ? s.lat.toFixed(8) : x.toFixed(3);
     const val2 = isWGS84 ? s.lng.toFixed(8) : y.toFixed(3);
     
+    // Durum belirleme
+    let status = "Kullanıldı";
+    if (location.usedSampleIndices && !location.usedSampleIndices.includes(idx)) {
+      // Neden kullanılmadığını tahmin et (Hassasiyet mi Outlier mı?)
+      // Not: Bu mantık GPSCapture ile paralel olmalı
+      if (s.accuracy > 20) { // Genelde 20 varsayılan limit, ancak tam değer burada yok
+        status = "Düşük Hass.";
+      } else {
+        status = "Elendi (Sigma)";
+      }
+    }
+
     return [
       idx + 1,
       new Date(s.timestamp).toLocaleTimeString('tr-TR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
@@ -126,7 +138,7 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
       val2,
       s.altitude !== null ? s.altitude.toFixed(3) : '---',
       s.accuracy.toFixed(3),
-      s.altitudeAccuracy !== null ? s.altitudeAccuracy.toFixed(3) : '---'
+      status
     ];
   });
 
@@ -138,7 +150,7 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
     ["Ölçüm Süresi:", `${location.measurementDuration || 0} sn`],
     ["Toplam Örnek Sayısı:", location.samples.length],
     [],
-    ["No", "Saat", header1, header2, "Yükseklik (m)", "Hassasiyet (m)", "Dikey Hass. (m)"],
+    ["No", "Saat", header1, header2, "Yükseklik (m)", "Hassasiyet (m)", "Durum"],
     ...dataRows
   ];
 

@@ -16,6 +16,7 @@ export interface SavedLocation extends Coordinate {
   coordinateSystem?: string;
   measurementDuration?: number;
   samples?: Coordinate[];
+  usedSampleIndices?: number[];
 }
 
 export interface StakeoutPoint {
