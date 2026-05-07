@@ -117,8 +117,8 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
   // --- İstatistiksel Ön Hazırlık ---
   const accuracyLimit = location.accuracyLimit || 5.0;
   
-  // Önce hassas verileri filtrele (Daha sonra sigma hesaplaması için temel)
-  const validSamples = location.samples.map((s, idx) => {
+  // Sadece hassas verileri filtrele (İstatistiklerin temeli budur)
+  const allConverted = location.samples.map((s, idx) => {
     const { x, y } = convertCoordinate(s.lat, s.lng, sys);
     return { 
       idx, 
@@ -129,49 +129,27 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
     };
   });
 
-  // Aritmetik Ortalama (Hassasiyete bakılmaksızın tümü)
-  const allX = validSamples.map(s => s.x);
-  const allY = validSamples.map(s => s.y);
-  const allZ = validSamples.filter(s => s.z !== null).map(s => s.z as number);
-  
-  const avgX = allX.reduce((a, b) => a + b, 0) / allX.length;
-  const avgY = allY.reduce((a, b) => a + b, 0) / allY.length;
-  const avgZ = allZ.length > 0 ? allZ.reduce((a, b) => a + b, 0) / allZ.length : 0;
+  // İstatistiksel işlemlere sadece hassas veriler girer
+  const validSamples = allConverted.filter(s => s.raw.accuracy <= accuracyLimit);
 
-  // Sigma Hesaplama (Mesafe bazlı)
-  const distances = validSamples.map(s => Math.sqrt(Math.pow(s.x - avgX, 2) + Math.pow(s.y - avgY, 2)));
-  const sumSqDist = distances.reduce((a, b) => a + Math.pow(b, 2), 0);
-  const sigma = Math.sqrt(sumSqDist / validSamples.length) || 0.00000001; // Bölme hatası olmasın
+  if (validSamples.length === 0) {
+    // Hiç hassas veri yoksa istatistikleri boş dönmemek için bir uyarı gerekebilir 
+    // ama pratikte en az bir tane olur. Sadece güvenlik için:
+  }
 
-  // Filtreleme Fonksiyonu
-  const getFilteredMean = (sigmaMultiplier: number | null) => {
-    let filtered = validSamples;
-    
-    // Önce hassasiyet sınırı (Eğer sigmaMultiplier varsa accuracy de elenir)
-    if (sigmaMultiplier !== null) {
-      filtered = filtered.filter(s => s.raw.accuracy <= accuracyLimit);
-    }
-
-    if (sigmaMultiplier !== null) {
-      filtered = filtered.filter((s, idx) => distances[s.idx] <= sigmaMultiplier * sigma);
-    }
-
-    if (filtered.length === 0) return { x: 0, y: 0, z: 0, count: 0 };
-    
-    const fX = filtered.reduce((a, b) => a + b.x, 0) / filtered.length;
-    const fY = filtered.reduce((a, b) => a + b.y, 0) / filtered.length;
-    const fZArr = filtered.filter(s => s.z !== null).map(s => s.z as number);
-    const fZ = fZArr.length > 0 ? fZArr.reduce((a, b) => a + b, 0) / fZArr.length : 0;
-    
-    return { x: fX, y: fY, z: fZ, count: filtered.length };
+  // Aritmetik Ortalama (Sadece Hassas Veriler)
+  const getMean = (samples: any[]) => {
+    if (samples.length === 0) return { x: 0, y: 0, z: 0, count: 0 };
+    const avgX = samples.reduce((a, b) => a + b.x, 0) / samples.length;
+    const avgY = samples.reduce((a, b) => a + b.y, 0) / samples.length;
+    const zArr = samples.filter(s => s.z !== null).map(s => s.z as number);
+    const avgZ = zArr.length > 0 ? zArr.reduce((a, b) => a + b, 0) / zArr.length : 0;
+    return { x: avgX, y: avgY, z: avgZ, count: samples.length };
   };
 
-  const statsAll = { x: avgX, y: avgY, z: avgZ, count: validSamples.length };
-  const statsS1 = getFilteredMean(1);
-  const statsS2 = getFilteredMean(2);
-  const statsS3 = getFilteredMean(3);
+  const statsAll = getMean(validSamples);
 
-  // --- Medyan Hesaplama ---
+  // --- Medyan Hesaplama (Sadece Hassas Veriler) ---
   const getMedian = (arr: number[]) => {
     if (arr.length === 0) return 0;
     const sorted = [...arr].sort((a, b) => a - b);
@@ -179,18 +157,16 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
     return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
   };
 
-  const medX = getMedian(allX);
-  const medY = getMedian(allY);
-  const medZ = getMedian(allZ);
+  const medX = getMedian(validSamples.map(s => s.x));
+  const medY = getMedian(validSamples.map(s => s.y));
+  const medZ = getMedian(validSamples.filter(s => s.z !== null).map(s => s.z as number));
 
-  // --- Kümeleme (Clustering) Mantığı (Basitleştirilmiş DBSCAN/Centroid) ---
+  // --- Kümeleme (Clustering) Mantığı ---
   const getClusteredMean = () => {
     if (validSamples.length === 0) return { x: 0, y: 0, z: 0, count: 0 };
     
-    // Yarıçap (Epsilon): Hassasiyet limitinin yarısı veya min 1m
     const epsilon = Math.max(accuracyLimit / 2, 1.0); 
     
-    // Her nokta için komşu sayısını bul
     const neighbors = validSamples.map(p1 => {
       const cluster = validSamples.filter(p2 => 
         Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2)) <= epsilon
@@ -198,7 +174,6 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
       return cluster;
     });
 
-    // En geniş/yoğun kümeyi seç
     let bestCluster = neighbors[0] || [];
     for (const cluster of neighbors) {
       if (cluster.length > bestCluster.length) {
@@ -206,14 +181,7 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
       }
     }
 
-    if (bestCluster.length === 0) return { x: 0, y: 0, z: 0, count: 0 };
-
-    const cX = bestCluster.reduce((a, b) => a + b.x, 0) / bestCluster.length;
-    const cY = bestCluster.reduce((a, b) => a + b.y, 0) / bestCluster.length;
-    const cZArr = bestCluster.filter(s => s.z !== null).map(s => s.z as number);
-    const cZ = cZArr.length > 0 ? cZArr.reduce((a, b) => a + b, 0) / cZArr.length : 0;
-
-    return { x: cX, y: cY, z: cZ, count: bestCluster.length };
+    return getMean(bestCluster);
   };
 
   const statsCluster = getClusteredMean();
@@ -223,17 +191,9 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
     const val1 = isWGS84 ? s.lat.toFixed(8) : x.toFixed(3);
     const val2 = isWGS84 ? s.lng.toFixed(8) : y.toFixed(3);
     
-    const dist = distances[idx];
     let status = "Kullanıldı";
-
     if (s.accuracy > accuracyLimit) {
       status = `Düşük Hass. (> ${accuracyLimit}m)`;
-    } else if (dist > 3 * sigma) {
-      status = "Elendi (Sigma 3+)";
-    } else if (dist > 2 * sigma) {
-      status = "Elendi (Sigma 2)";
-    } else if (dist > 1 * sigma) {
-      status = "Elendi (Sigma 1)";
     }
 
     return [
@@ -260,14 +220,11 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
     ["No", "Saat", header1, header2, "Yükseklik (m)", "Hassasiyet (m)", "Dikey Hass. (m)", "Durum"],
     ...dataRows,
     [],
-    ["İSTATİSTİKSEL HESAPLAMA ÖZETİ"],
+    ["İSTATİSTİKSEL HESAPLAMA ÖZETİ (Sadece Hassas Veriler)"],
     ["Yöntem", header1, header2, "Yükseklik (m)", "Kullanılan Veri"],
     ["Aritmetik Ortalama", isWGS84 ? statsAll.x.toFixed(8) : statsAll.x.toFixed(3), isWGS84 ? statsAll.y.toFixed(8) : statsAll.y.toFixed(3), statsAll.z.toFixed(3), `${statsAll.count} / ${location.samples.length}`],
-    ["Medyan Değerler", isWGS84 ? medX.toFixed(8) : medX.toFixed(3), isWGS84 ? medY.toFixed(8) : medY.toFixed(3), medZ.toFixed(3), `${location.samples.length} / ${location.samples.length}`],
+    ["Medyan Değerler", isWGS84 ? medX.toFixed(8) : medX.toFixed(3), isWGS84 ? medY.toFixed(8) : medY.toFixed(3), medZ.toFixed(3), `${validSamples.length} / ${location.samples.length}`],
     ["Kümeleme (Yoğunluk)", isWGS84 ? statsCluster.x.toFixed(8) : statsCluster.x.toFixed(3), isWGS84 ? statsCluster.y.toFixed(8) : statsCluster.y.toFixed(3), statsCluster.z.toFixed(3), `${statsCluster.count} / ${location.samples.length}`],
-    ["1-Sigma Filtreli (68%)", isWGS84 ? statsS1.x.toFixed(8) : statsS1.x.toFixed(3), isWGS84 ? statsS1.y.toFixed(8) : statsS1.y.toFixed(3), statsS1.z.toFixed(3), `${statsS1.count} / ${location.samples.length}`],
-    ["2-Sigma Filtreli (95%)", isWGS84 ? statsS2.x.toFixed(8) : statsS2.x.toFixed(3), isWGS84 ? statsS2.y.toFixed(8) : statsS2.y.toFixed(3), statsS2.z.toFixed(3), `${statsS2.count} / ${location.samples.length}`],
-    ["3-Sigma Filtreli (99%)", isWGS84 ? statsS3.x.toFixed(8) : statsS3.x.toFixed(3), isWGS84 ? statsS3.y.toFixed(8) : statsS3.y.toFixed(3), statsS3.z.toFixed(3), `${statsS3.count} / ${location.samples.length}`],
   ];
 
   const worksheet = XLSX.utils.aoa_to_sheet(ws_data);
