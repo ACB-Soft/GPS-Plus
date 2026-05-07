@@ -46,6 +46,8 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   
   const samplesRef = useRef<Coordinate[]>([]);
   const lastPositionRef = useRef<GeolocationPosition | null>(null);
+  const lastSavedPositionRef = useRef<{lat: number, lng: number, accuracy: number} | null>(null);
+  const lastSaveTimestampRef = useRef<number>(0);
   const watchIdRef = useRef<number | null>(null);
   const wakeLockRef = useRef<any>(null);
 
@@ -153,9 +155,33 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
           lastPositionRef.current = pos;
           setWaitingForSignal(false);
           setCaptureError(null);
+          
           if (step === 'COUNTDOWN') {
-            // Sadece güncel hassasiyeti ve konumu güncelle, örnek kaydını interval yapacak
-            setSampleCount(samplesRef.current.length);
+            // --- HİBRİT MANTIK: Farklı Veri Gelirse Kaydet ---
+            const current = {
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              accuracy: pos.coords.accuracy
+            };
+
+            const isDifferent = !lastSavedPositionRef.current || 
+              lastSavedPositionRef.current.lat !== current.lat ||
+              lastSavedPositionRef.current.lng !== current.lng ||
+              lastSavedPositionRef.current.accuracy !== current.accuracy;
+
+            if (isDifferent) {
+              samplesRef.current.push({
+                lat: pos.coords.latitude, 
+                lng: pos.coords.longitude,
+                accuracy: pos.coords.accuracy, 
+                altitude: pos.coords.altitude, 
+                altitudeAccuracy: pos.coords.altitudeAccuracy,
+                timestamp: Date.now()
+              });
+              lastSavedPositionRef.current = current;
+              lastSaveTimestampRef.current = Date.now();
+              setSampleCount(samplesRef.current.length);
+            }
           }
         },
         (err) => { 
@@ -292,8 +318,10 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
     
     if (step === 'COUNTDOWN' && !waitingForSignal) {
       timer = setInterval(() => {
-        // Her saniye o anki en taze konumu kaydet (1Hz Sampling)
-        if (lastPositionRef.current) {
+        const now = Date.now();
+        
+        // --- HİBRİT MANTIK: 5 Saniyede Bir Zorunlu Kayıt (Farklı veri gelmediyse) ---
+        if (lastPositionRef.current && (now - lastSaveTimestampRef.current >= 5000)) {
           const p = lastPositionRef.current;
           samplesRef.current.push({
             lat: p.coords.latitude, 
@@ -301,8 +329,14 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
             accuracy: p.coords.accuracy, 
             altitude: p.coords.altitude, 
             altitudeAccuracy: p.coords.altitudeAccuracy,
-            timestamp: Date.now()
+            timestamp: now
           });
+          lastSaveTimestampRef.current = now;
+          lastSavedPositionRef.current = {
+            lat: p.coords.latitude,
+            lng: p.coords.longitude,
+            accuracy: p.coords.accuracy
+          };
           setSampleCount(samplesRef.current.length);
         }
 
@@ -327,17 +361,26 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
     // Start with the last known position as the first sample
     if (lastPositionRef.current) {
       const p = lastPositionRef.current;
-      samplesRef.current = [{
+      const initialSample = {
         lat: p.coords.latitude, 
         lng: p.coords.longitude, 
         accuracy: p.coords.accuracy, 
         altitude: p.coords.altitude, 
         altitudeAccuracy: p.coords.altitudeAccuracy,
         timestamp: Date.now()
-      }];
+      };
+      samplesRef.current = [initialSample];
+      lastSavedPositionRef.current = {
+        lat: p.coords.latitude,
+        lng: p.coords.longitude,
+        accuracy: p.coords.accuracy
+      };
+      lastSaveTimestampRef.current = Date.now();
       setSampleCount(1);
     } else {
       samplesRef.current = [];
+      lastSavedPositionRef.current = null;
+      lastSaveTimestampRef.current = 0;
       setSampleCount(0);
     }
 
