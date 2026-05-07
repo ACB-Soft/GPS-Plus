@@ -70,10 +70,8 @@ export const downloadExcel = (locations: SavedLocation[]) => {
   });
 
   const ws_data = [
-    [`"${FULL_BRAND}" tarafindan olusturuldu.`],
-    [],
     ["Proje Adı:", projectName],
-    ["Proje Koordinat Sistemi:", projectSystem],
+    ["Koordinat Sistemi:", projectSystem],
     [], 
     ["Nokta İsmi", header1, header2, "Yükseklik (m)", "Elipsoidal Yükseklik (m)", "Ondülasyon (m)", "Hassasiyet (m)", "Gözlem Süresi (sn)", "Tarih"],
     ...dataRows

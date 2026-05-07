@@ -21,9 +21,8 @@ export const downloadTXT = (locations: SavedLocation[]) => {
   const header1 = isWGS84 ? "Enlem" : "Sağa (Y)";
   const header2 = isWGS84 ? "Boylam" : "Yukarı (X)";
 
-  let content = `"${FULL_BRAND}" tarafindan olusturuldu.\n\n`;
-  content += `Proje Adi:\t${projectName}\n`;
-  content += `Proje Koordinat Sistemi:\t${projectSystem}\n\n`;
+  let content = `Proje Adi:\t${projectName}\n`;
+  content += `Koordinat Sistemi:\t${projectSystem}\n\n`;
   
   content += `Nokta\t${header1}\t${header2}\tYukseklik(m)\n`;
   content += "----------------------------------------------------------------\n";
