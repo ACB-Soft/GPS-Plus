@@ -55,7 +55,12 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
         wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
         console.log('Wake Lock is active');
       } catch (err: any) {
-        console.error(`${err.name}, ${err.message}`);
+        // Iframe içinde veya izin politikası kısıtlı olduğunda bu hata normaldir.
+        if (err.name === 'NotAllowedError') {
+          console.warn('Wake Lock disallowed by permissions policy (likely running in an iframe)');
+        } else {
+          console.error(`Wake Lock error: ${err.name}, ${err.message}`);
+        }
       }
     }
   };

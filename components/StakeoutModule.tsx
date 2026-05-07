@@ -189,7 +189,12 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
         wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
         console.log('Stakeout Wake Lock is active');
       } catch (err: any) {
-        console.error(`${err.name}, ${err.message}`);
+        // Iframe içinde veya izin politikası kısıtlı olduğunda bu hata normaldir.
+        if (err.name === 'NotAllowedError') {
+          console.warn('Stakeout Wake Lock disallowed by permissions policy');
+        } else {
+          console.error(`Stakeout Wake Lock error: ${err.name}, ${err.message}`);
+        }
       }
     }
   };
