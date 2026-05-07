@@ -171,6 +171,18 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
   const statsS2 = getFilteredMean(2);
   const statsS3 = getFilteredMean(3);
 
+  // --- Medyan Hesaplama ---
+  const getMedian = (arr: number[]) => {
+    if (arr.length === 0) return 0;
+    const sorted = [...arr].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  };
+
+  const medX = getMedian(allX);
+  const medY = getMedian(allY);
+  const medZ = getMedian(allZ);
+
   const dataRows = location.samples.map((s, idx) => {
     const { x, y } = convertCoordinate(s.lat, s.lng, sys);
     const val1 = isWGS84 ? s.lat.toFixed(8) : x.toFixed(3);
@@ -216,6 +228,7 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
     ["İSTATİSTİKSEL HESAPLAMA ÖZETİ"],
     ["Yöntem", header1, header2, "Yükseklik (m)", "Kullanılan Veri"],
     ["Aritmetik Ortalama", isWGS84 ? statsAll.x.toFixed(8) : statsAll.x.toFixed(3), isWGS84 ? statsAll.y.toFixed(8) : statsAll.y.toFixed(3), statsAll.z.toFixed(3), `${statsAll.count} / ${location.samples.length}`],
+    ["Medyan Değerler", isWGS84 ? medX.toFixed(8) : medX.toFixed(3), isWGS84 ? medY.toFixed(8) : medY.toFixed(3), medZ.toFixed(3), `${location.samples.length} / ${location.samples.length}`],
     ["1-Sigma Filtreli (68%)", isWGS84 ? statsS1.x.toFixed(8) : statsS1.x.toFixed(3), isWGS84 ? statsS1.y.toFixed(8) : statsS1.y.toFixed(3), statsS1.z.toFixed(3), `${statsS1.count} / ${location.samples.length}`],
     ["2-Sigma Filtreli (95%)", isWGS84 ? statsS2.x.toFixed(8) : statsS2.x.toFixed(3), isWGS84 ? statsS2.y.toFixed(8) : statsS2.y.toFixed(3), statsS2.z.toFixed(3), `${statsS2.count} / ${location.samples.length}`],
     ["3-Sigma Filtreli (99%)", isWGS84 ? statsS3.x.toFixed(8) : statsS3.x.toFixed(3), isWGS84 ? statsS3.y.toFixed(8) : statsS3.y.toFixed(3), statsS3.z.toFixed(3), `${statsS3.count} / ${location.samples.length}`],
