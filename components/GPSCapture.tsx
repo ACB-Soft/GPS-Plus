@@ -153,7 +153,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
           lastPositionRef.current = pos;
           setWaitingForSignal(false);
           setCaptureError(null);
-          if (step === 'COUNTDOWN' && !waitingForSignal) {
+          if (step === 'COUNTDOWN') {
             samplesRef.current.push({
               lat: pos.coords.latitude, lng: pos.coords.longitude,
               accuracy: pos.coords.accuracy, 
