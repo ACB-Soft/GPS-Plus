@@ -13,9 +13,10 @@ interface Props {
   existingLocations: SavedLocation[];
   currentStep?: 'SELECT_MODE' | 'FORM' | 'READY' | 'COUNTDOWN';
   onNavigate: (step: 'SELECT_MODE' | 'FORM' | 'READY' | 'COUNTDOWN') => void;
+  gnssOnlySetting?: boolean;
 }
 
-const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = false, existingLocations, currentStep, onNavigate }) => {
+const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = false, existingLocations, currentStep, onNavigate, gnssOnlySetting = false }) => {
   const [step, setStep] = useState<'SELECT_MODE' | 'FORM' | 'READY' | 'COUNTDOWN'>(currentStep || (isContinuing ? 'READY' : 'SELECT_MODE'));
   const [isNewProject, setIsNewProject] = useState(!isContinuing);
 
@@ -226,7 +227,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
     }
 
     const calculationMethod = (localStorage.getItem('default_calculation_method') || 'ARITHMETIC_MEAN') as CalculationMethod;
-    const { result: avg, usedIndices } = calculateResult(samples, calculationMethod, accuracyLimit);
+    const { result: avg, usedIndices } = calculateResult(samples, calculationMethod, accuracyLimit, gnssOnlySetting);
 
     // Feedback (Sound/Vibration)
     const audioEnabled = localStorage.getItem('default_audio_feedback_enabled') === 'true';
@@ -254,16 +255,18 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       }
     }
 
-    onComplete(avg, folderName, pointName, '', coordinateSystem, measurementDuration, samples, usedIndices, accuracyLimit, calculationMethod);
+    onComplete(avg, folderName, pointName, '', coordinateSystem, measurementDuration, samples, usedIndices, accuracyLimit, calculationMethod, gnssOnlySetting);
     releaseWakeLock();
-  }, [folderName, pointName, coordinateSystem, measurementDuration, onComplete, accuracyLimit]);
+  }, [folderName, pointName, coordinateSystem, measurementDuration, onComplete, accuracyLimit, gnssOnlySetting]);
 
   // Ref to track accuracy validity without triggering effect re-runs
   const isAccuracyOkRef = useRef(false);
 
   useEffect(() => {
-    isAccuracyOkRef.current = instantAccuracy !== null && instantAccuracy <= accuracyLimit;
-  }, [instantAccuracy, accuracyLimit]);
+    const isAccOk = instantAccuracy !== null && instantAccuracy <= accuracyLimit;
+    const isGnssOk = !gnssOnlySetting || (lastPositionRef.current && lastPositionRef.current.coords.altitude !== null && lastPositionRef.current.coords.altitude !== 0);
+    isAccuracyOkRef.current = isAccOk && isGnssOk;
+  }, [instantAccuracy, accuracyLimit, gnssOnlySetting]);
 
   useEffect(() => {
     let timer: any;
@@ -272,8 +275,12 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       timer = setInterval(() => {
         const now = Date.now();
         
+        // --- GNSS Only Modu Kontrolü ---
+        const isActuallySatellite = !gnssOnlySetting || 
+          (lastPositionRef.current && lastPositionRef.current.coords.altitude !== null && lastPositionRef.current.coords.altitude !== 0);
+
         // --- HİBRİT MANTIK: 5 Saniyede Bir Zorunlu Kayıt (Farklı veri gelmediyse) ---
-        if (lastPositionRef.current && (now - lastSaveTimestampRef.current >= 5000)) {
+        if (isActuallySatellite && lastPositionRef.current && (now - lastSaveTimestampRef.current >= 5000)) {
           const p = lastPositionRef.current;
           samplesRef.current.push({
             lat: p.coords.latitude, 
@@ -434,6 +441,14 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
           </div>
 
           <div className="relative flex items-center justify-center flex-1 w-full max-h-[300px] mt-8">
+            {gnssOnlySetting && (
+                <div className="absolute -top-6 left-0 right-0 flex justify-center animate-in fade-in slide-in-from-bottom-1">
+                  <div className="px-3 py-1 bg-blue-600/10 border border-blue-600/20 rounded-full flex items-center gap-2">
+                    <i className="fas fa-satellite text-[8px] text-blue-600"></i>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-blue-600">GNSS ÖNCELİKLİ MOD AKTİF</span>
+                  </div>
+                </div>
+            )}
             <div className="w-44 h-44 sm:w-56 sm:h-56 md:w-72 md:h-72 rounded-[3.5rem] md:rounded-[4.5rem] border-8 border-slate-50 shadow-2xl flex items-center justify-center relative bg-slate-200">
               <div className={`absolute inset-4 md:inset-6 border-2 rounded-[2.8rem] md:rounded-[3.8rem] ${instantAccuracy && instantAccuracy <= 10 ? 'border-emerald-100' : 'border-slate-50'}`}></div>
               {step === 'COUNTDOWN' && !waitingForSignal && <div className="scanner-line"></div>}
@@ -533,6 +548,13 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                     <p className="font-black text-amber-600 text-[12px] md:text-[13px] uppercase tracking-[0.2em] leading-none">Hassasiyet Bekleniyor...</p>
                     <p className="text-slate-400 text-[10px] font-bold leading-tight uppercase tracking-widest px-4">
                       Mevcut hassasiyet (±{instantAccuracy.toFixed(1)}m),<br/>belirlenen {accuracyLimit}m limitinden yüksek.
+                    </p>
+                  </div>
+                ) : gnssOnlySetting && (!lastPositionRef.current || lastPositionRef.current.coords.altitude === null || lastPositionRef.current.coords.altitude === 0) ? (
+                  <div className="animate-pulse space-y-1">
+                    <p className="font-black text-blue-600 text-[12px] md:text-[13px] uppercase tracking-[0.2em] leading-none">Uydu Kilidi Bekleniyor...</p>
+                    <p className="text-slate-400 text-[10px] font-bold leading-tight uppercase tracking-widest px-4">
+                      Sadece GNSS modu aktif.<br/>Yükseklik verisi içeren uydu sinyali bekleniyor.
                     </p>
                   </div>
                 ) : (

@@ -6,11 +6,22 @@ import { Coordinate, CalculationMethod } from '../types';
 export function calculateResult(
   samples: Coordinate[],
   method: CalculationMethod,
-  accuracyLimit: number
+  accuracyLimit: number,
+  gnssOnly: boolean = false
 ): { result: Coordinate; usedIndices: number[] } {
-  // Step 1: Filter by accuracy limit (pre-requisite for all methods as requested)
-  const accuracyFiltered = samples.filter(s => s.accuracy <= accuracyLimit);
-  const sourceData = accuracyFiltered.length > 0 ? accuracyFiltered : samples;
+  // Step 1: Filter by GNSS metadata if requested
+  // GNSS usually provides altitude, while Wi-Fi/Network often doesn't in browsers
+  let baseData = samples;
+  if (gnssOnly) {
+    const gnssData = samples.filter(s => s.altitude !== null && s.altitude !== 0);
+    if (gnssData.length > 0) {
+      baseData = gnssData;
+    }
+  }
+
+  // Step 2: Filter by accuracy limit (pre-requisite for all methods)
+  const accuracyFiltered = baseData.filter(s => s.accuracy <= accuracyLimit);
+  const sourceData = accuracyFiltered.length > 0 ? accuracyFiltered : baseData;
 
   if (sourceData.length === 0) {
     return { result: samples[0], usedIndices: [0] };

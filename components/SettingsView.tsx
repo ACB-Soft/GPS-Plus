@@ -20,6 +20,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
   const [heightPrecision, setHeightPrecision] = useState(localStorage.getItem('default_height_precision') || '1');
   const [heightType, setHeightType] = useState(localStorage.getItem('default_height_type') || 'orthometric');
   const [calculationMethod, setCalculationMethod] = useState(localStorage.getItem('default_calculation_method') || 'ARITHMETIC_MEAN');
+  const [gnssOnlyMode, setGnssOnlyMode] = useState(localStorage.getItem('default_gnss_only_mode') === 'true');
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   
   const [modal, setModal] = useState<{
@@ -47,7 +48,8 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
     localStorage.setItem('default_height_precision', heightPrecision);
     localStorage.setItem('default_height_type', heightType);
     localStorage.setItem('default_calculation_method', calculationMethod);
-  }, [coordinateSystem, accuracyLimit, measurementDuration, mapProvider, audioEnabled, vibrationEnabled, screenAlwaysOn, locationPrecision, heightPrecision, heightType, calculationMethod]);
+    localStorage.setItem('default_gnss_only_mode', gnssOnlyMode.toString());
+  }, [coordinateSystem, accuracyLimit, measurementDuration, mapProvider, audioEnabled, vibrationEnabled, screenAlwaysOn, locationPrecision, heightPrecision, heightType, calculationMethod, gnssOnlyMode]);
 
   const handleResetSettings = () => {
     if (confirm('Tüm ayarlar fabrika ayarlarına sıfırlanacak. Emin misiniz?')) {
@@ -63,6 +65,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
       localStorage.removeItem('default_height_precision');
       localStorage.removeItem('default_height_type');
       localStorage.removeItem('default_calculation_method');
+      localStorage.removeItem('default_gnss_only_mode');
 
       // Reset state
       setCoordinateSystem('ITRF96');
@@ -76,6 +79,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
       setHeightPrecision('1');
       setHeightType('orthometric');
       setCalculationMethod('ARITHMETIC_MEAN');
+      setGnssOnlyMode(false);
 
       setModal({ show: true, type: 'success', message: 'Ayarlar başarıyla sıfırlandı.' });
     }
@@ -233,6 +237,23 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                   <option value="DBSCAN">5. Yöntem: DBSCAN Kümeleme</option>
                 </select>
               </div>
+
+              {/* Sadece GNSS Modu */}
+              <div className="flex items-center justify-between h-12 px-4 bg-slate-100 rounded-2xl border border-slate-100 shadow-sm">
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold text-slate-900 leading-none">Sadece GNSS Modu</span>
+                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Wi-Fi / Şebeke Verilerini Filtrele</span>
+                </div>
+                <button 
+                  onClick={() => setGnssOnlyMode(!gnssOnlyMode)}
+                  className={`w-12 h-6 rounded-full transition-all relative ${gnssOnlyMode ? 'bg-blue-600' : 'bg-slate-300'}`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${gnssOnlyMode ? 'right-1' : 'left-1'}`}></div>
+                </button>
+              </div>
+              <p className="text-[9px] text-slate-500 font-medium ml-1 leading-tight">
+                Aktif edildiğinde, sadece yükseklik verisi içeren uydu tabanlı konumlar ölçüme dahil edilir. Açık alanlarda hassasiyeti artırır.
+              </p>
             </div>
           </section>
 

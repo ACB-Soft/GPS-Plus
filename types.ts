@@ -21,6 +21,7 @@ export interface SavedLocation extends Coordinate {
   samples?: Coordinate[];
   usedSampleIndices?: number[];
   accuracyLimit?: number;
+  gnssOnlyMode?: boolean;
 }
 
 export interface StakeoutPoint {
@@ -55,4 +56,5 @@ export interface AppSettings {
   locationPrecision: number;
   heightPrecision: number;
   heightType: 'orthometric' | 'ellipsoidal';
+  gnssOnlyMode: boolean;
 }

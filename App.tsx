@@ -45,6 +45,7 @@ const App = () => {
     heightPrecision: parseInt(localStorage.getItem('default_height_precision') || '1'),
     heightType: (localStorage.getItem('default_height_type') as 'orthometric' | 'ellipsoidal') || 'orthometric',
     calculationMethod: (localStorage.getItem('default_calculation_method') || 'ARITHMETIC_MEAN') as any,
+    gnssOnlyMode: localStorage.getItem('default_gnss_only_mode') === 'true',
   }));
 
   // Navigation wrapper to sync with browser history
@@ -99,8 +100,9 @@ const App = () => {
     setLocations(prevLocations => {
       let changed = false;
       const updated = prevLocations.map(loc => {
-        if (loc.samples && loc.samples.length > 0 && loc.calculationMethod !== settings.calculationMethod) {
-          const { result, usedIndices } = calculateResult(loc.samples, settings.calculationMethod, loc.accuracyLimit || 5.0);
+        if (loc.samples && loc.samples.length > 0 && 
+           (loc.calculationMethod !== settings.calculationMethod || loc.gnssOnlyMode !== settings.gnssOnlyMode)) {
+          const { result, usedIndices } = calculateResult(loc.samples, settings.calculationMethod, loc.accuracyLimit || 5.0, settings.gnssOnlyMode);
           changed = true;
           return {
             ...loc,
@@ -110,6 +112,7 @@ const App = () => {
             altitude: result.altitude,
             altitudeAccuracy: result.altitudeAccuracy,
             calculationMethod: settings.calculationMethod,
+            gnssOnlyMode: settings.gnssOnlyMode,
             usedSampleIndices: usedIndices
           };
         }
@@ -118,8 +121,9 @@ const App = () => {
       return changed ? updated : prevLocations;
     });
 
-    if (lastResult && lastResult.samples && lastResult.samples.length > 0 && lastResult.calculationMethod !== settings.calculationMethod) {
-      const { result, usedIndices } = calculateResult(lastResult.samples, settings.calculationMethod, lastResult.accuracyLimit || 5.0);
+    if (lastResult && lastResult.samples && lastResult.samples.length > 0 && 
+       (lastResult.calculationMethod !== settings.calculationMethod || lastResult.gnssOnlyMode !== settings.gnssOnlyMode)) {
+      const { result, usedIndices } = calculateResult(lastResult.samples, settings.calculationMethod, lastResult.accuracyLimit || 5.0, settings.gnssOnlyMode);
       setLastResult({
         ...lastResult,
         lat: result.lat,
@@ -128,10 +132,11 @@ const App = () => {
         altitude: result.altitude,
         altitudeAccuracy: result.altitudeAccuracy,
         calculationMethod: settings.calculationMethod,
+        gnssOnlyMode: settings.gnssOnlyMode,
         usedSampleIndices: usedIndices
       });
     }
-  }, [settings.calculationMethod]);
+  }, [settings.calculationMethod, settings.gnssOnlyMode]);
 
   const checkLocation = () => {
     if (navigator.geolocation) {
@@ -210,7 +215,7 @@ const App = () => {
     navigateTo('dashboard');
   };
 
-  const handleGPSComplete = (coord: Coordinate, folderName: string, pointName: string, description: string, coordinateSystem: string, duration: number, samples: Coordinate[], usedIndices: number[], accLimit: number, method: any) => {
+  const handleGPSComplete = (coord: Coordinate, folderName: string, pointName: string, description: string, coordinateSystem: string, duration: number, samples: Coordinate[], usedIndices: number[], accLimit: number, method: any, gnssOnly: boolean) => {
     const newLoc: SavedLocation = {
       ...coord,
       id: Date.now().toString(),
@@ -220,6 +225,7 @@ const App = () => {
       coordinateSystem: coordinateSystem,
       measurementDuration: duration,
       calculationMethod: method,
+      gnssOnlyMode: gnssOnly,
       samples: samples,
       usedSampleIndices: usedIndices,
       accuracyLimit: accLimit
@@ -294,6 +300,7 @@ const App = () => {
                 heightPrecision: parseInt(localStorage.getItem('default_height_precision') || '1'),
                 heightType: (localStorage.getItem('default_height_type') as 'orthometric' | 'ellipsoidal') || 'orthometric',
                 calculationMethod: (localStorage.getItem('default_calculation_method') || 'ARITHMETIC_MEAN') as any,
+                gnssOnlyMode: localStorage.getItem('default_gnss_only_mode') === 'true',
               });
               window.history.back();
             }} 
@@ -322,6 +329,7 @@ const App = () => {
               isContinuing={isContinuing}
               currentStep={subView as any}
               onNavigate={(step) => navigateTo('capture', step)}
+              gnssOnlySetting={settings.gnssOnlyMode}
             />
           </div>
         )}
