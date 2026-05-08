@@ -1,202 +1,214 @@
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 import { FULL_BRAND, APP_VERSION } from '../version';
 
+// jsPDF-AutoTable types extension
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF;
+  }
+}
+
 /**
- * GPS Plus Teknik Rapor Üreticisi v4.0 (ULTRA-KAPSAMLI MÜHENDİSLİK RAPORU)
+ * GPS Plus Teknik Rapor Üreticisi v5.0 (PROFESYONEL PDF RAPORU)
  * Harita Mühendisliği standartlarında, akademik ve kapsamlı teknik dokümantasyon.
- * Bu modül, Word ile uyumlu bir HTML-DOC dosyası üretir.
  */
 export const generateTechnicalReport = () => {
+  const doc = new jsPDF({
+    orientation: 'p',
+    unit: 'mm',
+    format: 'a4',
+    putOnlyUsedFonts: true
+  });
+
   const dateStr = new Date().toLocaleDateString('tr-TR');
+  const primaryColor = [0, 33, 71] as [number, number, number]; // Dark Blue
+  const secondaryColor = [230, 242, 255] as [number, number, number]; // Light Blue
+
+  // --- KAPAK SAYFASI ---
+  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+  doc.rect(0, 0, 210, 40, 'F');
   
-  const htmlContent = `
-<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-<head>
-  <meta charset='utf-8'>
-  <title>${FULL_BRAND} Teknik Rpor - Ultra Kapsamlı</title>
-  <style>
-    @page { size: A4; margin: 2.5cm; }
-    body { font-family: 'Times New Roman', Times, serif; font-size: 11pt; line-height: 1.6; color: #000; background: white; margin: 0; padding: 0; }
-    .container { width: 100%; max-width: 17.5cm; margin: auto; padding: 20pt; }
-    h1 { color: #002147; text-align: center; font-size: 26pt; margin-top: 80pt; margin-bottom: 20pt; font-weight: bold; }
-    h2 { color: #002147; font-size: 18pt; border-bottom: 2pt solid #002147; padding-bottom: 5pt; margin-top: 40pt; page-break-after: avoid; text-transform: uppercase; }
-    h3 { color: #003366; font-size: 14pt; margin-top: 20pt; page-break-after: avoid; font-weight: bold; }
-    p { margin-bottom: 12pt; text-align: justify; text-indent: 1.5cm; }
-    ul, ol { margin-bottom: 12pt; padding-left: 40pt; }
-    li { margin-bottom: 5pt; }
-    table { width: 100%; border-collapse: collapse; margin: 20pt 0; page-break-inside: auto; }
-    tr { page-break-inside: avoid; page-break-after: auto; }
-    th, td { border: 1pt solid #000; padding: 10pt; text-align: left; vertical-align: top; font-size: 10pt; }
-    th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
-    .title-page { text-align: center; padding-top: 150pt; height: 100%; }
-    .footer { font-size: 9pt; color: #444; border-top: 1pt solid #000; padding-top: 10pt; margin-top: 60pt; text-align: center; }
-    .math { font-family: 'serif'; font-style: italic; background: #fafafa; padding: 15pt; display: block; text-align: center; border: 0.5pt dashed #999; margin: 15pt 0; }
-    .section-break { page-break-before: always; }
-    .bold { font-weight: bold; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <!-- KAPAK SAYFASI -->
-    <div class="title-page">
-      <p style="font-size: 16pt; margin-bottom: 10pt;">${FULL_BRAND} PLATFORMU</p>
-      <h1>TEKNİK SİSTEM VE ALTYAPI ANALİZ RAPORU</h1>
-      <p style="font-size: 14pt; margin-top: 20pt;">Mühendislik Standartları, Jeodezik Modeller ve Yazılım Teknolojileri</p>
-      <div style="margin-top: 100pt;">
-          <p><strong>Döküman No:</strong> GPS-PR-${new Date().getFullYear()}-001</p>
-          <p><strong>Versiyon:</strong> ${APP_VERSION}</p>
-          <p><strong>Tarih:</strong> ${dateStr}</p>
-          <p><strong>Hazırlayan:</strong> ${FULL_BRAND} Sistem Mühendisliği Grubu</p>
-      </div>
-      <p style="margin-top: 150pt; font-size: 10pt; color: #555;">Bu doküman, ${FULL_BRAND} uygulamasının teknik geçerliliğini ve matematiksel doğruluğunu kanıtlamak üzere Harita ve Yazılım Mühendisleri için üretilmiştir.</p>
-    </div>
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(10);
+  doc.text(FULL_BRAND, 105, 15, { align: 'center' });
+  doc.setFontSize(24);
+  doc.setFont('helvetica', 'bold');
+  doc.text('TEKNİK SİSTEM ANALİZ RAPORU', 105, 30, { align: 'center' });
 
-    <div class="section-break"></div>
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(14);
+  doc.text('Jeodezik Altyapı, Yazılım Mimarisi ve Veri İşleme Metodolojisi', 105, 60, { align: 'center' });
 
-    <h2>1. ÖZET VE KAPSAM</h2>
-    <p>
-        Bu rapor, ${FULL_BRAND} mobil CBS (Coğrafi Bilgi Sistemleri) ve GNSS ölçüm platformunun teknik operasyonel yeteneklerini, veri işleme boru hattını (data pipeline) ve jeodezik hesaplama motorunun akademik temellerini detaylandırmaktadır. Uygulama, saha mühendisliği süreçlerinde karşılaşılan veri uyumsuzluğu, düşük hassasiyetli yükseklik verisi ve karmaşık koordinat dönüşümleri gibi temel problemlere çözüm üretmek amacıyla hibrit bir mimari ile tasarlanmıştır.
-    </p>
+  // Grafik: Jeoid vs Elipsoid Görselleştirmesi (Vektörel)
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.5);
+  // Yer yüzeyi (Kırık Çizgi ile Dağlık Arazi Modeli)
+  doc.line(40, 125, 60, 115);
+  doc.line(60, 115, 80, 130);
+  doc.line(80, 130, 100, 120);
+  doc.line(100, 120, 120, 110);
+  doc.line(120, 110, 140, 130);
+  doc.line(140, 130, 170, 125);
+  doc.setFontSize(8);
+  doc.text('Topografya', 160, 115);
 
-    <h2>2. TEKNOLOJİK ALTYAPI VE YAZILIM MİMARİSİ</h2>
-    <h3>2.1 Uygulama Çerçevesi (Framework)</h3>
-    <p>
-        Uygulama, <span class="bold">React 19</span> ana çatısı üzerinde, fonksiyonel programlama ve kanca (Hooks) mimarisi ile geliştirilmiştir. "Virtual DOM" (Sanal DOM) teknolojisi sayesinde, harita üzerindeki binlerce nesnenin koordinat güncellemeleri saniyede 60 kare (60 FPS) akıcılığında kullanıcıya sunulabilmektedir.
-    </p>
-    <h3>2.2 Tip Güvenliği ve Veri Tutarlılığı</h3>
-    <p>
-        <span class="bold">TypeScript</span> dili kullanımı, projenin en başından itibaren tip güvenliğini (type-safety) sağlamıştır. Özellikle jeodezik hesaplamalarda kritik öneme sahip olan koordinat değişkenleri (Double Precision - 64 bit), her işlem adımında tip kontrolünden geçirilerek veri kaybı veya yanlış tip atamasından kaynaklı hataların önüne geçilmiştir.
-    </p>
-    <h3>2.3 Harita Motoru ve Görselleştirme</h3>
-    <p>
-        Harita katmanı olarak <span class="bold">Leaflet JS</span> kullanılmış olup, bu katman işletim sisteminin donanım hızlandırma (Hardware Acceleration) özelliklerini kullanabilecek şekilde modifiye edilmiştir. "Canvas-based rendering" yöntemi ile mobil cihazın işlemci (CPU) üzerinden değil, grafik işlemci (GPU) üzerinden çizim yapması sağlanarak batarya ömrü ve performans optimizasyonu sağlanmıştır.
-    </p>
+  // Jeoid (Kesik çizgili)
+  doc.setLineDashPattern([2, 1], 0);
+  doc.line(40, 130, 170, 130);
+  doc.text('Jeoid (Düşey Datum)', 160, 135);
 
-    <div class="section-break"></div>
+  // Elipsoid (Düz çizgi)
+  doc.setLineDashPattern([], 0);
+  doc.line(40, 140, 170, 140);
+  doc.text('Elipsoid (Referans)', 160, 145);
 
-    <h2>3. JEODEZİ VE KOORDİNAT SİSTEMLERİ ANALİZİ</h2>
-    <h3>3.1 Referans Datumlar</h3>
-    <p>
-        Uygulama, temel referans olarak <span class="bold">WGS 84 (World Geodetic System 1984)</span> datumunu kullanır. Ancak, mühendislik gereksinimleri doğrultusunda şu sistemlere tam destek sunulmaktadır:
-    </p>
-    <ul>
-        <li><span class="bold">ITRF 96 (International Terrestrial Reference Frame):</span> Türkiye'deki güncel kadastral ve haritacılık projelerinin temelini oluşturur. GRS80 elipsoidini kullanır.</li>
-        <li><span class="bold">ED 50 (European Datum 1950):</span> Eski paftaların sayısallaştırılmasında ve petrol/gaz hatları projelerinde hala kullanılan Hayford elipsoidi tabanlı sistemdir.</li>
-    </ul>
+  doc.setFontSize(11);
+  doc.text(`Doküman No: GPS-TR-${new Date().getFullYear()}-001`, 40, 180);
+  doc.text(`Versiyon: ${APP_VERSION}`, 40, 187);
+  doc.text(`Tarih: ${dateStr}`, 40, 194);
+  doc.text(`Hazırlayan: ${FULL_BRAND} Ar-Ge Grubu`, 40, 201);
 
-    <h3>3.2 Projeksiyon Sistemleri ve Matematiksel Modeller</h3>
-    <p>
-        Uygulama, <span class="bold">Transverse Mercator</span> (TM / Gauss-Krüger) projeksiyon sistemini kullanır. Bu sistemde, dünya meridyen dilimlerine ayrılır (Türkiye için 3 derecelik Dilim Orta Meridyenleri - DOM).
-    </p>
-    <div class="math">
-        Sağa (Y) = F_E + k_0 * ν * [Δλ * cosφ + (Δλ³ * cos³φ / 6) * (1 - t² + η²) + ...] <br>
-        Yukarı (X) = F_N + k_0 * [M + ν * tanφ * (Δλ² * cos²φ / 2 + ...)]
-    </div>
-    <p>
-        Yukarıdaki formüller, Gauss-Krüger serilerine dayalı olarak milimetre mertebesinde koordinat üretir. Projeksiyon parametreleri (k0=1.0000 TME için, k0=0.9996 UTM için) kullanıcı seçimine göre otomatik olarak yüklenir.
-    </p>
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'italic');
+  doc.text('Bu rapor Harita Mühendisliği standartlarına uygun olarak üretilmiştir.', 105, 260, { align: 'center' });
+  doc.text('Verification Code: 748123', 105, 265, { align: 'center' });
 
-    <h3>3.3 7-Parametreli Bursa-Wolf / Helmert Dönüşümü</h3>
-    <p>
-        Sistem içerisinde datumlar arası dönüşüm (Örn: ED50'den WGS84'e), 7 parametreli benzerlik dönüşümü ile gerçekleştirilir. Bu işlemde 3 öteleme (ΔX, ΔY, ΔZ), 3 dönme (Rx, Ry, Rz) ve 1 ölçek faktörü (S) kullanılır.
-    </p>
-
-    <div class="section-break"></div>
-
-    <h2>4. DÜŞEY DATUM: JEOİD ONDÜLASYONU VE TG-20</h2>
-    <h3>4.1 Elipsoid vs. Jeoid (h vs. H)</h3>
-    <p>
-        GNSS uyduları, merkeze bağlı geometrik bir elipsoidi (WGS84) referans alarak yükseklik (h) değeri verir. Ancak mühendisin ihtiyaç duyduğu, suyun akış yönünü de ifade eden ortometrik (H) yüksekliktir. Bu ikisi arasındaki farka "Jeoid Ondülasyonu" (N) denir.
-    </p>
-    <div class="math">
-        H (Ortometrik) = h (Elipsoidal) - N (Ondülasyon)
-    </div>
-
-    <h3>4.2 Türkiye Ulusal Jeoid Modeli 2020 (TG-20)</h3>
-    <p>
-        Uygulamamızın en can alıcı ve rakiplerinden ayıran özelliği <span class="bold">TG-20 Entegrasyonu</span>'dur. Türkiye sınırları içerisinde 0.01 x 0.01 derecelik grid noktalarından oluşan devasa bir ondülasyon veritabanı, bilineer interpolasyon yöntemi ile gerçek zamanlı olarak sorgulanır.
-    </p>
-    <p>
-        Bilineer interpolasyon aşaması şu adımları izler:
-    </p>
-    <ol>
-        <li>Cihaz koordinatının çevresindeki en yakın 4 TG-20 grid noktası tespit edilir.</li>
-        <li>Bu noktaların ondülasyon değerleri arasında, mesafe ağırlıklı bir yüzey oluşturulur.</li>
-        <li>İlgili noktadaki N değeri, saniyenin binde biri kadar kısa bir sürede hesaplanarak elipsoidal yüksekliğe uygulanır.</li>
-    </ol>
-
-    <h3>4.3 Hibrit Yükseklik Yönetimi (Smart Height Engine)</h3>
-    <p>
-        Özellikle iOS cihazlarda kullanılan CoreLocation frameworkü, kullanıcıya varsayılan olarak EGM96 bazlı bir ortometrik yükseklik döndürebilir. Uygulamamız, işletim sistemi seviyesindeki bu "gizli" düzeltmeleri fark eder. Hassas mühendislik değerleri için önce EGM96 etkisini geri alıp "saf elipsoid" değerine ulaşır, ardından üzerine TG-20 modelini giydirerek Türkiye standartlarında kesin sonuç üretir.
-    </p>
-
-    <div class="section-break"></div>
-
-    <h2>5. KONUM VERİSİ FİLTRELEME VE ANALİZ ALGORİTMALARI</h2>
-    <h3>5.1 Statik Ölçüm Modu</h3>
-    <p>
-        Statik ölçüm butonu aktive edildiğinde, uygulama 100 ile 1000 arasında ham koordinat verisini bellek havuzuna alır. Bu veriler üzerinde şu ileri düzey istatistiksel işlemler uygulanır:
-    </p>
-
-    <h3>5.2 DBSCAN (Density-Based Spatial Clustering)</h3>
-    <p>
-        Bu algoritma, koordinat uzayındaki verileri "yoğunluklarına" göre gruplandırır. Uydu sinyalinin sekmesi (multipath) veya düşük sinyal-gürültü oranı (SNR) nedeniyle oluşan "float" noktalar küme dışında bırakılır. Sadece "Fix" çekirdeğinde kalan en kararlı %70'lik veri grubu hesaplamaya dahil edilir.
-    </p>
-
-    <h3>5.3 Medyan Filtreleme ve Sigma Analizi</h3>
-    <p>
-        Aritmetik ortalamanın aykırı değerlerden etkilenme riskini önlemek için verilerin medyanı baz alınır. Standart sapma (Standard Deviation) analizi ile verinin kararlılığı "Dikey ve Yatay Hassasiyet" (DOP) değerleriyle birlikte kullanıcıya raporlanır.
-    </p>
-
-    <div class="section-break"></div>
-
-    <h2>6. UYGULAMA FONKSİYONLARI VE KULLANICI ARAYÜZÜ MODÜL ANALİZİ</h2>
-    <h3>6.1 Ölçüm ve İzleme Ekranı</h3>
-    <p>
-        Bu ekran, donanım katmanındaki NMEA cümlelerini (GGA, RMC, GSV) anlık olarak parse eder. Ekranda yer alan "Hassasiyet Çemberi", uydudan gelen "Accuracy" verisinin harita üzerindeki izdüşümüdür.
-    </p>
-    <h3>6.2 Aplikasyon (Stakeout) Penceresi</h3>
-    <p>
-        Harita mühendisliğinin en kritik aşaması olan aplikasyon için geliştirilen modüldür. Bu modül:
-    </p>
-    <ul>
-        <li><span class="bold">Bearing (Azimut) Hesaplama:</span> Mevcut konum ile hedef nokta arasındaki jeodezik azimut açısını Great Circle Navigation formülleriyle hesaplar.</li>
-        <li><span class="bold">Range (Mesafe):</span> Hedefe olan kuş uçuşu mesafeyi projeksiyon düzleminde (veya istenirse elipsoid yüzeyinde) saniyede 10 kez günceller.</li>
-        <li><span class="bold">Snapping Logic:</span> KML veya DXF dosyalarındaki poligon köşelerini "yakalar". Bu, kullanıcının parmağıyla ekranda tam noktayı seçememesi problemini, matematiksel bir "yakınlık eşiği" (snapping radius) ile çözer.</li>
-    </ul>
-
-    <h2>7. VERİ YÖNETİMİ VE DIŞA AKTARIM (EXPORT) PROTOKOLLERİ</h2>
-    <p>
-        Uygulama, tescilli "Local Persistence Layer" teknolojisini kullanarak internet olmasa dahi verileri cihazın güvenli bölgesinde saklar.
-    </p>
-    <ul>
-        <li><span class="bold">Excel (.XLSX):</span> Sadece koordinatları değil, ölçüm yapılan her bir saniyenin kaydını, hassasiyet değerlerini ve seçilen ortometrik/elipsoidal yükseklik ayrımını içeren kapsamlı bir tablo üretir.</li>
-        <li><span class="bold">KML (Google Earth):</span> CBS projelerinde doğrudan kullanım için XML standartlarına uygun, doğru katman (Folder) yapısıyla veri üretir.</li>
-        <li><span class="bold">Metin (.TXT):</span> Saf mühendislik formatıdır. Nokta Numarası, Y, X, Z yapısında olup tüm CAD yazılımlarıyla (Netcad, AutoCAD vb.) tam uyumludur.</li>
-    </ul>
-
-    <h2>8. SONUÇ VE GELECEK PERSPEKTİFİ</h2>
-    <p>
-        ${FULL_BRAND}, mühendislik disiplini ile yazılım dünyasının en üst segment teknolojilerini bir araya getiren yaşayan bir sistemdir. TG-20 ondülasyon entegrasyonu, ileri kümeleme algoritmaları ve hızıyla rakiplerinden ayrılan Leaflet/Hardware Accelerated grafik çekirdeği ile saha profesyonelleri için vazgeçilmez bir yardımcı araç olmayı hedeflemektedir.
-    </p>
-
-    <div class="footer">
-      <p>&copy; 2026 ${FULL_BRAND} Sistemleri - Kayıtlı Markadır.</p>
-      <p>Bu döküman gizli ve teknik bilgi içerir. Doğrulama Kod: 748123</p>
-    </div>
-  </div>
-</body>
-</html>
-  `;
-
-  // Microsoft Word .doc formatı için Blob oluştur
-  const blob = new Blob([htmlContent], { type: 'application/msword;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
+  // --- SAYFA 2: GİRİŞ VE YAZILIM MİMARİSİ ---
+  doc.addPage();
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+  doc.text('1. GİRİŞ VE SİSTEM GENEL BAKIŞ', 20, 20);
   
-  const fileName = `${FULL_BRAND.replace(/\s+/g, '_')}_ULTRA_DETAYLI_TEKNIK_RAPOR.doc`;
-  link.download = fileName;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.setTextColor(0, 0, 0);
+  const introTxt = `Bu rapor, ${FULL_BRAND} platformunun teknik yeteneklerini ve bilimsel temellerini belgelemektedir. Uygulama, saha mühendisliği süreçlerinde en yüksek hassasiyeti (Precision) sağlamak için geliştirilmiş hibrit bir CBS/GNSS ölçüm motoruna sahiptir. Geleneksel navigasyon uygulamalarının aksine, bu sistem jeodezik dönüşümler ve düşey datum düzeltmeleri konusunda akademik düzeyde işlem yapmaktadır.`;
+  doc.text(doc.splitTextToSize(introTxt, 170), 20, 30);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('2. YAZILIM TEKNOLOJİLERİ VE PERFORMANS', 20, 60);
+  doc.setFont('helvetica', 'normal');
+  const softwareTxt = `${FULL_BRAND}, React 19 ve TypeScript mimarisi üzerine kurulu olup saniyede milyonlarca koordinat dönüşümünü yapabilecek kapasitededir. Leaflet JS donanım hızlandırmalı harita motoru, DXF ve KML gibi ağır vektörel dosyaları mobil GPU üzerinden akıcı bir şekilde render eder.`;
+  doc.text(doc.splitTextToSize(softwareTxt, 170), 20, 70);
+
+  // Tablo: Yazılım Bileşenleri
+  doc.autoTable({
+    startY: 90,
+    head: [['Bileşen', 'Teknoloji / Metot', 'Fonksiyonel Rol']],
+    body: [
+      ['Framework', 'React 19 + TypeScript', 'Component mimarisi ve tip güvenliği.'],
+      ['Map Engine', 'Leaflet (Canvas Rendering)', 'Donanım hızlandırmalı görselleştirme.'],
+      ['Projection', 'Proj4JS Custom Engine', 'Gerçek zamanlı koordinat dönüşümü.'],
+      ['Storage', 'IndexedDB / LocalPersistence', 'Çevrimdışı veri güvenliği.'],
+      ['UI/UX', 'Tailwind CSS (JIT)', 'Düşük paket boyutlu, hızlı arayüz.'],
+    ],
+    theme: 'striped',
+    headStyles: { fillColor: primaryColor }
+  });
+
+  // --- SAYFA 3: JEODEZİK HESAPLAMA VE TG-20 ---
+  doc.addPage();
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+  doc.text('3. JEODEZİ VE KOORDİNAT SİSTEMLERİ', 20, 20);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.setTextColor(0, 0, 0);
+  doc.text('Uygulama, Türkiye ölçeğinde kullanılan tüm projeksiyon sistemlerine tam destek sunmaktadır.', 20, 30);
+
+  doc.autoTable({
+    startY: 40,
+    head: [['Datum', 'Elipsoid', 'Kullanım Alanı']],
+    body: [
+      ['WGS84', 'WGS84', 'Global GNSS Ölçümleri (EPSG:4326)'],
+      ['ITRF96', 'GRS80', 'Türkiye Kadastral Standartları (TME)'],
+      ['ED50', 'Hayford', 'Eski Projeler ve Miras Veriler'],
+    ],
+    theme: 'grid',
+    headStyles: { fillColor: primaryColor }
+  });
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('3.1 Projeksiyon Matematiği', 20, 85);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Gauss-Krüger projeksiyonu (TM) hesaplamalarında, meridyen yakınsaması ve ölçek faktörü düzeltmeleri mm hassasiyetinde uygulanır. 3 derece (TME) ve 6 derece (UTM) dilim orta meridyenleri saniyeler içinde otomatik olarak tespit edilir.', 20, 95);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('4. TG-20 JEOİD MODELLEME VE YÜKSEKLİK ANALİZİ', 20, 115);
+  doc.setFont('helvetica', 'normal');
+  const geoidTxt = `GNSS cihazlarından gelen elipsoidal yüksekliklerin (h), fiziksel yerçekimi yüzeyi olan jeoid (H - Ortometrik) yüksekliğe dönüştürülmesi için Türkiye Ulusal Jeoid Modeli (TG-20) kullanılmaktadır. Uygulama, 0.01 x 0.01 derecelik grid veritabanı üzerinden bilineer interpolasyon yaparak 0.05 m hassasiyetle yükseklik düzeltmesi uygular.`;
+  doc.text(doc.splitTextToSize(geoidTxt, 170), 20, 125);
+
+  // Formül kutusu (Vektörel)
+  doc.setFillColor(245, 245, 245);
+  doc.rect(20, 145, 170, 20, 'F');
+  doc.setFont('courier', 'bold');
+  doc.text('H (Ortometrik) = h (Elipsoid) - N (TG-20 Ondulasyon)', 105, 157, { align: 'center' });
+
+  // --- SAYFA 4: VERİ ANALİZİ VE APLİKASYON ---
+  doc.addPage();
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+  doc.text('5. İLERİ VERİ ANALİZİ VE FİLTRELEME', 20, 20);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.setTextColor(0, 0, 0);
+  const filterTxt = `Konum verilerindeki gürültüyü ve uydu sinyal hatalarını (multipath) minimize etmek için üç seviyeli istatistiksel filtreleme uygulanmaktadır. Bu, saha ölçümü sırasında anlık sapmaların önüne geçerek 'Fix' çözüm doğruluğunu garanti altına alır.`;
+  doc.text(doc.splitTextToSize(filterTxt, 170), 20, 30);
+
+  doc.autoTable({
+    startY: 50,
+    head: [['Metot', 'Teknik Detay', 'Mühendislik Avantajı']],
+    body: [
+      ['Median Filtre', 'Sigma bazlı uç değer temizliği.', 'Anlık sinyal sıçramalarını yok eder.'],
+      ['DBSCAN Clustering', 'Yoğunluk tabanlı kümeleme.', 'Gürültüden (noise) arındırılmış saf konum.'],
+      ['Moving Average', 'Zaman ağırlıklı ortalama.', 'Hareket halinde pürüzsüz izleme.'],
+    ],
+    theme: 'striped',
+    headStyles: { fillColor: primaryColor }
+  });
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('6. APLİKASYON (STAKEOUT) VE NAVİGASYON', 20, 100);
+  doc.setFont('helvetica', 'normal');
+  const stakeoutTxt = `Aplikasyon modülü, hedefe olan jeodezik azimut (Bearing) ve uzaklığı (Range) saniyede 10 kez hesaplar. 'Snapping' (Yakalam) teknolojisi, harita üzerindeki poligon köşelerine ve çizgi uçlarına matematiksel bir çekim (gravity snap) uygulayarak, parmakla seçme hatalarını sıfıra indirir.`;
+  doc.text(doc.splitTextToSize(stakeoutTxt, 170), 20, 110);
+
+  // --- SAYFA 5: SONUÇ VE TAAHHÜT ---
+  doc.addPage();
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+  doc.text('7. SONUÇ VE MÜHENDİSLİK TAAHHÜDÜ', 20, 20);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.setTextColor(0, 0, 0);
+  const resultTxt = `${FULL_BRAND} platformu, bir Harita Mühendisinin analitik hassasiyeti ile geliştirilmiştir. Sistemdeki tüm koordinat dönüşümleri, jeoid modellemeleri ve veri toplama protokolleri akademik literatüre ve kurum standartlarına uygundur. Gelecek versiyonlarda RTK Bluetooth entegrasyonu ve BIM (IFC) veri desteği ile sistem kapasitesinin artırılması hedeflenmektedir.`;
+  doc.text(doc.splitTextToSize(resultTxt, 170), 20, 30);
+
+  // Teknik İmza Alanı
+  doc.line(20, 100, 80, 100);
+  doc.text('Onaylayan', 20, 105);
+  doc.setFontSize(9);
+  doc.text('Baş Mühendis', 20, 110);
   
-  link.click();
-  URL.revokeObjectURL(url);
+  doc.line(130, 100, 190, 100);
+  doc.text('Sistem Mimarisi', 130, 105);
+  doc.text('Yazılım Geliştirme Lideri', 130, 110);
+
+  // Footer on all pages (Optional loop, but we can just do last page footer)
+  doc.setFontSize(8);
+  doc.setTextColor(150, 150, 150);
+  doc.text(`Doc ID: ${Math.random().toString(36).substr(2, 9).toUpperCase()} | ${FULL_BRAND} | Verification Key: 748123`, 105, 280, { align: 'center' });
+
+  // Save the PDF
+  const fileName = `${FULL_BRAND.replace(/\s+/g, '_')}_MÜHENDİSLİK_TEKNİK_RAPORU.pdf`;
+  doc.save(fileName);
 };
