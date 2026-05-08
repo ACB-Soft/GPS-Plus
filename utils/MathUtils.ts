@@ -8,57 +8,48 @@ export function calculateResult(
   method: CalculationMethod,
   accuracyLimit: number
 ): { result: Coordinate; usedIndices: number[] } {
-  // Step 1: Filter by accuracy limit
-  const preFiltered = samples
-    .map((s, idx) => ({ s, idx }))
-    .filter(item => item.s.accuracy <= accuracyLimit);
-    
-  const sourceItems = preFiltered.length > 0 ? preFiltered : samples.map((s, idx) => ({ s, idx }));
-  const sourceData = sourceItems.map(item => item.s);
+  // Step 1: Filter by accuracy limit (pre-requisite for all methods as requested)
+  const accuracyFiltered = samples.filter(s => s.accuracy <= accuracyLimit);
+  const sourceData = accuracyFiltered.length > 0 ? accuracyFiltered : samples;
 
   if (sourceData.length === 0) {
     return { result: samples[0], usedIndices: [0] };
   }
 
-  let finalItems = sourceItems;
+  let finalSamples = sourceData;
+  let usedIndices: number[] = [];
 
   switch (method) {
     case 'ARITHMETIC_MEAN':
-      finalItems = sourceItems;
+      finalSamples = sourceData;
       break;
-    case 'LEAST_SQUARES': {
-      const result = weightedLeastSquares(sourceData);
-      return { 
-        result, 
-        usedIndices: sourceItems.map(item => item.idx)
-      };
-    }
-    case 'ROBUST': {
-      const result = robustEstimation(sourceData);
-      return { 
-        result, 
-        usedIndices: sourceItems.map(item => item.idx)
-      };
-    }
-    case 'MAHALANOBIS': {
-      const filtered = applyMahalanobisFilter(sourceData);
-      finalItems = sourceItems.filter(item => filtered.some(fs => fs.timestamp === item.s.timestamp));
+    case 'LEAST_SQUARES':
+      // Weighted Least Squares based on accuracy
+      return weightedLeastSquares(sourceData);
+    case 'ROBUST':
+      // Robust estimation using M-estimators (simplified Huber weights)
+      return robustEstimation(sourceData);
+    case 'MAHALANOBIS':
+      // Anomaly detection using Mahalanobis distance
+      finalSamples = applyMahalanobisFilter(sourceData);
       break;
-    }
-    case 'DBSCAN': {
-      const filtered = applyDBSCANFilter(sourceData);
-      finalItems = sourceItems.filter(item => filtered.some(fs => fs.timestamp === item.s.timestamp));
+    case 'DBSCAN':
+      // Clustering to find the main core of points
+      finalSamples = applyDBSCANFilter(sourceData);
       break;
-    }
     default:
-      finalItems = sourceItems;
+      finalSamples = sourceData;
   }
 
-  const result = calculateAverage(finalItems.map(item => item.s));
-  return { 
-    result, 
-    usedIndices: finalItems.map(item => item.idx) 
-  };
+  // Determine which indices were used
+  usedIndices = samples
+    .map((s, idx) => finalSamples.includes(s) ? idx : -1)
+    .filter(idx => idx !== -1);
+
+  // Calculate average of final samples
+  const result = calculateAverage(finalSamples);
+
+  return { result, usedIndices };
 }
 
 function calculateAverage(samples: Coordinate[]): Coordinate {
@@ -109,17 +100,14 @@ function applySigmaFilter(samples: Coordinate[], sigma: number): Coordinate[] {
  * Weighted Least Squares
  * Weights are 1/(accuracy^2)
  */
-function weightedLeastSquares(samples: Coordinate[]): Coordinate {
+function weightedLeastSquares(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
   const weights = samples.map(s => 1 / Math.pow(s.accuracy || 0.1, 2));
   const totalWeight = weights.reduce((a, b) => a + b, 0);
 
-  // Estimated standard error of the weighted mean: sigma = sqrt(1 / sum(weights))
-  const estimatedAccuracy = Math.sqrt(1 / totalWeight);
-
-  return {
+  const result: Coordinate = {
     lat: samples.reduce((a, b, i) => a + b.lat * weights[i], 0) / totalWeight,
     lng: samples.reduce((a, b, i) => a + b.lng * weights[i], 0) / totalWeight,
-    accuracy: estimatedAccuracy,
+    accuracy: samples.reduce((a, b, i) => a + b.accuracy * weights[i], 0) / totalWeight,
     altitude: samples.some(s => s.altitude !== null)
       ? samples.reduce((a, b, i) => a + (b.altitude || 0) * weights[i], 0) / totalWeight
       : null,
@@ -128,12 +116,14 @@ function weightedLeastSquares(samples: Coordinate[]): Coordinate {
       : null,
     timestamp: Date.now()
   };
+
+  return { result, usedIndices: samples.map((_, i) => i) };
 }
 
 /**
  * Robust Estimation (Huber-style weights)
  */
-function robustEstimation(samples: Coordinate[]): Coordinate {
+function robustEstimation(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
   // First get a simple median or mean as starting point
   let currentLat = samples.reduce((a, b) => a + b.lat, 0) / samples.length;
   let currentLng = samples.reduce((a, b) => a + b.lng, 0) / samples.length;
@@ -155,11 +145,13 @@ function robustEstimation(samples: Coordinate[]): Coordinate {
   }
 
   const finalAvg = calculateAverage(samples); // For other fields
-  return {
+  const result = {
     ...finalAvg,
     lat: currentLat,
     lng: currentLng
   };
+
+  return { result, usedIndices: samples.map((_, i) => i) };
 }
 
 /**
@@ -285,10 +277,10 @@ function expandCluster(
 }
 
 /**
- * Calculates Root Mean Square Error (RMSE) of coordinates in meters
+ * Calculates variance of coordinates in meters
  */
-export function calculateRMSE(samples: Coordinate[], mean: Coordinate): number {
-  if (samples.length === 0) return 0;
+export function calculateVariance(samples: Coordinate[], mean: Coordinate): number {
+  if (samples.length < 2) return 0;
   
   // Convert degrees to meters roughly (1 deg ~ 111320m)
   const residuals = samples.map(s => {
@@ -297,7 +289,6 @@ export function calculateRMSE(samples: Coordinate[], mean: Coordinate): number {
     return dLat * dLat + dLng * dLng;
   });
   
-  const mse = residuals.reduce((a, b) => a + b, 0) / samples.length;
-  return Math.sqrt(mse);
+  return residuals.reduce((a, b) => a + b, 0) / (samples.length - 1);
 }
 

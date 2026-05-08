@@ -1,9 +1,9 @@
 import * as XLSX from 'xlsx';
 import { SavedLocation, AppSettings, CalculationMethod } from '../types';
 import { convertCoordinate } from '../utils/CoordinateUtils';
-import { calculateResult, calculateRMSE } from '../utils/MathUtils';
+import { calculateResult, calculateVariance } from '../utils/MathUtils';
 import { FULL_BRAND } from '../version';
-import { getCorrectedHeight, getEllipsoidalHeight } from './GeoidUtils';
+import { getCorrectedHeight } from './GeoidUtils';
 import { geoidService } from '../services/GeoidService';
 
 const getMethodName = (m: CalculationMethod) => {
@@ -46,13 +46,18 @@ export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings
   const dataRows = locations.map(loc => {
     const { x, y } = convertCoordinate(loc.lat, loc.lng, loc.coordinateSystem || 'WGS84');
     
-    const val1 = isWGS84 ? y.toFixed(8) : x.toFixed(locPrecision);
-    const val2 = isWGS84 ? x.toFixed(8) : y.toFixed(locPrecision);
+    const val1 = isWGS84 ? y.toFixed(6) : x.toFixed(locPrecision);
+    const val2 = isWGS84 ? x.toFixed(6) : y.toFixed(locPrecision);
     
     const correctedH = getCorrectedHeight(loc.lat, loc.lng, loc.altitude);
     const orthometricH = correctedH !== null ? correctedH.toFixed(heightPrecision) : '---';
     
-    const ellipVal = getEllipsoidalHeight(loc.lat, loc.lng, loc.altitude);
+    let ellipVal = loc.altitude;
+    if (isIOS && loc.altitude !== null) {
+      const egm96Undulation = geoidService.getUndulation(loc.lat, loc.lng, 'EGM96');
+      ellipVal = loc.altitude + egm96Undulation;
+    }
+    
     const ellipsoidalH = ellipVal !== null ? ellipVal.toFixed(heightPrecision) : '---';
     
     let undulationVal = '---';
@@ -135,22 +140,18 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
     const { x, y } = convertCoordinate(result.lat, result.lng, sys);
     
-    // Calculate RMSE for the method
+    // Calculate variance for the method
     const usedSamples = usedIndices.map(i => location.samples![i]);
-    const rmse = calculateRMSE(usedSamples, result);
+    const variance = calculateVariance(usedSamples, result);
     
-    const displayZ = isOrthometricSetting
-      ? getCorrectedHeight(result.lat, result.lng, result.altitude)
-      : getEllipsoidalHeight(result.lat, result.lng, result.altitude);
-
     return {
       method,
       x: isWGS84 ? result.lat : x,
       y: isWGS84 ? result.lng : y,
-      z: displayZ,
+      z: result.altitude,
       usedCount: usedIndices.length,
       accuracy: result.accuracy,
-      rmse: rmse
+      variance: variance
     };
   });
 
@@ -166,7 +167,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
 
     const hValue = isOrthometricSetting 
       ? getCorrectedHeight(s.lat, s.lng, s.altitude) 
-      : getEllipsoidalHeight(s.lat, s.lng, s.altitude);
+      : s.altitude;
 
     return [
       idx + 1,
@@ -193,7 +194,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     ...dataRows,
     [],
     ["ANLİZ YÖNTEMLERİ KARŞILAŞTIRMALI SONUÇLAR"],
-    ["Yöntem", header1, header2, isOrthometricSetting ? "Yükseklik (m)" : "Elipsoidal Yükseklik (m)", "Kullanılan Örnek", "Hassasiyet (m)", "Karesel Ort. Hata (m)"],
+    ["Yöntem", header1, header2, isOrthometricSetting ? "Yükseklik (m)" : "Elipsoidal Yükseklik (m)", "Kullanılan Örnek", "Hassasiyet (m)", "Varyans (m²)"],
     ...methodResults.map(res => [
       getMethodName(res.method),
       isWGS84 ? res.x.toFixed(8) : res.x.toFixed(locPrecision),
@@ -201,7 +202,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
       res.z !== null ? res.z.toFixed(heightPrecision) : '---',
       `${res.usedCount} / ${location.samples!.length}`,
       res.accuracy.toFixed(3),
-      res.rmse.toFixed(4)
+      res.variance.toFixed(6)
     ])
   ];
 
