@@ -152,7 +152,7 @@ const SavedLocationItem: React.FC<{
           <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
             {renderCoordinates(l)}
             <div className="flex flex-col">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Yükseklik</span>
+              <span className="text-[9px] font-black text-slate-400 tracking-widest leading-none mb-0.5">{isOrthometric ? 'YÜKSEKLİK' : 'h-ELİPSOİD'}</span>
               <p className="text-[14px] mono-font text-blue-600 font-black leading-tight">{displayHeight !== null ? `${displayHeight.toFixed(heightPrecision)}m` : '---'}</p>
             </div>
             <div className="flex flex-col">
