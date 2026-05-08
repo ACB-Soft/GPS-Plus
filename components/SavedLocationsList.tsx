@@ -50,8 +50,8 @@ const SavedLocationItem: React.FC<{
     const { x, y, labelX, labelY } = convertCoordinate(l.lat, l.lng, l.coordinateSystem || 'WGS84');
     const isUTM = l.coordinateSystem && l.coordinateSystem !== 'WGS84';
     const locPrecision = settings.locationPrecision ?? 1;
-    const formattedX = isUTM ? x.toFixed(locPrecision) : x.toFixed(6);
-    const formattedY = isUTM ? y.toFixed(locPrecision) : y.toFixed(6);
+    const formattedX = isUTM ? x.toFixed(locPrecision) : x.toFixed(8);
+    const formattedY = isUTM ? y.toFixed(locPrecision) : y.toFixed(8);
 
     return (
       <>

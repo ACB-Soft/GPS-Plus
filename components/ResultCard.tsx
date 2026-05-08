@@ -33,8 +33,8 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
   const heightPrecision = settings.heightPrecision ?? 2;
   const isOrthometric = settings.heightType === 'orthometric';
 
-  const formattedX = isUTM ? x.toFixed(locPrecision) : x.toFixed(6);
-  const formattedY = isUTM ? y.toFixed(locPrecision) : y.toFixed(6);
+  const formattedX = isUTM ? x.toFixed(locPrecision) : x.toFixed(8);
+  const formattedY = isUTM ? y.toFixed(locPrecision) : y.toFixed(8);
   
   const geoidInfo = useOrthometricHeight(location.altitude, location.lat, location.lng);
   const displayHeight = isOrthometric ? geoidInfo.orthometricHeight : location.altitude;

@@ -8,60 +8,57 @@ export function calculateResult(
   method: CalculationMethod,
   accuracyLimit: number
 ): { result: Coordinate; usedIndices: number[] } {
-  // Step 1: Filter by accuracy limit (pre-requisite for all methods as requested)
-  const accuracyFiltered = samples.filter(s => s.accuracy <= accuracyLimit);
-  const sourceData = accuracyFiltered.length > 0 ? accuracyFiltered : samples;
+  // Step 1: Filter by accuracy limit
+  const preFiltered = samples
+    .map((s, idx) => ({ s, idx }))
+    .filter(item => item.s.accuracy <= accuracyLimit);
+    
+  const sourceItems = preFiltered.length > 0 ? preFiltered : samples.map((s, idx) => ({ s, idx }));
+  const sourceData = sourceItems.map(item => item.s);
 
   if (sourceData.length === 0) {
     return { result: samples[0], usedIndices: [0] };
   }
 
-  let finalSamples = sourceData;
-  let usedIndices: number[] = [];
+  let finalItems = sourceItems;
 
   switch (method) {
     case 'ARITHMETIC_MEAN':
-      finalSamples = sourceData;
+      finalItems = sourceItems;
       break;
-    case 'LEAST_SQUARES':
-      // Weighted Least Squares based on accuracy
-      const wlsResult = weightedLeastSquares(sourceData);
+    case 'LEAST_SQUARES': {
+      const result = weightedLeastSquares(sourceData);
       return { 
-        result: wlsResult, 
-        usedIndices: samples
-          .map((s, idx) => sourceData.includes(s) ? idx : -1)
-          .filter(idx => idx !== -1)
+        result, 
+        usedIndices: sourceItems.map(item => item.idx)
       };
-    case 'ROBUST':
-      // Robust estimation using M-estimators (simplified Huber weights)
-      const robustResult = robustEstimation(sourceData);
+    }
+    case 'ROBUST': {
+      const result = robustEstimation(sourceData);
       return { 
-        result: robustResult, 
-        usedIndices: samples
-          .map((s, idx) => sourceData.includes(s) ? idx : -1)
-          .filter(idx => idx !== -1)
+        result, 
+        usedIndices: sourceItems.map(item => item.idx)
       };
-    case 'MAHALANOBIS':
-      // Anomaly detection using Mahalanobis distance
-      finalSamples = applyMahalanobisFilter(sourceData);
+    }
+    case 'MAHALANOBIS': {
+      const filtered = applyMahalanobisFilter(sourceData);
+      finalItems = sourceItems.filter(item => filtered.some(fs => fs.timestamp === item.s.timestamp));
       break;
-    case 'DBSCAN':
-      // Clustering to find the main core of points
-      finalSamples = applyDBSCANFilter(sourceData);
+    }
+    case 'DBSCAN': {
+      const filtered = applyDBSCANFilter(sourceData);
+      finalItems = sourceItems.filter(item => filtered.some(fs => fs.timestamp === item.s.timestamp));
       break;
+    }
     default:
-      finalSamples = sourceData;
+      finalItems = sourceItems;
   }
 
-  // Determine which indices were used
-  usedIndices = samples
-    .map((s, idx) => finalSamples.includes(s) ? idx : -1)
-    .filter(idx => idx !== -1);
-
-  // Calculate average of final samples
-  const result = calculateAverage(finalSamples);
-
-  return { result, usedIndices };
+  const result = calculateAverage(finalItems.map(item => item.s));
+  return { 
+    result, 
+    usedIndices: finalItems.map(item => item.idx) 
+  };
 }
 
 function calculateAverage(samples: Coordinate[]): Coordinate {
@@ -116,10 +113,13 @@ function weightedLeastSquares(samples: Coordinate[]): Coordinate {
   const weights = samples.map(s => 1 / Math.pow(s.accuracy || 0.1, 2));
   const totalWeight = weights.reduce((a, b) => a + b, 0);
 
+  // Estimated standard error of the weighted mean: sigma = sqrt(1 / sum(weights))
+  const estimatedAccuracy = Math.sqrt(1 / totalWeight);
+
   return {
     lat: samples.reduce((a, b, i) => a + b.lat * weights[i], 0) / totalWeight,
     lng: samples.reduce((a, b, i) => a + b.lng * weights[i], 0) / totalWeight,
-    accuracy: samples.reduce((a, b, i) => a + b.accuracy * weights[i], 0) / totalWeight,
+    accuracy: estimatedAccuracy,
     altitude: samples.some(s => s.altitude !== null)
       ? samples.reduce((a, b, i) => a + (b.altitude || 0) * weights[i], 0) / totalWeight
       : null,
