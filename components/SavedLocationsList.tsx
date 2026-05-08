@@ -44,8 +44,8 @@ const SavedLocationItem: React.FC<{
   const renderCoordinates = (l: SavedLocation) => {
     const { x, y, labelX, labelY } = convertCoordinate(l.lat, l.lng, l.coordinateSystem || 'WGS84');
     const isUTM = l.coordinateSystem && l.coordinateSystem !== 'WGS84';
-    const formattedX = isUTM ? x.toFixed(0) : x.toFixed(6);
-    const formattedY = isUTM ? y.toFixed(0) : y.toFixed(6);
+    const formattedX = isUTM ? x.toFixed(2) : x.toFixed(6);
+    const formattedY = isUTM ? y.toFixed(2) : y.toFixed(6);
 
     return (
       <>
@@ -147,7 +147,7 @@ const SavedLocationItem: React.FC<{
             {renderCoordinates(l)}
             <div className="flex flex-col">
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Yükseklik</span>
-              <p className="text-[14px] mono-font text-blue-600 font-black leading-tight">{orthometricHeight !== null ? `${Math.round(orthometricHeight)}m` : '---'}</p>
+              <p className="text-[14px] mono-font text-blue-600 font-black leading-tight">{orthometricHeight !== null ? `${orthometricHeight.toFixed(2)}m` : '---'}</p>
             </div>
             <div className="flex flex-col">
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Hassasiyet</span>

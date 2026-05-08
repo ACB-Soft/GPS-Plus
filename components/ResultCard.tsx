@@ -27,8 +27,8 @@ const ResultCard: React.FC<Props> = ({ location, initialShowMap = false, onClose
   const [showMap, setShowMap] = useState(initialShowMap);
   const { x, y, labelX, labelY, zone } = convertCoordinate(location.lat, location.lng, location.coordinateSystem || 'WGS84');
   const isUTM = location.coordinateSystem && location.coordinateSystem !== 'WGS84';
-  const formattedX = isUTM ? x.toFixed(0) : x.toFixed(6);
-  const formattedY = isUTM ? y.toFixed(0) : y.toFixed(6);
+  const formattedX = isUTM ? x.toFixed(2) : x.toFixed(6);
+  const formattedY = isUTM ? y.toFixed(2) : y.toFixed(6);
   
   const geoidInfo = useOrthometricHeight(location.altitude, location.lat, location.lng);
   const orthometricHeight = geoidInfo.orthometricHeight;
@@ -77,7 +77,7 @@ const ResultCard: React.FC<Props> = ({ location, initialShowMap = false, onClose
             </div>
             <div className="bg-blue-50/50 p-4 md:p-5 rounded-2xl md:rounded-3xl border border-blue-100 text-left shadow-sm">
               <div className="text-[9px] md:text-[10px] text-blue-500 font-black uppercase mb-1 leading-none">Yükseklik</div>
-              <div className="text-xl md:text-2xl font-black text-blue-600 mono-font leading-none">{orthometricHeight !== null ? Math.round(orthometricHeight) : '---'}<span className="text-[10px] ml-1">m</span></div>
+              <div className="text-xl md:text-2xl font-black text-blue-600 mono-font leading-none">{orthometricHeight !== null ? orthometricHeight.toFixed(2) : '---'}<span className="text-[10px] ml-1">m</span></div>
             </div>
             <div className={`p-4 md:p-5 rounded-2xl md:rounded-3xl border text-left transition-colors shadow-sm ${
               location.accuracy <= 10 ? 'bg-emerald-50/50 border-emerald-100' : 

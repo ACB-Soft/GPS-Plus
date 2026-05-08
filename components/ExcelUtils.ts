@@ -134,7 +134,7 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
 
   if (validSamples.length === 0) {
     // Hiç hassas veri yoksa istatistikleri boş dönmemek için bir uyarı gerekebilir 
-    // ama pratikte en az bir tane olur. Sadece güvenlik için:
+    // ama pratikte en az bir tane olur.
   }
 
   // Aritmetik Ortalama (Sadece Hassas Veriler)
@@ -188,8 +188,8 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
 
   const dataRows = location.samples.map((s, idx) => {
     const { x, y } = convertCoordinate(s.lat, s.lng, sys);
-    const val1 = isWGS84 ? s.lat.toFixed(8) : x.toFixed(3);
-    const val2 = isWGS84 ? s.lng.toFixed(8) : y.toFixed(3);
+    const val1 = isWGS84 ? s.lat.toFixed(8) : x.toFixed(2);
+    const val2 = isWGS84 ? s.lng.toFixed(8) : y.toFixed(2);
     
     let status = "Kullanıldı";
     if (s.accuracy > accuracyLimit) {
@@ -201,9 +201,9 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
       new Date(s.timestamp).toLocaleTimeString('tr-TR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
       val1,
       val2,
-      s.altitude !== null ? s.altitude.toFixed(3) : '---',
-      s.accuracy.toFixed(3),
-      s.altitudeAccuracy !== null ? s.altitudeAccuracy.toFixed(3) : '---',
+      s.altitude !== null ? s.altitude.toFixed(2) : '---',
+      s.accuracy.toFixed(2),
+      s.altitudeAccuracy !== null ? s.altitudeAccuracy.toFixed(2) : '---',
       status
     ];
   });
@@ -222,10 +222,10 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
     [],
     ["İSTATİSTİKSEL HESAPLAMA ÖZETİ (Sadece Hassas Veriler)"],
     ["Yöntem", header1, header2, "Yükseklik (m)", "Kullanılan Veri"],
-    ["Aritmetik Ortalama", isWGS84 ? statsAll.x.toFixed(8) : statsAll.x.toFixed(3), isWGS84 ? statsAll.y.toFixed(8) : statsAll.y.toFixed(3), statsAll.z.toFixed(3), `${statsAll.count} / ${location.samples.length}`],
-    ["Medyan Değerler", isWGS84 ? medX.toFixed(8) : medX.toFixed(3), isWGS84 ? medY.toFixed(8) : medY.toFixed(3), medZ.toFixed(3), `${validSamples.length} / ${location.samples.length}`],
-    [`Kümeleme (Dinamik - Eps: ${dynamicEpsilon.toFixed(2)}m)`, isWGS84 ? statsClusterDynamic.x.toFixed(8) : statsClusterDynamic.x.toFixed(3), isWGS84 ? statsClusterDynamic.y.toFixed(8) : statsClusterDynamic.y.toFixed(3), statsClusterDynamic.z.toFixed(3), `${statsClusterDynamic.count} / ${location.samples.length}`],
-    ["Kümeleme (Sabit - Eps: 1.00m)", isWGS84 ? statsClusterFixed.x.toFixed(8) : statsClusterFixed.x.toFixed(3), isWGS84 ? statsClusterFixed.y.toFixed(8) : statsClusterFixed.y.toFixed(3), statsClusterFixed.z.toFixed(3), `${statsClusterFixed.count} / ${location.samples.length}`],
+    ["Aritmetik Ortalama", isWGS84 ? statsAll.x.toFixed(8) : statsAll.x.toFixed(2), isWGS84 ? statsAll.y.toFixed(8) : statsAll.y.toFixed(2), statsAll.z.toFixed(2), `${statsAll.count} / ${location.samples.length}`],
+    ["Medyan Değerler", isWGS84 ? medX.toFixed(8) : medX.toFixed(2), isWGS84 ? medY.toFixed(8) : medY.toFixed(2), medZ.toFixed(2), `${validSamples.length} / ${location.samples.length}`],
+    [`Kümeleme (Dinamik - Eps: ${dynamicEpsilon.toFixed(2)}m)`, isWGS84 ? statsClusterDynamic.x.toFixed(8) : statsClusterDynamic.x.toFixed(2), isWGS84 ? statsClusterDynamic.y.toFixed(8) : statsClusterDynamic.y.toFixed(2), statsClusterDynamic.z.toFixed(2), `${statsClusterDynamic.count} / ${location.samples.length}`],
+    ["Kümeleme (Sabit - Eps: 1.00m)", isWGS84 ? statsClusterFixed.x.toFixed(8) : statsClusterFixed.x.toFixed(2), isWGS84 ? statsClusterFixed.y.toFixed(8) : statsClusterFixed.y.toFixed(2), statsClusterFixed.z.toFixed(2), `${statsClusterFixed.count} / ${location.samples.length}`],
   ];
 
   const worksheet = XLSX.utils.aoa_to_sheet(ws_data);
