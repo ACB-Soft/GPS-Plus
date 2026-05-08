@@ -35,11 +35,14 @@ const App = () => {
   const [stakeoutInitialPoint, setStakeoutInitialPoint] = useState<StakeoutPoint | null>(null);
   const [settings, setSettings] = useState<AppSettings>(() => ({
     defaultCoordinateSystem: localStorage.getItem('default_coord_system') || 'WGS84',
-    defaultAccuracyLimit: parseFloat(localStorage.getItem('default_accuracy_limit') || '5'),
-    defaultMeasurementDuration: parseInt(localStorage.getItem('default_duration') || '5'),
-    alertsEnabled: localStorage.getItem('default_audio_feedback_enabled') !== 'false',
+    defaultAccuracyLimit: parseFloat(localStorage.getItem('default_accuracy_limit') || '10'),
+    defaultMeasurementDuration: parseInt(localStorage.getItem('default_duration') || '10'),
+    alertsEnabled: localStorage.getItem('default_audio_feedback_enabled') === 'true',
     screenAlwaysOn: localStorage.getItem('default_screen_always_on') === 'true',
     mapProvider: localStorage.getItem('default_map_provider') || 'Google Hybrid',
+    locationPrecision: parseInt(localStorage.getItem('default_location_precision') || '2'),
+    heightPrecision: parseInt(localStorage.getItem('default_height_precision') || '1'),
+    heightType: (localStorage.getItem('default_height_type') as 'orthometric' | 'ellipsoidal') || 'orthometric',
   }));
 
   // Navigation wrapper to sync with browser history
@@ -240,11 +243,14 @@ const App = () => {
               // Refresh settings when coming back from settings
               setSettings({
                 defaultCoordinateSystem: localStorage.getItem('default_coord_system') || 'WGS84',
-                defaultAccuracyLimit: parseFloat(localStorage.getItem('default_accuracy_limit') || '5'),
-                defaultMeasurementDuration: parseInt(localStorage.getItem('default_duration') || '5'),
-                alertsEnabled: localStorage.getItem('default_audio_feedback_enabled') !== 'false',
+                defaultAccuracyLimit: parseFloat(localStorage.getItem('default_accuracy_limit') || '10'),
+                defaultMeasurementDuration: parseInt(localStorage.getItem('default_duration') || '10'),
+                alertsEnabled: localStorage.getItem('default_audio_feedback_enabled') === 'true',
                 screenAlwaysOn: localStorage.getItem('default_screen_always_on') === 'true',
                 mapProvider: localStorage.getItem('default_map_provider') || 'Google Hybrid',
+                locationPrecision: parseInt(localStorage.getItem('default_location_precision') || '2'),
+                heightPrecision: parseInt(localStorage.getItem('default_height_precision') || '1'),
+                heightType: (localStorage.getItem('default_height_type') as 'orthometric' | 'ellipsoidal') || 'orthometric',
               });
               window.history.back();
             }} 
@@ -284,6 +290,7 @@ const App = () => {
               <div className="max-w-sm mx-auto w-full">
                 <SavedLocationsList 
                   locations={locations} 
+                  settings={settings}
                   onDelete={(id) => setLocations(prev => prev.filter(l => l.id !== id))}
                 onDeleteFolder={(name) => setLocations(prev => prev.filter(l => l.folderName !== name))}
                 onRenameFolder={(oldName, newName) => setLocations(prev => prev.map(l => 
@@ -305,7 +312,7 @@ const App = () => {
           <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-slate-200">
             <Header title="Veri Aktar" />
             <div className="px-8 pt-4 pb-4">
-               <ExportUnifiedView locations={locations} />
+               <ExportUnifiedView locations={locations} settings={settings} />
             </div>
             <GlobalFooter />
           </div>
@@ -316,6 +323,7 @@ const App = () => {
             <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full pt-8">
               <ResultCard 
                 location={lastResult} 
+                settings={settings}
                 initialShowMap={autoShowMap} 
                 onCloseMap={resultSource === 'list' ? () => window.history.back() : undefined}
               />

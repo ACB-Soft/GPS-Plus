@@ -48,4 +48,7 @@ export interface AppSettings {
   alertsEnabled: boolean;
   screenAlwaysOn: boolean;
   mapProvider: string;
+  locationPrecision: number;
+  heightPrecision: number;
+  heightType: 'orthometric' | 'ellipsoidal';
 }

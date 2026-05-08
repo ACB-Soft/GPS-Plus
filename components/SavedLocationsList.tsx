@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { SavedLocation } from '../types';
+import { SavedLocation, AppSettings } from '../types';
 import { convertCoordinate } from '../utils/CoordinateUtils';
 import { getAccuracyColor } from '../utils/StyleUtils';
 import { useOrthometricHeight } from '../hooks/useGeoid';
 
 interface Props {
   locations: SavedLocation[];
+  settings: AppSettings;
   onDelete: (id: string) => void;
   onDeleteFolder: (name: string) => void;
   onRenameFolder: (oldName: string, newName: string) => void;
@@ -16,6 +17,7 @@ interface Props {
 
 const SavedLocationItem: React.FC<{ 
   l: SavedLocation; 
+  settings: AppSettings;
   expanded: boolean; 
   togglePoint: (id: string) => void; 
   deletingPoint: string | null; 
@@ -23,9 +25,12 @@ const SavedLocationItem: React.FC<{
   onDelete: (id: string) => void; 
   onRenamePoint: (id: string, newName: string) => void;
   onViewOnMap: (l: SavedLocation) => void;
-}> = ({ l, expanded, togglePoint, deletingPoint, setDeletingPoint, onDelete, onRenamePoint, onViewOnMap }) => {
+}> = ({ l, settings, expanded, togglePoint, deletingPoint, setDeletingPoint, onDelete, onRenamePoint, onViewOnMap }) => {
   const geoidInfo = useOrthometricHeight(l.altitude, l.lat, l.lng);
-  const orthometricHeight = geoidInfo.orthometricHeight;
+  const isOrthometric = settings.heightType === 'orthometric';
+  const displayHeight = isOrthometric ? geoidInfo.orthometricHeight : l.altitude;
+  const heightPrecision = settings.heightPrecision ?? 2;
+
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState(l.name);
 
@@ -44,8 +49,9 @@ const SavedLocationItem: React.FC<{
   const renderCoordinates = (l: SavedLocation) => {
     const { x, y, labelX, labelY } = convertCoordinate(l.lat, l.lng, l.coordinateSystem || 'WGS84');
     const isUTM = l.coordinateSystem && l.coordinateSystem !== 'WGS84';
-    const formattedX = isUTM ? x.toFixed(2) : x.toFixed(6);
-    const formattedY = isUTM ? y.toFixed(2) : y.toFixed(6);
+    const locPrecision = settings.locationPrecision ?? 1;
+    const formattedX = isUTM ? x.toFixed(locPrecision) : x.toFixed(6);
+    const formattedY = isUTM ? y.toFixed(locPrecision) : y.toFixed(6);
 
     return (
       <>
@@ -147,7 +153,7 @@ const SavedLocationItem: React.FC<{
             {renderCoordinates(l)}
             <div className="flex flex-col">
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Yükseklik</span>
-              <p className="text-[14px] mono-font text-blue-600 font-black leading-tight">{orthometricHeight !== null ? `${orthometricHeight.toFixed(2)}m` : '---'}</p>
+              <p className="text-[14px] mono-font text-blue-600 font-black leading-tight">{displayHeight !== null ? `${displayHeight.toFixed(heightPrecision)}m` : '---'}</p>
             </div>
             <div className="flex flex-col">
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Hassasiyet</span>
@@ -176,7 +182,7 @@ const SavedLocationItem: React.FC<{
   );
 };
 
-const SavedLocationsList: React.FC<Props> = ({ locations, onDelete, onDeleteFolder, onRenameFolder, onRenamePoint, onBulkDelete, onViewOnMap }) => {
+const SavedLocationsList: React.FC<Props> = ({ locations, settings, onDelete, onDeleteFolder, onRenameFolder, onRenamePoint, onBulkDelete, onViewOnMap }) => {
   const [expanded, setExpanded] = useState<string[]>([]);
   const [expandedPoints, setExpandedPoints] = useState<string[]>([]);
   const [deletingFolder, setDeletingFolder] = useState<string | null>(null);
@@ -311,6 +317,7 @@ const SavedLocationsList: React.FC<Props> = ({ locations, onDelete, onDeleteFold
                   <SavedLocationItem 
                     key={l.id} 
                     l={l} 
+                    settings={settings}
                     expanded={expandedPoints.includes(l.id)} 
                     togglePoint={togglePoint} 
                     deletingPoint={deletingPoint} 

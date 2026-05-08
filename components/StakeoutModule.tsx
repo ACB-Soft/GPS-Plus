@@ -19,8 +19,8 @@ interface Props {
   onNavigate: (step: string) => void;
 }
 
-// Helper Components defined outside to prevent re-mounting
-const MapPopupContent = ({ name, subtitle, onGo, color }: { name: string, subtitle?: string, onGo: () => void, color?: string }) => (
+// Optimized helper components
+const MapPopupContent = React.memo(({ name, subtitle, onGo, color }: { name: string, subtitle?: string, onGo: () => void, color?: string }) => (
   <div className="p-3 min-w-[140px] bg-slate-200 rounded-2xl shadow-xl border border-slate-100 flex flex-col gap-2">
     <div className="flex flex-col px-1">
       <div className="flex items-center gap-2">
@@ -38,7 +38,84 @@ const MapPopupContent = ({ name, subtitle, onGo, color }: { name: string, subtit
       GİT
     </button>
   </div>
-);
+));
+
+// Optimized Vertex Layer with Spatial Filtering
+const LazyVertexLayer = React.memo(({ geometries, zoom, onVertexSelect }: { geometries: StakeoutGeometry[], zoom: number, onVertexSelect: (g: StakeoutGeometry, c: {lat: number, lng: number}, idx: number) => void }) => {
+  const map = useMap();
+  const [bounds, setBounds] = useState(map.getBounds());
+
+  useMapEvents({
+    moveend: () => setBounds(map.getBounds()),
+    zoomend: () => setBounds(map.getBounds()),
+  });
+
+  if (zoom <= 16) return null;
+
+  const sw = bounds.getSouthWest();
+  const ne = bounds.getNorthEast();
+
+  return (
+    <>
+      {geometries.flatMap(g => {
+        return g.coordinates.map((c, idx) => {
+          // Simple numerical bounds check is much faster than object creation (L.latLng)
+          if (c.lat < sw.lat || c.lat > ne.lat || c.lng < sw.lng || c.lng > ne.lng) return null;
+
+          return (
+            <Circle
+              key={`${g.id}-v-${idx}`}
+              center={[c.lat, c.lng]}
+              radius={1.5}
+              pathOptions={{ color: 'white', fillColor: g.color || '#3b82f6', fillOpacity: 1, weight: 1 }}
+            >
+              <Popup closeButton={false} className="custom-leaflet-popup">
+                <MapPopupContent 
+                  name={g.name}
+                  subtitle={`Köşe ${idx + 1}`}
+                  color={g.color}
+                  onGo={() => onVertexSelect(g, c, idx)}
+                />
+              </Popup>
+            </Circle>
+          );
+        });
+      })}
+    </>
+  );
+});
+
+// Memoized Marker component
+const StakeoutMarker = React.memo(({ p, zoom, onGo }: { p: StakeoutPoint, zoom: number, onGo: (p: StakeoutPoint) => void }) => {
+  const icon = React.useMemo(() => L.divIcon({
+    className: 'custom-marker',
+    html: `<div style="width: 12px; height: 12px; background: ${p.color || '#3b82f6'}; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.3);"></div>`,
+    iconSize: [12, 12],
+    iconAnchor: [6, 6]
+  }), [p.color]);
+
+  return (
+    <Marker position={[p.lat, p.lng]} icon={icon}>
+      {zoom >= 14 && (
+        <Tooltip permanent direction="top" offset={[0, -10]} className="custom-tooltip">
+          <span 
+            className="font-black uppercase tracking-tighter"
+            style={{ fontSize: `${Math.min(10, zoom - 8)}px` }}
+          >
+            {p.name}
+          </span>
+        </Tooltip>
+      )}
+      <Popup closeButton={false} className="custom-leaflet-popup">
+        <MapPopupContent 
+          name={p.name}
+          color={p.color}
+          onGo={() => onGo(p)}
+        />
+      </Popup>
+    </Marker>
+  );
+});
 
 const MapUpdater = ({ center }: { center: [number, number] }) => {
   const map = useMap();
@@ -143,6 +220,14 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
     const saved = localStorage.getItem('stakeout_geometries_v1');
     return saved ? JSON.parse(saved) : [];
   });
+
+  // Pre-processed coordinates for Leaflet components
+  const processedGeometries = React.useMemo(() => {
+    return geometries.map(g => ({
+      ...g,
+      leafletCoords: g.coordinates.map(c => [c.lat, c.lng] as [number, number])
+    }));
+  }, [geometries]);
   const [activePoint, setActivePoint] = useState<StakeoutPoint | null>(initialPoint || null);
   const [confirmClear, setConfirmClear] = useState<'NONE' | 'LIST' | 'MAP'>('NONE');
   const [keepScreenOn, setKeepScreenOn] = useState(settings.screenAlwaysOn);
@@ -644,6 +729,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                 style={{ height: '100%', width: '100%' }}
                 zoomControl={false}
                 attributionControl={false}
+                preferCanvas={true}
               >
                 <TileLayer
                   url={getTileLayer(settings.mapProvider).url}
@@ -652,82 +738,52 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   maxNativeZoom={getTileLayer(settings.mapProvider).maxNativeZoom}
                 />
                 
-                {geometries.map(g => (
+                {processedGeometries.map(g => (
                   <React.Fragment key={g.id}>
                     {g.type === 'LineString' ? (
                       <Polyline 
-                        positions={g.coordinates.map(c => [c.lat, c.lng])} 
+                        positions={g.leafletCoords} 
                         pathOptions={{ color: g.color || '#3b82f6', weight: 3 }} 
                       />
                     ) : (
                       <Polygon 
-                        positions={g.coordinates.map(c => [c.lat, c.lng])} 
+                        positions={g.leafletCoords} 
                         pathOptions={{ color: g.color || '#3b82f6', fillColor: g.color || '#3b82f6', fillOpacity: 0.1, weight: 2 }} 
                       />
                     )}
-                    {/* Vertices for snapping */}
-                    {allMapZoom > 16 && g.coordinates.map((c, idx) => (
-                      <Circle
-                        key={`${g.id}-v-${idx}`}
-                        center={[c.lat, c.lng]}
-                        radius={1.5}
-                        pathOptions={{ color: 'white', fillColor: g.color || '#3b82f6', fillOpacity: 1, weight: 1 }}
-                      >
-                        <Popup closeButton={false} className="custom-leaflet-popup">
-                          <MapPopupContent 
-                            name={g.name}
-                            subtitle={`Köşe ${idx + 1}`}
-                            color={g.color}
-                            onGo={() => {
-                              const newPt: StakeoutPoint = {
-                                id: `snap-${Date.now()}`,
-                                name: `${g.name} - K${idx + 1}`,
-                                lat: c.lat,
-                                lng: c.lng,
-                                coordinateSystem: 'WGS84',
-                                originalX: c.lng,
-                                originalY: c.lat
-                              };
-                              setSourceView('ALL_MAP');
-                              setActivePoint(newPt);
-                              onNavigate('MAP');
-                            }}
-                          />
-                        </Popup>
-                      </Circle>
-                    ))}
                   </React.Fragment>
                 ))}
 
+                <LazyVertexLayer 
+                  geometries={geometries} 
+                  zoom={allMapZoom} 
+                  onVertexSelect={(g, c, idx) => {
+                    const newPt: StakeoutPoint = {
+                      id: `snap-${Date.now()}`,
+                      name: `${g.name} - K${idx + 1}`,
+                      lat: c.lat,
+                      lng: c.lng,
+                      coordinateSystem: 'WGS84',
+                      originalX: c.lng,
+                      originalY: c.lat
+                    };
+                    setSourceView('ALL_MAP');
+                    setActivePoint(newPt);
+                    onNavigate('MAP');
+                  }}
+                />
+
                 {points.map(p => (
-                  <Marker key={p.id} position={[p.lat, p.lng]} icon={L.divIcon({
-                    className: 'custom-marker',
-                    html: `<div style="width: 12px; height: 12px; background: ${p.color || '#3b82f6'}; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.3);"></div>`,
-                    iconSize: [12, 12],
-                    iconAnchor: [6, 6]
-                  })}>
-                    {allMapZoom >= 14 && (
-                      <Tooltip permanent direction="top" offset={[0, -10]} className="custom-tooltip">
-                        <span 
-                          className="font-black uppercase tracking-tighter"
-                          style={{ fontSize: `${Math.min(10, allMapZoom - 8)}px` }}
-                        >
-                          {p.name}
-                        </span>
-                      </Tooltip>
-                    )}
-                    <Popup closeButton={false} className="custom-leaflet-popup">
-                      <MapPopupContent 
-                        name={p.name}
-                        color={p.color}
-                        onGo={() => { 
-                          setSourceView('ALL_MAP');
-                          setActivePoint(p); 
-                          onNavigate('MAP'); 
-                        }}
-                      />
-                    </Popup>
-                  </Marker>
+                  <StakeoutMarker 
+                    key={p.id} 
+                    p={p} 
+                    zoom={allMapZoom} 
+                    onGo={(pt) => {
+                      setSourceView('ALL_MAP');
+                      setActivePoint(pt); 
+                      onNavigate('MAP'); 
+                    }}
+                  />
                 ))}
 
                 {userPos && (
@@ -792,6 +848,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                 style={{ height: '100%', width: '100%' }}
                 zoomControl={false}
                 attributionControl={false}
+                preferCanvas={true}
               >
                 <TileLayer
                   url={getTileLayer(settings.mapProvider).url}
@@ -800,16 +857,16 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   maxNativeZoom={getTileLayer(settings.mapProvider).maxNativeZoom}
                 />
                 
-                {geometries.map(g => (
+                {processedGeometries.map(g => (
                   <React.Fragment key={g.id}>
                     {g.type === 'LineString' ? (
                       <Polyline 
-                        positions={g.coordinates.map(c => [c.lat, c.lng])} 
+                        positions={g.leafletCoords} 
                         pathOptions={{ color: g.color || '#3b82f6', weight: 2, opacity: 0.7, dashArray: '5, 10' }} 
                       />
                     ) : (
                       <Polygon 
-                        positions={g.coordinates.map(c => [c.lat, c.lng])} 
+                        positions={g.leafletCoords} 
                         pathOptions={{ color: g.color || '#3b82f6', fillColor: g.color || '#3b82f6', fillOpacity: 0.2, weight: 1, opacity: 0.6 }} 
                       />
                     )}

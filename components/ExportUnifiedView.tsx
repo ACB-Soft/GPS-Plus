@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { SavedLocation } from '../types';
+import { SavedLocation, AppSettings } from '../types';
 import { downloadKML } from './KMLUtils';
 import { downloadExcel, downloadTechnicalReport } from './ExcelUtils';
 import { downloadTXT } from './TxtUtils';
 
 interface Props {
   locations: SavedLocation[];
+  settings: AppSettings;
 }
 
-const ExportUnifiedView: React.FC<Props> = ({ locations }) => {
+const ExportUnifiedView: React.FC<Props> = ({ locations, settings }) => {
   const uniqueFolders: string[] = Array.from(new Set(locations.map(l => l.folderName)));
   const [selectedFolder, setSelectedFolder] = useState<string>(uniqueFolders.length > 0 ? uniqueFolders[0] : '');
   
@@ -71,7 +72,7 @@ const ExportUnifiedView: React.FC<Props> = ({ locations }) => {
         </button>
 
         <button 
-          onClick={() => downloadExcel(getFiltered())} 
+          onClick={() => downloadExcel(getFiltered(), settings)} 
           disabled={!hasSelection} 
           className={`w-full py-3 md:py-4 px-6 text-white rounded-xl md:rounded-2xl font-black text-sm md:text-base uppercase flex items-center gap-5 transition-all duration-300 shadow-xl ${
             hasSelection ? 'bg-emerald-600 shadow-emerald-200 active:scale-[0.98]' : 'bg-slate-300 opacity-40 grayscale cursor-not-allowed shadow-none'
@@ -119,7 +120,7 @@ const ExportUnifiedView: React.FC<Props> = ({ locations }) => {
           <button 
             onClick={() => {
               const pt = getSelectedPoint();
-              if (pt) downloadTechnicalReport(pt);
+              if (pt) downloadTechnicalReport(pt, settings);
             }} 
             disabled={!hasPointSelection} 
             className={`w-full py-3 md:py-4 px-6 text-white rounded-xl md:rounded-2xl font-black text-sm md:text-base uppercase flex items-center gap-5 transition-all duration-300 shadow-xl ${

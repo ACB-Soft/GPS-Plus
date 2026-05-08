@@ -10,12 +10,15 @@ interface Props {
 
 const SettingsView: React.FC<Props> = ({ onBack }) => {
   const [coordinateSystem, setCoordinateSystem] = useState(localStorage.getItem('default_coord_system') || 'WGS84');
-  const [accuracyLimit, setAccuracyLimit] = useState(localStorage.getItem('default_accuracy_limit') || '5');
-  const [measurementDuration, setMeasurementDuration] = useState(localStorage.getItem('default_duration') || '5');
+  const [accuracyLimit, setAccuracyLimit] = useState(localStorage.getItem('default_accuracy_limit') || '10');
+  const [measurementDuration, setMeasurementDuration] = useState(localStorage.getItem('default_duration') || '10');
   const [mapProvider, setMapProvider] = useState(localStorage.getItem('default_map_provider') || 'Google Hybrid');
-  const [audioEnabled, setAudioEnabled] = useState(localStorage.getItem('default_audio_feedback_enabled') !== 'false');
-  const [vibrationEnabled, setVibrationEnabled] = useState(localStorage.getItem('default_vibration_feedback_enabled') !== 'false');
+  const [audioEnabled, setAudioEnabled] = useState(localStorage.getItem('default_audio_feedback_enabled') === 'true');
+  const [vibrationEnabled, setVibrationEnabled] = useState(localStorage.getItem('default_vibration_feedback_enabled') === 'true');
   const [screenAlwaysOn, setScreenAlwaysOn] = useState(localStorage.getItem('default_screen_always_on') === 'true');
+  const [locationPrecision, setLocationPrecision] = useState(localStorage.getItem('default_location_precision') || '2');
+  const [heightPrecision, setHeightPrecision] = useState(localStorage.getItem('default_height_precision') || '1');
+  const [heightType, setHeightType] = useState(localStorage.getItem('default_height_type') || 'orthometric');
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   
   const [modal, setModal] = useState<{
@@ -39,7 +42,10 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
     localStorage.setItem('default_audio_feedback_enabled', audioEnabled.toString());
     localStorage.setItem('default_vibration_feedback_enabled', vibrationEnabled.toString());
     localStorage.setItem('default_screen_always_on', screenAlwaysOn.toString());
-  }, [coordinateSystem, accuracyLimit, measurementDuration, mapProvider, audioEnabled, vibrationEnabled, screenAlwaysOn]);
+    localStorage.setItem('default_location_precision', locationPrecision);
+    localStorage.setItem('default_height_precision', heightPrecision);
+    localStorage.setItem('default_height_type', heightType);
+  }, [coordinateSystem, accuracyLimit, measurementDuration, mapProvider, audioEnabled, vibrationEnabled, screenAlwaysOn, locationPrecision, heightPrecision, heightType]);
 
   const handleUpdateCheck = async () => {
     if (isCheckingUpdate) return;
@@ -175,6 +181,60 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
                   {[5, 10, 15, 20, 30, 50, 100].map(v => <option key={v} value={v}>{v} saniye</option>)}
+                </select>
+              </div>
+            </div>
+          </section>
+
+          {/* Birim ve Duyarlılık Ayarları */}
+          <section className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                <i className="fas fa-ruler-combined"></i>
+              </div>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Birim ve Duyarlılık</h3>
+            </div>
+            
+            <div className="soft-card p-5 space-y-4">
+              {/* Konum Duyarlılığı */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Konum (Virgülden sonraki duyarlılık)</label>
+                <select 
+                  value={locationPrecision}
+                  onChange={(e) => setLocationPrecision(e.target.value)}
+                  className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
+                >
+                  {[0, 1, 2].map((v) => (
+                    <option key={v} value={v.toString()}>{v} Hane</option>
+                  ))}
+                </select>
+                <p className="text-[9px] text-slate-500 font-medium ml-1">WGS84 harici koordinat sistemlerinde geçerlidir.</p>
+              </div>
+
+              {/* Yükseklik Duyarlılığı */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Yükseklik (Virgülden sonraki duyarlılık)</label>
+                <select 
+                  value={heightPrecision}
+                  onChange={(e) => setHeightPrecision(e.target.value)}
+                  className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
+                >
+                  {[0, 1, 2].map((v) => (
+                    <option key={v} value={v.toString()}>{v} Hane</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Yükseklik Tipi */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Yükseklik Tipi</label>
+                <select 
+                  value={heightType}
+                  onChange={(e) => setHeightType(e.target.value)}
+                  className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
+                >
+                  <option value="orthometric">Ortometrik Yükseklik</option>
+                  <option value="ellipsoidal">Elipsoidal Yükseklik</option>
                 </select>
               </div>
             </div>

@@ -1,15 +1,19 @@
 import * as XLSX from 'xlsx';
-import { SavedLocation } from '../types';
+import { SavedLocation, AppSettings } from '../types';
 import { convertCoordinate } from '../utils/CoordinateUtils';
 import { FULL_BRAND } from '../version';
 import { getCorrectedHeight } from './GeoidUtils';
 import { geoidService } from '../services/GeoidService';
 
-export const downloadExcel = (locations: SavedLocation[]) => {
+export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings) => {
   if (locations.length === 0) {
     alert("Kayıt bulunamadı.");
     return;
   }
+
+  const locPrecision = settings?.locationPrecision ?? 1;
+  const heightPrecision = settings?.heightPrecision ?? 2;
+  const heightType = settings?.heightType ?? 'orthometric';
 
   const uniqueFolders = Array.from(new Set(locations.map(l => l.folderName)));
   const projectName = uniqueFolders.length === 1 ? uniqueFolders[0] : "Çoklu Proje Seçimi";
@@ -30,36 +34,35 @@ export const downloadExcel = (locations: SavedLocation[]) => {
   const dataRows = locations.map(loc => {
     const { x, y } = convertCoordinate(loc.lat, loc.lng, loc.coordinateSystem || 'WGS84');
     
-    // WGS84 ise 6 basamak, değilse (UTM vb.) 2 basamak (virgülden sonra sıfır olsa bile gösterilir)
-    const val1 = isWGS84 ? y.toFixed(6) : x.toFixed(2);
-    const val2 = isWGS84 ? x.toFixed(6) : y.toFixed(2);
+    const val1 = isWGS84 ? y.toFixed(6) : x.toFixed(locPrecision);
+    const val2 = isWGS84 ? x.toFixed(6) : y.toFixed(locPrecision);
     
     const correctedH = getCorrectedHeight(loc.lat, loc.lng, loc.altitude);
-    const orthometricH = correctedH !== null ? correctedH.toFixed(2) : '---';
+    const orthometricH = correctedH !== null ? correctedH.toFixed(heightPrecision) : '---';
     
-    // iOS cihazlarda ham veri (loc.altitude) ortometrik (MSL) olduğu için 
-    // elipsoid yüksekliği hesaplanırken EGM96 ondülasyonu eklenmelidir.
     let ellipVal = loc.altitude;
     if (isIOS && loc.altitude !== null) {
       const egm96Undulation = geoidService.getUndulation(loc.lat, loc.lng, 'EGM96');
       ellipVal = loc.altitude + egm96Undulation;
     }
     
-    const ellipsoidalH = ellipVal !== null ? ellipVal.toFixed(2) : '---';
+    const ellipsoidalH = ellipVal !== null ? ellipVal.toFixed(heightPrecision) : '---';
     
-    // Ondülasyon hesapla: Elipsoid - Orto
     let undulationVal = '---';
     if (ellipVal !== null && correctedH !== null) {
-      undulationVal = (ellipVal - correctedH).toFixed(2);
+      undulationVal = (ellipVal - correctedH).toFixed(heightPrecision);
     }
 
     const accuracy = loc.accuracy.toFixed(2);
     const duration = (loc.measurementDuration || 0).toString();
 
+    const displayHeight = heightType === 'orthometric' ? orthometricH : ellipsoidalH;
+
     return [
       loc.name,
       val1, // Sağa (Y) veya Enlem
       val2, // Yukarı (X) veya Boylam
+      displayHeight,
       orthometricH,
       ellipsoidalH,
       undulationVal,
@@ -73,7 +76,7 @@ export const downloadExcel = (locations: SavedLocation[]) => {
     ["Proje Adı:", projectName],
     ["Koordinat Sistemi:", projectSystem],
     [], 
-    ["Nokta İsmi", header1, header2, "Yükseklik (m)", "Elipsoidal Yükseklik (m)", "Ondülasyon (m)", "Hassasiyet (m)", "Gözlem Süresi (sn)", "Tarih"],
+    ["Nokta İsmi", header1, header2, `Yükseklik (${heightType === 'orthometric' ? 'Ortometrik' : 'Elipsoidal'}) (m)`, "Ortometrik Yükseklik (m)", "Elipsoidal Yükseklik (m)", "Ondülasyon (m)", "Hassasiyet (m)", "Gözlem Süresi (sn)", "Tarih"],
     ...dataRows
   ];
 
@@ -103,11 +106,15 @@ export const downloadExcel = (locations: SavedLocation[]) => {
   XLSX.writeFile(workbook, fileName);
 };
 
-export const downloadTechnicalReport = (location: SavedLocation) => {
+export const downloadTechnicalReport = (location: SavedLocation, settings?: AppSettings) => {
   if (!location.samples || location.samples.length === 0) {
     alert("Bu noktaya ait ham veri (örneklem) bulunamadı. Teknik rapor sadece yeni ölçülen noktalar için oluşturulabilir.");
     return;
   }
+
+  const locPrecision = settings?.locationPrecision ?? 1;
+  const heightPrecision = settings?.heightPrecision ?? 2;
+  const isOrthometricSetting = settings?.heightType === 'orthometric';
 
   const sys = location.coordinateSystem || 'WGS84';
   const isWGS84 = sys === 'WGS84';
@@ -188,20 +195,24 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
 
   const dataRows = location.samples.map((s, idx) => {
     const { x, y } = convertCoordinate(s.lat, s.lng, sys);
-    const val1 = isWGS84 ? s.lat.toFixed(8) : x.toFixed(2);
-    const val2 = isWGS84 ? s.lng.toFixed(8) : y.toFixed(2);
+    const val1 = isWGS84 ? s.lat.toFixed(8) : x.toFixed(locPrecision);
+    const val2 = isWGS84 ? s.lng.toFixed(8) : y.toFixed(locPrecision);
     
     let status = "Kullanıldı";
     if (s.accuracy > accuracyLimit) {
       status = `Düşük Hass. (> ${accuracyLimit}m)`;
     }
 
+    const hValue = isOrthometricSetting 
+      ? getCorrectedHeight(s.lat, s.lng, s.altitude) 
+      : s.altitude;
+
     return [
       idx + 1,
       new Date(s.timestamp).toLocaleTimeString('tr-TR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
       val1,
       val2,
-      s.altitude !== null ? s.altitude.toFixed(2) : '---',
+      hValue !== null ? hValue.toFixed(heightPrecision) : '---',
       s.accuracy.toFixed(2),
       s.altitudeAccuracy !== null ? s.altitudeAccuracy.toFixed(2) : '---',
       status
@@ -217,15 +228,15 @@ export const downloadTechnicalReport = (location: SavedLocation) => {
     ["Hassasiyet Eşiği:", `${accuracyLimit} m`],
     ["Toplam Örnek Sayısı:", location.samples.length],
     [],
-    ["No", "Saat", header1, header2, "Yükseklik (m)", "Hassasiyet (m)", "Dikey Hass. (m)", "Durum"],
+    ["No", "Saat", header1, header2, `Yükseklik (${isOrthometricSetting ? 'Ortometrik' : 'Elipsoidal'}) (m)`, "Hassasiyet (m)", "Dikey Hass. (m)", "Durum"],
     ...dataRows,
     [],
     ["İSTATİSTİKSEL HESAPLAMA ÖZETİ (Sadece Hassas Veriler)"],
-    ["Yöntem", header1, header2, "Yükseklik (m)", "Kullanılan Veri"],
-    ["Aritmetik Ortalama", isWGS84 ? statsAll.x.toFixed(8) : statsAll.x.toFixed(2), isWGS84 ? statsAll.y.toFixed(8) : statsAll.y.toFixed(2), statsAll.z.toFixed(2), `${statsAll.count} / ${location.samples.length}`],
-    ["Medyan Değerler", isWGS84 ? medX.toFixed(8) : medX.toFixed(2), isWGS84 ? medY.toFixed(8) : medY.toFixed(2), medZ.toFixed(2), `${validSamples.length} / ${location.samples.length}`],
-    [`Kümeleme (Dinamik - Eps: ${dynamicEpsilon.toFixed(2)}m)`, isWGS84 ? statsClusterDynamic.x.toFixed(8) : statsClusterDynamic.x.toFixed(2), isWGS84 ? statsClusterDynamic.y.toFixed(8) : statsClusterDynamic.y.toFixed(2), statsClusterDynamic.z.toFixed(2), `${statsClusterDynamic.count} / ${location.samples.length}`],
-    ["Kümeleme (Sabit - Eps: 1.00m)", isWGS84 ? statsClusterFixed.x.toFixed(8) : statsClusterFixed.x.toFixed(2), isWGS84 ? statsClusterFixed.y.toFixed(8) : statsClusterFixed.y.toFixed(2), statsClusterFixed.z.toFixed(2), `${statsClusterFixed.count} / ${location.samples.length}`],
+    ["Yöntem", header1, header2, `Yükseklik (${isOrthometricSetting ? 'Ortometrik' : 'Elipsoidal'}) (m)`, "Kullanılan Veri"],
+    ["Aritmetik Ortalama", isWGS84 ? statsAll.x.toFixed(8) : statsAll.x.toFixed(locPrecision), isWGS84 ? statsAll.y.toFixed(8) : statsAll.y.toFixed(locPrecision), statsAll.z.toFixed(heightPrecision), `${statsAll.count} / ${location.samples.length}`],
+    ["Medyan Değerler", isWGS84 ? medX.toFixed(8) : medX.toFixed(locPrecision), isWGS84 ? medY.toFixed(8) : medY.toFixed(locPrecision), medZ.toFixed(heightPrecision), `${validSamples.length} / ${location.samples.length}`],
+    [`Kümeleme (Dinamik - Eps: ${dynamicEpsilon.toFixed(2)}m)`, isWGS84 ? statsClusterDynamic.x.toFixed(8) : statsClusterDynamic.x.toFixed(locPrecision), isWGS84 ? statsClusterDynamic.y.toFixed(8) : statsClusterDynamic.y.toFixed(locPrecision), statsClusterDynamic.z.toFixed(heightPrecision), `${statsClusterDynamic.count} / ${location.samples.length}`],
+    ["Kümeleme (Sabit - Eps: 1.00m)", isWGS84 ? statsClusterFixed.x.toFixed(8) : statsClusterFixed.x.toFixed(locPrecision), isWGS84 ? statsClusterFixed.y.toFixed(8) : statsClusterFixed.y.toFixed(locPrecision), statsClusterFixed.z.toFixed(heightPrecision), `${statsClusterFixed.count} / ${location.samples.length}`],
   ];
 
   const worksheet = XLSX.utils.aoa_to_sheet(ws_data);

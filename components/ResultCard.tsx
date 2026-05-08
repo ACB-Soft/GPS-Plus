@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { SavedLocation } from '../types';
+import { SavedLocation, AppSettings } from '../types';
 import { convertCoordinate } from '../utils/CoordinateUtils';
 import { useOrthometricHeight } from '../hooks/useGeoid';
 
@@ -19,19 +19,25 @@ const MapResizer = () => {
 
 interface Props {
   location: SavedLocation;
+  settings: AppSettings;
   initialShowMap?: boolean;
   onCloseMap?: () => void;
 }
 
-const ResultCard: React.FC<Props> = ({ location, initialShowMap = false, onCloseMap }) => {
+const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = false, onCloseMap }) => {
   const [showMap, setShowMap] = useState(initialShowMap);
   const { x, y, labelX, labelY, zone } = convertCoordinate(location.lat, location.lng, location.coordinateSystem || 'WGS84');
   const isUTM = location.coordinateSystem && location.coordinateSystem !== 'WGS84';
-  const formattedX = isUTM ? x.toFixed(2) : x.toFixed(6);
-  const formattedY = isUTM ? y.toFixed(2) : y.toFixed(6);
+  
+  const locPrecision = settings.locationPrecision ?? 1;
+  const heightPrecision = settings.heightPrecision ?? 2;
+  const isOrthometric = settings.heightType === 'orthometric';
+
+  const formattedX = isUTM ? x.toFixed(locPrecision) : x.toFixed(6);
+  const formattedY = isUTM ? y.toFixed(locPrecision) : y.toFixed(6);
   
   const geoidInfo = useOrthometricHeight(location.altitude, location.lat, location.lng);
-  const orthometricHeight = geoidInfo.orthometricHeight;
+  const displayHeight = isOrthometric ? geoidInfo.orthometricHeight : location.altitude;
 
   const getMapProviderInfo = () => {
     const provider = localStorage.getItem('default_map_provider') || 'Google Hybrid';
@@ -77,7 +83,7 @@ const ResultCard: React.FC<Props> = ({ location, initialShowMap = false, onClose
             </div>
             <div className="bg-blue-50/50 p-4 md:p-5 rounded-2xl md:rounded-3xl border border-blue-100 text-left shadow-sm">
               <div className="text-[9px] md:text-[10px] text-blue-500 font-black uppercase mb-1 leading-none">Yükseklik</div>
-              <div className="text-xl md:text-2xl font-black text-blue-600 mono-font leading-none">{orthometricHeight !== null ? orthometricHeight.toFixed(2) : '---'}<span className="text-[10px] ml-1">m</span></div>
+              <div className="text-xl md:text-2xl font-black text-blue-600 mono-font leading-none">{displayHeight !== null ? displayHeight.toFixed(heightPrecision) : '---'}<span className="text-[10px] ml-1">m</span></div>
             </div>
             <div className={`p-4 md:p-5 rounded-2xl md:rounded-3xl border text-left transition-colors shadow-sm ${
               location.accuracy <= 10 ? 'bg-emerald-50/50 border-emerald-100' : 

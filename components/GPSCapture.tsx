@@ -277,8 +277,8 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
     };
 
     // Feedback (Sound/Vibration)
-    const audioEnabled = localStorage.getItem('default_audio_feedback_enabled') !== 'false';
-    const vibrationEnabled = localStorage.getItem('default_vibration_feedback_enabled') !== 'false';
+    const audioEnabled = localStorage.getItem('default_audio_feedback_enabled') === 'true';
+    const vibrationEnabled = localStorage.getItem('default_vibration_feedback_enabled') === 'true';
 
     if (vibrationEnabled && navigator.vibrate) {
       navigator.vibrate([200, 100, 200]);
