@@ -37,9 +37,6 @@ export function calculateResult(
       // Clustering to find the main core of points
       finalSamples = applyDBSCANFilter(sourceData);
       break;
-    case 'KALMAN':
-      // Simple Kalman tracking of the mean
-      return applyKalmanFilter(sourceData);
     default:
       finalSamples = applySigmaFilter(sourceData, 2);
   }
@@ -280,37 +277,18 @@ function expandCluster(
 }
 
 /**
- * Kalman Filter (Constant Position Model)
+ * Calculates variance of coordinates in meters
  */
-function applyKalmanFilter(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  if (samples.length === 0) return { result: samples[0], usedIndices: [0] };
-
-  // Initial state
-  let lat = samples[0].lat;
-  let lng = samples[0].lng;
-  let p = 1.0; // Estimate error covariance
-  const q = 1e-7; // Process noise covariance (assuming very little movement)
+export function calculateVariance(samples: Coordinate[], mean: Coordinate): number {
+  if (samples.length < 2) return 0;
   
-  for (let i = 1; i < samples.length; i++) {
-    const s = samples[i];
-    const r = Math.pow(s.accuracy / 111320, 2); // Measurement noise covariance (converted to roughly degrees squared)
-
-    // Prediction
-    p = p + q;
-
-    // Measurement Update (Correction)
-    const k = p / (p + r);
-    lat = lat + k * (s.lat - lat);
-    lng = lng + k * (s.lng - lng);
-    p = (1 - k) * p;
-  }
-
-  const finalAvg = calculateAverage(samples);
-  const result = {
-    ...finalAvg,
-    lat,
-    lng
-  };
-
-  return { result, usedIndices: samples.map((_, i) => i) };
+  // Convert degrees to meters roughly (1 deg ~ 111320m)
+  const residuals = samples.map(s => {
+    const dLat = (s.lat - mean.lat) * 111320;
+    const dLng = (s.lng - mean.lng) * 111320 * Math.cos(mean.lat * Math.PI / 180);
+    return dLat * dLat + dLng * dLng;
+  });
+  
+  return residuals.reduce((a, b) => a + b, 0) / (samples.length - 1);
 }
+

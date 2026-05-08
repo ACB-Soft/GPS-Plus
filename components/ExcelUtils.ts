@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import { SavedLocation, AppSettings, CalculationMethod } from '../types';
 import { convertCoordinate } from '../utils/CoordinateUtils';
-import { calculateResult } from '../utils/MathUtils';
+import { calculateResult, calculateVariance } from '../utils/MathUtils';
 import { FULL_BRAND } from '../version';
 import { getCorrectedHeight } from './GeoidUtils';
 import { geoidService } from '../services/GeoidService';
@@ -13,7 +13,6 @@ const getMethodName = (m: CalculationMethod) => {
     case 'ROBUST': return "Robust Yöntem";
     case 'MAHALANOBIS': return "Mahalanobis Analizi";
     case 'DBSCAN': return "DBSCAN Kümeleme";
-    case 'KALMAN': return "Kalman Filtresi";
     default: return m;
   }
 };
@@ -136,16 +135,23 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   // --- İstatistiksel Ön Hazırlık ---
   const accuracyLimit = location.accuracyLimit || 5.0;
   
-  const methods: CalculationMethod[] = ['ARITHMETIC_MEAN', 'LEAST_SQUARES', 'ROBUST', 'MAHALANOBIS', 'DBSCAN', 'KALMAN'];
+  const methods: CalculationMethod[] = ['ARITHMETIC_MEAN', 'LEAST_SQUARES', 'ROBUST', 'MAHALANOBIS', 'DBSCAN'];
   const methodResults = methods.map(method => {
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
     const { x, y } = convertCoordinate(result.lat, result.lng, sys);
+    
+    // Calculate variance for the method
+    const usedSamples = usedIndices.map(i => location.samples![i]);
+    const variance = calculateVariance(usedSamples, result);
+    
     return {
       method,
       x: isWGS84 ? result.lat : x,
       y: isWGS84 ? result.lng : y,
       z: result.altitude,
-      usedCount: usedIndices.length
+      usedCount: usedIndices.length,
+      accuracy: result.accuracy,
+      variance: variance
     };
   });
 
@@ -188,13 +194,15 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     ...dataRows,
     [],
     ["ANLİZ YÖNTEMLERİ KARŞILAŞTIRMALI SONUÇLAR"],
-    ["Yöntem", header1, header2, isOrthometricSetting ? "Yükseklik (m)" : "Elipsoidal Yükseklik (m)", "Kullanılan Örnek"],
+    ["Yöntem", header1, header2, isOrthometricSetting ? "Yükseklik (m)" : "Elipsoidal Yükseklik (m)", "Kullanılan Örnek", "Hassasiyet (m)", "Varyans (m²)"],
     ...methodResults.map(res => [
       getMethodName(res.method),
       isWGS84 ? res.x.toFixed(8) : res.x.toFixed(locPrecision),
       isWGS84 ? res.y.toFixed(8) : res.y.toFixed(locPrecision),
       res.z !== null ? res.z.toFixed(heightPrecision) : '---',
-      `${res.usedCount} / ${location.samples!.length}`
+      `${res.usedCount} / ${location.samples!.length}`,
+      res.accuracy.toFixed(3),
+      res.variance.toFixed(6)
     ])
   ];
 
