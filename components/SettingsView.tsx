@@ -19,6 +19,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
   const [locationPrecision, setLocationPrecision] = useState(localStorage.getItem('default_location_precision') || '2');
   const [heightPrecision, setHeightPrecision] = useState(localStorage.getItem('default_height_precision') || '1');
   const [heightType, setHeightType] = useState(localStorage.getItem('default_height_type') || 'orthometric');
+  const [calculationMethod, setCalculationMethod] = useState(localStorage.getItem('default_calculation_method') || 'ARITHMETIC_MEAN');
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   
   const [modal, setModal] = useState<{
@@ -45,7 +46,40 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
     localStorage.setItem('default_location_precision', locationPrecision);
     localStorage.setItem('default_height_precision', heightPrecision);
     localStorage.setItem('default_height_type', heightType);
-  }, [coordinateSystem, accuracyLimit, measurementDuration, mapProvider, audioEnabled, vibrationEnabled, screenAlwaysOn, locationPrecision, heightPrecision, heightType]);
+    localStorage.setItem('default_calculation_method', calculationMethod);
+  }, [coordinateSystem, accuracyLimit, measurementDuration, mapProvider, audioEnabled, vibrationEnabled, screenAlwaysOn, locationPrecision, heightPrecision, heightType, calculationMethod]);
+
+  const handleResetSettings = () => {
+    if (confirm('Tüm ayarlar fabrika ayarlarına sıfırlanacak. Emin misiniz?')) {
+      // Clear localStorage defaults
+      localStorage.removeItem('default_coordinate_system');
+      localStorage.removeItem('default_accuracy_limit');
+      localStorage.removeItem('default_duration');
+      localStorage.removeItem('default_map_provider');
+      localStorage.removeItem('default_audio_feedback_enabled');
+      localStorage.removeItem('default_vibration_feedback_enabled');
+      localStorage.removeItem('default_screen_always_on');
+      localStorage.removeItem('default_location_precision');
+      localStorage.removeItem('default_height_precision');
+      localStorage.removeItem('default_height_type');
+      localStorage.removeItem('default_calculation_method');
+
+      // Reset state
+      setCoordinateSystem('ITRF96');
+      setAccuracyLimit('5.0');
+      setMeasurementDuration('5');
+      setMapProvider('osm');
+      setAudioEnabled(true);
+      setVibrationEnabled(true);
+      setScreenAlwaysOn(false);
+      setLocationPrecision('2');
+      setHeightPrecision('1');
+      setHeightType('orthometric');
+      setCalculationMethod('ARITHMETIC_MEAN');
+
+      setModal({ show: true, type: 'success', message: 'Ayarlar başarıyla sıfırlandı.' });
+    }
+  };
 
   const handleUpdateCheck = async () => {
     if (isCheckingUpdate) return;
@@ -183,6 +217,23 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                   {[5, 10, 15, 20, 30, 50, 100].map(v => <option key={v} value={v}>{v} saniye</option>)}
                 </select>
               </div>
+
+              {/* Hesaplama Yöntemi */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Hesaplama Yöntemi</label>
+                <select 
+                  value={calculationMethod}
+                  onChange={(e) => setCalculationMethod(e.target.value)}
+                  className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
+                >
+                  <option value="ARITHMETIC_MEAN">1. Yöntem: Aritmetik Ortalama</option>
+                  <option value="LEAST_SQUARES">2. Yöntem: En Küçük Kareler</option>
+                  <option value="ROBUST">3. Yöntem: Robust Yöntem</option>
+                  <option value="MAHALANOBIS">4. Yöntem: Mahalanobis Analizi</option>
+                  <option value="DBSCAN">5. Yöntem: DBSCAN Kümeleme</option>
+                  <option value="KALMAN">6. Yöntem: Kalman Filtresi</option>
+                </select>
+              </div>
             </div>
           </section>
 
@@ -306,6 +357,17 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                 </button>
               </div>
             </div>
+          </section>
+
+          {/* Fabrika Ayarlarına Dön */}
+          <section className="mt-8 mb-4">
+            <button
+              onClick={handleResetSettings}
+              className="w-full flex items-center justify-center gap-3 py-4 bg-slate-100 hover:bg-red-50 text-slate-500 hover:text-red-600 rounded-3xl transition-colors border border-slate-200 border-dashed"
+            >
+              <i className="fas fa-rotate-left"></i>
+              <span className="font-black text-sm uppercase tracking-widest">Ayarları Sıfırla</span>
+            </button>
           </section>
         </div>
       </div>

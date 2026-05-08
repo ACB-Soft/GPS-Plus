@@ -130,7 +130,7 @@ const ExportUnifiedView: React.FC<Props> = ({ locations, settings }) => {
             <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/30 shrink-0">
               <i className="fas fa-microscope text-xl"></i>
             </div>
-            <span className="tracking-tight">Teknik Rapor (.XLSX)</span>
+            <span className="tracking-tight">Ölçüm Raporu (.XLSX)</span>
           </button>
         </div>
       </div>

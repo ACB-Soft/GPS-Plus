@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Coordinate, SavedLocation } from '../types';
+import { Coordinate, SavedLocation, CalculationMethod } from '../types';
+import { calculateResult } from '../utils/MathUtils';
 import { convertToMSL } from './GeoidUtils';
 import { getAccuracyColor, getAccuracyBg } from '../utils/StyleUtils';
 import GlobalFooter from './GlobalFooter';
 import Header from './Header';
 
 interface Props {
-  onComplete: (coord: Coordinate, folderName: string, pointName: string, description: string, coordinateSystem: string, duration: number, samples: Coordinate[], usedIndices: number[], accuracyLimit: number) => void;
+  onComplete: (coord: Coordinate, folderName: string, pointName: string, description: string, coordinateSystem: string, duration: number, samples: Coordinate[], usedIndices: number[], accuracyLimit: number, method: CalculationMethod) => void;
   onCancel: () => void;
   isContinuing?: boolean;
   existingLocations: SavedLocation[];
@@ -224,57 +225,8 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       return;
     }
 
-    // --- STRATEJİ 1: Hassasiyet Eşiği Filtresi ---
-    // Sadece kullanıcının belirlediği limit içindeki verileri al
-    const accuracyFiltered = samples.filter(s => s.accuracy <= accuracyLimit);
-    
-    // Eğer tüm veriler limit dışındaysa (beklenmedik durum), orijinal veriyi kullan
-    const sourceData = accuracyFiltered.length > 0 ? accuracyFiltered : samples;
-
-    // --- STRATEJİ 2: Outlier Temizliği (2-Sigma / 95% Güven Aralığı) ---
-    let finalSamples = sourceData;
-    if (sourceData.length >= 4) {
-      const latList = sourceData.map(s => s.lat);
-      const lngList = sourceData.map(s => s.lng);
-      
-      const getMean = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
-      const getStdDev = (arr: number[], mean: number) => Math.sqrt(arr.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / arr.length);
-      
-      const meanLat = getMean(latList);
-      const meanLng = getMean(lngList);
-      const stdLat = getStdDev(latList, meanLat);
-      const stdLng = getStdDev(lngList, meanLng);
-      
-      // 2-Sigma filtresi: Ortalamadan 2 standart sapma uzaklıktaki verileri çıkar
-      finalSamples = sourceData.filter(s => 
-        Math.abs(s.lat - meanLat) <= 2 * stdLat && 
-        Math.abs(s.lng - meanLng) <= 2 * stdLng
-      );
-      
-      // Eğer filtreleme sonucunda veri kalmazsa (hepsi aynıysa std=0 olur), orijinali koru
-      if (finalSamples.length === 0) finalSamples = sourceData;
-    }
-
-    // Hangi orijinal indekslerin kullanıldığını belirle
-    const usedIndices = samples
-      .map((s, idx) => finalSamples.includes(s) ? idx : -1)
-      .filter(idx => idx !== -1);
-
-    const validAltitudes = finalSamples.filter(s => s.altitude !== null);
-    const validAltAccuracies = finalSamples.filter(s => s.altitudeAccuracy !== null);
-
-    const avg = {
-      lat: finalSamples.reduce((a, b) => a + b.lat, 0) / finalSamples.length,
-      lng: finalSamples.reduce((a, b) => a + b.lng, 0) / finalSamples.length,
-      accuracy: finalSamples.reduce((a, b) => a + b.accuracy, 0) / finalSamples.length,
-      altitude: validAltitudes.length > 0 
-        ? validAltitudes.reduce((a, b) => a + (b.altitude || 0), 0) / validAltitudes.length 
-        : null,
-      altitudeAccuracy: validAltAccuracies.length > 0
-        ? validAltAccuracies.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / validAltAccuracies.length
-        : null,
-      timestamp: Date.now()
-    };
+    const calculationMethod = (localStorage.getItem('default_calculation_method') || 'ARITHMETIC_MEAN') as CalculationMethod;
+    const { result: avg, usedIndices } = calculateResult(samples, calculationMethod, accuracyLimit);
 
     // Feedback (Sound/Vibration)
     const audioEnabled = localStorage.getItem('default_audio_feedback_enabled') === 'true';
@@ -302,7 +254,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       }
     }
 
-    onComplete(avg, folderName, pointName, '', coordinateSystem, measurementDuration, samples, usedIndices, accuracyLimit);
+    onComplete(avg, folderName, pointName, '', coordinateSystem, measurementDuration, samples, usedIndices, accuracyLimit, calculationMethod);
     releaseWakeLock();
   }, [folderName, pointName, coordinateSystem, measurementDuration, onComplete, accuracyLimit]);
 

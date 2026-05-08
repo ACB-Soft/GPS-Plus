@@ -10,8 +10,9 @@ import HelpView from './components/HelpView';
 import SettingsView from './components/SettingsView';
 import GlobalFooter from './components/GlobalFooter';
 import Header from './components/Header';
-import { SavedLocation, Coordinate, StakeoutPoint, AppSettings } from './types';
+import { SavedLocation, Coordinate, StakeoutPoint, AppSettings, CalculationMethod } from './types';
 import { geoidService } from './services/GeoidService';
+import { calculateResult } from './utils/MathUtils';
 
 const App = () => {
   type ViewType = 'onboarding' | 'dashboard' | 'capture' | 'list' | 'export' | 'result' | 'stakeout' | 'help' | 'settings';
@@ -43,6 +44,7 @@ const App = () => {
     locationPrecision: parseInt(localStorage.getItem('default_location_precision') || '2'),
     heightPrecision: parseInt(localStorage.getItem('default_height_precision') || '1'),
     heightType: (localStorage.getItem('default_height_type') as 'orthometric' | 'ellipsoidal') || 'orthometric',
+    calculationMethod: (localStorage.getItem('default_calculation_method') || 'ARITHMETIC_MEAN') as any,
   }));
 
   // Navigation wrapper to sync with browser history
@@ -91,6 +93,45 @@ const App = () => {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  // Recalculate locations when calculation method changes
+  useEffect(() => {
+    setLocations(prevLocations => {
+      let changed = false;
+      const updated = prevLocations.map(loc => {
+        if (loc.samples && loc.samples.length > 0 && loc.calculationMethod !== settings.calculationMethod) {
+          const { result, usedIndices } = calculateResult(loc.samples, settings.calculationMethod, loc.accuracyLimit || 5.0);
+          changed = true;
+          return {
+            ...loc,
+            lat: result.lat,
+            lng: result.lng,
+            accuracy: result.accuracy,
+            altitude: result.altitude,
+            altitudeAccuracy: result.altitudeAccuracy,
+            calculationMethod: settings.calculationMethod,
+            usedSampleIndices: usedIndices
+          };
+        }
+        return loc;
+      });
+      return changed ? updated : prevLocations;
+    });
+
+    if (lastResult && lastResult.samples && lastResult.samples.length > 0 && lastResult.calculationMethod !== settings.calculationMethod) {
+      const { result, usedIndices } = calculateResult(lastResult.samples, settings.calculationMethod, lastResult.accuracyLimit || 5.0);
+      setLastResult({
+        ...lastResult,
+        lat: result.lat,
+        lng: result.lng,
+        accuracy: result.accuracy,
+        altitude: result.altitude,
+        altitudeAccuracy: result.altitudeAccuracy,
+        calculationMethod: settings.calculationMethod,
+        usedSampleIndices: usedIndices
+      });
+    }
+  }, [settings.calculationMethod]);
 
   const checkLocation = () => {
     if (navigator.geolocation) {
@@ -169,7 +210,7 @@ const App = () => {
     navigateTo('dashboard');
   };
 
-  const handleGPSComplete = (coord: Coordinate, folderName: string, pointName: string, description: string, coordinateSystem: string, duration: number, samples: Coordinate[], usedIndices: number[], accLimit: number) => {
+  const handleGPSComplete = (coord: Coordinate, folderName: string, pointName: string, description: string, coordinateSystem: string, duration: number, samples: Coordinate[], usedIndices: number[], accLimit: number, method: any) => {
     const newLoc: SavedLocation = {
       ...coord,
       id: Date.now().toString(),
@@ -178,6 +219,7 @@ const App = () => {
       description: description,
       coordinateSystem: coordinateSystem,
       measurementDuration: duration,
+      calculationMethod: method,
       samples: samples,
       usedSampleIndices: usedIndices,
       accuracyLimit: accLimit
@@ -251,6 +293,7 @@ const App = () => {
                 locationPrecision: parseInt(localStorage.getItem('default_location_precision') || '2'),
                 heightPrecision: parseInt(localStorage.getItem('default_height_precision') || '1'),
                 heightType: (localStorage.getItem('default_height_type') as 'orthometric' | 'ellipsoidal') || 'orthometric',
+                calculationMethod: (localStorage.getItem('default_calculation_method') || 'ARITHMETIC_MEAN') as any,
               });
               window.history.back();
             }} 

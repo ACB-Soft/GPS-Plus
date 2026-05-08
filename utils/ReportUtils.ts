@@ -40,7 +40,7 @@ export const generateTechnicalReport = () => {
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class='container'>
     <div style="text-align: center; margin-bottom: 50pt;">
       <p style="font-size: 16pt; font-weight: bold;">${FULL_BRAND} SİSTEM MÜHENDİSLİĞİ</p>
       <h1>KAPSAMLI TEKNİK ANALİZ VE<br>UYGULAMA METODOLOJİ RAPORU</h1>
@@ -117,20 +117,23 @@ export const generateTechnicalReport = () => {
 
     <div class="page-break"></div>
 
-    <h2>6. İSTATİSTİKSEL FİLTRELEME VE VERİ SAĞLIĞI</h2>
-    <p>Hatalı sinyalleri (Outliers) temizlemek için çok aşamalı algoritmalar çalışır:</p>
+    <h2>6. İSTATİSTİKSEL ANALİZ VE VERİ AYIKLAMA METODOLOJİLERİ</h2>
+    <p>Hatalı sinyalleri (Outliers) temizlemek ve en doğru sonucu üretmek için ${FULL_BRAND}, kullanıcıya 6 farklı ileri düzey istatistiksel yöntem sunar:</p>
     <ul>
-      <li><span class="bold">Median (Ortanca) Filtresi:</span> Veri kümesi içindeki aşırı sapan (spike) değerleri elemek için aritmetik ortalamaya göre daha kararlı olan ortanca değer yöntemi kullanılır.</li>
-      <li><span class="bold">DBSCAN Kümeleme:</span> Statik ölçümde, koordinat uzayındaki yoğunluk analizi yapılır. Birbirine en yakın 4-5 noktanın oluşturduğu "çekirdek küme" esas alınır; küme dışında kalan sıçramalı veriler atılır.</li>
-      <li><span class="bold">HDOP/VDOP Guard:</span> Uydu dizilimi geometrisinin zayıf olduğu zamanlarda sistem ölçümü askıya alır veya düşük güven işareti koyar.</li>
+      <li><span class="bold">1. Aritmetik Ortalama ve Sigma Filtresi:</span> Veri kümesindeki düşük hassasiyetli veriler elendikten sonra, kalan veriler üzerinde 2-Sigma (95% güven aralığı) testi uygulanır. Ortalamadan 2 standart sapma uzaklıktaki sapan veriler (spike) temizlenerek nihai ortalama hesaplanır.</li>
+      <li><span class="bold">2. Ağırlıklı En Küçük Kareler (Weighted Least Squares):</span> Her bir GNSS örneği, kendi anlık hassasiyet değerinin karesiyle ters orantılı olarak ağırlıklandırılır (W = 1/σ²). Bu sayede daha düşük hata payına sahip "kaliteli" sinyaller, hesaplama sonucuna matematiksel olarak daha fazla etki eder.</li>
+      <li><span class="bold">3. Robust Yöntem (M-Estimators):</span> Huber ağırlık fonksiyonu kullanılarak gerçekleştirilen bu yöntemde, sapan değerlerin etkisi doğrusal değil, belirli bir eşikten sonra sınırlı hale getirilir. Yinelemeli (iterative) hesaplama ile sapan verilere rağmen en kararlı konum kestirimi yapılır.</li>
+      <li><span class="bold">4. Mahalanobis Uzaklık Analizi:</span> Koordinatların kovaryans matrisi üzerinden çok boyutlu uzaklık analizi yapılır. Korelasyonu bozan ve gürültü içeren veriler, koordinat sisteminin geometrik yapısına göre tespit edilerek elenir.</li>
+      <li><span class="bold">5. DBSCAN (Density-Based Clustering):</span> Koordinat uzayındaki yoğunluk analizi yapılarak ana "çekirdek küme" tespit edilir. Yansıma (multi-path) nedeniyle oluşan küme dışı sıçramalı veriler "gürültü" (noise) olarak işaretlenerek hesaba katılmaz.</li>
+      <li><span class="bold">6. Kalman Filtresi (Yinelemeli Kestirim):</span> Süreç gürültüsü ve ölçüm gürültüsü parametreleri kullanılarak, her yeni gelen veriyle mevcut konum kestirimi güncellenir. Zaman serisi boyunca en düşük varyansa sahip sonuç dinamik olarak takip edilir.</li>
     </ul>
 
-    <h2>7. ÖLÇÜM MANTIĞI VE STATİK KAYIT SİSTEMİ</h2>
-    <p>Profesyonel ölçüm, anlık bir tıklamadan çok bir "Örnekleme Süreci"dir:</p>
+    <h2>7. ÖLÇÜM MANTIĞI VE VERİ İŞLEME DİSİPLİNLERİ</h2>
+    <p>Profesyonel ölçüm, anlık bir koordinat yakalamaktan ziyade, seçilen analiz yöntemiyle gerçekleştirilen bir "Sinyal İşleme" sürecidir:</p>
     <ul>
-      <li><span class="bold">Süre Bazlı Örnekleme:</span> Kullanıcı örneğin 60 saniyelik bir kayıt açtığında, saniyede bir okuma yapılır (60 örnek).</li>
-      <li><span class="bold">Ağırlıklı Ortalama:</span> Her bir okumanın sahip olduğu "Vertical/Horizontal Accuracy" değerleri ters orantılı ağırlık olarak kullanılır. Daha hassas okuma, sonuca daha çok etki eder.</li>
-      <li><span class="bold">Hassas Ofsetleme:</span> Donanım anten merkezi ile yer seviyesi arasındaki "Jalon Yüksekliği" kullanıcı tarafından girilerek dikey düzeltme yapılır.</li>
+      <li><span class="bold">Düşük Hassasiyet Eliminasyonu:</span> Seçilen analiz yönteminden bağımsız olarak, öncelikle kullanıcının belirlediği "Hassasiyet Limiti" dışındaki tüm ham veriler veri kümesinden derhal çıkartılır.</li>
+      <li><span class="bold">Hibrit Sinyal Kontrolü:</span> Saniyelik örnekleme sırasında GPS çipsetinin bildirdiği hata payları (HDOP/VDOP) sürekli izlenir; limit aşımı durumunda analiz duraklatılarak veri bütünlüğü korunur.</li>
+      <li><span class="bold">Matematiksel Ofset Uygulama:</span> Elde edilen hassas koordinat, jeoid interpolasyonu ve varsa jalon yüksekliği düzeltmeleri ile millimetrik seviyede nihai hale getirilir.</li>
     </ul>
 
     <h2>8. APLİKASYON (STAKEOUT) VE TASARIM METODOLOJİSİ</h2>

@@ -8,6 +8,8 @@ export interface Coordinate {
   timestamp: number;
 }
 
+export type CalculationMethod = 'ARITHMETIC_MEAN' | 'LEAST_SQUARES' | 'ROBUST' | 'MAHALANOBIS' | 'DBSCAN' | 'KALMAN';
+
 export interface SavedLocation extends Coordinate {
   id: string;
   name: string;
@@ -15,6 +17,7 @@ export interface SavedLocation extends Coordinate {
   description?: string;
   coordinateSystem?: string;
   measurementDuration?: number;
+  calculationMethod?: CalculationMethod;
   samples?: Coordinate[];
   usedSampleIndices?: number[];
   accuracyLimit?: number;
@@ -45,6 +48,7 @@ export interface AppSettings {
   defaultCoordinateSystem: string;
   defaultAccuracyLimit: number;
   defaultMeasurementDuration: number;
+  calculationMethod: CalculationMethod;
   alertsEnabled: boolean;
   screenAlwaysOn: boolean;
   mapProvider: string;

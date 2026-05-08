@@ -1,9 +1,22 @@
 import * as XLSX from 'xlsx';
-import { SavedLocation, AppSettings } from '../types';
+import { SavedLocation, AppSettings, CalculationMethod } from '../types';
 import { convertCoordinate } from '../utils/CoordinateUtils';
+import { calculateResult } from '../utils/MathUtils';
 import { FULL_BRAND } from '../version';
 import { getCorrectedHeight } from './GeoidUtils';
 import { geoidService } from '../services/GeoidService';
+
+const getMethodName = (m: CalculationMethod) => {
+  switch(m) {
+    case 'ARITHMETIC_MEAN': return "Aritmetik Ortalama";
+    case 'LEAST_SQUARES': return "En Küçük Kareler";
+    case 'ROBUST': return "Robust Yöntem";
+    case 'MAHALANOBIS': return "Mahalanobis Analizi";
+    case 'DBSCAN': return "DBSCAN Kümeleme";
+    case 'KALMAN': return "Kalman Filtresi";
+    default: return m;
+  }
+};
 
 export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings) => {
   if (locations.length === 0) {
@@ -123,74 +136,18 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   // --- İstatistiksel Ön Hazırlık ---
   const accuracyLimit = location.accuracyLimit || 5.0;
   
-  // Sadece hassas verileri filtrele (İstatistiklerin temeli budur)
-  const allConverted = location.samples.map((s, idx) => {
-    const { x, y } = convertCoordinate(s.lat, s.lng, sys);
-    return { 
-      idx, 
-      x: isWGS84 ? s.lat : x, 
-      y: isWGS84 ? s.lng : y, 
-      z: s.altitude,
-      raw: s
+  const methods: CalculationMethod[] = ['ARITHMETIC_MEAN', 'LEAST_SQUARES', 'ROBUST', 'MAHALANOBIS', 'DBSCAN', 'KALMAN'];
+  const methodResults = methods.map(method => {
+    const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
+    const { x, y } = convertCoordinate(result.lat, result.lng, sys);
+    return {
+      method,
+      x: isWGS84 ? result.lat : x,
+      y: isWGS84 ? result.lng : y,
+      z: result.altitude,
+      usedCount: usedIndices.length
     };
   });
-
-  // İstatistiksel işlemlere sadece hassas veriler girer
-  const validSamples = allConverted.filter(s => s.raw.accuracy <= accuracyLimit);
-
-  if (validSamples.length === 0) {
-    // Hiç hassas veri yoksa istatistikleri boş dönmemek için bir uyarı gerekebilir 
-    // ama pratikte en az bir tane olur.
-  }
-
-  // Aritmetik Ortalama (Sadece Hassas Veriler)
-  const getMean = (samples: any[]) => {
-    if (samples.length === 0) return { x: 0, y: 0, z: 0, count: 0 };
-    const avgX = samples.reduce((a, b) => a + b.x, 0) / samples.length;
-    const avgY = samples.reduce((a, b) => a + b.y, 0) / samples.length;
-    const zArr = samples.filter(s => s.z !== null).map(s => s.z as number);
-    const avgZ = zArr.length > 0 ? zArr.reduce((a, b) => a + b, 0) / zArr.length : 0;
-    return { x: avgX, y: avgY, z: avgZ, count: samples.length };
-  };
-
-  const statsAll = getMean(validSamples);
-
-  // --- Medyan Hesaplama (Sadece Hassas Veriler) ---
-  const getMedian = (arr: number[]) => {
-    if (arr.length === 0) return 0;
-    const sorted = [...arr].sort((a, b) => a - b);
-    const mid = Math.floor(sorted.length / 2);
-    return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-  };
-
-  const medX = getMedian(validSamples.map(s => s.x));
-  const medY = getMedian(validSamples.map(s => s.y));
-  const medZ = getMedian(validSamples.filter(s => s.z !== null).map(s => s.z as number));
-
-  // --- Kümeleme (Clustering) Mantığı ---
-  const getClusteredMean = (epsilonValue: number) => {
-    if (validSamples.length === 0) return { x: 0, y: 0, z: 0, count: 0 };
-    
-    const neighbors = validSamples.map(p1 => {
-      const cluster = validSamples.filter(p2 => 
-        Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2)) <= epsilonValue
-      );
-      return cluster;
-    });
-
-    let bestCluster = neighbors[0] || [];
-    for (const cluster of neighbors) {
-      if (cluster.length > bestCluster.length) {
-        bestCluster = cluster;
-      }
-    }
-
-    return getMean(bestCluster);
-  };
-
-  const dynamicEpsilon = Math.max(accuracyLimit / 2, 1.0);
-  const statsClusterDynamic = getClusteredMean(dynamicEpsilon);
-  const statsClusterFixed = getClusteredMean(1.0);
 
   const dataRows = location.samples.map((s, idx) => {
     const { x, y } = convertCoordinate(s.lat, s.lng, sys);
@@ -219,7 +176,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   });
 
   const ws_data = [
-    ["TEKNİK ÖLÇÜM RAPORU"],
+    ["ÖLÇÜM RAPORU"],
     ["Nokta Adı:", location.name],
     ["Proje Adı:", location.folderName],
     ["Koordinat Sistemi:", sys],
@@ -230,12 +187,15 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     ["No", "Saat", header1, header2, isOrthometricSetting ? "Yükseklik (m)" : "Elipsoidal Yükseklik (m)", "Hassasiyet (m)", "Dikey Hass. (m)", "Durum"],
     ...dataRows,
     [],
-    ["İSTATİSTİKSEL HESAPLAMA ÖZETİ (Sadece Hassas Veriler)"],
-    ["Yöntem", header1, header2, isOrthometricSetting ? "Yükseklik (m)" : "Elipsoidal Yükseklik (m)", "Kullanılan Veri"],
-    ["Aritmetik Ortalama", isWGS84 ? statsAll.x.toFixed(8) : statsAll.x.toFixed(locPrecision), isWGS84 ? statsAll.y.toFixed(8) : statsAll.y.toFixed(locPrecision), statsAll.z.toFixed(heightPrecision), `${statsAll.count} / ${location.samples.length}`],
-    ["Medyan Değerler", isWGS84 ? medX.toFixed(8) : medX.toFixed(locPrecision), isWGS84 ? medY.toFixed(8) : medY.toFixed(locPrecision), medZ.toFixed(heightPrecision), `${validSamples.length} / ${location.samples.length}`],
-    [`Kümeleme (Dinamik - Eps: ${dynamicEpsilon.toFixed(2)}m)`, isWGS84 ? statsClusterDynamic.x.toFixed(8) : statsClusterDynamic.x.toFixed(locPrecision), isWGS84 ? statsClusterDynamic.y.toFixed(8) : statsClusterDynamic.y.toFixed(locPrecision), statsClusterDynamic.z.toFixed(heightPrecision), `${statsClusterDynamic.count} / ${location.samples.length}`],
-    ["Kümeleme (Sabit - Eps: 1.00m)", isWGS84 ? statsClusterFixed.x.toFixed(8) : statsClusterFixed.x.toFixed(locPrecision), isWGS84 ? statsClusterFixed.y.toFixed(8) : statsClusterFixed.y.toFixed(locPrecision), statsClusterFixed.z.toFixed(heightPrecision), `${statsClusterFixed.count} / ${location.samples.length}`],
+    ["ANLİZ YÖNTEMLERİ KARŞILAŞTIRMALI SONUÇLAR"],
+    ["Yöntem", header1, header2, isOrthometricSetting ? "Yükseklik (m)" : "Elipsoidal Yükseklik (m)", "Kullanılan Örnek"],
+    ...methodResults.map(res => [
+      getMethodName(res.method),
+      isWGS84 ? res.x.toFixed(8) : res.x.toFixed(locPrecision),
+      isWGS84 ? res.y.toFixed(8) : res.y.toFixed(locPrecision),
+      res.z !== null ? res.z.toFixed(heightPrecision) : '---',
+      `${res.usedCount} / ${location.samples!.length}`
+    ])
   ];
 
   const worksheet = XLSX.utils.aoa_to_sheet(ws_data);
@@ -253,6 +213,6 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Ham Veriler");
   
-  const fileName = `Teknik_Rapor_${location.name}.xlsx`;
+  const fileName = `Olcum_Raporu_${location.name}.xlsx`;
   XLSX.writeFile(workbook, fileName);
 };
