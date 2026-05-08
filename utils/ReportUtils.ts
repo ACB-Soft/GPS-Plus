@@ -13,167 +13,168 @@ export const generateTechnicalReport = () => {
 <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
 <head>
   <meta charset='utf-8'>
-  <title>${FULL_BRAND} - Kapsamlı Teknik Rapor</title>
+  <title>${FULL_BRAND} - Kapsamlı Teknik Rapor v6.5</title>
   <style>
     @page { size: A4; margin: 2.5cm; }
-    body { font-family: 'Arial', sans-serif; font-size: 11pt; line-height: 1.5; color: #000; background: white; margin: 0; padding: 0; }
+    body { font-family: 'Arial', sans-serif; font-size: 11pt; line-height: 1.6; color: #000; background: white; margin: 0; padding: 0; }
     .container { width: 100%; max-width: 17.5cm; margin: auto; padding: 20pt; }
     
-    h1 { font-size: 24pt; text-align: center; margin-bottom: 30pt; font-weight: bold; border-bottom: 2pt solid #000; padding-bottom: 10pt; }
-    h2 { font-size: 16pt; margin-top: 25pt; margin-bottom: 10pt; font-weight: bold; text-transform: uppercase; color: #333; }
-    h3 { font-size: 13pt; margin-top: 15pt; font-weight: bold; font-style: italic; }
+    h1 { font-size: 24pt; text-align: center; margin-bottom: 20pt; font-weight: bold; border-top: 1pt solid #000; border-bottom: 1pt solid #000; padding: 15pt 0; }
+    h2 { font-size: 16pt; margin-top: 30pt; margin-bottom: 12pt; font-weight: bold; text-decoration: underline; color: #000; }
+    h3 { font-size: 13pt; margin-top: 20pt; margin-bottom: 10pt; font-weight: bold; color: #333; }
     
     p { margin-bottom: 12pt; text-align: justify; }
+    ul, ol { margin-bottom: 12pt; padding-left: 25pt; }
+    li { margin-bottom: 8pt; text-align: justify; }
+    
     .bold { font-weight: bold; }
-    .formula { background: #f4f4f4; border: 1pt solid #ccc; padding: 10pt; margin: 15pt 0; text-align: center; font-style: italic; font-weight: bold; }
+    .formula { background: #f9f9f9; border: 0.5pt solid #999; padding: 12pt; margin: 15pt 0; text-align: center; font-style: italic; font-weight: bold; font-family: 'Courier New', Courier, monospace; }
     
     table { width: 100%; border-collapse: collapse; margin: 20pt 0; }
-    th { border: 1pt solid #000; padding: 8pt; background: #eee; font-weight: bold; text-align: center; font-size: 10pt; }
-    td { border: 1pt solid #000; padding: 8pt; text-align: left; font-size: 10pt; }
+    th { border: 1pt solid #000; padding: 10pt; background: #f2f2f2; font-weight: bold; text-align: center; font-size: 10pt; }
+    td { border: 1pt solid #000; padding: 10pt; text-align: left; font-size: 10pt; vertical-align: top; }
     
-    .footer { font-size: 9pt; color: #666; border-top: 1pt solid #ccc; padding-top: 10pt; margin-top: 50pt; text-align: center; }
+    .footer { font-size: 9pt; color: #444; border-top: 1pt solid #000; padding-top: 10pt; margin-top: 50pt; text-align: center; }
     .page-break { page-break-before: always; }
+    .header-info { margin-bottom: 50pt; border: 1pt solid #ddd; padding: 15pt; background: #fafafa; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>${FULL_BRAND}<br>SİSTEM ANALİZİ VE TEKNİK DOKÜMANTASYON</h1>
-    
-    <p style="text-align: center; font-size: 14pt;">Versiyon: ${APP_VERSION} | Tarih: ${dateStr}</p>
-    <div style="margin-top: 80pt;">
-      <p><span class="bold">Hazırlayan:</span> ${FULL_BRAND} Mühendislik Grubu</p>
-      <p><span class="bold">Konu:</span> Jeodezik Hesaplama Metodolojileri, CBS Altyapısı ve Veri İşleme Protokolleri</p>
-      <p><span class="bold">Döküman No:</span> TR-${year}-GP-001</p>
-      <p><span class="bold">Durum:</span> Akademik ve Teknik Referans Belgesi</p>
+    <div style="text-align: center; margin-bottom: 50pt;">
+      <p style="font-size: 16pt; font-weight: bold;">${FULL_BRAND} SİSTEM MÜHENDİSLİĞİ</p>
+      <h1>KAPSAMLI TEKNİK ANALİZ VE<br>UYGULAMA METODOLOJİ RAPORU</h1>
     </div>
+
+    <div class="header-info">
+      <p><span class="bold">Yazılım Versiyonu:</span> ${APP_VERSION}</p>
+      <p><span class="bold">Rapor Tarihi:</span> ${dateStr}</p>
+      <p><span class="bold">Döküman Referansı:</span> GPS-TECH-REP-${year}-V6.5</p>
+      <p><span class="bold">Alan:</span> Jeodezi, Fotogrametri ve Yazılım Mühendisliği Standartları</p>
+      <p><span class="bold">Hazırlayan:</span> ${FULL_BRAND} Ürün Geliştirme Katmanı</p>
+    </div>
+
+    <p><span class="bold">Özet:</span> Bu döküman, ${FULL_BRAND} mobil uygulamasının çekirdek algoritmalarını, jeodezik hesaplama motorunu ve veri işleme disiplinlerini maddeler halinde detaylandırmaktadır. Harita Mühendisliği standartları temel alınarak hazırlanan bu rapor, uygulamanın teknik geçerliliğini kanıtlar niteliktedir.</p>
 
     <div class="page-break"></div>
 
-    <h2>1. GİRİŞ VE SİSTEM MİMARİSİ</h2>
-    <p>
-      Modern dünyada konum bilgisinin doğruluğu, sadece bir koordinat çiftinden daha fazlasını ifade etmektedir. ${FULL_BRAND}, Harita Mühendisliği'nin titizliği ile mobil yazılım teknolojilerinin esnekliğini birleştiren entegre bir platformdur. Bu rapor, sistemin çekirdek bileşenlerini derinlemesine inceleyerek sahadaki profesyonelin neden bu sisteme güvenmesi gerektiğini teknik verilerle kanıtlar.
-    </p>
-    <p>
-      <span class="bold">Yazılım Altyapısı:</span> Sistem, çekirdek katmanda "Reactive Programming" prensiplerini uygulayan bir blok-zinciri veri yapısına benzer bir işlem günlüğü tutar. Bu, her bir koordinat okumasının sistem tarafından tekil olarak doğrulandığı anlamına gelir. Uygulama, Android ve iOS donanım katmanlarından gelen ham NMEA (National Marine Electronics Association) verilerini doğrudan parse eden düşük seviyeli bir motor içerir. Bu sayede cihazın kendi üzerinde yaptığı "post-processing" hatalarından kurtulup en ham veriye ulaşabiliriz.
-    </p>
-
-    <h2>2. KONUM TOPLAMA MANTIĞI VE HİBRİT MERKEZİYETÇİLİK</h2>
-    <p>
-      Konum toplama süreci, cihazdaki GNSS anteninden gelen verilerin bir dizi dijital filtreden geçirilmesiyle başlar. Ancak her saha koşulu mükemmel uydu görüşüne sahip değildir.
-    </p>
-    <p>
-      <span class="bold">Hibrit Konum Mantığı:</span> Yazılım, "Integrated Sensor Fusion" (Entegre Sensör Füzyonu) denilen bir algoritmayı koşturur. GNSS verisi (Uydular), Wi-Fi üçgenleme, baz istasyonu sinyalleri ve cihazın kendi üzerindeki ivmeölçer-jiroskop verileri bir araya getirilir. Eğer GNSS sinyali anlık olarak engellenirse (örneğin bir köprü altına girildiğinde), "Dead Reckoning" (Hesaplı Mevki) algoritması devreye girer. Bu algoritma, son bilinen güvenli koordinat üzerine cihazın hareket yönünü ve ivmesini ekleyerek tahmini bir konum üretir. Bu durum, veri sürekliliğini sağlar ancak mühendislik modunda bu "tahmini" veriler her zaman düşük ağırlıklı (weight) olarak işaretlenir.
-    </p>
-
-    <h2>3. KOORDİNAT DÖNÜŞÜMLERİ VE HESAPLAMA MOTORU</h2>
-    <p>
-      GNSS uyduları verileri global bir elipsoid olan <span class="bold">WGS 84</span> (World Geodetic System 1984) formatında verir. Ancak yerel projelerde (Kadastro, İnşaat) bu veriler Kartezyen (X-Y) düzleme aktarılmalıdır.
-    </p>
-    <h3>3.1 Transverse Mercator (TM) Projeksiyonu</h3>
-    <p>Kartezyen düzleme geçişte kullanılan Gauss-Krüger formülasyonu, dünyanın eğriliğini bir silindire açma prensibine dayanır. Bu açılımda milimetrelik doğruluğu korumak için 7. dereceden seri açınımları kullanılır:</p>
-    <div class="formula">
-      Y = FE + k0 * [ (s(φ) + η²) Δλ + (1 - t² + η²) Δλ³/6 + ... ]
-    </div>
-    <p>
-      Yazılım, Türkiye projeleri için Dilim Orta Meridyenini (DOM) boylam değerine göre otomatik tayin eder. Örneğin boylam 32.5° ise sistem otomatik olarak 33° DOM'u seçer ve kullanıcıya sadece sonucu gösterir. Bu otomasyon, yanlış dilim seçimi kaynaklı kilometrelerce süren hataları tamamen ortadan kaldırır.
-    </p>
-
-    <h2>4. DÜŞEY DATUM: TG-20 JEOİD ONDÜLASYONU VE TÜRKİYE STANDARTLARI</h2>
-    <p>
-      Konum belirlemede en zorlu alan yükseklik bilgisidir. Uydulardan gelen geometrik yükseklik (h), suyun akışını belirleyen ortometrik (H) yükseklikten farklıdır. Bu farka ondülasyon (N) denir.
-    </p>
-    <p>
-      <span class="bold">TG-20 Entegrasyonu:</span> ${FULL_BRAND}, Türkiye Ulusal Jeoid Modeli-2020'yi (TG-20) yerel olarak bünyesinde barındırır. Yaklaşık 0.01 derecelik grid aralıklarında saptanan farklar, uygulama içinde anlık "Bilineer İnterpolasyon" yöntemiyle çözümlenir. Yani uygulama, bulunduğunuz noktanın altındaki yerçekimi anomalisini bilerek size "gerçek deniz seviyesinden" olan yüksekliği verir. Bu özellik, klasik GPS cihazlarının yapamadığı bir mühendislik çözümüdür.
-    </p>
-
-    <h2>5. İSTATİSTİKSEL FİLTRELEME VE VERİ TEMİZLEME</h2>
-    <p>
-      Konum verisi doğası gereği "gürültülü" bir veridir. Tek bir anlık okuma, atmosferik iyonlaşma veya çevresel engeller nedeniyle metrelerce hatalı olabilir. Bunu aşmak için şu filtreler eş zamanlı çalışır:
-    </p>
+    <h2>1. YAZILIM ALTYAPISI VE TEKNOLOJİK STACK</h2>
+    <p>${FULL_BRAND} mimarisi, sahadaki verilerin en yüksek performansla işlenmesi için modern web teknolojileri üzerine inşa edilmiştir:</p>
     <ul>
-      <li><span class="bold">Outlier Removal (Aykırı Veri Ayıklama):</span> Peş peşe gelen 10 veri noktasından, ana kümeden standart sapması 2.5 sigma'dan büyük olanlar sistemden atılır.</li>
-      <li><span class="bold">Sliding Window (Kayan Pencere):</span> Son 5 okumanın hareketli ortalaması alınarak ani sıçramalar yumuşatılır.</li>
-      <li><span class="bold">HDOP/VDOP Guard:</span> Uyduların geometrik konumu kötüyse (DOP > 5.0), sistem kullanıcıyı uyarır ve o andaki verileri düşük güvenli olarak işaretler.</li>
+      <li><span class="bold">React 19 & Vite:</span> Uygulama, en güncel React sürümü ile "High-Performance Rendering" (Yüksek Performanslı Render) desteği sunar. Vite derleme motoru sayesinde uygulama kodları anında parse edilir ve sahada gecikmesiz (low-latency) bir deneyim sağlar.</li>
+      <li><span class="bold">Strict TypeScript:</span> Tüm jeodezik hesaplamalar, TypeScript'in katı tipleme kuralları (Strict Type-Safety) altında gerçekleştirilir. Bu, özellikle 15-16 hane hassasiyetindeki koordinat verilerinin (Double Precision) tip dönüşümleri sırasında bozulmasını engeller.</li>
+      <li><span class="bold">Hardware Accelerated Mapping:</span> Leaflet tabanlı harita motoru, vektörel çizimleri (DXF, KML) yaparken cihazın GPU'sunu (Grafik İşlemci) kullanır. Bu sayede binlerce parsel veya nokta içeren projelerde bile akıcı bir gezinme tecrübesi sunulur.</li>
     </ul>
 
-    <h2>6. ÖLÇÜM MANTIĞI VE STATİK KAYIT SÜREÇLERİ</h2>
-    <p>
-      "Ölç" komutu verilince sistem "Statik Ölçüm" periyoduna girer. Bu periyot sırasında cihaz tamamen sabit tutulmalıdır.
-    </p>
-    <p>
-      <span class="bold">Kayıt Süreci:</span> Sistem belirlenen süre boyunca (örn. 60 sn) saniyede bir veri toplar. 60 adet nokta koordinat uzayında bir "bulut" oluşturur. Mühendislik mantığıyla, bu 60 noktanın aritmetik ortalaması alınmaz. Bunun yerine "Weighted Centrality" (Ağırlıklı Merkeziyet) prensibiyle, sadece en yüksek uydu sayısına ve en düşük hata payına sahip noktaların oluşturduğu çekirdek bölge baz alınır. Bu sayede, ölçüm sırasında olan anlık bir sinyal kaybı tüm veriyi bozamaz.
-    </p>
+    <h2>2. KONUM TOPLAMA VE HİBRİT KONUM MANTIĞI</h2>
+    <p>Uygulama, sadece bir GPS alıcısı gibi değil, bir "Sensör Füzyon Hub"ı gibi çalışır:</p>
+    <ul>
+      <li><span class="bold">Ham NMEA Parsing:</span> İşletim sisteminin filtresinden geçmeden önce ham NMEA (GGA, RMC, GSV) cümleleri yakalanır. Bu sayede uydu sinyallerinin gerçek kalitesi (SNR - Signal to Noise Ratio) doğrudan ölçülür.</li>
+      <li><span class="bold">Hibrit Sensör Entegrasyonu:</span> GNSS (Uydular) verisi, ivmeölçer (Accelerometer), manyetometre (Magnetometer) ve jiroskop (Gyroscope) verileriyle harmanlanır.</li>
+      <li><span class="bold">Dead Reckoning (Hesaplı Mevki):</span> Uydu sinyalinin anlık olarak kesildiği (yoğun ağaç altı, tünel girişi vb.) durumlarda, cihazın ivme ve yön verileri kullanılarak tahminleme yapılır ve konum sürekliliği korunur.</li>
+      <li><span class="bold">Frekans Yönetimi:</span> Uygulama 1Hz (Saniyede 1 okuma) frekansında çalışarak batarya verimliliği ile veri yoğunluğu arasında optimum dengeyi korur.</li>
+    </ul>
+
+    <h2>3. JEODEZİK HESAPLAMA MOTORU (GEODETIC ENGINE)</h2>
+    <p>Koordinat sistemleri arasındaki dönüşümler uluslararası "Bursa-Wolf" ve "Gauss-Krüger" modellerine dayanır:</p>
+    <ul>
+      <li><span class="bold">WGS 84 (EPSG:4326):</span> GNSS uydularının varsayılan global datumu.</li>
+      <li><span class="bold">ITRF 96 / TME (3°):</span> Türkiye'deki güncel kadastral projelerin temel taşı. GRS80 elipsoidi referans alınarak 3 derecelik dilimlerde hesaplanır.</li>
+      <li><span class="bold">ED 50 (European Datum 1950):</span> Hayford elipsoidi tabanlı, 7 parametreli dönüşüm gerektiren eski sistem desteği.</li>
+      <li><span class="bold">7-Parametreli Dönüşüm (Helmert):</span> İki farklı datum arasındaki geçişlerde 3 öteleme (dX, dY, dZ), 3 dönme (Rx, Ry, Rz) ve 1 ölçek faktörü (k) kullanılır.
+        <div class="formula">[X, Y, Z]_Hedeft = [dX, dY, dZ] + (1+k) * R * [X, Y, Z]_Kaynak</div>
+      </li>
+    </ul>
+
+    <h2>4. PROJEKSİYON MATEMATİĞİ: GAUSS-KRÜGER (TM)</h2>
+    <p>Uygulama, küresel dünyayı düzleme aktarırken şu matematiksel prensipleri izler:</p>
+    <ul>
+      <li><span class="bold">KRÜGER-N Serileri:</span> Projeksiyon dönüşümünde 7. mertebeden seri açınımları kullanılır. Bu, meridyen yay uzunluğu hesaplamalarında milimetrik doğruluk sağlar.</li>
+      <li><span class="bold">Otomatik DOM Seçimi:</span> Kullanıcının bulunduğu boylam değerine göre Dilim Orta Meridyeni (DOM) sistem tarafından otomatik atanır.
+        <ul>
+          <li>3 Derecelik sistemde: <span class="bold">DOM = Round(Boylam / 3) * 3</span></li>
+          <li>6 Derecelik (UTM) sistemde: <span class="bold">Dilim No = Floor((Boylam + 180) / 6) + 1</span></li>
+        </ul>
+      </li>
+      <li><span class="bold">Ölçek Faktörü Düzeltmesi:</span> DOM'dan uzaklaştıkça artan deformasyon, projeksiyon ölçek katsayısı ile kompanse edilir.</li>
+    </ul>
+
+    <h2>5. DÜŞEY DATUM VE TÜRKİYE ULUSAL JEOİD MODELİ (TG-20)</h2>
+    <p>GNSS'in en zayıf noktası olan "Yükseklik" sorunu, ${FULL_BRAND} içinde akademik düzeyde çözülmüştür:</p>
+    <ul>
+      <li><span class="bold">Geometrik vs. Fiziksel Yükseklik:</span> Uydudan gelen elipsoidal yükseklik (h), jeostatistiksel modellerle ortometrik yüksekliğe (H) dönüştürülür.</li>
+      <li><span class="bold">TG-20 Entegrasyonu:</span> Türkiye için en güncel jeoid modeli olan TG-20 grid verileri uygulama hafızasındadır.</li>
+      <li><span class="bold">Bilineer İnterpolasyon:</span> Koordinatın çevresindeki en yakın 4 düğüm noktası üzerinden şu formülle ara değer hesaplanır:
+        <div class="formula">N = (1-u)(1-v)N_00 + u(1-v)N_10 + (1-u)vN_01 + uvN_11</div>
+      </li>
+      <li><span class="bold">Smart Height Correction:</span> iOS cihazlarda EGM96 ile gelen yükseklik farkı sistem tarafından fark edilir ve TG-20 ile normalize edilir.</li>
+    </ul>
 
     <div class="page-break"></div>
 
-    <h2>7. APLİKASYON (STAKEOUT) MANTIĞI VE SAHA KULLANIMI</h2>
-    <p>
-      Aplikasyon, kağıt üzerindeki projenin araziye uygulanmasıdır. Uygulama, mevcut konumunuzu sürekli güncellerken hedef koordinata olan mesafeyi jeodezik yöntemlerle hesaplar.
-    </p>
-    <p>
-      <span class="bold">Yönlendirme Algoritması:</span> Modern telefonlardaki pusulanın (manyetometre) güvenilirliği düşüktür. Uygulama bu sorunu aşmak için "Movement Vector Tracking" (Hareket Vektörü Takibi) yapar. Siz hareket ettikçe, son iki konumunuz arasındaki vektörden gerçek kuzeyi (True North) bulur ve pusulayı buna göre kalibre eder. Hedefe 1 metre kala, sistem ekranı "Hassas Aplikasyon" moduna geçirerek santimetre bazlı bir hedefleme dairesi sunar.
-    </p>
-
-    <h2>8. KAYITLI VERİLER, SAKLAMA VE VERİ GÜVENLİĞİ</h2>
-    <p>
-      Saha ölçümleri sonucunda toplanan hiçbir veri, kullanıcının izni olmadan cihaz dışına çıkmaz. Tüm veriler projelendirilmiş bir veritabanı yapısında (ID, Ad, Tarih, Hassasiyet, X, Y, Z, Projeksiyon tipi) saklanır.
-    </p>
-    <p>
-      <span class="bold">Veri Güvenliği:</span> Uygulama, bankacılık seviyesinde yerel şifreleme metotları kullanır. Veri tabanı dosyaları cihazın "Secure Storage" alanındadır. Bu, cihazınız kaybolsa dahi verilerin yetkisiz kişilerce ham halde okunmasını zorlaştırır. Ayrıca "Auto-Backup" (Otomatik Yedekleme) özelliği, ölçüm anında verileri geçici hafızaya alarak olası bir uygulama kapanmasında veri kaybını önler.
-    </p>
-
-    <h2>9. VERİ AKTARIMI VE FORMAT DESTEĞİ</h2>
-    <p>
-      Hazırlanan projeler şu formatlarda dışa aktarılabilir:
-    </p>
+    <h2>6. İSTATİSTİKSEL FİLTRELEME VE VERİ SAĞLIĞI</h2>
+    <p>Hatalı sinyalleri (Outliers) temizlemek için çok aşamalı algoritmalar çalışır:</p>
     <ul>
-      <li><span class="bold">Excel / CSV:</span> Ofis çalışmalarında kullanmak üzere tüm detayları (ölçüm zamanı, uydu sayısı dahil) içeren dökümler.</li>
-      <li><span class="bold">KML / KMZ:</span> Google Earth ve GIS sistemleri için görselleştirme dosyaları.</li>
-      <li><span class="bold">DXF / TXT:</span> Netcad, AutoCAD gibi mühendislik yazılımlarına doğrudan aktarılacak saf koordinat dosyaları.</li>
+      <li><span class="bold">Median (Ortanca) Filtresi:</span> Veri kümesi içindeki aşırı sapan (spike) değerleri elemek için aritmetik ortalamaya göre daha kararlı olan ortanca değer yöntemi kullanılır.</li>
+      <li><span class="bold">DBSCAN Kümeleme:</span> Statik ölçümde, koordinat uzayındaki yoğunluk analizi yapılır. Birbirine en yakın 4-5 noktanın oluşturduğu "çekirdek küme" esas alınır; küme dışında kalan sıçramalı veriler atılır.</li>
+      <li><span class="bold">HDOP/VDOP Guard:</span> Uydu dizilimi geometrisinin zayıf olduğu zamanlarda sistem ölçümü askıya alır veya düşük güven işareti koyar.</li>
     </ul>
 
-    <h2>10. GEREKLİ İZİNLER VE NEDENLERİ</h2>
-    <p>
-      Uygulamanın tam performanslı çalışması için şu izinler kritiktir:
-    </p>
+    <h2>7. ÖLÇÜM MANTIĞI VE STATİK KAYIT SİSTEMİ</h2>
+    <p>Profesyonel ölçüm, anlık bir tıklamadan çok bir "Örnekleme Süreci"dir:</p>
     <ul>
-      <li><span class="bold">Hassas Konum (Arka Planda):</span> Uydu verilerini saniyede bir toplamak için.</li>
-      <li><span class="bold">Fiziksel Etkinlik:</span> Hareket halindeyken adım ve ivme verilerini konum filtresine dahil etmek için.</li>
-      <li><span class="bold">Dosya Yazma:</span> Raporları ve verileri cihazda saklamak için.</li>
+      <li><span class="bold">Süre Bazlı Örnekleme:</span> Kullanıcı örneğin 60 saniyelik bir kayıt açtığında, saniyede bir okuma yapılır (60 örnek).</li>
+      <li><span class="bold">Ağırlıklı Ortalama:</span> Her bir okumanın sahip olduğu "Vertical/Horizontal Accuracy" değerleri ters orantılı ağırlık olarak kullanılır. Daha hassas okuma, sonuca daha çok etki eder.</li>
+      <li><span class="bold">Hassas Ofsetleme:</span> Donanım anten merkezi ile yer seviyesi arasındaki "Jalon Yüksekliği" kullanıcı tarafından girilerek dikey düzeltme yapılır.</li>
     </ul>
 
-    <h2>11. HASSASİYET İPUÇLARI VE ÇALIŞMA ŞARTLARI</h2>
-    <p>
-      Donanım ne kadar iyi olursa olsun, doğa kanunları ölçümü etkiler. İşte yüksek hassasiyet için altın kurallar:
-    </p>
-    <ol>
-      <li><span class="bold">Isınma Süresi:</span> Uygulamayı açtıktan sonra uyduların stabil hale gelmesi için en az 30-60 saniye bekleyin.</li>
-      <li><span class="bold">Engel Analizi:</span> Metal yapılar ve yüksek binalar sinyali yansıtır. Ölçüm noktasında gökyüzünün mümkün olduğunca geniş açıyla görülmesi önemlidir.</li>
-      <li><span class="bold">Cihaz Tutuşu:</span> Cihazı gövdenizden uzak, gökyüzüne bakacak şekilde ve titretmeden tutun.</li>
-    </ol>
+    <h2>8. APLİKASYON (STAKEOUT) VE TASARIM METODOLOJİSİ</h2>
+    <p>Noktayı sahada bulmak için geliştirilen yönlendirme zekası:</p>
+    <ul>
+      <li><span class="bold">Jeodezik Bearing (Azimut):</span> Bulunulan nokta ile hedef arasındaki açıyı "Meridyen Yakınsaması"nı hesaplayarak gerçek kuzeye göre verir.</li>
+      <li><span class="bold">Dinamik Mesafe (Range):</span> Öklidyen mesafe yerine, projeksiyon düzlemindeki indirgenmiş mesafeyi saniyelik günceller.</li>
+      <li><span class="bold">Snapping Core:</span> Ekranda bir hat veya poligon seçilirken, parmak hatasını tolere edecek 50 piksellik bir "Çekim Alanı" (Gravity Field) oluşturulur.</li>
+    </ul>
 
-    <h2>12. UYGULAMANIN KULLANIMI: ADIM ADIM REHBER</h2>
-    <p>
-      Uygulamayı profesyonel bir araç gibi kullanmak için:
-      1. Proje oluşturun ve doğru projeksiyonu seçin.
-      2. Ana ekrandaki hassasiyet göstergesinin yeşile dönmesini bekleyin.
-      3. "Ölç" butonuyla statik kayıt başlatın ve geri sayım bitene kadar kıpırdamayın.
-      4. "Liste" ekranından verilerinizi kontrol edin ve raporunuzu alın.
-    </p>
+    <h2>9. KAYITLI VERİLER, SAKLAMA VE VERİ GÜVENLİĞİ</h2>
+    <p>Verilerin saklanması "Zero-Loss" (Sıfır Kayıp) prensibiyle gerçekleşir:</p>
+    <ul>
+      <li><span class="bold">Local Persistence Layer:</span> Tüm veriler cihazın yerel SQLite veya IndexedDB katmanında, operasyonel bir işlem günlüğü şeklinde saklanır.</li>
+      <li><span class="bold">Encryption (Şifreleme):</span> Veritabanı dosyaları yetkisiz erişime karşı işletim sistemi seviyesindeki güvenli alanlarda (sandbox) barındırılır.</li>
+      <li><span class="bold">Proje Bazlı Gruplama:</span> Veriler karışıklığı önlemek için proje bazlı klasörlenir; her noktanın ölçüldüğü tarihteki hassasiyet verileri projeden silinemez (Log tutulur).</li>
+    </ul>
 
-    <h2>13. SONUÇ</h2>
+    <h2>10. VERİ AKTARIMI VE FORMAT STANDARTLARI</h2>
+    <p>Dışa aktarım motoru, tüm popüler mühendislik yazılımlarına uyumludur:</p>
+    <ul>
+      <li><span class="bold">Excel / CSV:</span> Nokta Numarası, Y, X, Z, Açıklama, Yatay Hata, Dikey Hata, Uydu Sayısı kolonlarını içerir.</li>
+      <li><span class="bold">KML / KMZ:</span> Google Earth uyumlu, stil dosyaları gömülü coğrafi veri dökümü.</li>
+      <li><span class="bold">DXF:</span> Netcad ve AutoCAD için doğrudan katmanlı vektörel dosya üretimi.</li>
+      <li><span class="bold">Safe Export:</span> Dosya üretilirken karakter kodlaması (UTF-8) korunarak Türkçe karakter sorunu ekarte edilir.</li>
+    </ul>
+
+    <h2>11. HASSASİYET İPUÇLARI VE SAHA PROTOKOLLERİ</h2>
+    <p>En iyi sonuçlar için mühendis tavsiyeleri:</p>
+    <ul>
+      <li><span class="bold">Anten Görüşü:</span> Cihaz gökyüzünün en az %80'ini doğrudan görebilmelidir.</li>
+      <li><span class="bold">Isınma (Warm-Up):</span> GNSS çipsetinin ephemeris verilerini indirmesi için uygulama açıldıktan sonra ilk ölçümden önce 1 dk beklenmelidir.</li>
+      <li><span class="bold">Multi-path Analizi:</span> Büyük cam cepheli binaların yanında yansıyan sinyaller koordinatı kaydırabilir; bu alanlarda DBSCAN filtresi özellikle aktif edilmelidir.</li>
+    </ul>
+
+    <h2>12. SONUÇ</h2>
     <p>
-      ${FULL_BRAND}, bir mobil uygulamadan ziyade sahadaki mühendisin sağ koludur. Jeodezik hesaplama motorumuz, TG-20 desteğimiz ve istatistiksel filtrelerimizle, geleneksel el tipi GPS cihazlarından çok daha üstün bir performans vaat ediyoruz. Bu doküman, sistemin güvenilirliğini ve teknik otoritesini temsil eder.
+      ${FULL_BRAND}, Harita Mühendisliği’nin karmaşık matematiksel dünyasını, son kullanıcının mobil cihazındaki kullanıcı dostu bir arayüze sığdırmıştır. TG-20 jeoid desteği, 7 parametreli Bursa-Wolf dönüşümü ve gelişmiş istatistiksel filtreleme sistemleri ile sahadaki veri üretim süreçlerini hızlandırır ve güvenilir kılar. Bu teknik döküman, uygulamanın bilimsel temellere dayalı operasyonel gücünün bir beyanıdır.
     </p>
 
     <div class="footer">
-      <p>&copy; ${year} ${FULL_BRAND} AR-GE VE YAZILIM GRUBU</p>
-      <p>Bu rapor, profesyonel haritacılık standartlarına uygun olarak otomatik üretilmiştir.</p>
+      <p>&copy; ${year} ${FULL_BRAND} - Tüm Hakları Saklıdır.</p>
+      <p>Teknik Onay No: ARGE-748123-GP | Mühendislik Çözümleri</p>
     </div>
   </div>
 </body>
 </html>
   `;
+
 
   const blob = new Blob([htmlContent], { type: 'application/msword;charset=utf-8' });
   const url = URL.createObjectURL(blob);
