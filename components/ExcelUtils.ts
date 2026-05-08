@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import { SavedLocation, AppSettings, CalculationMethod } from '../types';
 import { convertCoordinate } from '../utils/CoordinateUtils';
-import { calculateResult, calculateVariance } from '../utils/MathUtils';
+import { calculateResult, calculateRMSE } from '../utils/MathUtils';
 import { FULL_BRAND } from '../version';
 import { getCorrectedHeight } from './GeoidUtils';
 import { geoidService } from '../services/GeoidService';
@@ -140,9 +140,9 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
     const { x, y } = convertCoordinate(result.lat, result.lng, sys);
     
-    // Calculate variance for the method
+    // Calculate RMSE for the method
     const usedSamples = usedIndices.map(i => location.samples![i]);
-    const variance = calculateVariance(usedSamples, result);
+    const rmse = calculateRMSE(usedSamples, result);
     
     return {
       method,
@@ -151,7 +151,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
       z: result.altitude,
       usedCount: usedIndices.length,
       accuracy: result.accuracy,
-      variance: variance
+      rmse: rmse
     };
   });
 
@@ -194,7 +194,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     ...dataRows,
     [],
     ["ANLİZ YÖNTEMLERİ KARŞILAŞTIRMALI SONUÇLAR"],
-    ["Yöntem", header1, header2, isOrthometricSetting ? "Yükseklik (m)" : "Elipsoidal Yükseklik (m)", "Kullanılan Örnek", "Hassasiyet (m)", "Varyans (m²)"],
+    ["Yöntem", header1, header2, isOrthometricSetting ? "Yükseklik (m)" : "Elipsoidal Yükseklik (m)", "Kullanılan Örnek", "Hassasiyet (m)", "Karesel Ort. Hata (m)"],
     ...methodResults.map(res => [
       getMethodName(res.method),
       isWGS84 ? res.x.toFixed(8) : res.x.toFixed(locPrecision),
@@ -202,7 +202,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
       res.z !== null ? res.z.toFixed(heightPrecision) : '---',
       `${res.usedCount} / ${location.samples!.length}`,
       res.accuracy.toFixed(3),
-      res.variance.toFixed(6)
+      res.rmse.toFixed(4)
     ])
   ];
 

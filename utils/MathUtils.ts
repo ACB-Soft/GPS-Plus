@@ -277,10 +277,10 @@ function expandCluster(
 }
 
 /**
- * Calculates variance of coordinates in meters
+ * Calculates Root Mean Square Error (RMSE) of coordinates in meters
  */
-export function calculateVariance(samples: Coordinate[], mean: Coordinate): number {
-  if (samples.length < 2) return 0;
+export function calculateRMSE(samples: Coordinate[], mean: Coordinate): number {
+  if (samples.length === 0) return 0;
   
   // Convert degrees to meters roughly (1 deg ~ 111320m)
   const residuals = samples.map(s => {
@@ -289,6 +289,7 @@ export function calculateVariance(samples: Coordinate[], mean: Coordinate): numb
     return dLat * dLat + dLng * dLng;
   });
   
-  return residuals.reduce((a, b) => a + b, 0) / (samples.length - 1);
+  const mse = residuals.reduce((a, b) => a + b, 0) / samples.length;
+  return Math.sqrt(mse);
 }
 
