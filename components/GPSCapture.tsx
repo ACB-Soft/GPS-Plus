@@ -441,14 +441,6 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
           </div>
 
           <div className="relative flex items-center justify-center flex-1 w-full max-h-[300px] mt-8">
-            {gnssOnlySetting && (
-                <div className="absolute -top-6 left-0 right-0 flex justify-center animate-in fade-in slide-in-from-bottom-1">
-                  <div className="px-3 py-1 bg-blue-600/10 border border-blue-600/20 rounded-full flex items-center gap-2">
-                    <i className="fas fa-satellite text-[8px] text-blue-600"></i>
-                    <span className="text-[8px] font-black uppercase tracking-widest text-blue-600">GNSS ÖNCELİKLİ MOD AKTİF</span>
-                  </div>
-                </div>
-            )}
             <div className="w-44 h-44 sm:w-56 sm:h-56 md:w-72 md:h-72 rounded-[3.5rem] md:rounded-[4.5rem] border-8 border-slate-50 shadow-2xl flex items-center justify-center relative bg-slate-200">
               <div className={`absolute inset-4 md:inset-6 border-2 rounded-[2.8rem] md:rounded-[3.8rem] ${instantAccuracy && instantAccuracy <= 10 ? 'border-emerald-100' : 'border-slate-50'}`}></div>
               {step === 'COUNTDOWN' && !waitingForSignal && <div className="scanner-line"></div>}
