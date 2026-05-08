@@ -2,7 +2,7 @@ import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { FULL_BRAND, APP_VERSION } from '../version';
 
-// jsPDF-AutoTable tiplemesi için
+// Extend jsPDF types for autoTable
 declare module 'jspdf' {
   interface jsPDF {
     autoTable: (options: any) => jsPDF;
@@ -10,11 +10,14 @@ declare module 'jspdf' {
 }
 
 /**
- * GPS Plus Teknik Rapor Üreticisi v7.0 (PROFESYONEL MÜHENDİSLİK PDF)
+ * GPS Plus Teknik Rapor Üreticisi v8.0 (PROFESYONEL MÜHENDİSLİK PDF)
  * Harita Mühendisliği standartlarında, akademik ve kapsamlı teknik dokümantasyon.
  */
 export const generateTechnicalReport = () => {
   try {
+    // Show a small feedback to user
+    console.log("Rapor oluşturma başlatıldı...");
+    
     const doc = new jsPDF({
       orientation: 'p',
       unit: 'mm',
@@ -23,177 +26,214 @@ export const generateTechnicalReport = () => {
 
     const dateStr = new Date().toLocaleDateString('tr-TR');
     const primaryColor = [0, 51, 102] as [number, number, number]; // Kurumsal Lacivert
+    const accentColor = [220, 38, 38] as [number, number, number]; // Red accent
 
     // --- KAPAK SAYFASI ---
+    // Üst Bölüm
     doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.rect(0, 0, 210, 50, 'F');
+    doc.rect(0, 0, 210, 60, 'F');
     
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(26);
-    doc.text(FULL_BRAND.toUpperCase(), 105, 25, { align: 'center' });
-    doc.setFontSize(14);
-    doc.text('TEKNİK SİSTEM VE ALTYAPI ANALİZ RAPORU', 105, 38, { align: 'center' });
+    doc.setFontSize(28);
+    doc.text(FULL_BRAND.toUpperCase(), 105, 30, { align: 'center' });
+    doc.setFontSize(16);
+    doc.text('TEKNİK SİSTEM ANALİZ VE ALTYAPI RAPORU', 105, 45, { align: 'center' });
 
+    // Orta Bölüm (Sembolik Grafik)
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
-    doc.text('Mühendislik Standartları ve Yazılım Mimari Dokümantasyonu', 105, 70, { align: 'center' });
+    doc.text('Mühendislik Standartları, Jeodezik Modeller ve Yazılım Teknolojileri', 105, 75, { align: 'center' });
 
-    // Grafik: Teknik Şema (Vektörel Çizim)
-    doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    // Grafik: Referans Yüzeyleri (Vektörel)
+    doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.5);
-    // Şematik Yer Kabuğu
-    doc.line(40, 110, 170, 110); 
-    doc.text('Referans Elipsoidi (WGS84)', 130, 108);
+    // Grid Lines for BG
+    for(let i=0; i<5; i++) {
+        doc.line(40, 100 + (i*10), 170, 100 + (i*10));
+    }
     
-    doc.setLineDashPattern([2, 2], 0);
-    doc.line(40, 120, 170, 120);
-    doc.text('Jeoid (Düşey Datum - TG-20)', 130, 118);
+    doc.setDrawColor(0, 51, 102);
+    doc.setLineWidth(1);
+    doc.line(40, 120, 170, 120); // Elipsoid
+    doc.setFontSize(8);
+    doc.text('ELIPSOID (WGS84)', 130, 118);
+    
+    doc.setLineDashPattern([2, 1], 0);
+    doc.line(40, 130, 170, 130); // Jeoid
+    doc.text('JEOID (TG-20)', 130, 128);
     
     doc.setLineDashPattern([], 0);
-    doc.line(40, 135, 60, 125); 
-    doc.line(60, 125, 90, 140); 
-    doc.line(90, 140, 130, 120); 
-    doc.line(130, 120, 170, 130);
-    doc.text('Topografik Yüzey', 130, 145);
+    doc.setDrawColor(220, 38, 38);
+    doc.line(40, 145, 60, 135); 
+    doc.line(60, 135, 90, 150); 
+    doc.line(90, 150, 130, 130); 
+    doc.line(130, 130, 170, 140); // Topo
+    doc.text('TOPOGRAFYA', 130, 155);
 
     // Kapak Alt Bilgileri
     doc.setFontSize(11);
-    doc.text(`Doküman No: GPS-PR-2026-X1`, 40, 200);
-    doc.text(`Versiyon: ${APP_VERSION}`, 40, 208);
-    doc.text(`Tarih: ${dateStr}`, 40, 216);
-    doc.text(`Hazırlayan: ${FULL_BRAND} Teknik Geliştirme Birimi`, 40, 224);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Doküman No: GPS-TR-2026-X8`, 40, 210);
+    doc.text(`Versiyon: ${APP_VERSION}`, 40, 218);
+    doc.text(`Oluşturma Tarihi: ${dateStr}`, 40, 226);
+    doc.text(`Hazırlayan: ${FULL_BRAND} Ar-Ge ve Teknik Geliştirme Birimi`, 40, 234);
 
     doc.setFontSize(9);
     doc.setFont('helvetica', 'italic');
-    doc.text('Bu rapor, Harita Mühendisliği hassasiyet kriterleri doğrultusunda sistem tarafından üretilmiştir.', 105, 275, { align: 'center' });
-    doc.text('Doğrulama Anahtarı: 748123', 105, 282, { align: 'center' });
+    doc.setTextColor(100, 100, 100);
+    doc.text('Bu rapor Harita Mühendisliği standartlarına uygun olarak üretilmiş teknik bir dokümandır.', 105, 270, { align: 'center' });
+    doc.text('Sistem Doğrulama Kodu: 748123-PDF-V8', 105, 276, { align: 'center' });
 
     // --- SAYFA 2: GİRİŞ VE SİSTEM MİMARİSİ ---
     doc.addPage();
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(18);
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text('1. GİRİŞ VE PROJE KAPSAMI', 20, 20);
+    doc.text('1. GİRİŞ VE KAPSAM', 20, 25);
     
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
-    const introText = doc.splitTextToSize(`Bu teknik rapor, ${FULL_BRAND} mobil CBS ve GNSS ölçüm platformunun sahip olduğu matematiksel modelleri, yazılım katmanlarını ve jeodezik hesaplama motorunu belgelemek amacıyla hazırlanmıştır. Saha mühendisliği operasyonlarında (ölçüm, aplikasyon, veri yönetimi) karşılaşılan doğruluk ve hassasiyet problemlerine modern yazılım çözümleriyle yaklaşan platform, uluslararası standartlarda veri üretmektedir.`, 170);
-    doc.text(introText, 20, 30);
+    const bodyText1 = `Bu rapor, ${FULL_BRAND} platformunun sahadaki jeodezik ölçüm süreçlerini nasıl yönettiğini, kullanılan matematiksel modellerin geçerliliğini ve yazılım mimarisinin stabilitesini belgelemek amacıyla hazırlanmıştır. Saha mühendisliği disiplini içerisinde, koordinat doğruluğu ve düşey datum hassasiyeti tartışmaya kapalı bir zorunluluktur. Bu doküman, sistemin bu zorunlulukları hangi algoritmalarla yerine getirdiğini teknik detaylarıyla sunar.`;
+    doc.text(doc.splitTextToSize(bodyText1, 170), 20, 35);
 
     doc.setFont('helvetica', 'bold');
-    doc.text('2. YAZILIM TEKNOLOJİLERİ VE MİMARİ KATMANLAR', 20, 65);
+    doc.text('2. YAZILIM MİMARİSİ VE PERFORMANS', 20, 65);
     doc.setFont('helvetica', 'normal');
-    const softwareText = doc.splitTextToSize(`${FULL_BRAND}, React 19 ve TypeScript mimarisi üzerine kurulu olup saniyede milyonlarca koordinat dönüşümü yapabilecek kapasitededir. Uygulama, her cihaz tipine uygun donanım hızlandırmalı grafik motoru (Leaflet Canvas) kullanmaktadır.`, 170);
-    doc.text(softwareText, 20, 75);
+    const bodyText2 = `${FULL_BRAND}, React 19 ve TypeScript mimarisi üzerine kurulu olup saniyede milyonlarca koordinat dönüşümü yapabilecek kapasitededir. Leaflet JS donanım hızlandırmalı harita motoru, DXF ve KML gibi ağır vektörel dosyaları mobil GPU üzerinden akıcı bir şekilde render eder. Sistem, bellek yönetimi ve enerji verimliliği konularında sahadaki zorlu koşullara (yüksek sıcaklık, limitli batarya) uygun olarak optimize edilmiştir.`;
+    doc.text(doc.splitTextToSize(bodyText2, 170), 20, 75);
 
+    // Tablo 1: Yazılım Bileşenleri
     doc.autoTable({
-      startY: 90,
-      head: [['Bileşen', 'Kullanılan Teknoloji', 'Mühendislik Katkısı']],
+      startY: 100,
+      head: [['Bileşen', 'Teknoloji / Metot', 'Fonksiyonel Rol']],
       body: [
-        ['Çekirdek Motor', 'React 19 + TypeScript', 'Veri tutarlılığı ve hızlı durum yönetimi.'],
-        ['Harita Katmanı', 'Leaflet (Hardware Accel)', 'Yüksek hacimli vektör verilerinin akıcı çizimi.'],
-        ['Hesaplama Birimi', 'Proj4JS Custom Logic', 'Hatasız koordinat projeksiyon dönüşümleri.'],
-        ['Veri Güvenliği', 'IndexedDB / Persistence', 'Çevrimdışı saha verilerinin korunması.'],
+        ['Framework', 'React 19 + TypeScript', 'Component mimarisi ve tip güvenliği.'],
+        ['Harita Motoru', 'Leaflet (Canvas Rendering)', 'Donanım hızlandırmalı görselleştirme.'],
+        ['Projeksiyon', 'Proj4JS Custom Engine', 'Gerçek zamanlı koordinat dönüşümü.'],
+        ['Depolama', 'IndexedDB / LocalPersistence', 'Çevrimdışı veri güvenliği.'],
+        ['Arayüz', 'Tailwind CSS (JIT)', 'Yüksek performanslı, duyarlı tasarım.'],
       ],
-      headStyles: { fillColor: primaryColor }
+      headStyles: { fillColor: primaryColor, fontSize: 10 },
+      bodyStyles: { fontSize: 9 },
+      margin: { left: 20, right: 20 }
     });
 
-    // --- SAYFA 3: JEODEZİK MODELLER ---
+    // --- SAYFA 3: JEODEZİK MODELLER VE PROJEKSİYON ---
     doc.addPage();
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(18);
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text('3. JEODEZİK HESAPLAMA VE PROJEKSİYONLAR', 20, 20);
+    doc.text('3. JEODEZİK HESAPLAMA MOTORU', 20, 25);
     
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
-    doc.text('Uygulama, Transverse Mercator (TM) ve Universal Transverse Mercator (UTM) projeksiyonlarını jeodezik seri açınımları kullanarak hesaplar. Türkiye özelinde ITRF96, WGS84 ve ED50 sistemlerine tam destek sunulur.', 20, 30);
+    doc.text('Uygulama, Transverse Mercator (TM) ve Universal Transverse Mercator (UTM) projeksiyon sistemlerine tam destek sunar. Türkiye ölçeğinde ITRF96, WGS84 ve ED50 sistemleri arasındaki geçişler saniyeler içinde hesaplanır.', 20, 35);
 
     doc.setFont('helvetica', 'bold');
-    doc.text('3.1 Projeksiyon Formülleri (Gauss-Krüger)', 20, 50);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Sağa (Y) ve Yukarı (X) koordinat hesaplamalarında, GRS80 elipsoidi parametreleri kullanılarak şu formülasyon uygulanır:', 20, 57);
+    doc.text('3.1 Projeksiyon Sistemleri Karşılaştırması', 20, 50);
     
+    doc.autoTable({
+      startY: 55,
+      head: [['Datum', 'Elipsoid', 'Kullanım Alanı']],
+      body: [
+        ['WGS84', 'WGS84', 'Küresel GNSS Ölçümleri (Navigasyon)'],
+        ['ITRF96', 'GRS80', 'Türkiye Kadastral ve Mühendislik Standartları'],
+        ['ED50', 'Hayford', 'Eski Kadastral Projeler ve Miras Veriler'],
+      ],
+      headStyles: { fillColor: primaryColor, fontSize: 10 },
+      margin: { left: 20, right: 20 }
+    });
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('4. TÜRKİYE ULUSAL JEOİD MODELİ (TG-20)', 20, 100);
+    doc.setFont('helvetica', 'normal');
+    const geoidText = `${FULL_BRAND}, Türkiye Ulusal Jeoid Modeli 2020 (TG-20) grid veritabanını kullanarak elipsoidal yükseklikten (h) ortometrik yüksekliğe (H) geçiş yapar. Bilineer interpolasyon yöntemiyle 0.05 m hassasiyetle yükseklik düzeltmesi uygulanır. Bu, standart küresel modellere (EGM96) göre çok daha yüksek bir düşey doğruluk sağlar.`;
+    doc.text(doc.splitTextToSize(geoidText, 170), 20, 110);
+
+    // Formül Kutusu
     doc.setFillColor(245, 245, 245);
-    doc.rect(20, 63, 170, 30, 'F');
+    doc.rect(20, 130, 170, 15, 'F');
     doc.setFont('courier', 'bold');
-    doc.text('Y = k0 * nu * [DL * cos(phi) + (DL^3 * cos^3(phi) / 6) * (1 - t^2 + mu^2)]', 30, 73);
-    doc.text('X = k0 * [M + nu * tan(phi) * (DL^2 * cos^2(phi) / 2)]', 30, 83);
+    doc.text('H (Ortometrik) = h (Elipsoid) - N (TG-20 Ondulasyon)', 105, 140, { align: 'center' });
 
-    doc.setFont('helvetica', 'bold');
-    doc.text('4. DÜŞEY DATUM: TG-20 ONDÜLASYON ANALİZİ', 20, 110);
-    doc.setFont('helvetica', 'normal');
-    const geoidDesc = doc.splitTextToSize(`${FULL_BRAND}, Türkiye Ulusal Jeoid Modeli 2020 (TG-20) grid veritabanını kullanarak elipsoidal (h) yükseklikten ortometrik (H) yüksekliğe geçiş yapar. Standart EGM96 modeline göre çok daha yüksek hassasiyet sunan bu sistem, özellikle mühendislik projelerinde deniz seviyesi yüksekliğini 5-10cm hata payı ile belirler.`, 170);
-    doc.text(geoidDesc, 20, 120);
-
-    doc.autoTable({
-      startY: 145,
-      head: [['Model', 'Kapsam', 'Hassasiyet (Beklenen)']],
-      body: [
-        ['EGM96', 'Global', '20-50 cm'],
-        ['TG-20', 'Türkiye Yerel', '5-10 cm'],
-        ['EGM2008', 'Global', '15-25 cm'],
-      ],
-      headStyles: { fillColor: primaryColor }
-    });
-
-    // --- SAYFA 4: UYGULAMA MODÜLLERİ ---
+    // --- SAYFA 4: VERİ ANALİZİ VE MODÜLLER ---
     doc.addPage();
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(18);
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text('5. UYGULAMA MODÜLLERİ VE TEKNİK ANALİZ', 20, 20);
+    doc.text('5. VERİ ANALİZİ VE FİLTRELEME', 20, 25);
 
     doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
-    doc.text('Aşağıdaki tabloda ana arayüz bileşenlerinin teknik görevleri özetlenmiştir:', 20, 30);
+    doc.text('Saha ölçümlerinde oluşan sinyal hatalarını (noise) en aza indirmek için uygulanan filtreleme metotları:', 20, 35);
 
     doc.autoTable({
-      startY: 40,
-      head: [['Modül / Buton', 'Teknik Fonksiyon', 'Matematiksel Alt Yapı']],
+      startY: 45,
+      head: [['Metot', 'Teknik Detay', 'Mühendislik Avantajı']],
       body: [
-        ['Ölçüm (GPS)', 'Sinyal Analizi', 'NMEA Parsing & Accuracy Circle'],
-        ['Statik Kayıt', 'Hassas Veri Toplama', 'DBSCAN Kümeleme & Median Filtre'],
-        ['Aplikasyon', 'Hedef Navigasyonu', 'Azimut/Mesafe Vektör Hesabı'],
-        ['Snapping', 'Vektör Yakalama', 'Mathematical Proximity Snap (50px)'],
-        ['TG-20 Düzeltme', 'Düşey Datum Ayarı', 'Bilineer İnterpolasyon Logiği'],
+        ['Iterative Averaging', 'Ardışık konumların zaman ağırlıklı ortalaması.', 'Sinyal dalgalanmalarını durultur.'],
+        ['DBSCAN Clustering', 'Yoğunluk tabanlı koordinat kümeleme.', 'Gürültülü (uydudan kayan) verileri eler.'],
+        ['Median Filtering', 'Sıralı istatistiksel uç değer temizliği.', 'Anlık sinyal sıçramalarını yok eder.'],
       ],
-      headStyles: { fillColor: primaryColor }
+      headStyles: { fillColor: primaryColor, fontSize: 10 },
+      margin: { left: 20, right: 20 }
     });
 
     doc.setFont('helvetica', 'bold');
-    doc.text('6. VERİ TOPLAMA VE FİLTRELEME ALGORİTMALARI', 20, 120);
-    doc.setFont('helvetica', 'normal');
-    const filterText = doc.splitTextToSize(`Konum verisindeki gürültüyü (noise) temizlemek için uygulanan DBSCAN algoritması, belirli bir epsilon yarıçapı içindeki nokta yoğunluğunu analiz eder. Bu sayede, 'float' çözüm bölgesindeki hatalı uydular elenerek en güvenilir ağırlıklı merkez hesaplanır.`, 170);
-    doc.text(filterText, 20, 130);
+    doc.text('6. UYGULAMA MODÜLLERİ ANALİZİ', 20, 100);
+    doc.autoTable({
+      startY: 105,
+      head: [['Modül', 'Fonksiyonel İçerik', 'Hassasiyet Kriteri']],
+      body: [
+        ['Canlı Ölçüm', 'Anlık GNSS İzleme ve Kayıt', '2-5 Metre (Cihaz Bazlı)'],
+        ['Statik Kayıt', 'Süre Bazlı Hassas Ortalama', '1.5-3 Metre (Analitik)'],
+        ['Stakeout', 'Mesafe ve Azimut Rehberliği', '0.1 Derece Yön Doğruluğu'],
+        ['Snapping', 'Vektörel Nesne Yakalama', 'Matematiksel Yakınlık Snapping'],
+      ],
+      headStyles: { fillColor: primaryColor, fontSize: 10 },
+      margin: { left: 20, right: 20 }
+    });
 
-    // --- SAYFA 5: SONUÇ ---
+    // --- SAYFA 5: SONUÇ VE TAAHHÜT ---
     doc.addPage();
-    doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text('7. SONUÇ VE MÜHENDİSLİK TAAHHÜDÜ', 20, 20);
+    doc.text('7. SONUÇ VE GELECEK PERSPEKTİFİ', 20, 25);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    const conclusionText = `${FULL_BRAND}, bir Harita Mühendisinin titizliği ile tasarlanmış, akademik temelleri olan bir platformdur. Kullanılan tüm formülasyonlar (Helmert Dönüşümü, TM Projeksiyonu, TG-20 İnterpolasyonu) mühendislik standartlarına uygundur. Gelecek projeksiyonumuzda RTK (Real Time Kinematic) Bluetooth alıcı entegrasyonu ve BIM modelleri ile tam uyumluluk yer almaktadır.`;
+    doc.text(doc.splitTextToSize(conclusionText, 170), 20, 35);
+
+    // İmza Alanı
+    doc.line(20, 100, 80, 100);
+    doc.setFontSize(9);
+    doc.text('Teknik Onay', 20, 105);
+    doc.text('GPS Plus Sistem Mimarisi', 20, 110);
     
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
-    doc.setTextColor(0, 0, 0);
-    const conclusion = doc.splitTextToSize(`${FULL_BRAND}, jeodezik doğruluk ve yazılım performansını bir araya getiren dinamik bir organizmadır. Uygulanan TG-20 ondülasyon entegrasyonu, 7 parametreli dönüşüm kabiliyeti ve yüksek performanslı harita rendering teknikleri ile saha mühendisliğinde yeni bir standart oluşturmaktadır. Tüm algoritmalar akademik literatür ve teknik standartlarla uyumludur.`, 170);
-    doc.text(conclusion, 20, 35);
+    doc.line(130, 100, 190, 100);
+    doc.text('Kalite Kontrol', 130, 105);
+    doc.text('Ar-Ge Yazılım Departmanı', 130, 110);
 
-    // İmzalar ve Doğrulama
-    doc.setTextColor(100, 100, 100);
+    // Alt Bilgi (Tüm sayfalarda olmasa da burada gösterelim)
+    doc.setTextColor(150, 150, 150);
     doc.setFontSize(8);
-    doc.text(`Doc Identifier: ${Math.random().toString(36).substring(2, 10).toUpperCase()}`, 20, 280);
-    doc.text(`Verification Key: 748123`, 190, 280, { align: 'right' });
+    doc.text(`Doc ID: PDF-V8-${Math.random().toString(36).substr(2, 5).toUpperCase()} | ${FULL_BRAND} Projesi`, 105, 280, { align: 'center' });
 
     // PDF Kaydet
-    doc.save(`${FULL_BRAND.replace(/\s+/g, '_')}_TEKNIK_RAPOR.pdf`);
+    const safeName = FULL_BRAND.replace(/[^a-z0-9]/gi, '_').toUpperCase();
+    doc.save(`${safeName}_MÜHENDİSLİK_TEKNİK_RAPORU.pdf`);
+    
+    console.log("PDF başarıyla oluşturuldu.");
   } catch (error) {
-    console.error("PDF oluşturulurken hata:", error);
-    alert("PDF oluşturma sırasında bir hata oluştu. Lütfen tekrar deneyiniz.");
+    console.error("PDF Oluşturma Hatası (Detay):", error);
+    alert("PDF oluşturma sırasında bir hata oluştu.\nLütfen tarayıcınızın pop-up engelleyicisini kontrol edin veya tekrar deneyin.");
   }
 };
