@@ -25,10 +25,22 @@ export function calculateResult(
       break;
     case 'LEAST_SQUARES':
       // Weighted Least Squares based on accuracy
-      return weightedLeastSquares(sourceData);
+      const wlsResult = weightedLeastSquares(sourceData);
+      return { 
+        result: wlsResult, 
+        usedIndices: samples
+          .map((s, idx) => sourceData.includes(s) ? idx : -1)
+          .filter(idx => idx !== -1)
+      };
     case 'ROBUST':
       // Robust estimation using M-estimators (simplified Huber weights)
-      return robustEstimation(sourceData);
+      const robustResult = robustEstimation(sourceData);
+      return { 
+        result: robustResult, 
+        usedIndices: samples
+          .map((s, idx) => sourceData.includes(s) ? idx : -1)
+          .filter(idx => idx !== -1)
+      };
     case 'MAHALANOBIS':
       // Anomaly detection using Mahalanobis distance
       finalSamples = applyMahalanobisFilter(sourceData);
@@ -100,11 +112,11 @@ function applySigmaFilter(samples: Coordinate[], sigma: number): Coordinate[] {
  * Weighted Least Squares
  * Weights are 1/(accuracy^2)
  */
-function weightedLeastSquares(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+function weightedLeastSquares(samples: Coordinate[]): Coordinate {
   const weights = samples.map(s => 1 / Math.pow(s.accuracy || 0.1, 2));
   const totalWeight = weights.reduce((a, b) => a + b, 0);
 
-  const result: Coordinate = {
+  return {
     lat: samples.reduce((a, b, i) => a + b.lat * weights[i], 0) / totalWeight,
     lng: samples.reduce((a, b, i) => a + b.lng * weights[i], 0) / totalWeight,
     accuracy: samples.reduce((a, b, i) => a + b.accuracy * weights[i], 0) / totalWeight,
@@ -116,14 +128,12 @@ function weightedLeastSquares(samples: Coordinate[]): { result: Coordinate; used
       : null,
     timestamp: Date.now()
   };
-
-  return { result, usedIndices: samples.map((_, i) => i) };
 }
 
 /**
  * Robust Estimation (Huber-style weights)
  */
-function robustEstimation(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+function robustEstimation(samples: Coordinate[]): Coordinate {
   // First get a simple median or mean as starting point
   let currentLat = samples.reduce((a, b) => a + b.lat, 0) / samples.length;
   let currentLng = samples.reduce((a, b) => a + b.lng, 0) / samples.length;
@@ -145,13 +155,11 @@ function robustEstimation(samples: Coordinate[]): { result: Coordinate; usedIndi
   }
 
   const finalAvg = calculateAverage(samples); // For other fields
-  const result = {
+  return {
     ...finalAvg,
     lat: currentLat,
     lng: currentLng
   };
-
-  return { result, usedIndices: samples.map((_, i) => i) };
 }
 
 /**

@@ -94,7 +94,7 @@ const ExportUnifiedView: React.FC<Props> = ({ locations, settings }) => {
           <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/30 shrink-0">
             <i className="fas fa-file-lines text-xl"></i>
           </div>
-          <span className="tracking-tight">Ölçüm Raporu (.TXT)</span>
+          <span className="tracking-tight">Metin Belgesi (.TXT)</span>
         </button>
 
         <div className="pt-6 mt-4 border-t border-slate-100 flex flex-col gap-4">
