@@ -3,7 +3,7 @@ import { SavedLocation, AppSettings, CalculationMethod } from '../types';
 import { convertCoordinate } from '../utils/CoordinateUtils';
 import { calculateResult, calculateVariance } from '../utils/MathUtils';
 import { FULL_BRAND } from '../version';
-import { getCorrectedHeight } from './GeoidUtils';
+import { getCorrectedHeight, getEllipsoidalHeight } from './GeoidUtils';
 import { geoidService } from '../services/GeoidService';
 
 const getMethodName = (m: CalculationMethod) => {
@@ -39,10 +39,6 @@ export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings
   const header1 = isWGS84 ? "Enlem" : "Sağa (Y)";
   const header2 = isWGS84 ? "Boylam" : "Yukarı (X)";
 
-  // iOS Tespiti
-  const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
-  const isIOS = /iPad|iPhone|iPod/.test(userAgent) || (typeof navigator !== 'undefined' && (navigator as any).platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
-
   const dataRows = locations.map(loc => {
     const { x, y } = convertCoordinate(loc.lat, loc.lng, loc.coordinateSystem || 'WGS84');
     
@@ -52,12 +48,7 @@ export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings
     const correctedH = getCorrectedHeight(loc.lat, loc.lng, loc.altitude);
     const orthometricH = correctedH !== null ? correctedH.toFixed(heightPrecision) : '---';
     
-    let ellipVal = loc.altitude;
-    if (isIOS && loc.altitude !== null) {
-      const egm96Undulation = geoidService.getUndulation(loc.lat, loc.lng, 'EGM96');
-      ellipVal = loc.altitude + egm96Undulation;
-    }
-    
+    const ellipVal = getEllipsoidalHeight(loc.lat, loc.lng, loc.altitude);
     const ellipsoidalH = ellipVal !== null ? ellipVal.toFixed(heightPrecision) : '---';
     
     let undulationVal = '---';
@@ -144,11 +135,13 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     const usedSamples = usedIndices.map(i => location.samples![i]);
     const variance = calculateVariance(usedSamples, result);
     
+    const resEllip = getEllipsoidalHeight(result.lat, result.lng, result.altitude);
+
     return {
       method,
       x: isWGS84 ? result.lat : x,
       y: isWGS84 ? result.lng : y,
-      z: result.altitude,
+      z: isOrthometricSetting ? getCorrectedHeight(result.lat, result.lng, result.altitude) : resEllip,
       usedCount: usedIndices.length,
       accuracy: result.accuracy,
       variance: variance
@@ -167,7 +160,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
 
     const hValue = isOrthometricSetting 
       ? getCorrectedHeight(s.lat, s.lng, s.altitude) 
-      : s.altitude;
+      : getEllipsoidalHeight(s.lat, s.lng, s.altitude);
 
     return [
       idx + 1,

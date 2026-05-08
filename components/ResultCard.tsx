@@ -37,7 +37,7 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
   const formattedY = isUTM ? y.toFixed(locPrecision) : y.toFixed(6);
   
   const geoidInfo = useOrthometricHeight(location.altitude, location.lat, location.lng);
-  const displayHeight = isOrthometric ? geoidInfo.orthometricHeight : location.altitude;
+  const displayHeight = isOrthometric ? geoidInfo.orthometricHeight : geoidInfo.ellipsoidalHeight;
 
   const getMapProviderInfo = () => {
     const provider = localStorage.getItem('default_map_provider') || 'Google Hybrid';

@@ -70,6 +70,20 @@ export const getGeoidInfo = (lat: number, lng: number, inputHeight: number | nul
   };
 };
 
+export const getEllipsoidalHeight = (lat: number, lng: number, altitude: number | null): number | null => {
+  if (altitude === null) return null;
+  
+  const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  const isIOS = /iPad|iPhone|iPod/.test(userAgent) || (typeof navigator !== 'undefined' && (navigator as any).platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
+  
+  if (isIOS) {
+    const egm96Undulation = geoidService.getUndulation(lat, lng, 'EGM96');
+    return altitude + egm96Undulation;
+  }
+  
+  return altitude;
+};
+
 export const getCorrectedHeight = (lat: number, lng: number, ellipsoidalHeight: number | null): number | null => {
   return getGeoidInfo(lat, lng, ellipsoidalHeight).orthometricHeight;
 };
