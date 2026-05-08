@@ -21,7 +21,7 @@ export function calculateResult(
 
   switch (method) {
     case 'ARITHMETIC_MEAN':
-      finalSamples = applySigmaFilter(sourceData, 2); // 2-sigma filter
+      finalSamples = sourceData;
       break;
     case 'LEAST_SQUARES':
       // Weighted Least Squares based on accuracy
@@ -38,7 +38,7 @@ export function calculateResult(
       finalSamples = applyDBSCANFilter(sourceData);
       break;
     default:
-      finalSamples = applySigmaFilter(sourceData, 2);
+      finalSamples = sourceData;
   }
 
   // Determine which indices were used
