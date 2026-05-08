@@ -85,7 +85,7 @@ const ExportUnifiedView: React.FC<Props> = ({ locations, settings }) => {
         </button>
 
         <button 
-          onClick={() => downloadTXT(getFiltered())} 
+          onClick={() => downloadTXT(getFiltered(), settings)} 
           disabled={!hasSelection} 
           className={`w-full py-3 md:py-4 px-6 text-white rounded-xl md:rounded-2xl font-black text-sm md:text-base uppercase flex items-center gap-5 transition-all duration-300 shadow-xl ${
             hasSelection ? 'bg-sky-600 shadow-sky-200 active:scale-[0.98]' : 'bg-slate-300 opacity-40 grayscale cursor-not-allowed shadow-none'

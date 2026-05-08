@@ -62,7 +62,6 @@ export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings
       loc.name,
       val1, // Sağa (Y) veya Enlem
       val2, // Yukarı (X) veya Boylam
-      displayHeight,
       orthometricH,
       ellipsoidalH,
       undulationVal,
@@ -76,7 +75,7 @@ export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings
     ["Proje Adı:", projectName],
     ["Koordinat Sistemi:", projectSystem],
     [], 
-    ["Nokta İsmi", header1, header2, `Yükseklik (${heightType === 'orthometric' ? 'Ortometrik' : 'Elipsoidal'}) (m)`, "Ortometrik Yükseklik (m)", "Elipsoidal Yükseklik (m)", "Ondülasyon (m)", "Hassasiyet (m)", "Gözlem Süresi (sn)", "Tarih"],
+    ["Nokta İsmi", header1, header2, "Yükseklik (m)", "Elipsoidal Yükseklik (m)", "Ondülasyon (m)", "Hassasiyet (m)", "Gözlem Süresi (sn)", "Tarih"],
     ...dataRows
   ];
 
@@ -86,7 +85,7 @@ export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings
     { wch: 15 }, // Nokta İsmi
     { wch: 18 }, // Sağa (Y) / Enlem
     { wch: 18 }, // Yukarı (X) / Boylam
-    { wch: 15 }, // Yükseklik
+    { wch: 20 }, // Ortometrik Yükseklik
     { wch: 20 }, // Elipsoidal Yükseklik
     { wch: 15 }, // Ondülasyon
     { wch: 15 }, // Hassasiyet
@@ -228,11 +227,11 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     ["Hassasiyet Eşiği:", `${accuracyLimit} m`],
     ["Toplam Örnek Sayısı:", location.samples.length],
     [],
-    ["No", "Saat", header1, header2, `Yükseklik (${isOrthometricSetting ? 'Ortometrik' : 'Elipsoidal'}) (m)`, "Hassasiyet (m)", "Dikey Hass. (m)", "Durum"],
+    ["No", "Saat", header1, header2, isOrthometricSetting ? "Yükseklik (m)" : "Elipsoidal Yükseklik (m)", "Hassasiyet (m)", "Dikey Hass. (m)", "Durum"],
     ...dataRows,
     [],
     ["İSTATİSTİKSEL HESAPLAMA ÖZETİ (Sadece Hassas Veriler)"],
-    ["Yöntem", header1, header2, `Yükseklik (${isOrthometricSetting ? 'Ortometrik' : 'Elipsoidal'}) (m)`, "Kullanılan Veri"],
+    ["Yöntem", header1, header2, isOrthometricSetting ? "Yükseklik (m)" : "Elipsoidal Yükseklik (m)", "Kullanılan Veri"],
     ["Aritmetik Ortalama", isWGS84 ? statsAll.x.toFixed(8) : statsAll.x.toFixed(locPrecision), isWGS84 ? statsAll.y.toFixed(8) : statsAll.y.toFixed(locPrecision), statsAll.z.toFixed(heightPrecision), `${statsAll.count} / ${location.samples.length}`],
     ["Medyan Değerler", isWGS84 ? medX.toFixed(8) : medX.toFixed(locPrecision), isWGS84 ? medY.toFixed(8) : medY.toFixed(locPrecision), medZ.toFixed(heightPrecision), `${validSamples.length} / ${location.samples.length}`],
     [`Kümeleme (Dinamik - Eps: ${dynamicEpsilon.toFixed(2)}m)`, isWGS84 ? statsClusterDynamic.x.toFixed(8) : statsClusterDynamic.x.toFixed(locPrecision), isWGS84 ? statsClusterDynamic.y.toFixed(8) : statsClusterDynamic.y.toFixed(locPrecision), statsClusterDynamic.z.toFixed(heightPrecision), `${statsClusterDynamic.count} / ${location.samples.length}`],
