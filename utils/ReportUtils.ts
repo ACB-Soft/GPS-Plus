@@ -166,7 +166,88 @@ export const generateTechnicalReport = () => {
       <li><span class="bold">Multi-path Analizi:</span> Büyük cam cepheli binaların yanında yansıyan sinyaller koordinatı kaydırabilir; bu alanlarda DBSCAN filtresi özellikle aktif edilmelidir.</li>
     </ul>
 
-    <h2>12. SONUÇ</h2>
+    <h2>12. TEKNİK GÖRSEL ARAYÜZ VE OPERASYONEL EKRAN ANALİZİ</h2>
+    <p>Uygulamanın kullanıcı arayüzü, karmaşık jeodezik verileri sahada anlaşılır kılmak için "Bilgi Hiyerarşisi" prensibiyle tasarlanmıştır. Aşağıda ana operasyonel ekranların teknik açıklamaları ve görsel yerleşimleri sunulmuştur:</p>
+
+    <h3>12.1 Onboarding ve Hazırlık Ekranı</h3>
+    <table style="border: none;">
+      <tr>
+        <td style="border: 2pt dashed #ccc; width: 40%; text-align: center; vertical-align: middle; height: 300pt;">
+          <br><br><br>
+          <span style="color: #999;">[BURAYA ONBOARDING EKRAN GÖRÜNTÜSÜ GELECEK]</span>
+          <br><br><br>
+        </td>
+        <td style="border: none; padding-left: 20pt;">
+          <span class="bold">Teknik Betimleme:</span>
+          <ul>
+            <li><span class="bold">Sistem İzinleri:</span> Hassas konum ve dosya erişim izinlerinin "Mühendislik Modu" için neden gerekli olduğunu kullanıcıya açıklar.</li>
+            <li><span class="bold">Initial Sync:</span> TG-20 jeoid grid verilerinin yerel veritabanına ilk senkronizasyon sürecini yönetir.</li>
+            <li><span class="bold">UI/UX Hedefi:</span> Sahaya çıkmadan önce cihazın jeodezik hesaplamalara hazır olduğunu (Ready to Measure) teyit eder.</li>
+          </ul>
+        </td>
+      </tr>
+    </table>
+
+    <h3>12.2 Dashboard (Proje Yönetim Paneli)</h3>
+    <table style="border: none;">
+      <tr>
+        <td style="border: 2pt dashed #ccc; width: 40%; text-align: center; vertical-align: middle; height: 300pt;">
+          <br><br><br>
+          <span style="color: #999;">[BURAYA DASHBOARD EKRAN GÖRÜNTÜSÜ GELECEK]</span>
+          <br><br><br>
+        </td>
+        <td style="border: none; padding-left: 20pt;">
+          <span class="bold">Teknik Betimleme:</span>
+          <ul>
+            <li><span class="bold">Proje Özetleri:</span> Aktif projenin toplam nokta sayısı, kullanılan projeksiyon (ITRF96/UTM) ve yükseklik modeli durumunu (TG-20 Aktif/Pasif) tek bakışta sunar.</li>
+            <li><span class="bold">Hızlı Erişim:</span> En son yapılan ölçümlere ve dışa aktarım (Export) araçlarına anlık erişim sağlar.</li>
+            <li><span class="bold">Sistem Sağlığı:</span> Batarya durumu ve GNSS çipsetinin güncel hata payını arka planda izler (Background Monitoring).</li>
+          </ul>
+        </td>
+      </tr>
+    </table>
+
+    <h3>12.3 Ölçüm (GNSS) ve Veri Kaydedici</h3>
+    <table style="border: none;">
+      <tr>
+        <td style="border: 2pt dashed #ccc; width: 40%; text-align: center; vertical-align: middle; height: 300pt;">
+          <br><br><br>
+          <span style="color: #999;">[BURAYA ÖLÇÜM EKRANI EKRAN GÖRÜNTÜSÜ GELECEK]</span>
+          <br><br><br>
+        </td>
+        <td style="border: none; padding-left: 20pt;">
+          <span class="bold">Teknik Betimleme:</span>
+          <ul>
+            <li><span class="bold">Canlı Veri Akışı:</span> GG-RMC ayıklayıcıdan gelen saniyelik koordinat güncellemeleri.</li>
+            <li><span class="bold">Hassasiyet Göstergesi:</span> Yatay ve dikey doğruluk değerlerine göre renk değiştiren (Yeşil: <1m, Sarı: 1-5m, Kırmızı: >5m) dinamik göstergeler.</li>
+            <li><span class="bold">Statik Kayıt Modu:</span> Geri sayım sayacı ve örnekleme havuzunun (Sample Pool) doluluk oranını gösteren ilerleme çubuğu.</li>
+          </ul>
+        </td>
+      </tr>
+    </table>
+
+    <div class="page-break"></div>
+
+    <h3>12.4 Aplikasyon (Stakeout) ve Navigasyon</h3>
+    <table style="border: none;">
+      <tr>
+        <td style="border: 2pt dashed #ccc; width: 40%; text-align: center; vertical-align: middle; height: 300pt;">
+          <br><br><br>
+          <span style="color: #999;">[BURAYA APLİKASYON EKRAN GÖRÜNTÜSÜ GELECEK]</span>
+          <br><br><br>
+        </td>
+        <td style="border: none; padding-left: 20pt;">
+          <span class="bold">Teknik Betimleme:</span>
+          <ul>
+            <li><span class="bold">Hedefleme Radarı:</span> Mevcut konumun hedefe göre bağıl vektörünü (Azimut/Mesafe) görselleştiren "Targeting Radar" katmanı.</li>
+            <li><span class="bold">Sanal Ufuk:</span> Jalon dikliğini kontrol etmek için ivmeölçer verisini kullanan su terazisi simülasyonu.</li>
+            <li><span class="bold">Sesli/Titreşimli Geri Bildirim:</span> Hedefe yaklaştıkça frekansı artan uyarı sinyalleri ile kullanıcının ekrana bakmadan aplikasyon yapabilmesine olanak tanır.</li>
+          </ul>
+        </td>
+      </tr>
+    </table>
+
+    <h2>13. SONUÇ</h2>
     <p>
       ${FULL_BRAND}, Harita Mühendisliği’nin karmaşık matematiksel dünyasını, son kullanıcının mobil cihazındaki kullanıcı dostu bir arayüze sığdırmıştır. TG-20 jeoid desteği, 7 parametreli Bursa-Wolf dönüşümü ve gelişmiş istatistiksel filtreleme sistemleri ile sahadaki veri üretim süreçlerini hızlandırır ve güvenilir kılar. Bu teknik döküman, uygulamanın bilimsel temellere dayalı operasyonel gücünün bir beyanıdır.
     </p>
