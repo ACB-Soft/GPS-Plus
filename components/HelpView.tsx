@@ -1,12 +1,22 @@
 import React from 'react';
 import GlobalFooter from './GlobalFooter';
 import Header from './Header';
+import { generateTechnicalReport } from '../utils/ReportUtils';
 
 interface Props {
   onBack: () => void;
 }
 
 const HelpView: React.FC<Props> = ({ onBack }) => {
+  const handleDownloadReport = () => {
+    const password = prompt("Teknik raporu indirmek için şifreyi giriniz:");
+    if (password === "748123") {
+      generateTechnicalReport();
+    } else if (password !== null) {
+      alert("Hatalı şifre!");
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-slate-200">
       <Header title="Yardım & Hakkında" onBack={onBack} sticky={true} />
@@ -294,6 +304,14 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <span className="text-xs font-bold text-slate-900">Lucide React & Font Awesome (Icons)</span>
               </div>
             </div>
+
+            <button 
+              onClick={handleDownloadReport}
+              className="w-full mt-6 py-3 px-4 bg-slate-800 text-white rounded-xl font-black text-xs uppercase flex items-center justify-center gap-3 active:scale-95 transition-all shadow-lg shadow-slate-300"
+            >
+              <i className="fas fa-file-pdf"></i>
+              Teknik Rapor İndir
+            </button>
           </div>
         </section>
 
