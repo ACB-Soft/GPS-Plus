@@ -3,7 +3,7 @@ import { SavedLocation, AppSettings, CalculationMethod } from '../types';
 import { convertCoordinate } from '../utils/CoordinateUtils';
 import { calculateResult, calculateRMSE } from '../utils/MathUtils';
 import { FULL_BRAND } from '../version';
-import { getCorrectedHeight } from './GeoidUtils';
+import { getCorrectedHeight, getGeoidInfo } from './GeoidUtils';
 import { geoidService } from '../services/GeoidService';
 
 const getMethodName = (m: CalculationMethod) => {
@@ -126,6 +126,10 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   const locPrecision = settings?.locationPrecision ?? 1;
   const heightPrecision = settings?.heightPrecision ?? 2;
   const isOrthometricSetting = settings?.heightType === 'orthometric';
+  
+  // iOS Tespiti
+  const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  const isIOS = /iPad|iPhone|iPod/.test(userAgent) || (typeof navigator !== 'undefined' && (navigator as any).platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
 
   const sys = location.coordinateSystem || 'WGS84';
   const isWGS84 = sys === 'WGS84';
@@ -144,11 +148,23 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     const usedSamples = usedIndices.map(i => location.samples![i]);
     const rmse = calculateRMSE(usedSamples, result);
     
+    const hPrec = settings?.heightPrecision ?? 2;
+    const gInfo = getGeoidInfo(result.lat, result.lng, result.altitude);
+
+    let finalZ = result.altitude;
+    if (isOrthometricSetting) {
+      finalZ = gInfo.orthometricHeight;
+    } else if (isIOS && result.altitude !== null) {
+      // Recover ellipsoidal from orthometric (EGM96)
+      const egm96Undulation = geoidService.getUndulation(result.lat, result.lng, 'EGM96');
+      finalZ = result.altitude + egm96Undulation;
+    }
+
     return {
       method,
       x: isWGS84 ? result.lat : x,
       y: isWGS84 ? result.lng : y,
-      z: result.altitude,
+      z: finalZ,
       usedCount: usedIndices.length,
       accuracy: result.accuracy,
       rmse: rmse
