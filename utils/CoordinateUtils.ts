@@ -26,7 +26,7 @@ const getDom6 = (lon: number) => {
 
 export const convertCoordinate = (lat: number, lng: number, system: string) => {
   if (!system || system === 'WGS84') {
-    return { x: lng, y: lat, labelX: 'Boylam', labelY: 'Enlem', zone: '' };
+    return { x: lat, y: lng, labelX: 'Enlem', labelY: 'Boylam', zone: '' };
   }
 
   let destProj = '';
@@ -50,20 +50,20 @@ export const convertCoordinate = (lat: number, lng: number, system: string) => {
 
   if (destProj) {
     try {
-      const [x, y] = proj4(WGS84, destProj, [lng, lat]);
-      return { x, y, labelX: 'Sağa (Y)', labelY: 'Yukarı (X)', zone: zoneLabel };
+      const [easting, northing] = proj4(WGS84, destProj, [lng, lat]);
+      return { x: easting, y: northing, labelX: 'Sağa (Y)', labelY: 'Yukarı (X)', zone: zoneLabel };
     } catch (e) {
       console.error("Proj4 conversion error:", e);
-      return { x: lng, y: lat, labelX: 'Boylam', labelY: 'Enlem', zone: 'Hata' };
+      return { x: lat, y: lng, labelX: 'Enlem', labelY: 'Boylam', zone: 'Hata' };
     }
   }
 
-  return { x: lng, y: lat, labelX: 'Boylam', labelY: 'Enlem', zone: '' };
+  return { x: lat, y: lng, labelX: 'Enlem', labelY: 'Boylam', zone: '' };
 };
 
-export const convertToWGS84 = (x: number, y: number, system: string, referenceLng?: number) => {
+export const convertToWGS84 = (val1: number, val2: number, system: string, referenceLng?: number) => {
   if (!system || system === 'WGS84') {
-    return { lat: y, lng: x };
+    return { lat: val1, lng: val2 };
   }
 
   const lng = referenceLng || 33; // Türkiye için varsayılan orta meridyen (yaklaşık)
@@ -82,7 +82,7 @@ export const convertToWGS84 = (x: number, y: number, system: string, referenceLn
 
   if (srcProj) {
     try {
-      const [lngResult, latResult] = proj4(srcProj, WGS84, [x, y]);
+      const [lngResult, latResult] = proj4(srcProj, WGS84, [val1, val2]);
       return { lat: latResult, lng: lngResult };
     } catch (e) {
       console.error("Proj4 reverse conversion error:", e);

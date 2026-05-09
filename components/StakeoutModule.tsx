@@ -419,8 +419,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
 
     let lat = 0, lng = 0;
     if (manualSystem === 'WGS84') {
-      lat = parseFloat(manualY);
-      lng = parseFloat(manualX);
+      lat = parseFloat(manualX);
+      lng = parseFloat(manualY);
     } else {
       const wgs = convertToWGS84(parseFloat(manualX), parseFloat(manualY), manualSystem);
       lat = wgs.lat;
@@ -623,10 +623,10 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                           <h4 className="font-black text-slate-800">{p.name}</h4>
                           <div className="flex flex-col">
                             <p className="text-[10px] font-bold text-slate-400 mono-font">
-                              {p.coordinateSystem === 'WGS84' ? `Enl: ${p.originalY?.toFixed(6)}` : `Y: ${p.originalX?.toFixed(3)}`}
+                              {p.coordinateSystem === 'WGS84' ? `Enl: ${p.originalX?.toFixed(6)}` : `Y: ${p.originalX?.toFixed(3)}`}
                             </p>
                             <p className="text-[10px] font-bold text-slate-400 mono-font">
-                              {p.coordinateSystem === 'WGS84' ? `Boy: ${p.originalX?.toFixed(6)}` : `X: ${p.originalY?.toFixed(3)}`}
+                              {p.coordinateSystem === 'WGS84' ? `Boy: ${p.originalY?.toFixed(6)}` : `X: ${p.originalY?.toFixed(3)}`}
                             </p>
                             <p className="text-[8px] font-black text-blue-500 uppercase tracking-tighter">
                               {p.coordinateSystem?.replace('_', ' ')}
@@ -698,13 +698,13 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">
-                        {manualSystem === 'WGS84' ? 'Boylam (X)' : 'Sağa (Y)'}
+                        {manualSystem === 'WGS84' ? 'Enlem (Y)' : 'Sağa (Y)'}
                       </label>
                       <input type="number" value={manualX} onChange={e => setManualX(e.target.value)} placeholder="0.000" className="w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">
-                        {manualSystem === 'WGS84' ? 'Enlem (Y)' : 'Yukarı (X)'}
+                        {manualSystem === 'WGS84' ? 'Boylam (X)' : 'Yukarı (X)'}
                       </label>
                       <input type="number" value={manualY} onChange={e => setManualY(e.target.value)} placeholder="0.000" className="w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all" />
                     </div>
