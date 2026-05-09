@@ -623,10 +623,10 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                           <h4 className="font-black text-slate-800">{p.name}</h4>
                           <div className="flex flex-col">
                             <p className="text-[10px] font-bold text-slate-400 mono-font">
-                              {p.coordinateSystem === 'WGS84' ? `Boy: ${p.originalX?.toFixed(6)}` : `Y: ${p.originalY?.toFixed(3)}`}
+                              {p.coordinateSystem === 'WGS84' ? `Enl: ${p.originalY?.toFixed(6)}` : `Y: ${p.originalX?.toFixed(3)}`}
                             </p>
                             <p className="text-[10px] font-bold text-slate-400 mono-font">
-                              {p.coordinateSystem === 'WGS84' ? `Enl: ${p.originalY?.toFixed(6)}` : `X: ${p.originalX?.toFixed(3)}`}
+                              {p.coordinateSystem === 'WGS84' ? `Boy: ${p.originalX?.toFixed(6)}` : `X: ${p.originalY?.toFixed(3)}`}
                             </p>
                             <p className="text-[8px] font-black text-blue-500 uppercase tracking-tighter">
                               {p.coordinateSystem?.replace('_', ' ')}

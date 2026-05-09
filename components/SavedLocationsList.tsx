@@ -56,12 +56,12 @@ const SavedLocationItem: React.FC<{
     return (
       <>
         <div className="flex flex-col">
-          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{labelY}</span>
-          <p className="text-[13px] mono-font text-slate-800 font-bold leading-tight">{formattedY}</p>
-        </div>
-        <div className="flex flex-col">
           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{labelX}</span>
           <p className="text-[13px] mono-font text-slate-800 font-bold leading-tight">{formattedX}</p>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{labelY}</span>
+          <p className="text-[13px] mono-font text-slate-800 font-bold leading-tight">{formattedY}</p>
         </div>
       </>
     );
