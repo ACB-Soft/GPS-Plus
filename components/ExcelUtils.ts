@@ -15,6 +15,7 @@ const getMethodName = (m: CalculationMethod) => {
     case 'DBSCAN': return "DBSCAN Kümeleme";
     case 'RANSAC': return "RANSAC (Konsensüs)";
     case 'KDE': return "KDE (Yoğunluk)";
+    case 'MEDIAN_MAD': return "Median + MAD (Sağlam Sapma)";
     default: return m;
   }
 };
@@ -128,7 +129,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   // --- İstatistiksel Ön Hazırlık ---
   const accuracyLimit = location.accuracyLimit || 5.0;
   
-  const methods: CalculationMethod[] = ['ARITHMETIC_MEAN', 'LEAST_SQUARES', 'ROBUST', 'MAHALANOBIS', 'DBSCAN', 'RANSAC', 'KDE'];
+  const methods: CalculationMethod[] = ['ARITHMETIC_MEAN', 'LEAST_SQUARES', 'ROBUST', 'MAHALANOBIS', 'DBSCAN', 'RANSAC', 'KDE', 'MEDIAN_MAD'];
   const methodResults = methods.map(method => {
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
     const { x, y } = convertCoordinate(result.lat, result.lng, sys);
@@ -148,6 +149,54 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
       accuracy: result.accuracy,
       variance: variance
     };
+  });
+
+  // --- Gözlem Süresi Analizi (5, 10, 15, 30, 60 sn) ---
+  const possibleIntervals = [5, 10, 15, 30, 60];
+  const actualDuration = location.measurementDuration || 0;
+  const analysisIntervals = possibleIntervals.filter(i => i < actualDuration);
+  
+  const intervalAnalysisRows: any[][] = [];
+  
+  analysisIntervals.forEach(interval => {
+    const startTime = location.samples![0].timestamp;
+    const sliceSamples = location.samples!.filter(s => s.timestamp <= startTime + (interval * 1000) + 500); // +500ms to be safe with timing
+    
+    if (sliceSamples.length < 2) return;
+
+    const sliceResults = methods.map(method => {
+      const { result, usedIndices } = calculateResult(sliceSamples, method, accuracyLimit);
+      const { x, y } = convertCoordinate(result.lat, result.lng, sys);
+      const usedSamples = usedIndices.map(i => sliceSamples[i]);
+      const variance = calculateVariance(usedSamples, result);
+      const resEllip = getEllipsoidalHeight(result.lat, result.lng, result.altitude);
+
+      return {
+        method,
+        x: isWGS84 ? result.lat : x,
+        y: isWGS84 ? result.lng : y,
+        z: isOrthometricSetting ? getCorrectedHeight(result.lat, result.lng, result.altitude) : resEllip,
+        usedCount: usedIndices.length,
+        accuracy: result.accuracy,
+        variance: variance
+      };
+    });
+
+    intervalAnalysisRows.push([]);
+    intervalAnalysisRows.push([`GÖZLEM SÜRESİ ETKİ ANALİZİ - İLK ${interval} SANİYE`]);
+    intervalAnalysisRows.push(["Yöntem", header1, header2, isOrthometricSetting ? "Yükseklik (m)" : "Elipsoidal Yükseklik (m)", "Kullanılan Örnek", "Hassasiyet (m)", "Varyans (m²)"]);
+    
+    sliceResults.forEach(res => {
+      intervalAnalysisRows.push([
+        getMethodName(res.method),
+        isWGS84 ? res.x.toFixed(8) : res.x.toFixed(locPrecision),
+        isWGS84 ? res.y.toFixed(8) : res.y.toFixed(locPrecision),
+        res.z !== null ? res.z.toFixed(heightPrecision) : '---',
+        `${res.usedCount} / ${sliceSamples.length}`,
+        res.accuracy.toFixed(3),
+        res.variance.toFixed(6)
+      ]);
+    });
   });
 
   const dataRows = location.samples.map((s, idx) => {
@@ -198,7 +247,8 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
       `${res.usedCount} / ${location.samples!.length}`,
       res.accuracy.toFixed(3),
       res.variance.toFixed(6)
-    ])
+    ]),
+    ...intervalAnalysisRows
   ];
 
   const worksheet = XLSX.utils.aoa_to_sheet(ws_data);

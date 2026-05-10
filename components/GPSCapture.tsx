@@ -507,7 +507,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                       onChange={e => setAccuracyLimit(parseFloat(e.target.value))}
                       className="w-full p-2.5 bg-slate-200 rounded-xl font-black text-center text-lg text-slate-900 outline-none border border-slate-200 leading-none appearance-none"
                     >
-                      {[2, 3, 5, 10, 20, 50, 100].map(v => <option key={v} value={v}>{v}m</option>)}
+                      {[2, 3, 4, 5, 10, 25, 50, 100].map(v => <option key={v} value={v}>{v}m</option>)}
                     </select>
                   </div>
                   <div className="space-y-1">
@@ -520,7 +520,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                       onChange={e => setMeasurementDuration(parseInt(e.target.value))}
                       className="w-full p-2.5 bg-slate-200 rounded-xl font-black text-center text-lg text-slate-900 outline-none border border-slate-200 leading-none appearance-none"
                     >
-                      {[5, 10, 15, 20, 30, 50, 100].map(v => <option key={v} value={v}>{v}sn</option>)}
+                      {[5, 10, 15, 30, 60, 120].map(v => <option key={v} value={v}>{v}sn</option>)}
                     </select>
                   </div>
                 </div>

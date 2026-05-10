@@ -118,7 +118,7 @@ export const generateTechnicalReport = () => {
     <div class="page-break"></div>
 
     <h2>6. İSTATİSTİKSEL ANALİZ VE VERİ AYIKLAMA METODOLOJİLERİ</h2>
-    <p>Hatalı sinyalleri (Outliers) temizlemek ve en doğru sonucu üretmek için ${FULL_BRAND}, kullanıcıya 7 farklı ileri düzey istatistiksel yöntem sunar. Bu yöntemler, farklı arazi ve sinyal koşullarına göre optimize edilmiştir:</p>
+    <p>Hatalı sinyalleri (Outliers) temizlemek ve en doğru sonucu üretmek için ${FULL_BRAND}, kullanıcıya 8 farklı ileri düzey istatistiksel yöntem sunar. Bu yöntemler, farklı arazi ve sinyal koşullarına göre optimize edilmiştir:</p>
     <ul>
       <li><span class="bold">1. Aritmetik Ortalama:</span> Veri kümesindeki düşük hassasiyetli veriler elendikten sonra, kalan tüm verilerin matematiksel ortalaması alınarak nihai koordinat hesaplanır.
         <div class="formula">μ = (1/n) * Σ xᵢ</div>
@@ -136,6 +136,9 @@ export const generateTechnicalReport = () => {
       <li><span class="bold">6. RANSAC (Random Sample Consensus):</span> Rastgele örnekleme ve konsensüs prensibiyle çalışır. Veri kümesi içindeki en büyük uyumlu grubu (inliers) tespit eder. Sıçramalı ve hatalı verilerin (outliers) yoğun olduğu zorlu arazi koşullarında en güvenilir sonuçlardan birini üretir.</li>
       <li><span class="bold">7. KDE (Kernel Density Estimation):</span> Çekirdek yoğunluk kestirimi ile verilerin dağılım olasılığı hesaplanır. Matematiksel olarak olasılığın en yüksek olduğu "zirve noktası" nihai koordinat olarak belirlenir.
         <div class="formula">f̂(x) = (1 / nh) * Σ K((x - xᵢ) / h)</div>
+      </li>
+      <li><span class="bold">8. Median + MAD (Median Absolute Deviation):</span> Aşırı uç değerlere karşı en dirençli yöntemdir. Medyan üzerinden hesaplanan mutlak sapma (MAD) değerini kullanarak, verilerin merkezine en yakın "sağlam" (robust) grubu filtreler.
+        <div class="formula">MAD = median(|xᵢ - median(X)|)</div>
       </li>
     </ul>
 
@@ -283,6 +286,7 @@ export const generateTechnicalReport = () => {
     <p>Bu uygulamada kullanılan algoritmalar, jeodezik modeller ve yazılım kütüphaneleri aşağıdaki temel literatüre dayanmaktadır:</p>
     <ul>
       <li><span class="bold">Huber, P. J. (1981).</span> Robust Statistics. John Wiley & Sons. (M-Estimators ve Robust Tahminleme yöntemleri için).</li>
+      <li><span class="bold">Hampel, F. R. (1974).</span> The influence curve and its role in robust estimation. Journal of the American Statistical Association. (Median Absolute Deviation - MAD yöntemi için).</li>
       <li><span class="bold">Fischler, M. A., & Bolles, R. C. (1981).</span> Random sample consensus: a paradigm for model fitting with applications to image analysis and automated cartography. Communications of the ACM. (RANSAC algoritması için).</li>
       <li><span class="bold">Ester, M., Kriegel, H. P., Sander, J., & Xu, X. (1996).</span> A density-based algorithm for discovering clusters in large spatial databases with noise. In KDD. (DBSCAN kümeleme analizi için).</li>
       <li><span class="bold">Silverman, B. W. (1986).</span> Density Estimation for Statistics and Data Analysis. CRC Press. (Kernel Density Estimation - KDE yöntemleri için).</li>

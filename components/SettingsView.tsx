@@ -206,7 +206,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                   onChange={(e) => setAccuracyLimit(e.target.value)}
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
-                  {[2, 3, 5, 10, 20, 50, 100].map(v => <option key={v} value={v}>{v} metre</option>)}
+                  {[2, 3, 4, 5, 10, 25, 50, 100].map(v => <option key={v} value={v.toString()}>{v} metre</option>)}
                 </select>
               </div>
 
@@ -218,7 +218,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                   onChange={(e) => setMeasurementDuration(e.target.value)}
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
-                  {[5, 10, 15, 20, 30, 50, 100].map(v => <option key={v} value={v}>{v} saniye</option>)}
+                  {[5, 10, 15, 30, 60, 120].map(v => <option key={v} value={v.toString()}>{v} saniye</option>)}
                 </select>
               </div>
 
@@ -237,6 +237,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                   <option value="DBSCAN">5. Yöntem: DBSCAN Kümeleme</option>
                   <option value="RANSAC">6. Yöntem: RANSAC (Konsensüs)</option>
                   <option value="KDE">7. Yöntem: KDE (Yoğunluk)</option>
+                  <option value="MEDIAN_MAD">8. Yöntem: Median + MAD (Sağlam Sapma)</option>
                 </select>
               </div>
 

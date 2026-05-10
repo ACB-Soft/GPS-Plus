@@ -55,6 +55,10 @@ export function calculateResult(
     case 'KDE':
       // Kernel Density Estimation to find the densest area
       return applyKDEEstimation(sourceData);
+    case 'MEDIAN_MAD':
+      // Median Absolute Deviation for extreme outlier resistance
+      finalSamples = applyMedianMADFilter(sourceData);
+      break;
     default:
       finalSamples = sourceData;
   }
@@ -386,6 +390,42 @@ function applyKDEEstimation(samples: Coordinate[]): { result: Coordinate; usedIn
     .filter(idx => idx !== -1);
 
   return { result: calculateAverage(inliers), usedIndices };
+}
+
+/**
+ * Median Absolute Deviation (MAD) Filter
+ * A robust alternative to standard deviation for outlier detection
+ */
+function applyMedianMADFilter(samples: Coordinate[]): Coordinate[] {
+  if (samples.length < 3) return samples;
+
+  const lats = samples.map(s => s.lat);
+  const lngs = samples.map(s => s.lng);
+
+  const getMedian = (arr: number[]) => {
+    const sorted = [...arr].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  };
+
+  const medLat = getMedian(lats);
+  const medLng = getMedian(lngs);
+
+  const absDevLat = lats.map(x => Math.abs(x - medLat));
+  const absDevLng = lngs.map(x => Math.abs(x - medLng));
+
+  const madLat = getMedian(absDevLat) || 1e-9;
+  const madLng = getMedian(absDevLng) || 1e-9;
+
+  // Scale factor 1.4826 makes MAD comparable to standard deviation for normal data
+  const threshold = 3.0; // Typical threshold for outliers (3 sigma equivalent)
+  
+  const filtered = samples.filter(s => 
+    Math.abs(s.lat - medLat) <= threshold * 1.4826 * madLat &&
+    Math.abs(s.lng - medLng) <= threshold * 1.4826 * madLng
+  );
+
+  return filtered.length > 0 ? filtered : samples;
 }
 
 /**
