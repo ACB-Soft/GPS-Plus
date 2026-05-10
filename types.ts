@@ -8,7 +8,7 @@ export interface Coordinate {
   timestamp: number;
 }
 
-export type CalculationMethod = 'ARITHMETIC_MEAN' | 'LEAST_SQUARES' | 'ROBUST' | 'MAHALANOBIS' | 'DBSCAN';
+export type CalculationMethod = 'ARITHMETIC_MEAN' | 'LEAST_SQUARES' | 'ROBUST' | 'MAHALANOBIS' | 'DBSCAN' | 'RANSAC' | 'KDE';
 
 export interface SavedLocation extends Coordinate {
   id: string;

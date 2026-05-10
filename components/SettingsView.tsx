@@ -235,6 +235,8 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                   <option value="ROBUST">3. Yöntem: Robust Yöntem</option>
                   <option value="MAHALANOBIS">4. Yöntem: Mahalanobis Analizi</option>
                   <option value="DBSCAN">5. Yöntem: DBSCAN Kümeleme</option>
+                  <option value="RANSAC">6. Yöntem: RANSAC (Konsensüs)</option>
+                  <option value="KDE">7. Yöntem: KDE (Yoğunluk)</option>
                 </select>
               </div>
 

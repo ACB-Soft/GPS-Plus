@@ -13,6 +13,8 @@ const getMethodName = (m: CalculationMethod) => {
     case 'ROBUST': return "Robust Yöntem";
     case 'MAHALANOBIS': return "Mahalanobis Analizi";
     case 'DBSCAN': return "DBSCAN Kümeleme";
+    case 'RANSAC': return "RANSAC (Konsensüs)";
+    case 'KDE': return "KDE (Yoğunluk)";
     default: return m;
   }
 };
@@ -126,7 +128,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   // --- İstatistiksel Ön Hazırlık ---
   const accuracyLimit = location.accuracyLimit || 5.0;
   
-  const methods: CalculationMethod[] = ['ARITHMETIC_MEAN', 'LEAST_SQUARES', 'ROBUST', 'MAHALANOBIS', 'DBSCAN'];
+  const methods: CalculationMethod[] = ['ARITHMETIC_MEAN', 'LEAST_SQUARES', 'ROBUST', 'MAHALANOBIS', 'DBSCAN', 'RANSAC', 'KDE'];
   const methodResults = methods.map(method => {
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
     const { x, y } = convertCoordinate(result.lat, result.lng, sys);

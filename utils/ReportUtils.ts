@@ -125,6 +125,8 @@ export const generateTechnicalReport = () => {
       <li><span class="bold">3. Robust Yöntem (M-Estimators):</span> Huber ağırlık fonksiyonu kullanılarak gerçekleştirilen bu yöntemde, sapan değerlerin etkisi doğrusal değil, belirli bir eşikten sonra sınırlı hale getirilir. Yinelemeli (iterative) hesaplama ile sapan verilere rağmen en kararlı konum kestirimi yapılır.</li>
       <li><span class="bold">4. Mahalanobis Uzaklık Analizi:</span> Koordinatların kovaryans matrisi üzerinden çok boyutlu uzaklık analizi yapılır. Korelasyonu bozan ve gürültü içeren veriler, koordinat sisteminin geometrik yapısına göre tespit edilerek elenir.</li>
       <li><span class="bold">5. DBSCAN (Density-Based Clustering):</span> Koordinat uzayındaki yoğunluk analizi yapılarak ana "çekirdek küme" tespit edilir. Yansıma (multi-path) nedeniyle oluşan küme dışı sıçramalı veriler "gürültü" (noise) olarak işaretlenerek hesaba katılmaz.</li>
+      <li><span class="bold">6. RANSAC (Random Sample Consensus):</span> Rastgele örnekleme ve konsensüs prensibiyle çalışır. Veri kümesi içindeki en büyük uyumlu grubu (inliers) tespit eder. Sıçramalı ve hatalı verilerin (outliers) yoğun olduğu zorlu arazi koşullarında en güvenilir sonuçlardan birini üretir.</li>
+      <li><span class="bold">7. KDE (Kernel Density Estimation):</span> Çekirdek yoğunluk kestirimi ile verilerin dağılım olasılığı hesaplanır. Matematiksel olarak olasılığın en yüksek olduğu "zirve noktası" nihai koordinat olarak belirlenir. Gürültülü verilerin dağılımı içerisinden en muhtemel gerçek konumu süzmek için kullanılır.</li>
     </ul>
 
     <h2>7. ÖLÇÜM MANTIĞI VE VERİ İŞLEME DİSİPLİNLERİ</h2>

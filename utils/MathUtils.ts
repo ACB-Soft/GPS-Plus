@@ -48,6 +48,13 @@ export function calculateResult(
       // Clustering to find the main core of points
       finalSamples = applyDBSCANFilter(sourceData);
       break;
+    case 'RANSAC':
+      // Robust estimation by finding maximum consensus
+      finalSamples = applyRANSACFilter(sourceData);
+      break;
+    case 'KDE':
+      // Kernel Density Estimation to find the densest area
+      return applyKDEEstimation(sourceData);
     default:
       finalSamples = sourceData;
   }
@@ -285,6 +292,100 @@ function expandCluster(
       noise.delete(nIdx);
     }
   }
+}
+
+/**
+ * RANSAC (Random Sample Consensus)
+ * Finds the largest subset of points that agree within a threshold
+ */
+function applyRANSACFilter(samples: Coordinate[]): Coordinate[] {
+  if (samples.length < 3) return samples;
+
+  let bestInliers: number[] = [];
+  const iterations = Math.min(50, samples.length * 5);
+  // Threshold based on accuracy or typical GPS drift (e.g., 5-10 meters)
+  const avgAcc = samples.reduce((a, b) => a + b.accuracy, 0) / samples.length;
+  const threshold = (avgAcc / 111320); // in degrees
+
+  for (let i = 0; i < iterations; i++) {
+    // Pick a random sample point as a candidate center
+    const randomIndex = Math.floor(Math.random() * samples.length);
+    const candidate = samples[randomIndex];
+    
+    const inliers: number[] = [];
+    for (let j = 0; j < samples.length; j++) {
+      const dist = Math.sqrt(
+        Math.pow(candidate.lat - samples[j].lat, 2) + 
+        Math.pow(candidate.lng - samples[j].lng, 2)
+      );
+      if (dist <= threshold) {
+        inliers.push(j);
+      }
+    }
+
+    if (inliers.length > bestInliers.length) {
+      bestInliers = inliers;
+    }
+
+    // Early exit if we found a very high consensus
+    if (bestInliers.length > samples.length * 0.8) break;
+  }
+
+  return bestInliers.map(idx => samples[idx]);
+}
+
+/**
+ * KDE (Kernel Density Estimation)
+ * Finds the point with the highest local density using a Gaussian kernel
+ */
+function applyKDEEstimation(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length === 0) return { result: samples[0], usedIndices: [0] };
+  if (samples.length === 1) return { result: samples[0], usedIndices: [0] };
+
+  const lats = samples.map(s => s.lat);
+  const lngs = samples.map(s => s.lng);
+  
+  // Silverman's Rule for Bandwidth
+  const stdLat = Math.sqrt(lats.reduce((a, b) => a + Math.pow(b - (lats.reduce((x, y) => x + y) / lats.length), 2), 0) / lats.length) || 1e-7;
+  const stdLng = Math.sqrt(lngs.reduce((a, b) => a + Math.pow(b - (lngs.reduce((x, y) => x + y) / lngs.length), 2), 0) / lngs.length) || 1e-7;
+  
+  const hLat = 1.06 * stdLat * Math.pow(samples.length, -0.2);
+  const hLng = 1.06 * stdLng * Math.pow(samples.length, -0.2);
+
+  let maxDensity = -1;
+  let bestPointIdx = 0;
+
+  // Calculate density for each point based on all others
+  for (let i = 0; i < samples.length; i++) {
+    let density = 0;
+    for (let j = 0; j < samples.length; j++) {
+      const dLat = (samples[i].lat - samples[j].lat) / hLat;
+      const dLng = (samples[i].lng - samples[j].lng) / hLng;
+      
+      // Gaussian kernel: (1/sqrt(2pi)) * exp(-0.5 * u^2)
+      // We can skip the constant factor as we only care about the max
+      density += Math.exp(-0.5 * (dLat * dLat + dLng * dLng));
+    }
+    
+    if (density > maxDensity) {
+      maxDensity = density;
+      bestPointIdx = i;
+    }
+  }
+
+  // The result is the point with the highest density
+  // But to be more "smooth", let's take a weighted average around that peak
+  const peak = samples[bestPointIdx];
+  const threshold = Math.sqrt(hLat * hLat + hLng * hLng) * 2;
+  const inliers: Coordinate[] = samples.filter(s => 
+    Math.sqrt(Math.pow(s.lat - peak.lat, 2) + Math.pow(s.lng - peak.lng, 2)) <= threshold
+  );
+
+  const usedIndices = samples
+    .map((s, idx) => inliers.includes(s) ? idx : -1)
+    .filter(idx => idx !== -1);
+
+  return { result: calculateAverage(inliers), usedIndices };
 }
 
 /**
