@@ -251,7 +251,20 @@ export const generateTechnicalReport = () => {
       </tr>
     </table>
 
-    <h2>13. SONUÇ</h2>
+    <h2>13. UYGULAMA DOSYA YAPISI VE MODÜLER MİMARİ</h2>
+    <p>${FULL_BRAND} yazılım mimarisi, "Separation of Concerns" (Sorumlulukların Ayrılması) prensibiyle modüler bir yapıda tasarlanmıştır. Bu yapı, her bir jeodezik fonksiyonun izole bir şekilde test edilmesine ve geliştirilmesine olanak tanır:</p>
+    <ul>
+      <li><span class="bold">/utils/MathUtils.ts (İstatistik ve Hesaplama Çekirdeği):</span> Uygulamanın beynidir. Aritmetik Ortalama, Robust Tahminleme, KDE, RANSAC, Mahalanobis ve DBSCAN gibi tüm ileri düzey istatistiksel algoritmalar bu dosyada kodlanmıştır. Sinyal işlemenin matematiksel doğrulanması burada gerçekleşir.</li>
+      <li><span class="bold">/utils/CoordinateUtils.ts (Projeksiyon ve Dönüşüm Katmanı):</span> Proj4 kütüphanesi entegrasyonu ile WGS84, ITRF96, ED50 gibi koordinat sistemleri arasındaki geçişleri yönetir. Dilim orta meridyeni (DOM) hesaplamaları ve TM projeksiyon dönüşümleri bu modülün sorumluluğundadır.</li>
+      <li><span class="bold">/components/GeoidUtils.ts (Yükseklik Modeli Yönetimi):</span> Elipsoidal yükseklik verisini, TG-20 ve EGM96 modellerini kullanarak fiziksel (ortometrik) yüksekliğe dönüştüren yardımcı fonksiyondur. Cihazın yerel yüksekliğini global datum ile senkronize eder.</li>
+      <li><span class="bold">/components/ExcelUtils.ts (Veri Raporlama ve Excel Dökümü):</span> Toplanan verilerin mühendislik standartlarına uygun Excel (.xlsx) formatına dönüştürülmesini sağlar. Kolon yapıları, veri tipleri ve istatistiksel özet tabloları bu modülde yapılandırılır.</li>
+      <li><span class="bold">/services/GeoidService.ts (Grid Veri Servisi):</span> TG-20 ve EGM96 gibi büyük ölçekli jeoid grid verilerini sorgulayan ve "Bilineer İnterpolasyon" ile ara değer üreten düşük seviyeli servis katmanıdır. Hafıza yönetimini optimize ederek grid verilerini hızlıca işler.</li>
+      <li><span class="bold">/components/GPSCapture.tsx (Saha Ölçüm Modülü):</span> Kullanıcının saha operasyonlarını yönettiği ana görsel arayüzdür. GNSS verilerinin saniyelik görselleştirilmesi, doğruluk kontrolleri ve kayıt süreçleri bu bileşen üzerinden yürütülür.</li>
+      <li><span class="bold">/components/StakeoutModule.tsx (Aplikasyon / Navigasyon Modülü):</span> Manuel nokta ekleme, haritadan nokta seçimi ve hedefe yönlendirme (azimut/mesafe) zekasını barındıran modüldür. Görsel "Radar" ve "Su Terazisi" kontrollerini içerir.</li>
+      <li><span class="bold">/utils/ReportUtils.ts (Teknik Rapor Oluşturucu):</span> Şu an okumakta olduğunuz dökümantasyonun dinamik olarak üretilmesini sağlar. Yazılımın tüm teknik parametrelerini profesyonel bir formatta PDF/DOC çıktılarına hazırlar.</li>
+    </ul>
+
+    <h2>14. SONUÇ</h2>
     <p>
       ${FULL_BRAND}, Harita Mühendisliği’nin karmaşık matematiksel dünyasını, son kullanıcının mobil cihazındaki kullanıcı dostu bir arayüze sığdırmıştır. TG-20 jeoid desteği, 7 parametreli Bursa-Wolf dönüşümü ve gelişmiş istatistiksel filtreleme sistemleri ile sahadaki veri üretim süreçlerini hızlandırır ve güvenilir kılar. Bu teknik döküman, uygulamanın bilimsel temellere dayalı operasyonel gücünün bir beyanıdır.
     </p>
