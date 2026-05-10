@@ -315,7 +315,7 @@ export const generateTechnicalReport = () => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${FULL_BRAND.replace(/\s+/g, '_')}_KAPSAMLI_TEKNIK_RAPOR_${year}.doc`;
+  link.download = 'GPS_Plus_TEKNIK_RAPOR.doc';
   link.click();
   URL.revokeObjectURL(url);
 };

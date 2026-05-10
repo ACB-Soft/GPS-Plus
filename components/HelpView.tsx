@@ -309,8 +309,8 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
               onClick={handleDownloadReport}
               className="w-full mt-6 py-3 px-4 bg-slate-800 text-white rounded-xl font-black text-xs uppercase flex items-center justify-center gap-3 active:scale-95 transition-all shadow-lg shadow-slate-300"
             >
-              <i className="fas fa-file-pdf"></i>
-              Teknik Rapor İndir
+              <i className="fas fa-file-word"></i>
+              GPS_Plus_TEKNIK_RAPOR İndir
             </button>
           </div>
         </section>
