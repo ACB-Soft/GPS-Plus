@@ -118,15 +118,25 @@ export const generateTechnicalReport = () => {
     <div class="page-break"></div>
 
     <h2>6. İSTATİSTİKSEL ANALİZ VE VERİ AYIKLAMA METODOLOJİLERİ</h2>
-    <p>Hatalı sinyalleri (Outliers) temizlemek ve en doğru sonucu üretmek için ${FULL_BRAND}, kullanıcıya 5 farklı ileri düzey istatistiksel yöntem sunar:</p>
+    <p>Hatalı sinyalleri (Outliers) temizlemek ve en doğru sonucu üretmek için ${FULL_BRAND}, kullanıcıya 7 farklı ileri düzey istatistiksel yöntem sunar. Bu yöntemler, farklı arazi ve sinyal koşullarına göre optimize edilmiştir:</p>
     <ul>
-      <li><span class="bold">1. Aritmetik Ortalama:</span> Veri kümesindeki düşük hassasiyetli veriler elendikten sonra, kalan tüm verilerin matematiksel ortalaması alınarak nihai koordinat hesaplanır.</li>
-      <li><span class="bold">2. Ağırlıklı En Küçük Kareler (Weighted Least Squares):</span> Her bir GNSS örneği, kendi anlık hassasiyet değerinin karesiyle ters orantılı olarak ağırlıklandırılır (W = 1/σ²). Bu sayede daha düşük hata payına sahip "kaliteli" sinyaller, hesaplama sonucuna matematiksel olarak daha fazla etki eder.</li>
-      <li><span class="bold">3. Robust Yöntem (M-Estimators):</span> Huber ağırlık fonksiyonu kullanılarak gerçekleştirilen bu yöntemde, sapan değerlerin etkisi doğrusal değil, belirli bir eşikten sonra sınırlı hale getirilir. Yinelemeli (iterative) hesaplama ile sapan verilere rağmen en kararlı konum kestirimi yapılır.</li>
-      <li><span class="bold">4. Mahalanobis Uzaklık Analizi:</span> Koordinatların kovaryans matrisi üzerinden çok boyutlu uzaklık analizi yapılır. Korelasyonu bozan ve gürültü içeren veriler, koordinat sisteminin geometrik yapısına göre tespit edilerek elenir.</li>
-      <li><span class="bold">5. DBSCAN (Density-Based Clustering):</span> Koordinat uzayındaki yoğunluk analizi yapılarak ana "çekirdek küme" tespit edilir. Yansıma (multi-path) nedeniyle oluşan küme dışı sıçramalı veriler "gürültü" (noise) olarak işaretlenerek hesaba katılmaz.</li>
+      <li><span class="bold">1. Aritmetik Ortalama:</span> Veri kümesindeki düşük hassasiyetli veriler elendikten sonra, kalan tüm verilerin matematiksel ortalaması alınarak nihai koordinat hesaplanır.
+        <div class="formula">μ = (1/n) * Σ xᵢ</div>
+      </li>
+      <li><span class="bold">2. Ağırlıklı En Küçük Kareler (Weighted Least Squares):</span> Her bir GNSS örneği, kendi anlık hassasiyet değerinin karesiyle ters orantılı olarak ağırlıklandırılır (W = 1/σ²). Bu sayede daha düşük hata payına sahip "kaliteli" sinyaller, hesaplama sonucuna matematiksel olarak daha fazla etki eder.
+        <div class="formula">x̂ = (Σ wᵢ xᵢ) / (Σ wᵢ) , burada wᵢ = 1/σᵢ²</div>
+      </li>
+      <li><span class="bold">3. Robust Yöntem (M-Estimators):</span> Huber ağırlık fonksiyonu kullanılarak gerçekleştirilen bu yöntemde, sapan değerlerin etkisi doğrusal değil, belirli bir eşikten sonra sınırlı hale getirilir. Yinelemeli (iterative) hesaplama ile sapan verilere rağmen en kararlı konum kestirimi yapılır.
+        <div class="formula">ρ(e) = { 0.5 * e² (|e| ≤ k); k * |e| - 0.5 * k² (|e| > k) }</div>
+      </li>
+      <li><span class="bold">4. Mahalanobis Uzaklık Analizi:</span> Koordinatların kovaryans matrisi üzerinden çok boyutlu uzaklık analizi yapılır. Korelasyonu bozan ve gürültü içeren veriler, koordinat sisteminin geometrik yapısına göre tespit edilerek elenir.
+        <div class="formula">d² = (x - μ)ᵀ S⁻¹ (x - μ)</div>
+      </li>
+      <li><span class="bold">5. DBSCAN (Density-Based Clustering):</span> Koordinat uzayındaki yoğunluk analizi yapılarak ana "çekirdek küme" tespit edilir. Yansıma (multi-path) nedeniyle oluşan küme dışı sıçramalı veriler "gürültü" (noise) olarak işaretlenerek hesaba katılmaz. Algoritma, ε (epsilon) yarıçap komşuluğundaki MinPts (Minimum Nokta) parametrelerine dayanır.</li>
       <li><span class="bold">6. RANSAC (Random Sample Consensus):</span> Rastgele örnekleme ve konsensüs prensibiyle çalışır. Veri kümesi içindeki en büyük uyumlu grubu (inliers) tespit eder. Sıçramalı ve hatalı verilerin (outliers) yoğun olduğu zorlu arazi koşullarında en güvenilir sonuçlardan birini üretir.</li>
-      <li><span class="bold">7. KDE (Kernel Density Estimation):</span> Çekirdek yoğunluk kestirimi ile verilerin dağılım olasılığı hesaplanır. Matematiksel olarak olasılığın en yüksek olduğu "zirve noktası" nihai koordinat olarak belirlenir. Gürültülü verilerin dağılımı içerisinden en muhtemel gerçek konumu süzmek için kullanılır.</li>
+      <li><span class="bold">7. KDE (Kernel Density Estimation):</span> Çekirdek yoğunluk kestirimi ile verilerin dağılım olasılığı hesaplanır. Matematiksel olarak olasılığın en yüksek olduğu "zirve noktası" nihai koordinat olarak belirlenir.
+        <div class="formula">f̂(x) = (1 / nh) * Σ K((x - xᵢ) / h)</div>
+      </li>
     </ul>
 
     <h2>7. ÖLÇÜM MANTIĞI VE VERİ İŞLEME DİSİPLİNLERİ</h2>
@@ -268,6 +278,24 @@ export const generateTechnicalReport = () => {
     <p>
       ${FULL_BRAND}, Harita Mühendisliği’nin karmaşık matematiksel dünyasını, son kullanıcının mobil cihazındaki kullanıcı dostu bir arayüze sığdırmıştır. TG-20 jeoid desteği, 7 parametreli Bursa-Wolf dönüşümü ve gelişmiş istatistiksel filtreleme sistemleri ile sahadaki veri üretim süreçlerini hızlandırır ve güvenilir kılar. Bu teknik döküman, uygulamanın bilimsel temellere dayalı operasyonel gücünün bir beyanıdır.
     </p>
+
+    <h2>15. KAYNAKÇA VE AKADEMİK ATIFLAR</h2>
+    <p>Bu uygulamada kullanılan algoritmalar, jeodezik modeller ve yazılım kütüphaneleri aşağıdaki temel literatüre dayanmaktadır:</p>
+    <ul>
+      <li><span class="bold">Huber, P. J. (1981).</span> Robust Statistics. John Wiley & Sons. (M-Estimators ve Robust Tahminleme yöntemleri için).</li>
+      <li><span class="bold">Fischler, M. A., & Bolles, R. C. (1981).</span> Random sample consensus: a paradigm for model fitting with applications to image analysis and automated cartography. Communications of the ACM. (RANSAC algoritması için).</li>
+      <li><span class="bold">Ester, M., Kriegel, H. P., Sander, J., & Xu, X. (1996).</span> A density-based algorithm for discovering clusters in large spatial databases with noise. In KDD. (DBSCAN kümeleme analizi için).</li>
+      <li><span class="bold">Silverman, B. W. (1986).</span> Density Estimation for Statistics and Data Analysis. CRC Press. (Kernel Density Estimation - KDE yöntemleri için).</li>
+      <li><span class="bold">Kaplan, E. D., & Hegarty, C. (2017).</span> Understanding GPS/GNSS: Principles and Applications. Artech House. (Hata modelleri ve sinyal işleme prensipleri için).</li>
+      <li><span class="bold">Teunissen, P. J. G. (2000).</span> The Least-Squares Equation. Delft University Press. (En Küçük Kareler yöntemi jeodezik uygulamaları için).</li>
+      <li><span class="bold">Hofmann-Wellenhof, B., Lichtenegger, H., & Wasle, E. (2007).</span> GNSS – Global Navigation Satellite Systems. Springer. (Koordinat dönüşümleri ve projeksiyon sistemleri için).</li>
+      <li><span class="bold">Harita Genel Müdürlüğü (HGM). (2020).</span> Türkiye Geoidi - 2020 (TG-20) Teknik Dökümanı. (Yerel düşey datum ve ondülasyon hesaplamaları için).</li>
+      <li><span class="bold">Lemoine, F. G., et al. (1998).</span> The Development of the Joint NASA GSFC and NIMA Geopotential Model EGM96. NASA/TP-1998-206861. (Global jeoid modeli EGM96 için).</li>
+      <li><span class="bold">Bursa, M. (1962).</span> The theory of the determination of the non-parallelism of the minor axis of the reference ellipsoid. Studia Geophysica et Geodaetica. (7-Parametreli Bursa-Wolf dönüşüm modeli için).</li>
+      <li><span class="bold">Evenden, G. I. (1990).</span> Cartographic Projection Procedures for the UNIX Environment — A User's Manual. USGS Open-File Report. (Proj4 kütüphanesinin temelini oluşturan matematiksel algoritmalar için).</li>
+      <li><span class="bold">Agafonkin, V. (2011).</span> Leaflet: An Open-Source JavaScript Library for Mobile-Friendly Interactive Maps. (Harita görselleştirme mimarisi için).</li>
+      <li><span class="bold">OSGeo (Open Source Geospatial Foundation).</span> PROJ: Generic coordinate transformation software. (Projeksiyon dönüşümleri standartları için).</li>
+    </ul>
 
     <div class="footer">
       <p>&copy; ${year} ${FULL_BRAND} - Tüm Hakları Saklıdır.</p>

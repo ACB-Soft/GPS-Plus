@@ -89,5 +89,5 @@ export const convertToWGS84 = (val1: number, val2: number, system: string, refer
     }
   }
 
-  return { lat: y, lng: x };
+  return { lat: val1, lng: val2 };
 };
