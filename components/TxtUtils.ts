@@ -46,8 +46,8 @@ export const downloadTXT = (locations: SavedLocation[], settings: AppSettings) =
     
     // WGS84 ise valY (Enlem) önce gelir, valX (Boylam) sonra.
     // UTM ise valX (Sağa Y) önce gelir, valY (Yukarı X) sonra.
-    const firstVal = isWGS84 ? valY : valX;
-    const secondVal = isWGS84 ? valX : valY;
+    const firstVal = isWGS84 ? valX : valY;
+    const secondVal = isWGS84 ? valY : valX;
     
     content += `${loc.name}\t${firstVal}\t${secondVal}\t${displayHeight !== null ? displayHeight.toFixed(hPrec) : '---'}\n`;
   });

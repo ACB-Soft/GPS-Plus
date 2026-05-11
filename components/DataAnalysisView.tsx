@@ -482,16 +482,16 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     <thead>
                       <tr className="bg-slate-900 text-white text-[9px] uppercase tracking-widest">
                         <th className="p-4 rounded-tl-3xl">Yöntem</th>
-                        <th className="p-4">Hesaplanan Y (Sağa)</th>
-                        <th className="p-4 rounded-tr-3xl">Hesaplanan X (Yukarı)</th>
+                        <th className="p-4">{useLocal ? 'Hesaplanan Y (Sağa)' : 'Hesaplanan Enlem (Lat)'}</th>
+                        <th className="p-4 rounded-tr-3xl">{useLocal ? 'Hesaplanan X (Yukarı)' : 'Hesaplanan Boylam (Lng)'}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {analysisResults.map((res, idx) => (
                         <tr key={res.method} className={`border-b border-slate-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
                           <td className="p-4 font-black text-[11px] text-slate-800">{getMethodLabel(res.method)}</td>
-                          <td className="p-4 font-bold text-xs text-blue-600">{res.calculated.y.toFixed(3)}</td>
-                          <td className="p-4 font-bold text-xs text-indigo-600">{res.calculated.x.toFixed(3)}</td>
+                          <td className="p-4 font-bold text-xs text-blue-600">{res.calculated.x.toFixed(useLocal ? 3 : 8)}</td>
+                          <td className="p-4 font-bold text-xs text-indigo-600">{res.calculated.y.toFixed(useLocal ? 3 : 8)}</td>
                         </tr>
                       ))}
                     </tbody>

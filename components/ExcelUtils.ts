@@ -45,8 +45,8 @@ export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings
   const dataRows = locations.map(loc => {
     const { x, y } = convertCoordinate(loc.lat, loc.lng, loc.coordinateSystem || 'WGS84');
     
-    const val1 = isWGS84 ? y.toFixed(6) : x.toFixed(locPrecision);
-    const val2 = isWGS84 ? x.toFixed(6) : y.toFixed(locPrecision);
+    const val1 = isWGS84 ? x.toFixed(7) : x.toFixed(locPrecision);
+    const val2 = isWGS84 ? y.toFixed(7) : y.toFixed(locPrecision);
     
     const correctedH = getCorrectedHeight(loc.lat, loc.lng, loc.altitude);
     const orthometricH = correctedH !== null ? correctedH.toFixed(heightPrecision) : '---';
@@ -344,11 +344,11 @@ export const downloadCombinedAnalysisReport = (
     [preciseCoords.x, preciseCoords.y, preciseCoords.z],
     [],
     ["3. ALGORİTMA BAZLI HATA ANALİZİ (KIYASLAMA)"],
-    ["Yöntem", "Hesaplanan X/Lat", "Hesaplanan Y/Lng", "Hesaplanan Z/H", "ΔX (m)", "ΔY (m)", "ΔDüşey (m)", "Yatay Hata (m)", "DURUM"],
+    ["Yöntem", preciseCoords.isWgs84 ? "Enlem (Lat)" : "Sağa (Y)", preciseCoords.isWgs84 ? "Boylam (Lng)" : "Yukarı (X)", preciseCoords.isWgs84 ? "Alt (Elip.H)" : "Kot (Z)", "ΔX (m)", "ΔY (m)", "ΔDüşey (m)", "Yatay Hata (m)", "DURUM"],
     ...results.map(res => [
       getMethodName(res.method),
-      res.calculated.x.toFixed(preciseCoords.isWgs84 ? 8 : locPrecision),
-      res.calculated.y.toFixed(preciseCoords.isWgs84 ? 8 : locPrecision),
+      (preciseCoords.isWgs84 ? res.calculated.x : res.calculated.x).toFixed(preciseCoords.isWgs84 ? 8 : locPrecision),
+      (preciseCoords.isWgs84 ? res.calculated.y : res.calculated.y).toFixed(preciseCoords.isWgs84 ? 8 : locPrecision),
       res.calculated.z.toFixed(heightPrecision),
       res.errors.dx.toFixed(3),
       res.errors.dy.toFixed(3),
