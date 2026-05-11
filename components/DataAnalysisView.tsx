@@ -66,6 +66,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [selectedFolder, setSelectedFolder] = useState<string>('');
   const [selectedPointId, setSelectedPointId] = useState<string>(initialSelectedId || '');
   const [showMap, setShowMap] = useState(false);
+  const [mapMode, setMapMode] = useState<'satellite' | 'grid'>('grid');
 
   const folders = useMemo(() => {
     const f = Array.from(new Set(locations.map(l => l.folderName || 'Genel')));
@@ -754,26 +755,56 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               >
                 <i className="fas fa-times"></i>
               </button>
+              <button 
+                onClick={() => setMapMode(prev => prev === 'satellite' ? 'grid' : 'satellite')}
+                className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-2xl active:scale-90 transition-all border border-slate-200 ${mapMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-white text-slate-900'}`}
+                title={mapMode === 'grid' ? 'Uydu Görünümü' : 'Izgara (Grid) Görünümü'}
+              >
+                <i className={mapMode === 'grid' ? 'fas fa-satellite' : 'fas fa-border-all'}></i>
+              </button>
               <div className="h-12 px-6 bg-white rounded-2xl flex items-center shadow-2xl border border-slate-200">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mr-2">Nokta:</p>
-                <p className="text-sm font-black text-slate-900">{location.name}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mr-2">Mod:</p>
+                <p className="text-sm font-black text-slate-900">{mapMode === 'grid' ? 'Teknik Izgara' : 'Saha Görünümü'}</p>
               </div>
             </div>
+
+            <style>
+              {`
+                .grid-background {
+                  background-color: #f8f9fa !important;
+                  background-image: 
+                    linear-gradient(#e5e7eb 1px, transparent 1px),
+                    linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
+                  background-size: 20px 20px;
+                }
+                .grid-background-fine {
+                  background-image: 
+                    linear-gradient(#e5e7eb 1px, transparent 1px),
+                    linear-gradient(90deg, #e5e7eb 1px, transparent 1px),
+                    linear-gradient(#d1d5db 1px, transparent 1px),
+                    linear-gradient(90deg, #d1d5db 1px, transparent 1px);
+                  background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
+                }
+              `}
+            </style>
 
             <MapContainer 
               center={[location.lat, location.lng]} 
               zoom={20} 
-              maxZoom={22}
+              maxZoom={26}
               style={{ height: '100%', width: '100%' }}
+              className={mapMode === 'grid' ? 'grid-background-fine' : ''}
               zoomControl={false}
               attributionControl={false}
             >
-              <TileLayer
-                url={mapInfo.url}
-                attribution="&copy; Google Maps"
-                maxZoom={22}
-                maxNativeZoom={mapInfo.maxNativeZoom}
-              />
+              {mapMode === 'satellite' && (
+                <TileLayer
+                  url={mapInfo.url}
+                  attribution="&copy; Google Maps"
+                  maxZoom={22}
+                  maxNativeZoom={mapInfo.maxNativeZoom}
+                />
+              )}
               
               {/* Raw Samples Cloud */}
               {location.samples?.map((s, idx) => (
@@ -782,7 +813,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   position={[s.lat, s.lng]} 
                   icon={L.divIcon({
                     className: 'raw-marker',
-                    html: `<div style="width: 8px; height: 8px; background: rgba(255,255,255,0.4); border: 1px solid rgba(0,0,0,0.5); border-radius: 50%;"></div>`,
+                    html: `<div style="width: 8px; height: 8px; background: ${mapMode === 'grid' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.4)'}; border: 1px solid rgba(0,0,0,0.5); border-radius: 50%;"></div>`,
                     iconSize: [8, 8],
                     iconAnchor: [4, 4]
                   })}
