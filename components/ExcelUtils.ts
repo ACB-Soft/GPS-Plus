@@ -257,39 +257,78 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     { wch: 12 }, // Saat
     { wch: 20 }, // Val1
     { wch: 20 }, // Val2
-    { wch: 15 }, // Yükseklik
-    { wch: 15 }, // Hassasiyet
-    { wch: 15 }, // Dikey Hass
-    { wch: 20 }, // Durum
+    { wch: 15 } // Yükseklik
   ];
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Ham Veriler");
   
-  const fileName = `Olcum_Raporu_${location.name}.xlsx`;
+  const fileName = `Teknik_Rapor_${location.name}.xlsx`;
   XLSX.writeFile(workbook, fileName);
 };
 
-export const downloadAnalysisReport = (
+export const downloadCombinedAnalysisReport = (
   location: SavedLocation, 
   preciseCoords: { x: number, y: number, z: number, isWgs84: boolean },
   results: any[],
   settings?: AppSettings
 ) => {
+  const workbook = XLSX.utils.book_new();
+
+  // --- SAYFA 1: HAM ÖLÇÜM VERİLERİ (120 SN KAYIT) ---
+  const rawData: any[][] = [
+    ["HAM ÖLÇÜM VE GÖZLEM KAYITLARI"],
+    ["Nokta Adı:", location.name],
+    ["Klasör:", location.folderName],
+    ["Kayıt Tarihi:", new Date(location.timestamp).toLocaleString('tr-TR')],
+    [],
+    ["GÖZLEM LİSTESİ (Tüm Örnekler)"],
+    ["No", "Enlem (Lat)", "Boylam (Lng)", "Yükseklik (Alt)", "Hassasiyet (m)", "Zaman"]
+  ];
+
+  if (location.samples && location.samples.length > 0) {
+    location.samples.forEach((s, idx) => {
+      rawData.push([
+        idx + 1, 
+        s.lat.toFixed(8), 
+        s.lng.toFixed(8), 
+        s.altitude.toFixed(3), 
+        s.accuracy.toFixed(3), 
+        new Date(s.timestamp).toLocaleTimeString('tr-TR')
+      ]);
+    });
+  }
+
+  const wsRaw = XLSX.utils.aoa_to_sheet(rawData);
+  XLSX.utils.book_append_sheet(workbook, wsRaw, "Ölçüm Kayıtları");
+
+  // --- SAYFA 2: İSTATİSTİKSEL ANALİZ VE AR-GE SONUÇLARI ---
   const locPrecision = settings?.locationPrecision ?? 1;
   const heightPrecision = settings?.heightPrecision ?? 2;
   const sys = location.coordinateSystem || 'WGS84';
+  const calculationMethod = location.calculationMethod || 'ARITHMETIC_MEAN';
 
-  const ws_data = [
-    ["HASSAS ANALİZ VE HATA RAPORU (AR-GE)"],
+  const analysisData: any[][] = [
+    ["DETAYLI İSTATİSTİKSEL ANALİZ VE ALGORİTMA PERFORMANS RAPORU"],
     ["Nokta Adı:", location.name],
-    ["Tarih:", new Date().toLocaleString('tr-TR')],
+    ["Analiz Tarihi:", new Date().toLocaleString('tr-TR')],
     [],
-    ["KESİN REFERANS DEĞERLER (GROUND TRUTH)"],
+    ["1. UYGULAMA ANA HESAPLAMA SONUÇLARI"],
+    ["Koordinat Sistemi:", sys],
+    ["Kullanılan Ana Yöntem:", getMethodName(calculationMethod)],
+    ["Hesaplanan X/Lat:", location.lat.toFixed(sys === "WGS84" ? 8 : locPrecision)],
+    ["Hesaplanan Y/Lng:", location.lng.toFixed(sys === "WGS84" ? 8 : locPrecision)],
+    ["Hesaplanan Z/Alt:", (location.altitude || 0).toFixed(heightPrecision)],
+    ["Yatay Hassasiyet (RMS):", `${location.accuracy.toFixed(3)} m`],
+    ["Düşey Hassasiyet (V):", `${location.altitudeAccuracy?.toFixed(3) || '-'} m`],
+    ["Ölçüm Süresi:", `${location.measurementDuration || 0} sn`],
+    ["Toplam Örnek Sayısı:", `${location.samples?.length || 0}`],
+    [],
+    ["2. KESİN REFERANS DEĞERLER (GROUND TRUTH)"],
     [preciseCoords.isWgs84 ? "Enlem" : "Sağa (Y)", preciseCoords.isWgs84 ? "Boylam" : "Yukarı (X)", preciseCoords.isWgs84 ? "Alt (Elip.H)" : "Kot (Z)"],
     [preciseCoords.x, preciseCoords.y, preciseCoords.z],
     [],
-    ["YÖNTEM BAZLI HATA VE RMSE ANALİZİ"],
+    ["3. ALGORİTMA BAZLI HATA ANALİZİ (KIYASLAMA)"],
     ["Yöntem", "Hesaplanan X/Lat", "Hesaplanan Y/Lng", "Hesaplanan Z/H", "ΔX (m)", "ΔY (m)", "ΔZ/H (m)", "Yatay Sapma (m)", "3D RMSE (m)"],
     ...results.map(res => [
       getMethodName(res.method),
@@ -303,15 +342,17 @@ export const downloadAnalysisReport = (
       res.errors.d3d.toFixed(3)
     ]),
     [],
-    ["AÇIKLAMA:"],
-    ["* Delta (Δ) değerleri 'Kesin Değer - Hesaplanan Değer' farkını ifade eder."],
-    ["* 3D RMSE, x/y/z eksenlerindeki toplam sapmanın geometrik ortalamasıdır."],
-    [`* Bu rapor ${FULL_BRAND} Ar-Ge algoritma testleri kapsamında oluşturulmuştur.`]
+    ["HATA TERMİNOLOJİSİ VE NOTLAR:"],
+    ["- Delta (Δ): Kesin Değer - Hesaplanan Değer farkıdır."],
+    ["- Yatay Sapma: Konumsal (2D) vektörel hatadır."],
+    ["- 3D RMSE: Toplam üç boyutlu karesel hata ortalamasıdır."],
+    [`- Bu rapor ${FULL_BRAND} Ar-Ge algoritma testleri kapsamında otomatik üretilmiştir.`]
   ];
 
-  const worksheet = XLSX.utils.aoa_to_sheet(ws_data);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Hata Analizi");
-  
-  XLSX.writeFile(workbook, `Hata_Analiz_Raporu_${location.name}.xlsx`);
+  const wsAnalysis = XLSX.utils.aoa_to_sheet(analysisData);
+  XLSX.utils.book_append_sheet(workbook, wsAnalysis, "İstatistik ve Analiz");
+
+  // Save the combined book
+  const fileName = `ArGe_Analiz_Raporu_${location.name}.xlsx`;
+  XLSX.writeFile(workbook, fileName);
 };

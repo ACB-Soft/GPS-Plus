@@ -3,21 +3,25 @@ import { SavedLocation, AppSettings, CalculationMethod } from '../types';
 import { geoidService } from '../services/GeoidService';
 import { convertCoordinate } from '../utils/CoordinateUtils';
 import { calculateResult } from '../utils/MathUtils';
-import { downloadAnalysisReport } from './ExcelUtils';
+import { downloadCombinedAnalysisReport } from './ExcelUtils';
 
 interface Props {
-  location: SavedLocation;
+  locations: SavedLocation[];
+  initialSelectedId?: string;
   settings: AppSettings;
   onClose: () => void;
 }
 
-const DataAnalysisView: React.FC<Props> = ({ location, settings, onClose }) => {
+const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, settings, onClose }) => {
+  const [selectedPointId, setSelectedPointId] = useState<string>(initialSelectedId || (locations.length > 0 ? locations[0].id : ''));
+  const location = locations.find(l => l.id === selectedPointId);
+
   const [preciseX, setPreciseX] = useState<string>('');
   const [preciseY, setPreciseY] = useState<string>('');
   const [preciseZ, setPreciseZ] = useState<string>('');
   
   const [analysisResults, setAnalysisResults] = useState<any[] | null>(null);
-  const [useLocal, setUseLocal] = useState(location.coordinateSystem !== 'WGS84');
+  const [useLocal, setUseLocal] = useState(location?.coordinateSystem !== 'WGS84');
 
   const methods: CalculationMethod[] = [
     'ARITHMETIC_MEAN', 
@@ -45,6 +49,7 @@ const DataAnalysisView: React.FC<Props> = ({ location, settings, onClose }) => {
   };
 
   const calculateAllMethods = () => {
+    if (!location) return;
     const px = parseFloat(preciseX);
     const py = parseFloat(preciseY);
     const pz = parseFloat(preciseZ);
@@ -100,9 +105,9 @@ const DataAnalysisView: React.FC<Props> = ({ location, settings, onClose }) => {
   };
 
   const handleDownloadExcel = () => {
-    if (!analysisResults) return;
+    if (!analysisResults || !location) return;
     
-    downloadAnalysisReport(
+    downloadCombinedAnalysisReport(
       location,
       { 
         x: parseFloat(preciseX), 
@@ -124,7 +129,7 @@ const DataAnalysisView: React.FC<Props> = ({ location, settings, onClose }) => {
           <div className="flex justify-between items-start">
             <div>
               <h2 className="text-xl font-black uppercase tracking-widest leading-none">Hassas Analiz & AR-GE</h2>
-              <p className="text-blue-400 text-[10px] font-bold mt-2 uppercase tracking-widest">Nokta Karşılaştırmalı Test: {location.name}</p>
+              <p className="text-blue-400 text-[10px] font-bold mt-2 uppercase tracking-widest">Gelişmiş Raporlama Sistemi</p>
             </div>
             <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center active:scale-90 transition-all">
               <i className="fas fa-times"></i>
@@ -135,6 +140,30 @@ const DataAnalysisView: React.FC<Props> = ({ location, settings, onClose }) => {
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 no-scrollbar">
           
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Detaylı Analiz İçin Nokta Seçiniz</label>
+            <div className="relative">
+              <select 
+                value={selectedPointId}
+                onChange={(e) => {
+                  setSelectedPointId(e.target.value);
+                  setAnalysisResults(null);
+                  const loc = locations.find(l => l.id === e.target.value);
+                  if (loc) setUseLocal(loc.coordinateSystem !== 'WGS84');
+                }}
+                className="w-full p-4 bg-slate-100 rounded-2xl font-bold text-slate-900 appearance-none border-2 border-transparent focus:border-blue-500 outline-none transition-all text-sm"
+              >
+                <option value="">Lütfen bir nokta seçin...</option>
+                {locations.map(p => (
+                  <option key={p.id} value={p.id}>[{p.folderName}] - {p.name}</option>
+                ))}
+              </select>
+              <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <i className="fas fa-chevron-down"></i>
+              </div>
+            </div>
+          </div>
+
           <div className="flex gap-2">
             <button 
               onClick={() => { setUseLocal(false); setAnalysisResults(null); }}
@@ -185,7 +214,7 @@ const DataAnalysisView: React.FC<Props> = ({ location, settings, onClose }) => {
             className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[12px] uppercase tracking-widest active:scale-95 transition-all shadow-xl flex items-center justify-center gap-3"
           >
             <i className="fas fa-microchip"></i>
-            Tüm Algoritmaları Kıyasla
+            Hata Analizini Başlat
           </button>
 
           {analysisResults && (
@@ -225,7 +254,7 @@ const DataAnalysisView: React.FC<Props> = ({ location, settings, onClose }) => {
                   className="bg-white text-blue-600 px-8 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all flex items-center gap-2"
                 >
                   <i className="fas fa-file-excel"></i>
-                  Excel Raporu Al
+                  Birleşik Raporu İndir
                 </button>
               </div>
 

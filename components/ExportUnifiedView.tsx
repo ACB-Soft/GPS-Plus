@@ -45,9 +45,10 @@ const ExportUnifiedView: React.FC<Props> = ({ locations, settings }) => {
 
   return (
     <div className="space-y-8 pb-10 max-w-sm mx-auto w-full">
-      {showAnalysis && getSelectedPoint() && (
+      {showAnalysis && (
         <DataAnalysisView 
-          location={getSelectedPoint()!} 
+          locations={locations} 
+          initialSelectedId={selectedPointId}
           settings={settings} 
           onClose={() => setShowAnalysis(false)} 
         />
@@ -117,53 +118,15 @@ const ExportUnifiedView: React.FC<Props> = ({ locations, settings }) => {
         </button>
 
         <div className="pt-6 mt-4 border-t border-slate-100 flex flex-col gap-4">
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Detaylı Rapor İçin Nokta Seç</label>
-            <div className="relative">
-              <select 
-                value={selectedPointId}
-                onChange={(e) => setSelectedPointId(e.target.value)}
-                disabled={!hasSelection}
-                className="w-full p-4 rounded-3xl border border-slate-200 bg-slate-50 font-bold text-slate-800 appearance-none outline-none focus:border-blue-500 transition-all text-sm disabled:opacity-50"
-              >
-                {filteredPoints.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-              <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                <i className="fas fa-location-dot"></i>
-              </div>
-            </div>
+          <div className="pt-4 mt-2 flex justify-center">
+            <button 
+              onClick={handleOpenAnalysis} 
+              className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] hover:text-blue-400 transition-colors py-2 px-4 border border-slate-100 rounded-full"
+            >
+              <i className="fas fa-flask mr-2 opacity-50"></i>
+              AR-GE MODÜLÜ
+            </button>
           </div>
-
-          <button 
-            onClick={() => {
-              const pt = getSelectedPoint();
-              if (pt) downloadTechnicalReport(pt, settings);
-            }} 
-            disabled={!hasPointSelection} 
-            className={`w-full py-3 md:py-4 px-6 text-white rounded-xl md:rounded-2xl font-black text-sm md:text-base uppercase flex items-center gap-5 transition-all duration-300 shadow-xl ${
-              hasPointSelection ? 'bg-slate-900 shadow-slate-200 active:scale-[0.98]' : 'bg-slate-200 opacity-40 grayscale cursor-not-allowed shadow-none'
-            }`}
-          >
-            <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/30 shrink-0">
-              <i className="fas fa-microscope text-xl"></i>
-            </div>
-            <span className="tracking-tight">Ölçüm Raporu (.XLSX)</span>
-          </button>
-
-          <button 
-            onClick={handleOpenAnalysis} 
-            disabled={!hasPointSelection} 
-            className={`w-full py-3 md:py-4 px-6 text-white rounded-xl md:rounded-2xl font-black text-sm md:text-base uppercase flex items-center gap-5 transition-all duration-300 shadow-xl ${
-              hasPointSelection ? 'bg-amber-600 shadow-amber-200 active:scale-[0.98]' : 'bg-slate-200 opacity-40 grayscale cursor-not-allowed shadow-none'
-            }`}
-          >
-            <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/30 shrink-0">
-              <i className="fas fa-chart-line text-xl"></i>
-            </div>
-            <span className="tracking-tight">Hassas Analiz (AR-GE)</span>
-          </button>
         </div>
       </div>
     </div>
