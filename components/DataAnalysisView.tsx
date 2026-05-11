@@ -10,6 +10,19 @@ import {
   ScatterChart, Scatter, LineChart, Line, XAxis, YAxis, ZAxis, CartesianGrid, 
   Tooltip, ResponsiveContainer, Cell, ReferenceLine, Legend
 } from 'recharts';
+import { MapContainer, TileLayer, Marker, Circle, useMap, Popup } from 'react-leaflet';
+import L from 'leaflet';
+
+// Map rendering fix for modals
+const MapResizer = () => {
+  const map = useMap();
+  React.useEffect(() => {
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 400);
+  }, [map]);
+  return null;
+};
 
 const METHOD_COLORS: Record<string, string> = {
   ARITHMETIC_MEAN: '#ef4444',
@@ -52,6 +65,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [analysisType, setAnalysisType] = useState<'precise' | 'normal'>('precise');
   const [selectedFolder, setSelectedFolder] = useState<string>('');
   const [selectedPointId, setSelectedPointId] = useState<string>(initialSelectedId || '');
+  const [showMap, setShowMap] = useState(false);
 
   const folders = useMemo(() => {
     const f = Array.from(new Set(locations.map(l => l.folderName || 'Genel')));
@@ -124,9 +138,13 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
     if (!useLocal) {
       // Input is Lat(pn)/Lng(pe)/Alt -> Convert to meters for error calculation
+      // pn = Yukarı (X) = Lat, pe = Sağa (Y) = Lng
       const converted = convertCoordinate(pn, pe, testSys);
-      refX = converted.x;
-      refY = converted.y;
+      refX = converted.y; // Northing (Yukarı/X)
+      refY = converted.x; // Easting (Sağa/Y)
+    } else {
+      refX = pn; // Yukarı (X)
+      refY = pe; // Sağa (Y)
     }
 
     const results = methods.map(method => {
@@ -138,16 +156,17 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       const calcZ = result.altitude; 
 
       // 3. Calculate errors
-      const dx = refX - calcMeter.x;
-      const dy = refY - calcMeter.y;
+      // calcMeter.y is Northing (Yukarı/X), calcMeter.x is Easting (Sağa/Y)
+      const dx = refX - calcMeter.y; // Yukarı (X) error
+      const dy = refY - calcMeter.x; // Sağa (Y) error
       const dz = refZ - (calcZ || 0);
       const dhz = Math.sqrt(dx*dx + dy*dy);
 
       return {
         method,
         calculated: {
-          x: useLocal ? calcMeter.x : result.lat,
-          y: useLocal ? calcMeter.y : result.lng,
+          x: useLocal ? calcMeter.x : result.lat, // x is Sağa (Y) / Lat? Wait. 
+          y: useLocal ? calcMeter.y : result.lng, // y is Yukarı (X) / Lng?
           z: calcZ
         },
         errors: { dx, dy, dz, dhz }
@@ -184,18 +203,18 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     let isPrecise = false;
 
     if (analysisType === 'precise') {
-      const pn = parseFloat(preciseN);
-      const pe = parseFloat(preciseE);
+      const pn = parseFloat(preciseN); // Yukarı (X)
+      const pe = parseFloat(preciseE); // Sağa (Y)
       
       if (!isNaN(pn) && !isNaN(pe)) {
         const sys = location?.coordinateSystem || 'ITRF96_3';
         if (useLocal) {
-          centerX = pn;
-          centerY = pe;
+          centerX = pe; // Easting (Sağa/Y)
+          centerY = pn; // Northing (Yukarı/X)
         } else {
           const conv = convertCoordinate(pn, pe, sys);
-          centerX = conv.x;
-          centerY = conv.y;
+          centerX = conv.x; // Easting (Sağa/Y)
+          centerY = conv.y; // Northing (Yukarı/X)
         }
         isPrecise = true;
       }
@@ -210,15 +229,15 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     let maxDelta = 0.1;
 
     const rawPoints = chartData.map(d => {
-      const dE = d.y - centerY; // Easting Delta
-      const dN = d.x - centerX; // Northing Delta
+      const dE = d.x - centerX; // Easting Delta
+      const dN = d.y - centerY; // Northing Delta
       maxDelta = Math.max(maxDelta, Math.abs(dE), Math.abs(dN));
       return { ...d, dE, dN };
     });
 
     const methodPoints = (analysisResults || []).map((res, index) => {
-      const dE = res.calculated.y - centerY;
-      const dN = res.calculated.x - centerX;
+      const dE = res.calculated.x - centerX;
+      const dN = res.calculated.y - centerY;
       maxDelta = Math.max(maxDelta, Math.abs(dE), Math.abs(dN));
       return {
         ...res,
@@ -265,6 +284,19 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       settings
     );
   };
+
+  const getMapProviderInfo = () => {
+    const provider = localStorage.getItem('default_map_provider') || 'Google Hybrid';
+    switch (provider) {
+      case 'Google Hybrid': return { url: "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", maxNativeZoom: 20 };
+      case 'Google Satellite': return { url: "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", maxNativeZoom: 20 };
+      case 'OpenTopoMap': return { url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", maxNativeZoom: 17 };
+      case 'Google Roadmap':
+      default: return { url: "https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", maxNativeZoom: 20 };
+    }
+  };
+
+  const mapInfo = getMapProviderInfo();
 
   const calculateNormalStats = () => {
     if (!location) return;
@@ -445,6 +477,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               <div className="flex items-center justify-between px-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">5. Analiz Sonuçları</label>
               </div>
+
+              <button 
+                onClick={() => setShowMap(true)}
+                className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-[12px] uppercase tracking-widest active:scale-95 transition-all shadow-xl flex items-center justify-center gap-3"
+              >
+                <i className="fas fa-map-marked-alt"></i>
+                Analiz Sonuçlarını Haritada Gör
+              </button>
 
               {analysisType === 'precise' ? (
                 <div className="overflow-x-auto rounded-3xl border border-slate-100 bg-slate-50 shadow-sm">
@@ -702,8 +742,140 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
           )}
 
         </div>
-
       </div>
+
+      {/* Map Modal */}
+        {showMap && location && analysisResults && (
+          <div className="fixed inset-0 z-[100] bg-black flex flex-col animate-in fade-in">
+            <div className="absolute top-6 left-6 z-[10000] flex gap-3">
+              <button 
+                onClick={() => setShowMap(false)}
+                className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all border border-slate-200"
+              >
+                <i className="fas fa-times"></i>
+              </button>
+              <div className="h-12 px-6 bg-white rounded-2xl flex items-center shadow-2xl border border-slate-200">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mr-2">Nokta:</p>
+                <p className="text-sm font-black text-slate-900">{location.name}</p>
+              </div>
+            </div>
+
+            <MapContainer 
+              center={[location.lat, location.lng]} 
+              zoom={20} 
+              maxZoom={22}
+              style={{ height: '100%', width: '100%' }}
+              zoomControl={false}
+              attributionControl={false}
+            >
+              <TileLayer
+                url={mapInfo.url}
+                attribution="&copy; Google Maps"
+                maxZoom={22}
+                maxNativeZoom={mapInfo.maxNativeZoom}
+              />
+              
+              {/* Raw Samples Cloud */}
+              {location.samples?.map((s, idx) => (
+                <Marker 
+                  key={`raw-${idx}`}
+                  position={[s.lat, s.lng]} 
+                  icon={L.divIcon({
+                    className: 'raw-marker',
+                    html: `<div style="width: 8px; height: 8px; background: rgba(255,255,255,0.4); border: 1px solid rgba(0,0,0,0.5); border-radius: 50%;"></div>`,
+                    iconSize: [8, 8],
+                    iconAnchor: [4, 4]
+                  })}
+                >
+                  <Popup>
+                    <div className="p-2">
+                      <p className="text-[10px] font-black uppercase text-slate-500 mb-1">Ham Ölçüm #{idx+1}</p>
+                      <p className="text-xs font-bold font-mono">Hass: ±{s.accuracy.toFixed(2)}m</p>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+
+              {/* Ground Truth IF Precise */}
+              {analysisType === 'precise' && (
+                <Marker 
+                  position={[parseFloat(preciseN), parseFloat(preciseE)]} 
+                  icon={L.divIcon({
+                    className: 'precise-marker',
+                    html: `<div style="width: 20px; height: 20px; display: flex; align-items: center; justify-center; background: #ef4444; color: white; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);"><i class="fas fa-crosshairs" style="font-size: 10px; margin: auto;"></i></div>`,
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                  })}
+                >
+                  <Popup>
+                    <div className="p-2 text-center">
+                      <p className="text-xs font-black text-rose-600 mb-1">KESİN KOORDİNAT</p>
+                      <p className="text-[10px] font-bold text-slate-500">Bu nokta referans alınmıştır.</p>
+                    </div>
+                  </Popup>
+                </Marker>
+              )}
+
+              {/* Algorithm Results */}
+              {analysisResults.map((res) => {
+                const { result } = calculateResult(location.samples!, res.method as any, location.accuracyLimit || 5.0);
+                
+                return (
+                  <Marker 
+                    key={res.method}
+                    position={[result.lat, result.lng]} 
+                    icon={L.divIcon({
+                      className: 'method-marker',
+                      html: `<div style="width: 14px; height: 14px; background: ${METHOD_COLORS[res.method]}; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.3); display: flex; align-items: center; justify-center; color: white; font-size: 6px; font-weight: 900;"></div>`,
+                      iconSize: [14, 14],
+                      iconAnchor: [7, 7]
+                    })}
+                  >
+                    <Popup>
+                      <div className="p-2">
+                        <p className="text-[10px] font-black uppercase mb-1" style={{ color: METHOD_COLORS[res.method] }}>
+                          {getMethodLabel(res.method as any)}
+                        </p>
+                        <p className="text-xs font-bold font-mono">
+                          Y: {res.calculated.x.toFixed(useLocal ? 3 : 8)}<br/>
+                          X: {res.calculated.y.toFixed(useLocal ? 3 : 8)}
+                        </p>
+                        {res.errors && (
+                           <p className="mt-1 text-[9px] font-black text-emerald-600 uppercase border-t border-slate-100 pt-1">
+                             Hata: {res.errors.dhz.toFixed(3)}m
+                           </p>
+                        )}
+                      </div>
+                    </Popup>
+                  </Marker>
+                );
+              })}
+
+              <MapResizer />
+            </MapContainer>
+
+            {/* Legend Overlay */}
+            <div className="absolute bottom-6 right-6 z-[10000] max-w-[180px]">
+              <div className="bg-white/90 backdrop-blur-md p-3 rounded-2xl shadow-2xl border border-slate-200">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-3 border-b pb-1">Renk Skalası</p>
+                <div className="space-y-1.5">
+                  {analysisResults.map(res => (
+                    <div key={res.method} className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: METHOD_COLORS[res.method] }}></div>
+                      <span className="text-[9px] font-black text-slate-700 truncate">{getMethodLabel(res.method as any)}</span>
+                    </div>
+                  ))}
+                  {analysisType === 'precise' && (
+                    <div className="flex items-center gap-2 pt-1 border-t mt-1">
+                      <div className="w-2.5 h-2.5 rounded-full bg-rose-600"></div>
+                      <span className="text-[9px] font-black text-rose-600">Referans</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   );
 };
