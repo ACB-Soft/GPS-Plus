@@ -66,7 +66,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [selectedFolder, setSelectedFolder] = useState<string>('');
   const [selectedPointId, setSelectedPointId] = useState<string>(initialSelectedId || '');
   const [showMap, setShowMap] = useState(false);
-  const [mapMode, setMapMode] = useState<'satellite' | 'grid'>('grid');
 
   const folders = useMemo(() => {
     const f = Array.from(new Set(locations.map(l => l.folderName || 'Genel')));
@@ -746,38 +745,25 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       </div>
 
       {/* Map Modal */}
-        {showMap && location && analysisResults && (
+      {showMap && location && analysisResults && (
           <div className="fixed inset-0 z-[100] bg-black flex flex-col animate-in fade-in">
             <div className="absolute top-6 left-6 z-[10000] flex gap-3">
               <button 
                 onClick={() => setShowMap(false)}
-                className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all border border-slate-200"
+                className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-95 transition-all border border-slate-200"
               >
                 <i className="fas fa-times"></i>
               </button>
-              <button 
-                onClick={() => setMapMode(prev => prev === 'satellite' ? 'grid' : 'satellite')}
-                className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-2xl active:scale-90 transition-all border border-slate-200 ${mapMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-white text-slate-900'}`}
-                title={mapMode === 'grid' ? 'Uydu Görünümü' : 'Izgara (Grid) Görünümü'}
-              >
-                <i className={mapMode === 'grid' ? 'fas fa-satellite' : 'fas fa-border-all'}></i>
-              </button>
               <div className="h-12 px-6 bg-white rounded-2xl flex items-center shadow-2xl border border-slate-200">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mr-2">Mod:</p>
-                <p className="text-sm font-black text-slate-900">{mapMode === 'grid' ? 'Teknik Izgara' : 'Saha Görünümü'}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mr-2">Nokta:</p>
+                <p className="text-sm font-black text-slate-900">{location.name}</p>
               </div>
             </div>
 
             <style>
               {`
-                .grid-background {
-                  background-color: #f8f9fa !important;
-                  background-image: 
-                    linear-gradient(#e5e7eb 1px, transparent 1px),
-                    linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
-                  background-size: 20px 20px;
-                }
                 .grid-background-fine {
+                  background-color: #fcfcfc !important;
                   background-image: 
                     linear-gradient(#e5e7eb 1px, transparent 1px),
                     linear-gradient(90deg, #e5e7eb 1px, transparent 1px),
@@ -785,26 +771,31 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     linear-gradient(90deg, #d1d5db 1px, transparent 1px);
                   background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
                 }
+                .triangle-up {
+                  width: 0;
+                  height: 0;
+                  border-left: 10px solid transparent;
+                  border-right: 10px solid transparent;
+                  border-bottom: 20px solid #10b981;
+                  filter: drop-shadow(0 0 5px rgba(16, 185, 129, 0.5));
+                }
               `}
             </style>
 
             <MapContainer 
               center={[location.lat, location.lng]} 
               zoom={20} 
-              maxZoom={26}
+              maxZoom={40}
               style={{ height: '100%', width: '100%' }}
-              className={mapMode === 'grid' ? 'grid-background-fine' : ''}
+              className="grid-background-fine"
               zoomControl={false}
               attributionControl={false}
             >
-              {mapMode === 'satellite' && (
-                <TileLayer
-                  url={mapInfo.url}
-                  attribution="&copy; Google Maps"
-                  maxZoom={22}
-                  maxNativeZoom={mapInfo.maxNativeZoom}
-                />
-              )}
+              <TileLayer
+                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                opacity={0}
+                maxZoom={40}
+              />
               
               {/* Raw Samples Cloud */}
               {location.samples?.map((s, idx) => (
@@ -813,9 +804,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   position={[s.lat, s.lng]} 
                   icon={L.divIcon({
                     className: 'raw-marker',
-                    html: `<div style="width: 8px; height: 8px; background: ${mapMode === 'grid' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.4)'}; border: 1px solid rgba(0,0,0,0.5); border-radius: 50%;"></div>`,
-                    iconSize: [8, 8],
-                    iconAnchor: [4, 4]
+                    html: `<div style="width: 6px; height: 6px; background: rgba(0,0,0,0.15); border: 0.5px solid rgba(0,0,0,0.3); border-radius: 50%;"></div>`,
+                    iconSize: [6, 6],
+                    iconAnchor: [3, 3]
                   })}
                 >
                   <Popup>
@@ -833,22 +824,22 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   position={[parseFloat(preciseN), parseFloat(preciseE)]} 
                   icon={L.divIcon({
                     className: 'precise-marker',
-                    html: `<div style="width: 20px; height: 20px; display: flex; align-items: center; justify-center; background: #ef4444; color: white; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);"><i class="fas fa-crosshairs" style="font-size: 10px; margin: auto;"></i></div>`,
+                    html: `<div class="triangle-up"></div>`,
                     iconSize: [20, 20],
-                    iconAnchor: [10, 10]
+                    iconAnchor: [10, 15]
                   })}
                 >
                   <Popup>
                     <div className="p-2 text-center">
-                      <p className="text-xs font-black text-rose-600 mb-1">KESİN KOORDİNAT</p>
-                      <p className="text-[10px] font-bold text-slate-500">Bu nokta referans alınmıştır.</p>
+                      <p className="text-xs font-black text-emerald-600 mb-1">KESİN KOORDİNAT</p>
+                      <p className="text-[10px] font-bold text-slate-500">Referans Nirengi Noktası</p>
                     </div>
                   </Popup>
                 </Marker>
               )}
 
               {/* Algorithm Results */}
-              {analysisResults.map((res) => {
+              {analysisResults.map((res, index) => {
                 const { result } = calculateResult(location.samples!, res.method as any, location.accuracyLimit || 5.0);
                 
                 return (
@@ -857,15 +848,15 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     position={[result.lat, result.lng]} 
                     icon={L.divIcon({
                       className: 'method-marker',
-                      html: `<div style="width: 14px; height: 14px; background: ${METHOD_COLORS[res.method]}; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.3); display: flex; align-items: center; justify-center; color: white; font-size: 6px; font-weight: 900;"></div>`,
-                      iconSize: [14, 14],
-                      iconAnchor: [7, 7]
+                      html: `<div style="width: 22px; height: 22px; background: ${METHOD_COLORS[res.method]}; border: 2.5px solid white; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.2); display: flex; align-items: center; justify-center; color: white; font-size: 11px; font-weight: 900; line-height: 1;">${index + 1}</div>`,
+                      iconSize: [22, 22],
+                      iconAnchor: [11, 11]
                     })}
                   >
                     <Popup>
                       <div className="p-2">
                         <p className="text-[10px] font-black uppercase mb-1" style={{ color: METHOD_COLORS[res.method] }}>
-                          {getMethodLabel(res.method as any)}
+                          {index + 1}. {getMethodLabel(res.method as any)}
                         </p>
                         <p className="text-xs font-bold font-mono">
                           Y: {res.calculated.x.toFixed(useLocal ? 3 : 8)}<br/>
@@ -873,7 +864,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         </p>
                         {res.errors && (
                            <p className="mt-1 text-[9px] font-black text-emerald-600 uppercase border-t border-slate-100 pt-1">
-                             Hata: {res.errors.dhz.toFixed(3)}m
+                             Sapma: {res.errors.dhz.toFixed(3)}m
                            </p>
                         )}
                       </div>
@@ -886,22 +877,28 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
             </MapContainer>
 
             {/* Legend Overlay */}
-            <div className="absolute bottom-6 right-6 z-[10000] max-w-[180px]">
-              <div className="bg-white/90 backdrop-blur-md p-3 rounded-2xl shadow-2xl border border-slate-200">
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-3 border-b pb-1">Renk Skalası</p>
-                <div className="space-y-1.5">
-                  {analysisResults.map(res => (
-                    <div key={res.method} className="flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: METHOD_COLORS[res.method] }}></div>
-                      <span className="text-[9px] font-black text-slate-700 truncate">{getMethodLabel(res.method as any)}</span>
-                    </div>
-                  ))}
+            <div className="absolute bottom-6 right-6 z-[10000] w-[200px]">
+              <div className="bg-white/95 backdrop-blur-md p-4 rounded-3xl shadow-2xl border border-slate-100">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 border-b pb-2">Analiz Lejantı</p>
+                <div className="space-y-3">
                   {analysisType === 'precise' && (
-                    <div className="flex items-center gap-2 pt-1 border-t mt-1">
-                      <div className="w-2.5 h-2.5 rounded-full bg-rose-600"></div>
-                      <span className="text-[9px] font-black text-rose-600">Referans</span>
+                    <div className="flex items-center gap-3">
+                      <div className="triangle-up" style={{ transform: 'scale(0.5)', marginBottom: '-8px' }}></div>
+                      <span className="text-[10px] font-black text-emerald-600 uppercase">Referans</span>
                     </div>
                   )}
+                  {analysisResults.map((res, idx) => (
+                    <div key={res.method} className="flex items-center gap-3">
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{ backgroundColor: METHOD_COLORS[res.method] }}>
+                        {idx + 1}
+                      </div>
+                      <span className="text-[10px] font-black text-slate-700 truncate">{getMethodLabel(res.method as any)}</span>
+                    </div>
+                  ))}
+                  <div className="flex items-center gap-3 pt-2 border-t">
+                    <div className="w-2 h-2 rounded-full bg-slate-300"></div>
+                    <span className="text-[9px] font-bold text-slate-400">Ham Gözlemler</span>
+                  </div>
                 </div>
               </div>
             </div>
