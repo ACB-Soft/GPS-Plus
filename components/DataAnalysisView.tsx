@@ -1,13 +1,26 @@
 import React, { useState, useMemo } from 'react';
+import { toPng } from 'html-to-image';
+import { saveAs } from 'file-saver';
 import { SavedLocation, AppSettings, CalculationMethod } from '../types';
 import { geoidService } from '../services/GeoidService';
 import { convertCoordinate } from '../utils/CoordinateUtils';
 import { calculateResult, calculateAverage } from '../utils/MathUtils';
 import { downloadCombinedAnalysisReport } from './ExcelUtils';
 import { 
-  ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, Cell, ReferenceLine
+  ScatterChart, Scatter, LineChart, Line, XAxis, YAxis, ZAxis, CartesianGrid, 
+  Tooltip, ResponsiveContainer, Cell, ReferenceLine, Legend
 } from 'recharts';
+
+const METHOD_COLORS: Record<string, string> = {
+  ARITHMETIC_MEAN: '#ef4444',
+  LEAST_SQUARES: '#3b82f6',
+  ROBUST: '#10b981',
+  MAHALANOBIS: '#f59e0b',
+  DBSCAN: '#8b5cf6',
+  RANSAC: '#ec4899',
+  KDE: '#06b6d4',
+  MEDIAN_MAD: '#71717a'
+};
 
 interface Props {
   locations: SavedLocation[];
@@ -32,13 +45,17 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   }, [locations, selectedFolder]);
 
   const location = locations.find(l => l.id === selectedPointId);
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   const [preciseN, setPreciseN] = useState<string>(''); // Northing (X)
   const [preciseE, setPreciseE] = useState<string>(''); // Easting (Y)
   const [preciseZ, setPreciseZ] = useState<string>('');
   
   const [analysisResults, setAnalysisResults] = useState<any[] | null>(null);
-  const [useLocal, setUseLocal] = useState(true);
+  const useLocal = useMemo(() => {
+    if (!location) return true;
+    return location.coordinateSystem !== 'WGS84';
+  }, [location]);
 
   const methods: CalculationMethod[] = [
     'ARITHMETIC_MEAN', 
@@ -138,25 +155,79 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     });
   }, [location]);
 
-  // Data for the distribution plot (Local offsets from mean)
   const distributionData = useMemo(() => {
-    if (chartData.length === 0) return { data: [], maxOffset: 0.1 };
+    // If we have analysis results, show those 8 methods
+    if (analysisResults && analysisResults.length > 0) {
+      let maxAbs = 0.05;
+      
+      // Determine center
+      let centerX = 0;
+      let centerY = 0;
+      
+      if (analysisType === 'precise') {
+        // Center is Ground Truth
+        const pn = parseFloat(preciseN);
+        const pe = parseFloat(preciseE);
+        const sys = location?.coordinateSystem || 'ITRF96_3';
+        
+        if (useLocal) {
+          centerX = pn;
+          centerY = pe;
+        } else {
+          const conv = convertCoordinate(pn, pe, sys);
+          centerX = conv.x;
+          centerY = conv.y;
+        }
+      } else {
+        // Center is mean of calculations
+        centerX = analysisResults.reduce((a, b) => a + b.calculated.x, 0) / analysisResults.length;
+        centerY = analysisResults.reduce((a, b) => a + b.calculated.y, 0) / analysisResults.length;
+      }
+
+      const data = analysisResults.map(res => {
+        // Y calculation results are Easting, X are Northing
+        const offsetX = res.calculated.y - centerY;
+        const offsetY = res.calculated.x - centerX;
+        maxAbs = Math.max(maxAbs, Math.abs(offsetX), Math.abs(offsetY));
+        return {
+          ...res,
+          label: getMethodLabel(res.method),
+          offsetX,
+          offsetY,
+          color: METHOD_COLORS[res.method] || '#94a3b8'
+        };
+      });
+
+      const maxOffset = Math.ceil(maxAbs * 10) / 10 + 0.1;
+      return { data, maxOffset, isMethods: true };
+    }
+
+    // Default: show raw points scattering around their own mean
+    if (chartData.length === 0) return { data: [], maxOffset: 0.1, isMethods: false };
     const meanX = chartData.reduce((a, b) => a + b.x, 0) / chartData.length;
     const meanY = chartData.reduce((a, b) => a + b.y, 0) / chartData.length;
     
-    let maxAbs = 0.05; // En az 5cm ölçek
+    let maxAbs = 0.05;
     const data = chartData.map(d => {
-      const offsetX = d.y - meanY; // West-East (Easting)
-      const offsetY = d.x - meanX; // South-North (Northing)
+      const offsetX = d.y - meanY;
+      const offsetY = d.x - meanX;
       maxAbs = Math.max(maxAbs, Math.abs(offsetX), Math.abs(offsetY));
-      return { ...d, offsetX, offsetY };
+      return { ...d, offsetX, offsetY, color: '#3b82f6' };
     });
 
-    // Ölçeği biraz daha genişlet (marjin bırak)
     const maxOffset = Math.ceil(maxAbs * 10) / 10 + 0.1;
+    return { data, maxOffset, isMethods: false };
+  }, [chartData, analysisResults, analysisType, preciseN, preciseE, useLocal, location]);
 
-    return { data, maxOffset };
-  }, [chartData]);
+  const exportChart = async () => {
+    if (!chartRef.current) return;
+    try {
+      const dataUrl = await toPng(chartRef.current, { backgroundColor: '#ffffff', quality: 1 });
+      saveAs(dataUrl, `analiz-grafigi-${location?.name || 'export'}.png`);
+    } catch (error) {
+      console.error('Error exporting chart:', error);
+    }
+  };
 
   const handleDownloadExcel = () => {
     if (!analysisResults || !location) return;
@@ -288,21 +359,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
           {analysisType === 'precise' && selectedPointId && (
             <div className="space-y-4 pt-4 border-t border-slate-100">
               <div className="flex justify-between items-center px-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">4. Kesin Koordinat Girişi</label>
-                <div className="flex gap-1">
-                  <button 
-                    onClick={() => setUseLocal(false)}
-                    className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-tighter transition-all ${!useLocal ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-400'}`}
-                  >
-                    Lat/Lng
-                  </button>
-                  <button 
-                    onClick={() => setUseLocal(true)}
-                    className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-tighter transition-all ${useLocal ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-400'}`}
-                  >
-                    Y/X (Local)
-                  </button>
-                </div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  4. Kesin Koordinat Girişi ({location?.coordinateSystem})
+                </label>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -422,57 +481,116 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               {/* Graphical Analysis Section */}
               <div className="space-y-4">
                 <div className="bg-slate-50 rounded-[2.5rem] p-6 border border-slate-100">
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center">
-                    <i className="fas fa-bullseye mr-2 text-blue-500"></i>
-                    Yatay Konum Hassasiyet Dağılımı (X-Y Saçılımı)
-                  </h3>
-                  <div className="h-80 w-full flex justify-center">
-                    <div style={{ width: '100%', maxWidth: '320px', aspectRatio: '1/1' }}>
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center">
+                      <i className="fas fa-bullseye mr-2 text-blue-500"></i>
+                      Hassasiyet Dağılımı ({distributionData.isMethods ? 'Algoritmalar' : 'Ölçümler'})
+                    </h3>
+                    <button 
+                      onClick={exportChart}
+                      className="text-[9px] font-black text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg uppercase tracking-tighter hover:bg-blue-100 transition-all"
+                    >
+                      <i className="fas fa-camera mr-1"></i> Resim İndir
+                    </button>
+                  </div>
+                  <div ref={chartRef} className="bg-white rounded-3xl p-4 shadow-inner">
+                    <div className="h-80 w-full flex justify-center">
+                      <div style={{ width: '100%', maxWidth: '320px', aspectRatio: '1/1' }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
+                            <XAxis 
+                              type="number" 
+                              dataKey="offsetX" 
+                              name="ΔE (Sağa)" 
+                              unit="m" 
+                              domain={[-distributionData.maxOffset, distributionData.maxOffset]} 
+                              tick={{fontSize: 9}} 
+                              axisLine={false}
+                            />
+                            <YAxis 
+                              type="number" 
+                              dataKey="offsetY" 
+                              name="ΔN (Yukarı)" 
+                              unit="m" 
+                              domain={[-distributionData.maxOffset, distributionData.maxOffset]} 
+                              tick={{fontSize: 9}} 
+                              axisLine={false}
+                            />
+                            <ZAxis type="number" range={[150, 150]} />
+                            <Tooltip 
+                              cursor={{ strokeDasharray: '3 3' }} 
+                              content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                  const data = payload[0].payload;
+                                  return (
+                                    <div className="bg-white p-3 rounded-xl shadow-xl border border-slate-100">
+                                      <p className="text-[10px] font-black text-slate-800 uppercase mb-1">
+                                        {distributionData.isMethods ? getMethodLabel(data.method) : `Ölçüm #${data.id}`}
+                                      </p>
+                                      <div className="text-[9px] space-y-0.5">
+                                        <p className="text-blue-600 font-bold">ΔE: {data.offsetX.toFixed(4)} m</p>
+                                        <p className="text-indigo-600 font-bold">ΔN: {data.offsetY.toFixed(4)} m</p>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
+                            />
+                            <ReferenceLine x={0} stroke="#94a3b8" strokeWidth={2} />
+                            <ReferenceLine y={0} stroke="#94a3b8" strokeWidth={2} />
+                            <Scatter name="Points" data={distributionData.data}>
+                              {distributionData.data.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} fillOpacity={0.8} />
+                              ))}
+                            </Scatter>
+                            {distributionData.isMethods && <Legend wrapperStyle={{ fontSize: '9px', fontWeight: 'bold' }} />}
+                          </ScatterChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="mt-4 text-[9px] text-slate-400 font-bold text-center uppercase tracking-widest leading-loose">
+                    {analysisType === 'precise' 
+                      ? 'Merkez (0,0) noktası girdiğiniz KESİN KOORDİNATI temsil eder.' 
+                      : 'Merkez (0,0) noktası tüm verilerin ARİTMETİK ORTALAMASINI temsil eder.'}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                      <i className="fas fa-history mr-2 text-indigo-500"></i>
+                      Zamana Bağlı Yukarı (X)
+                    </h3>
+                    <div className="h-40 w-full">
                       <ResponsiveContainer width="100%" height="100%">
-                        <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-                          <XAxis 
-                            type="number" 
-                            dataKey="offsetX" 
-                            name="ΔE (Sağa)" 
-                            unit="m" 
-                            domain={[-distributionData.maxOffset, distributionData.maxOffset]} 
-                            tick={{fontSize: 9}} 
-                            axisLine={false}
-                          />
-                          <YAxis 
-                            type="number" 
-                            dataKey="offsetY" 
-                            name="ΔN (Yukarı)" 
-                            unit="m" 
-                            domain={[-distributionData.maxOffset, distributionData.maxOffset]} 
-                            tick={{fontSize: 9}} 
-                            axisLine={false}
-                          />
-                          <ZAxis type="number" range={[100, 100]} />
-                          <Tooltip 
-                            cursor={{ strokeDasharray: '3 3' }} 
-                            contentStyle={{ borderRadius: '1rem', border: 'none', fontWeight: 'bold' }}
-                          />
-                          <ReferenceLine x={0} stroke="#94a3b8" strokeWidth={2} />
-                          <ReferenceLine y={0} stroke="#94a3b8" strokeWidth={2} />
-                          <Scatter name="Measurement" data={distributionData.data} fill="#3b82f6">
-                            {distributionData.data.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={index > distributionData.data.length - 20 ? '#ef4444' : '#3b82f6'} fillOpacity={0.5} />
-                            ))}
-                          </Scatter>
-                        </ScatterChart>
+                        <LineChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
+                          <XAxis dataKey="time" hide />
+                          <YAxis domain={['auto', 'auto']} tick={{fontSize: 8}} axisLine={false} width={45} />
+                          <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontWeight: 'bold' }} />
+                          <Line type="monotone" dataKey="x" stroke="#6366f1" strokeWidth={2} dot={false} />
+                        </LineChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
-                  <div className="flex justify-center gap-6 mt-4">
-                    <div className="flex items-center gap-2">
-                       <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                       <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">İlk Ölçümler</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                       <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                       <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Son Ölçümler</span>
+                  <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                      <i className="fas fa-history mr-2 text-amber-500"></i>
+                      Zamana Bağlı Sağa (Y)
+                    </h3>
+                    <div className="h-40 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
+                          <XAxis dataKey="time" hide />
+                          <YAxis domain={['auto', 'auto']} tick={{fontSize: 8}} axisLine={false} width={45} />
+                          <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontWeight: 'bold' }} />
+                          <Line type="monotone" dataKey="y" stroke="#f59e0b" strokeWidth={2} dot={false} />
+                        </LineChart>
+                      </ResponsiveContainer>
                     </div>
                   </div>
                 </div>
