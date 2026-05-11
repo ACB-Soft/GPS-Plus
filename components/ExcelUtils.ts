@@ -11,11 +11,11 @@ const getMethodName = (m: CalculationMethod) => {
     case 'ARITHMETIC_MEAN': return "Aritmetik Ortalama";
     case 'LEAST_SQUARES': return "En Küçük Kareler";
     case 'ROBUST': return "Robust Yöntem";
-    case 'MAHALANOBIS': return "Mahalanobis Analizi";
+    case 'BAARDA': return "Baarda (Veri Eleme)";
+    case 'L1_HUBER': return "L1-Norm (Huber)";
     case 'DBSCAN': return "DBSCAN Kümeleme";
     case 'RANSAC': return "RANSAC (Konsensüs)";
     case 'KDE': return "KDE (Yoğunluk)";
-    case 'MEDIAN_MAD': return "Median + MAD (Sağlam Sapma)";
     default: return m;
   }
 };
@@ -129,7 +129,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   // --- İstatistiksel Ön Hazırlık ---
   const accuracyLimit = location.accuracyLimit || 5.0;
   
-  const methods: CalculationMethod[] = ['ARITHMETIC_MEAN', 'LEAST_SQUARES', 'ROBUST', 'MAHALANOBIS', 'DBSCAN', 'RANSAC', 'KDE', 'MEDIAN_MAD'];
+  const methods: CalculationMethod[] = ['ARITHMETIC_MEAN', 'LEAST_SQUARES', 'ROBUST', 'BAARDA', 'L1_HUBER', 'DBSCAN', 'RANSAC', 'KDE'];
   const methodResults = methods.map(method => {
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
     const { x, y } = convertCoordinate(result.lat, result.lng, sys);

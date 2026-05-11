@@ -233,11 +233,11 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                   <option value="ARITHMETIC_MEAN">1. Yöntem: Aritmetik Ortalama</option>
                   <option value="LEAST_SQUARES">2. Yöntem: En Küçük Kareler</option>
                   <option value="ROBUST">3. Yöntem: Robust Yöntem</option>
-                  <option value="MAHALANOBIS">4. Yöntem: Mahalanobis Analizi</option>
-                  <option value="DBSCAN">5. Yöntem: DBSCAN Kümeleme</option>
-                  <option value="RANSAC">6. Yöntem: RANSAC (Konsensüs)</option>
-                  <option value="KDE">7. Yöntem: KDE (Yoğunluk)</option>
-                  <option value="MEDIAN_MAD">8. Yöntem: Median + MAD (Sağlam Sapma)</option>
+                  <option value="BAARDA">4. Yöntem: Baarda (Veri Eleme)</option>
+                  <option value="L1_HUBER">5. Yöntem: L1-Norm (Huber)</option>
+                  <option value="DBSCAN">6. Yöntem: DBSCAN Kümeleme</option>
+                  <option value="RANSAC">7. Yöntem: RANSAC (Konsensüs)</option>
+                  <option value="KDE">8. Yöntem: KDE (Yoğunluk)</option>
                 </select>
               </div>
 

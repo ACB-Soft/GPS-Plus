@@ -40,10 +40,13 @@ export function calculateResult(
     case 'ROBUST':
       // Robust estimation using M-estimators (simplified Huber weights)
       return robustEstimation(sourceData);
-    case 'MAHALANOBIS':
-      // Anomaly detection using Mahalanobis distance
-      finalSamples = applyMahalanobisFilter(sourceData);
+    case 'BAARDA':
+      // Baarda's Data Snooping (Recursive outlier removal based on standardized residuals)
+      finalSamples = applyBaardaFilter(sourceData);
       break;
+    case 'L1_HUBER':
+      // L1-Norm / Huber M-Estimation (Robust minimization of absolute errors)
+      return applyL1HuberEstimation(sourceData);
     case 'DBSCAN':
       // Clustering to find the main core of points
       finalSamples = applyDBSCANFilter(sourceData);
@@ -55,10 +58,6 @@ export function calculateResult(
     case 'KDE':
       // Kernel Density Estimation to find the densest area
       return applyKDEEstimation(sourceData);
-    case 'MEDIAN_MAD':
-      // Median Absolute Deviation for extreme outlier resistance
-      finalSamples = applyMedianMADFilter(sourceData);
-      break;
     default:
       finalSamples = sourceData;
   }
@@ -177,50 +176,120 @@ function robustEstimation(samples: Coordinate[]): { result: Coordinate; usedIndi
 }
 
 /**
- * Mahalanobis Distance Filter
+ * Baarda's Data Snooping (Standardized Residuals)
+ * Recursive process to remove one outlier at a time until no kaba hata exists.
  */
-function applyMahalanobisFilter(samples: Coordinate[]): Coordinate[] {
+function applyBaardaFilter(samples: Coordinate[]): Coordinate[] {
   if (samples.length < 5) return samples;
 
-  const lats = samples.map(s => s.lat);
-  const lngs = samples.map(s => s.lng);
+  let currentSamples = [...samples];
+  const alpha = 0.001; // Significance level
+  const criticalValue = 3.29; // Approximately for 0.1% significance
 
-  const meanLat = lats.reduce((a, b) => a + b, 0) / lats.length;
-  const meanLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
+  while (currentSamples.length > 4) {
+    // 1. Calculate weighted mean (L2)
+    const weights = currentSamples.map(s => 1 / Math.pow(s.accuracy || 0.1, 2));
+    const sumW = weights.reduce((a, b) => a + b, 0);
+    const meanLat = currentSamples.reduce((a, b, i) => a + b.lat * weights[i], 0) / sumW;
+    const meanLng = currentSamples.reduce((a, b, i) => a + b.lng * weights[i], 0) / sumW;
 
-  // Simple covariance estimation
-  let covXX = 0, covYY = 0, covXY = 0;
-  for (let i = 0; i < samples.length; i++) {
-    const dX = samples[i].lat - meanLat;
-    const dY = samples[i].lng - meanLng;
-    covXX += dX * dX;
-    covYY += dY * dY;
-    covXY += dX * dY;
+    // 2. Calculate residuals (v = l_cap - l)
+    // We treat Lat and Lng separately or as a vector. For simplicity in geodetic work, we check distance.
+    const residuals = currentSamples.map(s => {
+      const dLat = (s.lat - meanLat) * 111320;
+      const dLng = (s.lng - meanLng) * 111320 * Math.cos(meanLat * Math.PI / 180);
+      return Math.sqrt(dLat * dLat + dLng * dLng);
+    });
+
+    // 3. Sigma0 estimate (Standard deviation of unit weight)
+    const vTPv = residuals.reduce((a, v, i) => a + v * v * weights[i], 0);
+    const sigma0 = Math.sqrt(vTPv / (currentSamples.length - 1));
+
+    // 4. Standardized residuals (w_i = v_i / (sigma0 * sqrt(q_vv)))
+    // Simplified q_vv (cofactor of residual) for a simple mean: q_ii = (1 - p_i / [sum P])
+    const standardizedResiduals = currentSamples.map((s, i) => {
+      const p_i = weights[i];
+      const q_ii = (1 - p_i / sumW); // Cofactor of residual for mean
+      return residuals[i] / (sigma0 * Math.sqrt(q_ii) || 1e-9);
+    });
+
+    // 5. Find the worst offender
+    let maxW = -1;
+    let worstIdx = -1;
+    for (let i = 0; i < standardizedResiduals.length; i++) {
+      if (standardizedResiduals[i] > maxW) {
+        maxW = standardizedResiduals[i];
+        worstIdx = i;
+      }
+    }
+
+    // 6. Test
+    if (maxW > criticalValue) {
+      currentSamples.splice(worstIdx, 1);
+    } else {
+      break; // No more outliers detected
+    }
   }
-  covXX /= samples.length;
-  covYY /= samples.length;
-  covXY /= samples.length;
 
-  // Determinant
-  const det = covXX * covYY - covXY * covXY;
-  if (det <= 0) return applySigmaFilter(samples, 2);
+  return currentSamples;
+}
 
-  // Inverse matrix
-  const invXX = covYY / det;
-  const invYY = covXX / det;
-  const invXY = -covXY / det;
+/**
+ * L1-Norm / Huber M-Estimation
+ * Iteratively Reweighted Least Squares (IRLS) using Huber weights.
+ */
+function applyL1HuberEstimation(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length === 0) return { result: samples[0], usedIndices: [0] };
 
-  const mahalanobisDistances = samples.map(s => {
-    const dX = s.lat - meanLat;
-    const dY = s.lng - meanLng;
-    return dX * dX * invXX + dY * dY * invYY + 2 * dX * dY * invXY;
-  });
+  // Starting point: Median
+  const getMedian = (arr: number[]) => {
+    const sorted = [...arr].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  };
 
-  // Threshold for 2 degrees of freedom at 95% confidence is approx 5.99
-  const threshold = 5.99;
-  const filtered = samples.filter((_, i) => mahalanobisDistances[i] <= threshold);
+  let currentLat = getMedian(samples.map(s => s.lat));
+  let currentLng = getMedian(samples.map(s => s.lng));
 
-  return filtered.length > 0 ? filtered : samples;
+  const k = 1.345; // Huber tuning constant
+
+  for (let iter = 0; iter < 10; iter++) {
+    const residuals = samples.map(s => {
+      const dLat = (s.lat - currentLat) * 111320;
+      const dLng = (s.lng - currentLng) * 111320 * Math.cos(currentLat * Math.PI / 180);
+      return Math.sqrt(dLat * dLat + dLng * dLng);
+    });
+
+    // Estimate scale (sigma) using MAD for robustness
+    const medianRes = getMedian(residuals);
+    const sigma = 1.4826 * (medianRes || 1e-9);
+
+    const weights = residuals.map((r, i) => {
+      const p_obs = 1 / Math.pow(samples[i].accuracy || 0.1, 2);
+      const u = r / sigma;
+      const w_huber = u <= k ? 1 : k / u;
+      return p_obs * w_huber;
+    });
+
+    const sumW = weights.reduce((a, b) => a + b, 0);
+    const nextLat = samples.reduce((a, b, i) => a + b.lat * weights[i], 0) / sumW;
+    const nextLng = samples.reduce((a, b, i) => a + b.lng * weights[i], 0) / sumW;
+
+    // Convergence check
+    const diff = Math.sqrt(Math.pow(nextLat - currentLat, 2) + Math.pow(nextLng - currentLng, 2)) * 111320;
+    currentLat = nextLat;
+    currentLng = nextLng;
+    if (diff < 0.001) break;
+  }
+
+  const result = {
+    ...calculateAverage(samples),
+    lat: currentLat,
+    lng: currentLng,
+    timestamp: Date.now()
+  };
+
+  return { result, usedIndices: samples.map((_, i) => i) };
 }
 
 /**
@@ -392,41 +461,6 @@ function applyKDEEstimation(samples: Coordinate[]): { result: Coordinate; usedIn
   return { result: calculateAverage(inliers), usedIndices };
 }
 
-/**
- * Median Absolute Deviation (MAD) Filter
- * A robust alternative to standard deviation for outlier detection
- */
-function applyMedianMADFilter(samples: Coordinate[]): Coordinate[] {
-  if (samples.length < 3) return samples;
-
-  const lats = samples.map(s => s.lat);
-  const lngs = samples.map(s => s.lng);
-
-  const getMedian = (arr: number[]) => {
-    const sorted = [...arr].sort((a, b) => a - b);
-    const mid = Math.floor(sorted.length / 2);
-    return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-  };
-
-  const medLat = getMedian(lats);
-  const medLng = getMedian(lngs);
-
-  const absDevLat = lats.map(x => Math.abs(x - medLat));
-  const absDevLng = lngs.map(x => Math.abs(x - medLng));
-
-  const madLat = getMedian(absDevLat) || 1e-9;
-  const madLng = getMedian(absDevLng) || 1e-9;
-
-  // Scale factor 1.4826 makes MAD comparable to standard deviation for normal data
-  const threshold = 3.0; // Typical threshold for outliers (3 sigma equivalent)
-  
-  const filtered = samples.filter(s => 
-    Math.abs(s.lat - medLat) <= threshold * 1.4826 * madLat &&
-    Math.abs(s.lng - medLng) <= threshold * 1.4826 * madLng
-  );
-
-  return filtered.length > 0 ? filtered : samples;
-}
 
 /**
  * Calculates variance of coordinates in meters

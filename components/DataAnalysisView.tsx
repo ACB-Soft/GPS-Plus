@@ -15,11 +15,11 @@ const METHOD_COLORS: Record<string, string> = {
   ARITHMETIC_MEAN: '#ef4444',
   LEAST_SQUARES: '#3b82f6',
   ROBUST: '#10b981',
-  MAHALANOBIS: '#f59e0b',
-  DBSCAN: '#8b5cf6',
+  BAARDA: '#f59e0b',
+  L1_HUBER: '#8b5cf6',
+  DBSCAN: '#6366f1',
   RANSAC: '#ec4899',
-  KDE: '#06b6d4',
-  MEDIAN_MAD: '#71717a'
+  KDE: '#06b6d4'
 };
 
 const CustomScatterLabel = (props: any) => {
@@ -81,11 +81,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     'ARITHMETIC_MEAN', 
     'LEAST_SQUARES', 
     'ROBUST', 
-    'MAHALANOBIS', 
+    'BAARDA', 
+    'L1_HUBER',
     'DBSCAN', 
     'RANSAC', 
-    'KDE', 
-    'MEDIAN_MAD'
+    'KDE'
   ];
 
   const getMethodLabel = (m: CalculationMethod) => {
@@ -93,11 +93,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       case 'ARITHMETIC_MEAN': return "Aritmetik";
       case 'LEAST_SQUARES': return "E.K.K.";
       case 'ROBUST': return "Robust";
-      case 'MAHALANOBIS': return "Mahalanob.";
+      case 'BAARDA': return "Baarda";
+      case 'L1_HUBER': return "L1-Norm";
       case 'DBSCAN': return "DBSCAN";
       case 'RANSAC': return "RANSAC";
       case 'KDE': return "KDE";
-      case 'MEDIAN_MAD': return "Median+MAD";
       default: return m;
     }
   };
