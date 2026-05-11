@@ -189,8 +189,8 @@ export const parseKML = (text: string): { points: StakeoutPoint[], geometries: S
             lng: coords[0].lng,
             altitude: coords[0].altitude,
             coordinateSystem: 'WGS84',
-            originalX: coords[0].lng,
-            originalY: coords[0].lat,
+            originalX: coords[0].lat,
+            originalY: coords[0].lng,
             color,
             iconUrl
           });

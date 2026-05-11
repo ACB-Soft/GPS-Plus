@@ -323,6 +323,15 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
   const [manualX, setManualX] = useState('');
   const [manualY, setManualY] = useState('');
   const [manualSystem, setManualSystem] = useState('WGS84');
+  const [manualZone, setManualZone] = useState('33');
+
+  useEffect(() => {
+    if (manualSystem.endsWith('_3')) {
+      setManualZone('33');
+    } else if (manualSystem.endsWith('_6')) {
+      setManualZone('36');
+    }
+  }, [manualSystem]);
 
   useEffect(() => {
     const watchId = navigator.geolocation.watchPosition(
@@ -422,7 +431,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
       lat = parseFloat(manualX);
       lng = parseFloat(manualY);
     } else {
-      const wgs = convertToWGS84(parseFloat(manualX), parseFloat(manualY), manualSystem);
+      const zoneVal = parseInt(manualZone);
+      const wgs = convertToWGS84(parseFloat(manualX), parseFloat(manualY), manualSystem, zoneVal);
       lat = wgs.lat;
       lng = wgs.lng;
     }
@@ -622,12 +632,21 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                         <div>
                           <h4 className="font-black text-slate-800">{p.name}</h4>
                           <div className="flex flex-col">
-                            <p className="text-[10px] font-bold text-slate-400 mono-font">
-                              {p.coordinateSystem === 'WGS84' ? `Enl: ${p.originalX?.toFixed(6)}` : `Y: ${p.originalX?.toFixed(3)}`}
-                            </p>
-                            <p className="text-[10px] font-bold text-slate-400 mono-font">
-                              {p.coordinateSystem === 'WGS84' ? `Boy: ${p.originalY?.toFixed(6)}` : `X: ${p.originalY?.toFixed(3)}`}
-                            </p>
+                            {(() => {
+                              const { x, y, labelX, labelY } = convertCoordinate(p.lat, p.lng, p.coordinateSystem || 'WGS84');
+                              const isUTM = p.coordinateSystem && p.coordinateSystem !== 'WGS84';
+                              const precision = isUTM ? 3 : 8;
+                              return (
+                                <>
+                                  <p className="text-[10px] font-bold text-slate-400 mono-font">
+                                    {labelX}: {x.toFixed(precision)}
+                                  </p>
+                                  <p className="text-[10px] font-bold text-slate-400 mono-font">
+                                    {labelY}: {y.toFixed(precision)}
+                                  </p>
+                                </>
+                              );
+                            })()}
                             <p className="text-[8px] font-black text-blue-500 uppercase tracking-tighter">
                               {p.coordinateSystem?.replace('_', ' ')}
                             </p>
@@ -691,20 +710,54 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     <select value={manualSystem} onChange={e => setManualSystem(e.target.value)} className="w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none">
                       <option value="WGS84">WGS84 (Enlem-Boylam)</option>
                       <option value="ITRF96_3">ITRF96 - 3°</option>
+                      <option value="ITRF96_6">ITRF96 - 6° (UTM)</option>
                       <option value="ED50_3">ED50 - 3°</option>
-                      <option value="ED50_6">ED50 - 6°</option>
+                      <option value="ED50_6">ED50 - 6° (UTM)</option>
                     </select>
                   </div>
+
+                  {manualSystem !== 'WGS84' && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">
+                        {manualSystem.endsWith('_3') ? 'Dilim Orta Meridyeni (DOM)' : 'UTM Zon (6°)'}
+                      </label>
+                      <select 
+                        value={manualZone} 
+                        onChange={e => setManualZone(e.target.value)} 
+                        className="w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none"
+                      >
+                        {manualSystem.endsWith('_3') ? (
+                          <>
+                            <option value="27">27° (DOM)</option>
+                            <option value="30">30° (DOM)</option>
+                            <option value="33">33° (DOM)</option>
+                            <option value="36">36° (DOM)</option>
+                            <option value="39">39° (DOM)</option>
+                            <option value="42">42° (DOM)</option>
+                            <option value="45">45° (DOM)</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value="35">35 (Zon)</option>
+                            <option value="36">36 (Zon)</option>
+                            <option value="37">37 (Zon)</option>
+                            <option value="38">38 (Zon)</option>
+                          </>
+                        )}
+                      </select>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">
-                        {manualSystem === 'WGS84' ? 'Enlem (Y)' : 'Sağa (Y)'}
+                        {manualSystem === 'WGS84' ? 'Enlem (N/X)' : 'Sağa (E/Y)'}
                       </label>
                       <input type="number" value={manualX} onChange={e => setManualX(e.target.value)} placeholder="0.000" className="w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">
-                        {manualSystem === 'WGS84' ? 'Boylam (X)' : 'Yukarı (X)'}
+                        {manualSystem === 'WGS84' ? 'Boylam (E/Y)' : 'Yukarı (N/X)'}
                       </label>
                       <input type="number" value={manualY} onChange={e => setManualY(e.target.value)} placeholder="0.000" className="w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all" />
                     </div>
@@ -764,8 +817,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                       lat: c.lat,
                       lng: c.lng,
                       coordinateSystem: 'WGS84',
-                      originalX: c.lng,
-                      originalY: c.lat
+                      originalX: c.lat,
+                      originalY: c.lng
                     };
                     setSourceView('ALL_MAP');
                     setActivePoint(newPt);

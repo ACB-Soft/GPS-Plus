@@ -42,10 +42,13 @@ export const convertCoordinate = (lat: number, lng: number, system: string) => {
     // +towgs84=dX,dY,dZ,Rx,Ry,Rz,dS
     destProj = `+proj=tmerc +lat_0=0 +lon_0=${dom} +k=1 +x_0=500000 +y_0=0 +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
     zoneLabel = `DOM ${dom}`;
-  } else if (system === 'ED50_6') {
+  } else if (system === 'ED50_6' || system === 'ITRF96_6') {
     const dom = getDom6(lng);
-    destProj = `+proj=utm +zone=${getUTMZone(lng)} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
-    zoneLabel = `DOM ${dom}`;
+    const zone = getUTMZone(lng);
+    const ellps = system.startsWith('ITRF96') ? 'GRS80' : 'intl';
+    const towgs84 = system.startsWith('ED50') ? '+towgs84=-87,-98,-121,0,0,0,0 ' : '';
+    destProj = `+proj=utm +zone=${zone} +ellps=${ellps} ${towgs84}+units=m +no_defs`;
+    zoneLabel = `Zon ${zone}`;
   }
 
   if (destProj) {
@@ -61,33 +64,36 @@ export const convertCoordinate = (lat: number, lng: number, system: string) => {
   return { x: lat, y: lng, labelX: 'Enlem', labelY: 'Boylam', zone: '' };
 };
 
-export const convertToWGS84 = (val1: number, val2: number, system: string, referenceLng?: number) => {
+export const convertToWGS84 = (valE: number, valN: number, system: string, zoneParam?: number) => {
   if (!system || system === 'WGS84') {
-    return { lat: val1, lng: val2 };
+    return { lat: valE, lng: valN };
   }
 
-  const lng = referenceLng || 33; // Türkiye için varsayılan orta meridyen (yaklaşık)
   let srcProj = '';
 
-  if (system === 'ITRF96_3') {
-    const dom = getDom3(lng);
-    srcProj = `+proj=tmerc +lat_0=0 +lon_0=${dom} +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs`;
-  } else if (system === 'ED50_3') {
-    const dom = getDom3(lng);
-    srcProj = `+proj=tmerc +lat_0=0 +lon_0=${dom} +k=1 +x_0=500000 +y_0=0 +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
-  } else if (system === 'ED50_6') {
-    const zone = getUTMZone(lng);
-    srcProj = `+proj=utm +zone=${zone} +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
+  if (system === 'ITRF96_3' || system === 'ED50_3') {
+    // zoneParam is DOM for 3-degree systems
+    const dom = zoneParam || 33;
+    const ellps = system.startsWith('ITRF96') ? 'GRS80' : 'intl';
+    const towgs84 = system.startsWith('ED50') ? '+towgs84=-87,-98,-121,0,0,0,0 ' : '';
+    srcProj = `+proj=tmerc +lat_0=0 +lon_0=${dom} +k=1 +x_0=500000 +y_0=0 +ellps=${ellps} ${towgs84}+units=m +no_defs`;
+  } else if (system === 'ED50_6' || system === 'ITRF96_6') {
+     // zoneParam is UTM Zone for 6-degree systems
+     const zone = zoneParam || 36;
+     const ellps = system.startsWith('ITRF96') ? 'GRS80' : 'intl';
+     const towgs84 = system.startsWith('ED50') ? '+towgs84=-87,-98,-121,0,0,0,0 ' : '';
+     srcProj = `+proj=utm +zone=${zone} +ellps=${ellps} ${towgs84}+units=m +no_defs`;
   }
 
   if (srcProj) {
     try {
-      const [lngResult, latResult] = proj4(srcProj, WGS84, [val1, val2]);
+      // proj4 takes [longitude, latitude] or [easting, northing]
+      const [lngResult, latResult] = proj4(srcProj, WGS84, [valE, valN]);
       return { lat: latResult, lng: lngResult };
     } catch (e) {
       console.error("Proj4 reverse conversion error:", e);
     }
   }
 
-  return { lat: val1, lng: val2 };
+  return { lat: valE, lng: valN };
 };
