@@ -564,7 +564,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                 <button 
                   onClick={() => processSamples()}
                   disabled={sampleCount === 0}
-                  className="w-full mt-2 py-3 px-5 bg-blue-600 text-white rounded-2xl font-black text-[11px] md:text-[12px] active:scale-[0.96] disabled:opacity-50 transition-all uppercase tracking-[0.2em] leading-none shadow-xl shadow-blue-100 flex items-center justify-center gap-2"
+                  className="mx-auto mt-2 py-3 px-8 bg-blue-600 text-white rounded-2xl font-black text-[11px] md:text-[12px] active:scale-[0.96] disabled:opacity-50 transition-all uppercase tracking-[0.2em] leading-none shadow-xl shadow-blue-100 flex items-center justify-center gap-2 whitespace-nowrap"
                 >
                   <i className="fas fa-check-circle"></i>
                   Hemen Bitir ve Kaydet
