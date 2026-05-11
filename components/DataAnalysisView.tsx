@@ -292,13 +292,13 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       <div className="bg-white w-full max-w-2xl rounded-[2.5rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 flex flex-col max-h-[95vh]">
         
         {/* Header */}
-        <div className="bg-slate-900 p-8 text-white shrink-0">
-          <div className="flex justify-between items-start">
+        <div className="bg-slate-900 px-8 py-5 text-white shrink-0">
+          <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-xl font-black uppercase tracking-widest leading-none">Hassas Analiz & AR-GE</h2>
-              <p className="text-blue-400 text-[10px] font-bold mt-2 uppercase tracking-widest">Gelişmiş Raporlama Sistemi</p>
+              <h2 className="text-sm font-black uppercase tracking-[0.2em] leading-none">Hassas Analiz & AR-GE</h2>
+              <p className="text-blue-400 text-[8px] font-bold mt-1 uppercase tracking-widest opacity-80">Gelişmiş Raporlama Sistemi</p>
             </div>
-            <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center active:scale-90 transition-all">
+            <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center active:scale-90 transition-all text-xs">
               <i className="fas fa-times"></i>
             </button>
           </div>
@@ -500,31 +500,34 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               )}
 
               {/* Technical Analysis Pafta */}
-              <div className="space-y-6">
-                <div className="bg-slate-900 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-all">
-                    <i className="fas fa-bullseye text-8xl text-blue-400"></i>
+              <div className="space-y-4">
+                <div className="bg-slate-900 rounded-[2rem] p-5 shadow-2xl relative overflow-hidden group border border-white/5">
+                  <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-all pointer-events-none">
+                    <i className="fas fa-bullseye text-6xl text-blue-400"></i>
                   </div>
                   
-                  <div className="flex justify-between items-center mb-8 relative z-10">
-                    <div className="space-y-1">
-                      <h3 className="text-white font-black text-xs uppercase tracking-[0.3em]">Hassasiyet Analiz Paftası</h3>
-                      <p className="text-blue-400 text-[9px] font-bold uppercase tracking-widest">Referans: {distributionData.centerLabel}</p>
+                  <div className="flex justify-between items-center mb-4 relative z-10">
+                    <div className="flex items-center gap-3">
+                      <div className="h-6 w-[2px] bg-blue-500 rounded-full"></div>
+                      <div className="space-y-0.5">
+                        <h3 className="text-white font-black text-[9px] uppercase tracking-[0.2em]">Hassasiyet Analiz Paftası</h3>
+                        <p className="text-blue-400 text-[7px] font-bold uppercase tracking-widest opacity-80">Ref: {distributionData.centerLabel}</p>
+                      </div>
                     </div>
                     <button 
                       onClick={() => exportChart(rawChartRef, 'teknik-analiz-paftasi')}
-                      className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all backdrop-blur-md border border-white/10"
+                      className="bg-white/5 hover:bg-white/10 text-white px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all backdrop-blur-md border border-white/10"
                     >
-                      <i className="fas fa-file-export mr-2"></i> Paftayı İndir
+                      <i className="fas fa-camera mr-1"></i> PNG
                     </button>
                   </div>
 
-                  <div ref={rawChartRef} className="bg-white rounded-3xl p-6 shadow-2xl aspect-square w-full max-w-sm mx-auto relative overflow-hidden ring-4 ring-white/10">
-                    {/* Technical Circles for Accuracy */}
-                    <div className="absolute inset-0 pointer-events-none opacity-[0.03] flex items-center justify-center">
+                  <div ref={rawChartRef} className="bg-white rounded-2xl p-4 shadow-2xl aspect-square w-full max-w-sm mx-auto relative overflow-hidden">
+                    {/* Technical Grid Overlay */}
+                    <div className="absolute inset-0 pointer-events-none opacity-[0.02] flex items-center justify-center">
+                      <div className="absolute inset-0 border-2 border-black/10 m-4"></div>
                       <div className="w-[20%] h-[20%] border border-black rounded-full"></div>
                       <div className="absolute w-[40%] h-[40%] border border-black rounded-full"></div>
-                      <div className="absolute w-[60%] h-[60%] border border-black rounded-full"></div>
                       <div className="absolute w-[80%] h-[80%] border border-black rounded-full"></div>
                     </div>
 
@@ -613,13 +616,13 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   </div>
 
                   {/* Legend / Method Reference */}
-                  <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-3 bg-white/5 p-5 rounded-2xl border border-white/5">
+                  <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-2 bg-white/5 p-4 rounded-xl border border-white/5">
                     {distributionData.methodPoints.map(m => (
-                      <div key={m.id} className="flex items-center gap-3">
-                        <div className="w-5 h-5 flex items-center justify-center rounded-lg text-[9px] font-black text-white shadow-lg" style={{ backgroundColor: m.color }}>{m.id}</div>
+                      <div key={m.id} className="flex items-center gap-2">
+                        <div className="w-4 h-4 flex items-center justify-center rounded-md text-[8px] font-black text-white shadow-lg shrink-0" style={{ backgroundColor: m.color }}>{m.id}</div>
                         <div className="flex flex-col min-w-0">
-                          <span className="text-[8px] font-black text-white uppercase tracking-tighter truncate">{getMethodLabel(m.method)}</span>
-                          <span className="text-[7px] font-bold text-blue-400 uppercase tracking-widest">{m.errors?.dhz.toFixed(3)}m Hata</span>
+                          <span className="text-[7px] font-black text-white uppercase tracking-tighter truncate leading-tight">{getMethodLabel(m.method)}</span>
+                          <span className="text-[6px] font-bold text-blue-400 uppercase tracking-widest leading-tight">{m.errors?.dhz.toFixed(3)}m</span>
                         </div>
                       </div>
                     ))}
