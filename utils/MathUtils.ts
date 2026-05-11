@@ -74,7 +74,7 @@ export function calculateResult(
   return { result, usedIndices };
 }
 
-function calculateAverage(samples: Coordinate[]): Coordinate {
+export function calculateAverage(samples: Coordinate[]): Coordinate {
   const validAltitudes = samples.filter(s => s.altitude !== null);
   const validAltAccuracies = samples.filter(s => s.altitudeAccuracy !== null);
 

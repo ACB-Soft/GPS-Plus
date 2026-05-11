@@ -275,25 +275,42 @@ export const downloadCombinedAnalysisReport = (
 ) => {
   const workbook = XLSX.utils.book_new();
 
+  const locPrecision = settings?.locationPrecision ?? 1;
+  const heightPrecision = settings?.heightPrecision ?? 2;
+  const isOrthometric = settings?.heightType === 'orthometric';
+  const sys = location.coordinateSystem || 'WGS84';
+  const isWgsPoint = sys === 'WGS84';
+
   // --- SAYFA 1: HAM ÖLÇÜM VERİLERİ (120 SN KAYIT) ---
+  const headerX = isWgsPoint ? "Enlem (Lat)" : "Sağa (Y)";
+  const headerY = isWgsPoint ? "Boylam (Lng)" : "Yukarı (X)";
+
   const rawData: any[][] = [
     ["HAM ÖLÇÜM VE GÖZLEM KAYITLARI"],
     ["Nokta Adı:", location.name],
     ["Klasör:", location.folderName],
     ["Kayıt Tarihi:", new Date(location.timestamp).toLocaleString('tr-TR')],
+    ["Koordinat Sistemi:", sys],
+    ["Yükseklik Tipi:", isOrthometric ? "Ortometrik (Jeoid)" : "Elipsoidal"],
     [],
     ["GÖZLEM LİSTESİ (Tüm Örnekler)"],
-    ["No", "Enlem (Lat)", "Boylam (Lng)", "Yükseklik (Alt)", "Hassasiyet (m)", "Zaman"]
+    ["No", headerX, headerY, isOrthometric ? "Kot (H)" : "Alt (h)", "Hassasiyet (m)", "Düşey Hass (m)", "Zaman"]
   ];
 
   if (location.samples && location.samples.length > 0) {
     location.samples.forEach((s, idx) => {
+      const conv = convertCoordinate(s.lat, s.lng, sys);
+      const hVal = isOrthometric 
+        ? getCorrectedHeight(s.lat, s.lng, s.altitude) 
+        : getEllipsoidalHeight(s.lat, s.lng, s.altitude);
+
       rawData.push([
         idx + 1, 
-        s.lat.toFixed(8), 
-        s.lng.toFixed(8), 
-        s.altitude.toFixed(3), 
+        isWgsPoint ? s.lat.toFixed(8) : conv.x.toFixed(locPrecision), 
+        isWgsPoint ? s.lng.toFixed(8) : conv.y.toFixed(locPrecision), 
+        hVal !== null ? hVal.toFixed(heightPrecision) : (s.altitude || 0).toFixed(heightPrecision), 
         s.accuracy.toFixed(3), 
+        s.altitudeAccuracy?.toFixed(3) || '---',
         new Date(s.timestamp).toLocaleTimeString('tr-TR')
       ]);
     });
@@ -303,10 +320,8 @@ export const downloadCombinedAnalysisReport = (
   XLSX.utils.book_append_sheet(workbook, wsRaw, "Ölçüm Kayıtları");
 
   // --- SAYFA 2: İSTATİSTİKSEL ANALİZ VE AR-GE SONUÇLARI ---
-  const locPrecision = settings?.locationPrecision ?? 1;
-  const heightPrecision = settings?.heightPrecision ?? 2;
-  const sys = location.coordinateSystem || 'WGS84';
   const calculationMethod = location.calculationMethod || 'ARITHMETIC_MEAN';
+  const bestMethod = results.sort((a,b) => a.errors.dhz - b.errors.dhz)[0];
 
   const analysisData: any[][] = [
     ["DETAYLI İSTATİSTİKSEL ANALİZ VE ALGORİTMA PERFORMANS RAPORU"],
@@ -329,7 +344,7 @@ export const downloadCombinedAnalysisReport = (
     [preciseCoords.x, preciseCoords.y, preciseCoords.z],
     [],
     ["3. ALGORİTMA BAZLI HATA ANALİZİ (KIYASLAMA)"],
-    ["Yöntem", "Hesaplanan X/Lat", "Hesaplanan Y/Lng", "Hesaplanan Z/H", "ΔX (m)", "ΔY (m)", "ΔZ/H (m)", "Yatay Sapma (m)", "3D RMSE (m)"],
+    ["Yöntem", "Hesaplanan X/Lat", "Hesaplanan Y/Lng", "Hesaplanan Z/H", "ΔX (m)", "ΔY (m)", "ΔDüşey (m)", "Yatay Hata (m)", "DURUM"],
     ...results.map(res => [
       getMethodName(res.method),
       res.calculated.x.toFixed(preciseCoords.isWgs84 ? 8 : locPrecision),
@@ -337,20 +352,74 @@ export const downloadCombinedAnalysisReport = (
       res.calculated.z.toFixed(heightPrecision),
       res.errors.dx.toFixed(3),
       res.errors.dy.toFixed(3),
-      res.errors.dz.toFixed(3),
+      Math.abs(res.errors.dz).toFixed(3),
       res.errors.dhz.toFixed(3),
-      res.errors.d3d.toFixed(3)
+      res.method === bestMethod.method ? "EN BAŞARILI (YATAY)" : ""
     ]),
     [],
     ["HATA TERMİNOLOJİSİ VE NOTLAR:"],
     ["- Delta (Δ): Kesin Değer - Hesaplanan Değer farkıdır."],
-    ["- Yatay Sapma: Konumsal (2D) vektörel hatadır."],
-    ["- 3D RMSE: Toplam üç boyutlu karesel hata ortalamasıdır."],
-    [`- Bu rapor ${FULL_BRAND} Ar-Ge algoritma testleri kapsamında otomatik üretilmiştir.`]
+    ["- Yatay Hata: Konumsal (2D) vektörel sapmadır."],
+    ["- Düşey Hata: Kot/Yükseklik eksenindeki mutlak sapmadır."],
+    ["- En Başarılı Seçimi: Yatay hatası (ΔHz) en düşük olan algoritmaya göre yapılmıştır."],
+    [`- Bu rapor ${FULL_BRAND} Ar-Ge platformu üzerinden otomatik üretilmiştir.`]
   ];
 
   const wsAnalysis = XLSX.utils.aoa_to_sheet(analysisData);
   XLSX.utils.book_append_sheet(workbook, wsAnalysis, "İstatistik ve Analiz");
+
+  // --- SAYFA 3: ZAMAN BAZLI PERFORMANS ANALİZİ (SÜRE ETKİSİ) ---
+  const timeSteps = [5, 10, 15, 30, 45, 60, 90, 120].filter(t => t <= (location.measurementDuration || 0));
+  const timeSeriesData: any[][] = [
+    ["ZAMAN BAZLI KONUMLANMA PERFORMANS ANALİZİ"],
+    ["(En başarılı algoritma üzerinden zamana bağlı iyileşme)"],
+    [],
+    ["Gözlem Süresi (sn)", "Hesaplanan X/Lat", "Hesaplanan Y/Lng", "Hesaplanan Z/H", "Yatay Hata (m)", "Düşey Hata (m)", "Örnek Sayısı"],
+  ];
+
+  const accuracyLimit = location.accuracyLimit || 5.0;
+  const targetMethod = bestMethod.method;
+  
+  // Reference values in meters for comparison
+  let rX = preciseCoords.x;
+  let rY = preciseCoords.y;
+  let rZ = preciseCoords.z;
+  const testSys = preciseCoords.isWgs84 ? 'ITRF96_3' : sys;
+
+  if (preciseCoords.isWgs84) {
+    const converted = convertCoordinate(preciseCoords.x, preciseCoords.y, testSys);
+    rX = converted.x;
+    rY = converted.y;
+  }
+
+  timeSteps.forEach(t => {
+    const startTime = location.samples![0].timestamp;
+    const slice = location.samples!.filter(s => s.timestamp <= startTime + t * 1000 + 500);
+    if (slice.length < 2) return;
+
+    const { result } = calculateResult(slice, targetMethod, accuracyLimit);
+    const convResult = convertCoordinate(result.lat, result.lng, testSys);
+    
+    const dx = rX - convResult.x;
+    const dy = rY - convResult.y;
+    const dz = rZ - (result.altitude || 0);
+    const dhz = Math.sqrt(dx*dx + dy*dy);
+
+    const dispConv = convertCoordinate(result.lat, result.lng, sys);
+
+    timeSeriesData.push([
+      `${t} sn`,
+      (sys === "WGS84" ? result.lat : dispConv.x).toFixed(sys === "WGS84" ? 8 : locPrecision),
+      (sys === "WGS84" ? result.lng : dispConv.y).toFixed(sys === "WGS84" ? 8 : locPrecision),
+      (result.altitude || 0).toFixed(heightPrecision),
+      dhz.toFixed(3),
+      Math.abs(dz).toFixed(3),
+      slice.length
+    ]);
+  });
+
+  const wsTimeSeries = XLSX.utils.aoa_to_sheet(timeSeriesData);
+  XLSX.utils.book_append_sheet(workbook, wsTimeSeries, "Zaman Bazlı Analiz");
 
   // Save the combined book
   const fileName = `ArGe_Analiz_Raporu_${location.name}.xlsx`;

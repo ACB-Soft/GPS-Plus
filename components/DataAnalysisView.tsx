@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { SavedLocation, AppSettings, CalculationMethod } from '../types';
 import { geoidService } from '../services/GeoidService';
 import { convertCoordinate } from '../utils/CoordinateUtils';
-import { calculateResult } from '../utils/MathUtils';
+import { calculateResult, calculateAverage } from '../utils/MathUtils';
 import { downloadCombinedAnalysisReport } from './ExcelUtils';
+import { 
+  ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, 
+  Tooltip, ResponsiveContainer, Cell, ReferenceLine
+} from 'recharts';
 
 interface Props {
   locations: SavedLocation[];
@@ -81,14 +85,13 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       
       // 2. Convert result to comparison system (meters)
       const calcMeter = convertCoordinate(result.lat, result.lng, testSys);
-      const calcZ = result.altitude; // We compare ellipsoidal heights or user input
+      const calcZ = result.altitude; 
 
       // 3. Calculate errors
       const dx = refX - calcMeter.x;
       const dy = refY - calcMeter.y;
-      const dz = refZ - calcZ;
+      const dz = refZ - (calcZ || 0);
       const dhz = Math.sqrt(dx*dx + dy*dy);
-      const d3d = Math.sqrt(dx*dx + dy*dy + dz*dz);
 
       return {
         method,
@@ -97,12 +100,43 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
           y: useLocal ? calcMeter.y : result.lng,
           z: calcZ
         },
-        errors: { dx, dy, dz, dhz, d3d }
+        errors: { dx, dy, dz, dhz }
       };
     });
 
     setAnalysisResults(results);
   };
+
+  const chartData = useMemo(() => {
+    if (!location || !location.samples) return [];
+    
+    const sys = location.coordinateSystem || 'ITRF96_3';
+    
+    return location.samples.map((s, idx) => {
+      const conv = convertCoordinate(s.lat, s.lng, sys);
+      return {
+        id: idx + 1,
+        x: conv.x,
+        y: conv.y,
+        alt: s.altitude || 0,
+        acc: s.accuracy,
+        time: new Date(s.timestamp).toLocaleTimeString()
+      };
+    });
+  }, [location]);
+
+  // Data for the distribution plot (Local offsets from mean)
+  const distributionData = useMemo(() => {
+    if (chartData.length === 0) return [];
+    const meanX = chartData.reduce((a, b) => a + b.x, 0) / chartData.length;
+    const meanY = chartData.reduce((a, b) => a + b.y, 0) / chartData.length;
+    
+    return chartData.map(d => ({
+      ...d,
+      offsetX: d.x - meanX,
+      offsetY: d.y - meanY
+    }));
+  }, [chartData]);
 
   const handleDownloadExcel = () => {
     if (!analysisResults || !location) return;
@@ -226,27 +260,98 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       <th className="p-4 rounded-tl-3xl">Yöntem</th>
                       <th className="p-4">ΔYatay (m)</th>
                       <th className="p-4">ΔDüşey (m)</th>
-                      <th className="p-4 rounded-tr-3xl">3D RMSE (m)</th>
+                      <th className="p-4 rounded-tr-3xl">DURUM</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {analysisResults.map((res, idx) => (
-                      <tr key={res.method} className={`border-b border-slate-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-                        <td className="p-4 font-black text-[11px] text-slate-800">{getMethodLabel(res.method)}</td>
-                        <td className="p-4 font-bold text-xs text-blue-600">{res.errors.dhz.toFixed(3)}</td>
-                        <td className="p-4 font-bold text-xs text-amber-600">{res.errors.dz.toFixed(3)}</td>
-                        <td className="p-4 font-black text-xs text-red-600">{res.errors.d3d.toFixed(3)}</td>
-                      </tr>
-                    ))}
+                    {analysisResults.map((res, idx) => {
+                      const isBest = res.method === analysisResults.sort((a,b) => a.errors.dhz - b.errors.dhz)[0].method;
+                      return (
+                        <tr key={res.method} className={`border-b border-slate-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                          <td className="p-4 font-black text-[11px] text-slate-800">{getMethodLabel(res.method)}</td>
+                          <td className="p-4 font-bold text-xs text-blue-600">{res.errors.dhz.toFixed(3)}</td>
+                          <td className="p-4 font-bold text-xs text-amber-600">{Math.abs(res.errors.dz).toFixed(3)}</td>
+                          <td className="p-4">
+                            {isBest && (
+                              <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter">EN İYİ</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
 
+              {/* Graphical Analysis Section */}
+              <div className="space-y-4">
+                <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center">
+                    <i className="fas fa-bullseye mr-2 text-blue-500"></i>
+                    Yatay Konum Dağılım Grafiği (Offset)
+                  </h3>
+                  <div className="h-64 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
+                        <XAxis type="number" dataKey="offsetX" name="Y (East)" unit="m" tick={{fontSize: 9}} />
+                        <YAxis type="number" dataKey="offsetY" name="X (North)" unit="m" tick={{fontSize: 9}} />
+                        <ZAxis type="number" range={[50, 400]} />
+                        <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+                        <ReferenceLine x={0} stroke="#cbd5e1" />
+                        <ReferenceLine y={0} stroke="#cbd5e1" />
+                        <Scatter name="Measurement" data={distributionData} fill="#3b82f6" fillOpacity={0.6}>
+                          {distributionData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={index > distributionData.length - 20 ? '#ef4444' : '#3b82f6'} />
+                          ))}
+                        </Scatter>
+                      </ScatterChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <p className="mt-4 text-[9px] text-slate-400 font-bold text-center uppercase tracking-widest">Merkez (0,0) noktası tüm ölçümlerin aritmetik ortalamasıdır.</p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
+                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                        <i className="fas fa-arrows-left-right mr-2 text-amber-500"></i>
+                        Y (E) Değişimi
+                      </h3>
+                      <div className="h-40 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <ScatterChart>
+                            <XAxis type="number" dataKey="id" hide />
+                            <YAxis type="number" dataKey="x" domain={['auto', 'auto']} tick={{fontSize: 8}} />
+                            <Tooltip />
+                            <Scatter data={chartData} fill="#f59e0b" shape="circle" />
+                          </ScatterChart>
+                        </ResponsiveContainer>
+                      </div>
+                   </div>
+                   <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
+                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                        <i className="fas fa-arrows-up-down mr-2 text-indigo-500"></i>
+                        X (N) Değişimi
+                      </h3>
+                      <div className="h-40 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <ScatterChart>
+                            <XAxis type="number" dataKey="id" hide />
+                            <YAxis type="number" dataKey="y" domain={['auto', 'auto']} tick={{fontSize: 8}} />
+                            <Tooltip />
+                            <Scatter data={chartData} fill="#6366f1" shape="circle" />
+                          </ScatterChart>
+                        </ResponsiveContainer>
+                      </div>
+                   </div>
+                </div>
+              </div>
+
               <div className="bg-blue-600 p-6 rounded-[2rem] text-white flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl shadow-blue-100">
                 <div className="text-center md:text-left">
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-80">En Başarılı Algoritma</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Yatayda En Başarılı Algoritma</p>
                   <p className="text-xl font-black uppercase">
-                    {getMethodLabel(analysisResults.sort((a,b) => a.errors.d3d - b.errors.d3d)[0].method)}
+                    {getMethodLabel(analysisResults.sort((a,b) => a.errors.dhz - b.errors.dhz)[0].method)}
                   </p>
                 </div>
                 <button 
