@@ -209,6 +209,11 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
 
   const processSamples = useCallback(() => {
     let samples = [...samplesRef.current];
+    
+    // Geçen süreyi hesapla (Erken bitirme durumu için)
+    const elapsedSeconds = measurementDuration - seconds;
+    const actualDuration = elapsedSeconds > 0 ? elapsedSeconds : measurementDuration;
+
     if (samples.length === 0 && lastPositionRef.current) {
       const p = lastPositionRef.current;
       samples.push({ 
@@ -255,9 +260,9 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       }
     }
 
-    onComplete(avg, folderName, pointName, '', coordinateSystem, measurementDuration, samples, usedIndices, accuracyLimit, calculationMethod, gnssOnlySetting);
+    onComplete(avg, folderName, pointName, '', coordinateSystem, actualDuration, samples, usedIndices, accuracyLimit, calculationMethod, gnssOnlySetting);
     releaseWakeLock();
-  }, [folderName, pointName, coordinateSystem, measurementDuration, onComplete, accuracyLimit, gnssOnlySetting]);
+  }, [folderName, pointName, coordinateSystem, measurementDuration, seconds, onComplete, accuracyLimit, gnssOnlySetting]);
 
   // Ref to track accuracy validity without triggering effect re-runs
   const isAccuracyOkRef = useRef(false);
@@ -534,7 +539,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                 </button>
               </div>
             ) : (
-              <div className="space-y-2 py-2">
+              <div className="space-y-4 py-2">
                 {instantAccuracy !== null && instantAccuracy > accuracyLimit ? (
                   <div className="animate-pulse space-y-1">
                     <p className="font-black text-amber-600 text-[12px] md:text-[13px] uppercase tracking-[0.2em] leading-none">Hassasiyet Bekleniyor...</p>
@@ -555,6 +560,15 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                     <p className="text-slate-400 text-[11px] md:text-[12px] font-bold leading-none uppercase tracking-widest">SABİT TUTUN</p>
                   </div>
                 )}
+
+                <button 
+                  onClick={() => processSamples()}
+                  disabled={sampleCount === 0}
+                  className="w-full mt-2 py-3 px-5 bg-blue-600 text-white rounded-2xl font-black text-[11px] md:text-[12px] active:scale-[0.96] disabled:opacity-50 transition-all uppercase tracking-[0.2em] leading-none shadow-xl shadow-blue-100 flex items-center justify-center gap-2"
+                >
+                  <i className="fas fa-check-circle"></i>
+                  Hemen Bitir ve Kaydet
+                </button>
               </div>
             )}
           </div>
