@@ -127,15 +127,22 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
   // Data for the distribution plot (Local offsets from mean)
   const distributionData = useMemo(() => {
-    if (chartData.length === 0) return [];
+    if (chartData.length === 0) return { data: [], maxOffset: 0.1 };
     const meanX = chartData.reduce((a, b) => a + b.x, 0) / chartData.length;
     const meanY = chartData.reduce((a, b) => a + b.y, 0) / chartData.length;
     
-    return chartData.map(d => ({
-      ...d,
-      offsetX: d.x - meanX,
-      offsetY: d.y - meanY
-    }));
+    let maxAbs = 0.05; // En az 5cm ölçek
+    const data = chartData.map(d => {
+      const offsetX = d.y - meanY; // West-East (Easting)
+      const offsetY = d.x - meanX; // South-North (Northing)
+      maxAbs = Math.max(maxAbs, Math.abs(offsetX), Math.abs(offsetY));
+      return { ...d, offsetX, offsetY };
+    });
+
+    // Ölçeği biraz daha genişlet (marjin bırak)
+    const maxOffset = Math.ceil(maxAbs * 10) / 10 + 0.1;
+
+    return { data, maxOffset };
   }, [chartData]);
 
   const handleDownloadExcel = () => {
@@ -293,65 +300,77 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
               {/* Graphical Analysis Section */}
               <div className="space-y-4">
-                <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
+                <div className="bg-slate-50 rounded-[2.5rem] p-6 border border-slate-100">
                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 flex items-center">
                     <i className="fas fa-bullseye mr-2 text-blue-500"></i>
-                    Yatay Konum Dağılım Grafiği (Offset)
+                    Yatay Konum Hassasiyet Dağılımı (X-Y Saçılımı)
                   </h3>
-                  <div className="h-64 w-full">
+                  <div className="h-80 w-full flex justify-center">
+                    <div style={{ width: '100%', maxWidth: '320px', aspectRatio: '1/1' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
+                          <XAxis 
+                            type="number" 
+                            dataKey="offsetX" 
+                            name="ΔE (Sağa)" 
+                            unit="m" 
+                            domain={[-distributionData.maxOffset, distributionData.maxOffset]} 
+                            tick={{fontSize: 9}} 
+                            axisLine={false}
+                          />
+                          <YAxis 
+                            type="number" 
+                            dataKey="offsetY" 
+                            name="ΔN (Yukarı)" 
+                            unit="m" 
+                            domain={[-distributionData.maxOffset, distributionData.maxOffset]} 
+                            tick={{fontSize: 9}} 
+                            axisLine={false}
+                          />
+                          <ZAxis type="number" range={[100, 100]} />
+                          <Tooltip 
+                            cursor={{ strokeDasharray: '3 3' }} 
+                            contentStyle={{ borderRadius: '1rem', border: 'none', fontWeight: 'bold' }}
+                          />
+                          <ReferenceLine x={0} stroke="#94a3b8" strokeWidth={2} />
+                          <ReferenceLine y={0} stroke="#94a3b8" strokeWidth={2} />
+                          <Scatter name="Measurement" data={distributionData.data} fill="#3b82f6">
+                            {distributionData.data.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={index > distributionData.data.length - 20 ? '#ef4444' : '#3b82f6'} fillOpacity={0.5} />
+                            ))}
+                          </Scatter>
+                        </ScatterChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                  <div className="flex justify-center gap-6 mt-4">
+                    <div className="flex items-center gap-2">
+                       <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                       <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">İlk Ölçümler</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                       <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Son Ölçümler</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center">
+                    <i className="fas fa-arrows-up-down mr-2 text-indigo-500"></i>
+                    Düşey (Kot) Değişim Analizi
+                  </h3>
+                  <div className="h-32 w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
-                        <XAxis type="number" dataKey="offsetY" name="Y (East)" unit="m" tick={{fontSize: 9}} />
-                        <YAxis type="number" dataKey="offsetX" name="X (North)" unit="m" tick={{fontSize: 9}} />
-                        <ZAxis type="number" range={[50, 400]} />
-                        <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-                        <ReferenceLine x={0} stroke="#cbd5e1" />
-                        <ReferenceLine y={0} stroke="#cbd5e1" />
-                        <Scatter name="Measurement" data={distributionData} fill="#3b82f6" fillOpacity={0.6}>
-                          {distributionData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={index > distributionData.length - 20 ? '#ef4444' : '#3b82f6'} />
-                          ))}
-                        </Scatter>
+                      <ScatterChart margin={{ left: -20 }}>
+                        <XAxis type="number" dataKey="id" hide />
+                        <YAxis type="number" dataKey="alt" domain={['auto', 'auto']} tick={{fontSize: 8}} axisLine={false} />
+                        <Tooltip />
+                        <Scatter data={chartData} fill="#6366f1" shape="circle" fillOpacity={0.6} />
                       </ScatterChart>
                     </ResponsiveContainer>
                   </div>
-                  <p className="mt-4 text-[9px] text-slate-400 font-bold text-center uppercase tracking-widest">Merkez (0,0) noktası tüm ölçümlerin aritmetik ortalamasıdır.</p>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
-                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
-                        <i className="fas fa-arrows-left-right mr-2 text-amber-500"></i>
-                        Y (E) Değişimi
-                      </h3>
-                      <div className="h-40 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <ScatterChart>
-                            <XAxis type="number" dataKey="id" hide />
-                            <YAxis type="number" dataKey="y" domain={['auto', 'auto']} tick={{fontSize: 8}} />
-                            <Tooltip />
-                            <Scatter data={chartData} fill="#f59e0b" shape="circle" />
-                          </ScatterChart>
-                        </ResponsiveContainer>
-                      </div>
-                   </div>
-                   <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
-                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
-                        <i className="fas fa-arrows-up-down mr-2 text-indigo-500"></i>
-                        X (N) Değişimi
-                      </h3>
-                      <div className="h-40 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <ScatterChart>
-                            <XAxis type="number" dataKey="id" hide />
-                            <YAxis type="number" dataKey="x" domain={['auto', 'auto']} tick={{fontSize: 8}} />
-                            <Tooltip />
-                            <Scatter data={chartData} fill="#6366f1" shape="circle" />
-                          </ScatterChart>
-                        </ResponsiveContainer>
-                      </div>
-                   </div>
                 </div>
               </div>
 
