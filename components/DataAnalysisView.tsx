@@ -20,8 +20,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [selectedPointId, setSelectedPointId] = useState<string>(initialSelectedId || (locations.length > 0 ? locations[0].id : ''));
   const location = locations.find(l => l.id === selectedPointId);
 
-  const [preciseX, setPreciseX] = useState<string>('');
-  const [preciseY, setPreciseY] = useState<string>('');
+  const [preciseN, setPreciseN] = useState<string>(''); // Northing (X)
+  const [preciseE, setPreciseE] = useState<string>(''); // Easting (Y)
   const [preciseZ, setPreciseZ] = useState<string>('');
   
   const [analysisResults, setAnalysisResults] = useState<any[] | null>(null);
@@ -54,11 +54,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
   const calculateAllMethods = () => {
     if (!location) return;
-    const px = parseFloat(preciseX);
-    const py = parseFloat(preciseY);
+    const pn = parseFloat(preciseN);
+    const pe = parseFloat(preciseE);
     const pz = parseFloat(preciseZ);
 
-    if (isNaN(px) || isNaN(py) || isNaN(pz)) {
+    if (isNaN(pn) || isNaN(pe) || isNaN(pz)) {
       alert("Lütfen kesin koordinatları eksiksiz giriniz.");
       return;
     }
@@ -68,13 +68,13 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     const testSys = useLocal ? sys : 'ITRF96_3';
 
     // Ground Truth in comparison system
-    let refX = px;
-    let refY = py;
+    let refX = pn; // North
+    let refY = pe; // East
     let refZ = pz;
 
     if (!useLocal) {
-      // Input is Lat/Lng/Alt -> Convert to meters for error calculation
-      const converted = convertCoordinate(px, py, testSys);
+      // Input is Lat(pn)/Lng(pe)/Alt -> Convert to meters for error calculation
+      const converted = convertCoordinate(pn, pe, testSys);
       refX = converted.x;
       refY = converted.y;
     }
@@ -144,14 +144,19 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     downloadCombinedAnalysisReport(
       location,
       { 
-        x: parseFloat(preciseX), 
-        y: parseFloat(preciseY), 
+        x: parseFloat(preciseN), 
+        y: parseFloat(preciseE), 
         z: parseFloat(preciseZ), 
         isWgs84: !useLocal 
       },
       analysisResults,
       settings
     );
+  };
+
+  const handleDownloadNormal = () => {
+    if (!location) return;
+    import('./ExcelUtils').then(m => m.downloadTechnicalReport(location, settings));
   };
 
   return (
@@ -215,20 +220,22 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">{useLocal ? 'X (E)' : 'Enlem (Lat)'}</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">{useLocal ? 'Sağa (Y)' : 'Enlem (Lat)'}</label>
               <input 
                 type="number" 
-                value={preciseX} 
-                onChange={e => setPreciseX(e.target.value)} 
+                value={preciseE} 
+                onChange={e => setPreciseE(e.target.value)} 
+                placeholder={useLocal ? "500000.000" : "39.9"}
                 className="w-full p-4 bg-slate-100 rounded-2xl font-bold text-slate-900 focus:bg-white border-2 border-transparent focus:border-blue-500 outline-none transition-all text-sm"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">{useLocal ? 'Y (N)' : 'Boylam (Lng)'}</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">{useLocal ? 'Yukarı (X)' : 'Boylam (Lng)'}</label>
               <input 
                 type="number" 
-                value={preciseY} 
-                onChange={e => setPreciseY(e.target.value)} 
+                value={preciseN} 
+                onChange={e => setPreciseN(e.target.value)} 
+                placeholder={useLocal ? "4400000.000" : "32.8"}
                 className="w-full p-4 bg-slate-100 rounded-2xl font-bold text-slate-900 focus:bg-white border-2 border-transparent focus:border-blue-500 outline-none transition-all text-sm"
               />
             </div>
@@ -238,6 +245,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 type="number" 
                 value={preciseZ} 
                 onChange={e => setPreciseZ(e.target.value)} 
+                placeholder="100.000"
                 className="w-full p-4 bg-slate-100 rounded-2xl font-bold text-slate-900 focus:bg-white border-2 border-transparent focus:border-blue-500 outline-none transition-all text-sm"
               />
             </div>
@@ -294,8 +302,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     <ResponsiveContainer width="100%" height="100%">
                       <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
-                        <XAxis type="number" dataKey="offsetX" name="Y (East)" unit="m" tick={{fontSize: 9}} />
-                        <YAxis type="number" dataKey="offsetY" name="X (North)" unit="m" tick={{fontSize: 9}} />
+                        <XAxis type="number" dataKey="offsetY" name="Y (East)" unit="m" tick={{fontSize: 9}} />
+                        <YAxis type="number" dataKey="offsetX" name="X (North)" unit="m" tick={{fontSize: 9}} />
                         <ZAxis type="number" range={[50, 400]} />
                         <Tooltip cursor={{ strokeDasharray: '3 3' }} />
                         <ReferenceLine x={0} stroke="#cbd5e1" />
@@ -321,7 +329,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         <ResponsiveContainer width="100%" height="100%">
                           <ScatterChart>
                             <XAxis type="number" dataKey="id" hide />
-                            <YAxis type="number" dataKey="x" domain={['auto', 'auto']} tick={{fontSize: 8}} />
+                            <YAxis type="number" dataKey="y" domain={['auto', 'auto']} tick={{fontSize: 8}} />
                             <Tooltip />
                             <Scatter data={chartData} fill="#f59e0b" shape="circle" />
                           </ScatterChart>
@@ -337,7 +345,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         <ResponsiveContainer width="100%" height="100%">
                           <ScatterChart>
                             <XAxis type="number" dataKey="id" hide />
-                            <YAxis type="number" dataKey="y" domain={['auto', 'auto']} tick={{fontSize: 8}} />
+                            <YAxis type="number" dataKey="x" domain={['auto', 'auto']} tick={{fontSize: 8}} />
                             <Tooltip />
                             <Scatter data={chartData} fill="#6366f1" shape="circle" />
                           </ScatterChart>
@@ -347,20 +355,30 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 </div>
               </div>
 
-              <div className="bg-blue-600 p-6 rounded-[2rem] text-white flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl shadow-blue-100">
-                <div className="text-center md:text-left">
+              <div className="bg-blue-600 p-6 rounded-[2rem] text-white flex flex-col items-center gap-6 shadow-xl shadow-blue-100">
+                <div className="text-center w-full">
                   <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Yatayda En Başarılı Algoritma</p>
                   <p className="text-xl font-black uppercase">
                     {getMethodLabel(analysisResults.sort((a,b) => a.errors.dhz - b.errors.dhz)[0].method)}
                   </p>
                 </div>
-                <button 
-                  onClick={handleDownloadExcel}
-                  className="bg-white text-blue-600 px-8 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all flex items-center gap-2"
-                >
-                  <i className="fas fa-file-excel"></i>
-                  Birleşik Raporu İndir
-                </button>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+                  <button 
+                    onClick={handleDownloadExcel}
+                    className="bg-white text-blue-600 px-6 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2"
+                  >
+                    <i className="fas fa-flask"></i>
+                    Kesin Koordinatlı Analiz Raporu
+                  </button>
+                  <button 
+                    onClick={handleDownloadNormal}
+                    className="bg-blue-500 text-white px-6 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 border border-blue-400/30"
+                  >
+                    <i className="fas fa-file-excel"></i>
+                    Normal Ölçüm Raporu
+                  </button>
+                </div>
               </div>
 
               <p className="text-[10px] text-slate-400 font-bold text-center italic px-4">
