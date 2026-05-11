@@ -51,14 +51,14 @@ export const convertCoordinate = (lat: number, lng: number, system: string) => {
   if (destProj) {
     try {
       const [easting, northing] = proj4(WGS84, destProj, [lng, lat]);
-      return { x: easting, y: northing, labelX: 'Sağa (Y)', labelY: 'Yukarı (X)', zone: zoneLabel };
+      return { easting, northing, labelX: 'Sağa (Y)', labelY: 'Yukarı (X)', zone: zoneLabel };
     } catch (e) {
       console.error("Proj4 conversion error:", e);
-      return { x: lat, y: lng, labelX: 'Enlem', labelY: 'Boylam', zone: 'Hata' };
+      return { easting: lng, northing: lat, labelX: 'Enlem', labelY: 'Boylam', zone: 'Hata' };
     }
   }
 
-  return { x: lat, y: lng, labelX: 'Enlem', labelY: 'Boylam', zone: '' };
+  return { easting: lng, northing: lat, labelX: 'Enlem', labelY: 'Boylam', zone: '' };
 };
 
 export const convertToWGS84 = (val1: number, val2: number, system: string, referenceLng?: number) => {

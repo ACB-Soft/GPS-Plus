@@ -98,15 +98,15 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     const testSys = useLocal ? sys : 'ITRF96_3';
 
     // Ground Truth in comparison system
-    let refX = pn; // North
-    let refY = pe; // East
+    let refNorthing = pn; // North (X)
+    let refEasting = pe;  // East (Y)
     let refZ = pz;
 
     if (!useLocal) {
-      // Input is Lat(pn)/Lng(pe)/Alt -> Convert to meters for error calculation
+      // Input is Lat(pn)/Lng(pe) -> Convert to meters for error calculation
       const converted = convertCoordinate(pn, pe, testSys);
-      refX = converted.x;
-      refY = converted.y;
+      refNorthing = converted.northing;
+      refEasting = converted.easting;
     }
 
     const results = methods.map(method => {
@@ -118,16 +118,16 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       const calcZ = result.altitude; 
 
       // 3. Calculate errors
-      const dx = refX - calcMeter.x;
-      const dy = refY - calcMeter.y;
+      const dx = refNorthing - calcMeter.northing; // Error in Northing (X)
+      const dy = refEasting - calcMeter.easting;   // Error in Easting (Y)
       const dz = refZ - (calcZ || 0);
       const dhz = Math.sqrt(dx*dx + dy*dy);
 
       return {
         method,
         calculated: {
-          x: useLocal ? calcMeter.x : result.lat,
-          y: useLocal ? calcMeter.y : result.lng,
+          x: useLocal ? calcMeter.northing : result.lat,
+          y: useLocal ? calcMeter.easting : result.lng,
           z: calcZ
         },
         errors: { dx, dy, dz, dhz }
@@ -146,8 +146,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       const conv = convertCoordinate(s.lat, s.lng, sys);
       return {
         id: idx + 1,
-        x: conv.x,
-        y: conv.y,
+        x: conv.northing, // Yukarı (X)
+        y: conv.easting,  // Sağa (Y)
         alt: s.altitude || 0,
         acc: s.accuracy,
         time: new Date(s.timestamp).toLocaleTimeString()
@@ -156,15 +156,13 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   }, [location]);
 
   const distributionData = useMemo(() => {
-    // If we have analysis results, show those 8 methods
-    if (analysisResults && analysisResults.length > 0) {
-      let maxAbs = 0.05;
-      
-      // Determine center
-      let centerX = 0;
-      let centerY = 0;
-      
-      if (analysisType === 'precise') {
+    if (chartData.length === 0) return { rawData: [], methodData: [], truthData: [], maxOffset: 0.1 };
+
+    // Determine Center
+    let centerX = 0; // Northing (North)
+    let centerY = 0; // Easting (East)
+
+    if (analysisType === 'precise' && !isNaN(parseFloat(preciseN)) && !isNaN(parseFloat(preciseE))) {
         // Center is Ground Truth
         const pn = parseFloat(preciseN);
         const pe = parseFloat(preciseE);
@@ -175,48 +173,64 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
           centerY = pe;
         } else {
           const conv = convertCoordinate(pn, pe, sys);
-          centerX = conv.x;
-          centerY = conv.y;
+          centerX = conv.northing;
+          centerY = conv.easting;
         }
-      } else {
-        // Center is mean of calculations
-        centerX = analysisResults.reduce((a, b) => a + b.calculated.x, 0) / analysisResults.length;
-        centerY = analysisResults.reduce((a, b) => a + b.calculated.y, 0) / analysisResults.length;
-      }
-
-      const data = analysisResults.map(res => {
-        // Y calculation results are Easting, X are Northing
-        const offsetX = res.calculated.y - centerY;
-        const offsetY = res.calculated.x - centerX;
-        maxAbs = Math.max(maxAbs, Math.abs(offsetX), Math.abs(offsetY));
-        return {
-          ...res,
-          label: getMethodLabel(res.method),
-          offsetX,
-          offsetY,
-          color: METHOD_COLORS[res.method] || '#94a3b8'
-        };
-      });
-
-      const maxOffset = Math.ceil(maxAbs * 10) / 10 + 0.1;
-      return { data, maxOffset, isMethods: true };
+    } else {
+        // Center is Arithmetic Mean of raw points
+        centerX = chartData.reduce((a, b) => a + b.x, 0) / chartData.length;
+        centerY = chartData.reduce((a, b) => a + b.y, 0) / chartData.length;
     }
 
-    // Default: show raw points scattering around their own mean
-    if (chartData.length === 0) return { data: [], maxOffset: 0.1, isMethods: false };
-    const meanX = chartData.reduce((a, b) => a + b.x, 0) / chartData.length;
-    const meanY = chartData.reduce((a, b) => a + b.y, 0) / chartData.length;
-    
     let maxAbs = 0.05;
-    const data = chartData.map(d => {
-      const offsetX = d.y - meanY;
-      const offsetY = d.x - meanX;
+
+    // 1. Raw Points
+    const rawData = chartData.map(d => {
+      const offsetX = d.y - centerY; // Easting offset (Horizontal axis)
+      const offsetY = d.x - centerX; // Northing offset (Vertical axis)
       maxAbs = Math.max(maxAbs, Math.abs(offsetX), Math.abs(offsetY));
-      return { ...d, offsetX, offsetY, color: '#3b82f6' };
+      return { ...d, offsetX, offsetY, type: 'raw', color: '#94a3b8' };
     });
 
+    // 2. Method Results
+    const methodData = (analysisResults || []).map(res => {
+      const sys = location?.coordinateSystem || 'ITRF96_3';
+      let mX = res.calculated.x;
+      let mY = res.calculated.y;
+
+      if (!useLocal) {
+        // Convert Lat/Lng result to meters for offset calculation
+        const conv = convertCoordinate(res.calculated.x, res.calculated.y, sys);
+        mX = conv.northing;
+        mY = conv.easting;
+      }
+
+      const offsetX = mY - centerY;
+      const offsetY = mX - centerX;
+      maxAbs = Math.max(maxAbs, Math.abs(offsetX), Math.abs(offsetY));
+
+      return {
+        ...res,
+        label: getMethodLabel(res.method),
+        offsetX,
+        offsetY,
+        type: 'method',
+        color: METHOD_COLORS[res.method] || '#3b82f6'
+      };
+    });
+
+    // 3. Ground Truth Data (it's at 0,0 relative to center if center is truth)
+    const truthData = analysisType === 'precise' ? [{
+        offsetX: 0,
+        offsetY: 0,
+        type: 'truth',
+        color: '#ff0000',
+        label: 'Kesin Koordinat'
+    }] : [];
+
     const maxOffset = Math.ceil(maxAbs * 10) / 10 + 0.1;
-    return { data, maxOffset, isMethods: false };
+
+    return { rawData, methodData, truthData, maxOffset };
   }, [chartData, analysisResults, analysisType, preciseN, preciseE, useLocal, location]);
 
   const exportChart = async () => {
@@ -256,8 +270,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       return {
         method,
         calculated: {
-          x: conv.x,
-          y: conv.y,
+          x: conv.northing,
+          y: conv.easting,
           z: result.altitude
         },
         errors: null // No ground truth
@@ -366,22 +380,22 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase ml-2">{useLocal ? 'Sağa (Y)' : 'Enlem (Lat)'}</label>
+                  <label className="text-[9px] font-bold text-slate-500 uppercase ml-2">{useLocal ? 'Sağa (Y)' : 'Boylam (Lng)'}</label>
                   <input 
                     type="number" 
                     value={preciseE} 
                     onChange={e => setPreciseE(e.target.value)} 
-                    placeholder={useLocal ? "500000.000" : "39.9"}
+                    placeholder={useLocal ? "500000.000" : "32.8"}
                     className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-900 border-2 border-slate-100 focus:border-blue-500 outline-none transition-all text-sm"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase ml-2">{useLocal ? 'Yukarı (X)' : 'Boylam (Lng)'}</label>
+                  <label className="text-[9px] font-bold text-slate-500 uppercase ml-2">{useLocal ? 'Yukarı (X)' : 'Enlem (Lat)'}</label>
                   <input 
                     type="number" 
                     value={preciseN} 
                     onChange={e => setPreciseN(e.target.value)} 
-                    placeholder={useLocal ? "4400000.000" : "32.8"}
+                    placeholder={useLocal ? "4400000.000" : "39.9"}
                     className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-900 border-2 border-slate-100 focus:border-blue-500 outline-none transition-all text-sm"
                   />
                 </div>
@@ -484,7 +498,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center">
                       <i className="fas fa-bullseye mr-2 text-blue-500"></i>
-                      Hassasiyet Dağılımı ({distributionData.isMethods ? 'Algoritmalar' : 'Ölçümler'})
+                      Hassasiyet Dağılımı (Tüm Veriler)
                     </h3>
                     <button 
                       onClick={exportChart}
@@ -517,7 +531,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               tick={{fontSize: 9}} 
                               axisLine={false}
                             />
-                            <ZAxis type="number" range={[150, 150]} />
                             <Tooltip 
                               cursor={{ strokeDasharray: '3 3' }} 
                               content={({ active, payload }) => {
@@ -526,11 +539,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   return (
                                     <div className="bg-white p-3 rounded-xl shadow-xl border border-slate-100">
                                       <p className="text-[10px] font-black text-slate-800 uppercase mb-1">
-                                        {distributionData.isMethods ? getMethodLabel(data.method) : `Ölçüm #${data.id}`}
+                                        {data.type === 'method' ? getMethodLabel(data.method) : data.type === 'truth' ? 'Kesin Nokta' : `Ölçüm #${data.id}`}
                                       </p>
                                       <div className="text-[9px] space-y-0.5">
-                                        <p className="text-blue-600 font-bold">ΔE: {data.offsetX.toFixed(4)} m</p>
-                                        <p className="text-indigo-600 font-bold">ΔN: {data.offsetY.toFixed(4)} m</p>
+                                        <p className="text-blue-600 font-bold">ΔE (Sağa): {data.offsetX.toFixed(4)} m</p>
+                                        <p className="text-indigo-600 font-bold">ΔN (Yukarı): {data.offsetY.toFixed(4)} m</p>
                                       </div>
                                     </div>
                                   );
@@ -538,14 +551,29 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 return null;
                               }}
                             />
-                            <ReferenceLine x={0} stroke="#94a3b8" strokeWidth={2} />
-                            <ReferenceLine y={0} stroke="#94a3b8" strokeWidth={2} />
-                            <Scatter name="Points" data={distributionData.data}>
-                              {distributionData.data.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} fillOpacity={0.8} />
+                            <ReferenceLine x={0} stroke="#94a3b8" strokeWidth={1} />
+                            <ReferenceLine y={0} stroke="#94a3b8" strokeWidth={1} />
+                            
+                            {/* 1. Raw Points (Samples) */}
+                            <Scatter name="Ölçümler" data={distributionData.rawData} fill="#94a3b8">
+                              {distributionData.rawData.map((entry, index) => (
+                                <Cell key={`raw-${index}`} fillOpacity={0.3} strokeWidth={0} />
                               ))}
                             </Scatter>
-                            {distributionData.isMethods && <Legend wrapperStyle={{ fontSize: '9px', fontWeight: 'bold' }} />}
+
+                            {/* 2. Method Results */}
+                            <Scatter name="Yöntemler" data={distributionData.methodData}>
+                              {distributionData.methodData.map((entry, index) => (
+                                <Cell key={`method-${index}`} fill={entry.color} stroke="#fff" strokeWidth={1} />
+                              ))}
+                            </Scatter>
+
+                            {/* 3. Ground Truth */}
+                            <Scatter name="Kesin" data={distributionData.truthData}>
+                               <Cell fill="#ff0000" stroke="#fff" strokeWidth={2} />
+                            </Scatter>
+
+                            <Legend wrapperStyle={{ fontSize: '8px', fontWeight: 'bold' }} verticalAlign="bottom" height={36}/>
                           </ScatterChart>
                         </ResponsiveContainer>
                       </div>
