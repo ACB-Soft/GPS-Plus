@@ -17,7 +17,20 @@ interface Props {
 }
 
 const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, settings, onClose }) => {
-  const [selectedPointId, setSelectedPointId] = useState<string>(initialSelectedId || (locations.length > 0 ? locations[0].id : ''));
+  const [analysisType, setAnalysisType] = useState<'precise' | 'normal'>('precise');
+  const [selectedFolder, setSelectedFolder] = useState<string>('');
+  const [selectedPointId, setSelectedPointId] = useState<string>(initialSelectedId || '');
+
+  const folders = useMemo(() => {
+    const f = Array.from(new Set(locations.map(l => l.folderName || 'Genel')));
+    return f.sort();
+  }, [locations]);
+
+  const filteredPoints = useMemo(() => {
+    if (!selectedFolder) return [];
+    return locations.filter(l => (l.folderName || 'Genel') === selectedFolder);
+  }, [locations, selectedFolder]);
+
   const location = locations.find(l => l.id === selectedPointId);
 
   const [preciseN, setPreciseN] = useState<string>(''); // Northing (X)
@@ -25,7 +38,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [preciseZ, setPreciseZ] = useState<string>('');
   
   const [analysisResults, setAnalysisResults] = useState<any[] | null>(null);
-  const [useLocal, setUseLocal] = useState(location?.coordinateSystem !== 'WGS84');
+  const [useLocal, setUseLocal] = useState(true);
 
   const methods: CalculationMethod[] = [
     'ARITHMETIC_MEAN', 
@@ -161,9 +174,25 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     );
   };
 
-  const handleDownloadNormal = () => {
+  const calculateNormalStats = () => {
     if (!location) return;
-    import('./ExcelUtils').then(m => m.downloadTechnicalReport(location, settings));
+    const accuracyLimit = location.accuracyLimit || 5.0;
+    const sys = location.coordinateSystem || 'ITRF96_3';
+
+    const results = methods.map(method => {
+      const { result } = calculateResult(location.samples!, method, accuracyLimit);
+      const conv = convertCoordinate(result.lat, result.lng, sys);
+      return {
+        method,
+        calculated: {
+          x: conv.x,
+          y: conv.y,
+          z: result.altitude
+        },
+        errors: null // No ground truth
+      };
+    });
+    setAnalysisResults(results);
   };
 
   return (
@@ -186,117 +215,209 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 no-scrollbar">
           
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Detaylı Analiz İçin Nokta Seçiniz</label>
-            <div className="relative">
-              <select 
-                value={selectedPointId}
-                onChange={(e) => {
-                  setSelectedPointId(e.target.value);
-                  setAnalysisResults(null);
-                  const loc = locations.find(l => l.id === e.target.value);
-                  if (loc) setUseLocal(loc.coordinateSystem !== 'WGS84');
-                }}
-                className="w-full p-4 bg-slate-100 rounded-2xl font-bold text-slate-900 appearance-none border-2 border-transparent focus:border-blue-500 outline-none transition-all text-sm"
+          {/* STEP 1: Method Selection */}
+          <div className="space-y-3">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">1. Analiz Yöntemini Seçin</label>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => { setAnalysisType('precise'); setAnalysisResults(null); }}
+                className={`flex-1 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all border-2 ${analysisType === 'precise' ? 'bg-blue-600 text-white border-blue-600 shadow-xl shadow-blue-100' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
               >
-                <option value="">Lütfen bir nokta seçin...</option>
-                {locations.map(p => (
-                  <option key={p.id} value={p.id}>[{p.folderName}] - {p.name}</option>
-                ))}
-              </select>
-              <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                <i className="fas fa-chevron-down"></i>
+                <i className="fas fa-bullseye mr-2"></i>
+                Kesin Koordinatlı
+              </button>
+              <button 
+                onClick={() => { setAnalysisType('normal'); setAnalysisResults(null); }}
+                className={`flex-1 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all border-2 ${analysisType === 'normal' ? 'bg-blue-600 text-white border-blue-600 shadow-xl shadow-blue-100' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
+              >
+                <i className="fas fa-chart-line mr-2"></i>
+                Normal Analiz
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* STEP 2: Project Selection */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">2. Proje Seçin</label>
+              <div className="relative">
+                <select 
+                  value={selectedFolder}
+                  onChange={(e) => {
+                    setSelectedFolder(e.target.value);
+                    setSelectedPointId('');
+                    setAnalysisResults(null);
+                  }}
+                  className="w-full p-4 bg-slate-100 rounded-2xl font-bold text-slate-900 appearance-none border-2 border-transparent focus:border-blue-500 outline-none transition-all text-sm"
+                >
+                  <option value="">Proje Seçiniz...</option>
+                  {folders.map(f => <option key={f} value={f}>{f}</option>)}
+                </select>
+                <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <i className="fas fa-folder"></i>
+                </div>
+              </div>
+            </div>
+
+            {/* STEP 3: Point Selection */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">3. Nokta Seçin</label>
+              <div className="relative text-sm">
+                <select 
+                  value={selectedPointId}
+                  onChange={(e) => {
+                    setSelectedPointId(e.target.value);
+                    setAnalysisResults(null);
+                  }}
+                  disabled={!selectedFolder}
+                  className="w-full p-4 bg-slate-100 rounded-2xl font-bold text-slate-900 appearance-none border-2 border-transparent focus:border-blue-500 outline-none transition-all text-sm disabled:opacity-50"
+                >
+                  <option value="">Nokta Seçiniz...</option>
+                  {filteredPoints.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+                <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <i className="fas fa-map-pin"></i>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="flex gap-2">
+          {/* STEP 4: Data Entry (Only for Precise) */}
+          {analysisType === 'precise' && selectedPointId && (
+            <div className="space-y-4 pt-4 border-t border-slate-100">
+              <div className="flex justify-between items-center px-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">4. Kesin Koordinat Girişi</label>
+                <div className="flex gap-1">
+                  <button 
+                    onClick={() => setUseLocal(false)}
+                    className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-tighter transition-all ${!useLocal ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-400'}`}
+                  >
+                    Lat/Lng
+                  </button>
+                  <button 
+                    onClick={() => setUseLocal(true)}
+                    className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-tighter transition-all ${useLocal ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-400'}`}
+                  >
+                    Y/X (Local)
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-slate-500 uppercase ml-2">{useLocal ? 'Sağa (Y)' : 'Enlem (Lat)'}</label>
+                  <input 
+                    type="number" 
+                    value={preciseE} 
+                    onChange={e => setPreciseE(e.target.value)} 
+                    placeholder={useLocal ? "500000.000" : "39.9"}
+                    className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-900 border-2 border-slate-100 focus:border-blue-500 outline-none transition-all text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-slate-500 uppercase ml-2">{useLocal ? 'Yukarı (X)' : 'Boylam (Lng)'}</label>
+                  <input 
+                    type="number" 
+                    value={preciseN} 
+                    onChange={e => setPreciseN(e.target.value)} 
+                    placeholder={useLocal ? "4400000.000" : "32.8"}
+                    className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-900 border-2 border-slate-100 focus:border-blue-500 outline-none transition-all text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-slate-500 uppercase ml-2">{useLocal ? 'Z (Kot)' : 'Alt (H)'}</label>
+                  <input 
+                    type="number" 
+                    value={preciseZ} 
+                    onChange={e => setPreciseZ(e.target.value)} 
+                    placeholder="100.000"
+                    className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-900 border-2 border-slate-100 focus:border-blue-500 outline-none transition-all text-sm"
+                  />
+                </div>
+              </div>
+
+              <button 
+                onClick={calculateAllMethods}
+                className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[12px] uppercase tracking-widest active:scale-95 transition-all shadow-xl flex items-center justify-center gap-3"
+              >
+                <i className="fas fa-microchip"></i>
+                Analizi Gerçekleştir
+              </button>
+            </div>
+          )}
+
+          {/* Normal Analysis Trigger */}
+          {analysisType === 'normal' && selectedPointId && !analysisResults && (
             <button 
-              onClick={() => { setUseLocal(false); setAnalysisResults(null); }}
-              className={`flex-1 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${!useLocal ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-slate-100 text-slate-400'}`}
+              onClick={calculateNormalStats}
+              className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[12px] uppercase tracking-widest active:scale-95 transition-all shadow-xl flex items-center justify-center gap-3"
             >
-              WGS84 Girdi
+              <i className="fas fa-chart-bar"></i>
+              İstatistikleri Göster
             </button>
-            <button 
-              onClick={() => { setUseLocal(true); setAnalysisResults(null); }}
-              className={`flex-1 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${useLocal ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-slate-100 text-slate-400'}`}
-            >
-              Lokal (X,Y,Z) Girdi
-            </button>
-          </div>
+          )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">{useLocal ? 'Sağa (Y)' : 'Enlem (Lat)'}</label>
-              <input 
-                type="number" 
-                value={preciseE} 
-                onChange={e => setPreciseE(e.target.value)} 
-                placeholder={useLocal ? "500000.000" : "39.9"}
-                className="w-full p-4 bg-slate-100 rounded-2xl font-bold text-slate-900 focus:bg-white border-2 border-transparent focus:border-blue-500 outline-none transition-all text-sm"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">{useLocal ? 'Yukarı (X)' : 'Boylam (Lng)'}</label>
-              <input 
-                type="number" 
-                value={preciseN} 
-                onChange={e => setPreciseN(e.target.value)} 
-                placeholder={useLocal ? "4400000.000" : "32.8"}
-                className="w-full p-4 bg-slate-100 rounded-2xl font-bold text-slate-900 focus:bg-white border-2 border-transparent focus:border-blue-500 outline-none transition-all text-sm"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">{useLocal ? 'Z (Kot)' : 'Alt (H)'}</label>
-              <input 
-                type="number" 
-                value={preciseZ} 
-                onChange={e => setPreciseZ(e.target.value)} 
-                placeholder="100.000"
-                className="w-full p-4 bg-slate-100 rounded-2xl font-bold text-slate-900 focus:bg-white border-2 border-transparent focus:border-blue-500 outline-none transition-all text-sm"
-              />
-            </div>
-          </div>
-
-          <button 
-            onClick={calculateAllMethods}
-            className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[12px] uppercase tracking-widest active:scale-95 transition-all shadow-xl flex items-center justify-center gap-3"
-          >
-            <i className="fas fa-microchip"></i>
-            Hata Analizini Başlat
-          </button>
-
+          {/* STEP 5: Results and Visualization */}
           {analysisResults && (
-            <div className="space-y-6 animate-in zoom-in-95 duration-300">
-              <div className="overflow-x-auto rounded-3xl border border-slate-100 bg-slate-50 shadow-sm">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-900 text-white text-[9px] uppercase tracking-widest">
-                      <th className="p-4 rounded-tl-3xl">Yöntem</th>
-                      <th className="p-4">ΔYatay (m)</th>
-                      <th className="p-4">ΔDüşey (m)</th>
-                      <th className="p-4 rounded-tr-3xl">DURUM</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {analysisResults.map((res, idx) => {
-                      const isBest = res.method === analysisResults.sort((a,b) => a.errors.dhz - b.errors.dhz)[0].method;
-                      return (
+            <div className="space-y-6 animate-in slide-in-from-top-4 duration-500">
+              <div className="flex items-center justify-between px-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">5. Analiz Sonuçları</label>
+              </div>
+
+              {analysisType === 'precise' ? (
+                <div className="overflow-x-auto rounded-3xl border border-slate-100 bg-slate-50 shadow-sm">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-900 text-white text-[9px] uppercase tracking-widest">
+                        <th className="p-4 rounded-tl-3xl">Yöntem</th>
+                        <th className="p-4">ΔYatay (m)</th>
+                        <th className="p-4">ΔDüşey (m)</th>
+                        <th className="p-4 rounded-tr-3xl">DURUM</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {analysisResults.map((res, idx) => {
+                        const isBest = res.method === analysisResults.sort((a,b) => (a.errors?.dhz || 0) - (b.errors?.dhz || 0))[0].method;
+                        return (
+                          <tr key={res.method} className={`border-b border-slate-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                            <td className="p-4 font-black text-[11px] text-slate-800">{getMethodLabel(res.method)}</td>
+                            <td className="p-4 font-bold text-xs text-blue-600">{res.errors.dhz.toFixed(3)}</td>
+                            <td className="p-4 font-bold text-xs text-amber-600">{Math.abs(res.errors.dz).toFixed(3)}</td>
+                            <td className="p-4">
+                              {isBest && (
+                                <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter">EN İYİ</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-3xl border border-slate-100 bg-slate-50 shadow-sm">
+                   <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-900 text-white text-[9px] uppercase tracking-widest">
+                        <th className="p-4 rounded-tl-3xl">Yöntem</th>
+                        <th className="p-4">Hesaplanan Y (Sağa)</th>
+                        <th className="p-4 rounded-tr-3xl">Hesaplanan X (Yukarı)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {analysisResults.map((res, idx) => (
                         <tr key={res.method} className={`border-b border-slate-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
                           <td className="p-4 font-black text-[11px] text-slate-800">{getMethodLabel(res.method)}</td>
-                          <td className="p-4 font-bold text-xs text-blue-600">{res.errors.dhz.toFixed(3)}</td>
-                          <td className="p-4 font-bold text-xs text-amber-600">{Math.abs(res.errors.dz).toFixed(3)}</td>
-                          <td className="p-4">
-                            {isBest && (
-                              <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter">EN İYİ</span>
-                            )}
-                          </td>
+                          <td className="p-4 font-bold text-xs text-blue-600">{res.calculated.y.toFixed(3)}</td>
+                          <td className="p-4 font-bold text-xs text-indigo-600">{res.calculated.x.toFixed(3)}</td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
               {/* Graphical Analysis Section */}
               <div className="space-y-4">
@@ -355,49 +476,34 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     </div>
                   </div>
                 </div>
-                
-                <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
-                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center">
-                    <i className="fas fa-arrows-up-down mr-2 text-indigo-500"></i>
-                    Düşey (Kot) Değişim Analizi
-                  </h3>
-                  <div className="h-32 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ScatterChart margin={{ left: -20 }}>
-                        <XAxis type="number" dataKey="id" hide />
-                        <YAxis type="number" dataKey="alt" domain={['auto', 'auto']} tick={{fontSize: 8}} axisLine={false} />
-                        <Tooltip />
-                        <Scatter data={chartData} fill="#6366f1" shape="circle" fillOpacity={0.6} />
-                      </ScatterChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
               </div>
 
-              <div className="bg-blue-600 p-6 rounded-[2rem] text-white flex flex-col items-center gap-6 shadow-xl shadow-blue-100">
-                <div className="text-center w-full">
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Yatayda En Başarılı Algoritma</p>
-                  <p className="text-xl font-black uppercase">
-                    {getMethodLabel(analysisResults.sort((a,b) => a.errors.dhz - b.errors.dhz)[0].method)}
-                  </p>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+                <div className="bg-blue-600 p-6 rounded-[2rem] text-white flex flex-col items-center gap-6 shadow-xl shadow-blue-100">
+                {analysisType === 'precise' ? (
+                  <>
+                    <div className="text-center w-full">
+                      <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Yatayda En Başarılı Algoritma</p>
+                      <p className="text-xl font-black uppercase">
+                        {getMethodLabel(analysisResults.sort((a,b) => (a.errors?.dhz || 0) - (b.errors?.dhz || 0))[0].method)}
+                      </p>
+                    </div>
+                    <button 
+                      onClick={handleDownloadExcel}
+                      className="w-full bg-white text-blue-600 px-6 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2"
+                    >
+                      <i className="fas fa-flask"></i>
+                      Kesin Koordinatlı Analiz Raporu
+                    </button>
+                  </>
+                ) : (
                   <button 
-                    onClick={handleDownloadExcel}
-                    className="bg-white text-blue-600 px-6 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2"
-                  >
-                    <i className="fas fa-flask"></i>
-                    Kesin Koordinatlı Analiz Raporu
-                  </button>
-                  <button 
-                    onClick={handleDownloadNormal}
-                    className="bg-blue-500 text-white px-6 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 border border-blue-400/30"
+                    onClick={() => import('./ExcelUtils').then(m => m.downloadTechnicalReport(location!, settings))}
+                    className="w-full bg-white text-blue-600 px-6 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2"
                   >
                     <i className="fas fa-file-excel"></i>
-                    Normal Ölçüm Raporu
+                    Normal Ölçüm Raporu Al
                   </button>
-                </div>
+                )}
               </div>
 
               <p className="text-[10px] text-slate-400 font-bold text-center italic px-4">
