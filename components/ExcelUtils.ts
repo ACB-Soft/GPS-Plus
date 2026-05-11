@@ -269,3 +269,49 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   const fileName = `Olcum_Raporu_${location.name}.xlsx`;
   XLSX.writeFile(workbook, fileName);
 };
+
+export const downloadAnalysisReport = (
+  location: SavedLocation, 
+  preciseCoords: { x: number, y: number, z: number, isWgs84: boolean },
+  results: any[],
+  settings?: AppSettings
+) => {
+  const locPrecision = settings?.locationPrecision ?? 1;
+  const heightPrecision = settings?.heightPrecision ?? 2;
+  const sys = location.coordinateSystem || 'WGS84';
+
+  const ws_data = [
+    ["HASSAS ANALİZ VE HATA RAPORU (AR-GE)"],
+    ["Nokta Adı:", location.name],
+    ["Tarih:", new Date().toLocaleString('tr-TR')],
+    [],
+    ["KESİN REFERANS DEĞERLER (GROUND TRUTH)"],
+    [preciseCoords.isWgs84 ? "Enlem" : "Sağa (Y)", preciseCoords.isWgs84 ? "Boylam" : "Yukarı (X)", preciseCoords.isWgs84 ? "Alt (Elip.H)" : "Kot (Z)"],
+    [preciseCoords.x, preciseCoords.y, preciseCoords.z],
+    [],
+    ["YÖNTEM BAZLI HATA VE RMSE ANALİZİ"],
+    ["Yöntem", "Hesaplanan X/Lat", "Hesaplanan Y/Lng", "Hesaplanan Z/H", "ΔX (m)", "ΔY (m)", "ΔZ/H (m)", "Yatay Sapma (m)", "3D RMSE (m)"],
+    ...results.map(res => [
+      getMethodName(res.method),
+      res.calculated.x.toFixed(preciseCoords.isWgs84 ? 8 : locPrecision),
+      res.calculated.y.toFixed(preciseCoords.isWgs84 ? 8 : locPrecision),
+      res.calculated.z.toFixed(heightPrecision),
+      res.errors.dx.toFixed(3),
+      res.errors.dy.toFixed(3),
+      res.errors.dz.toFixed(3),
+      res.errors.dhz.toFixed(3),
+      res.errors.d3d.toFixed(3)
+    ]),
+    [],
+    ["AÇIKLAMA:"],
+    ["* Delta (Δ) değerleri 'Kesin Değer - Hesaplanan Değer' farkını ifade eder."],
+    ["* 3D RMSE, x/y/z eksenlerindeki toplam sapmanın geometrik ortalamasıdır."],
+    [`* Bu rapor ${FULL_BRAND} Ar-Ge algoritma testleri kapsamında oluşturulmuştur.`]
+  ];
+
+  const worksheet = XLSX.utils.aoa_to_sheet(ws_data);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Hata Analizi");
+  
+  XLSX.writeFile(workbook, `Hata_Analiz_Raporu_${location.name}.xlsx`);
+};
