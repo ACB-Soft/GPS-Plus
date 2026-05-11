@@ -176,18 +176,12 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   }, [location]);
 
   const distributionData = useMemo(() => {
-    if (chartData.length === 0) return { rawPoints: [], methodPoints: [], truthPoint: [], minX: 0, minY: 0, range: 1 };
+    if (chartData.length === 0) return { rawPoints: [], methodPoints: [], centerPoint: [], range: 0.5 };
 
-    // 1. Find Raw Data Bounds
-    let minX = Math.min(...chartData.map(d => d.x));
-    let maxX = Math.max(...chartData.map(d => d.x));
-    let minY = Math.min(...chartData.map(d => d.y));
-    let maxY = Math.max(...chartData.map(d => d.y));
-
-    // 2. Include Ground Truth in bounds if it exists
-    let hasTruth = false;
-    let truthX = 0;
-    let truthY = 0;
+    // 1. Determine the Center (Reference)
+    let centerX = 0;
+    let centerY = 0;
+    let isPrecise = false;
 
     if (analysisType === 'precise') {
       const pn = parseFloat(preciseN);
@@ -196,67 +190,53 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       if (!isNaN(pn) && !isNaN(pe)) {
         const sys = location?.coordinateSystem || 'ITRF96_3';
         if (useLocal) {
-          truthX = pn;
-          truthY = pe;
+          centerX = pn;
+          centerY = pe;
         } else {
           const conv = convertCoordinate(pn, pe, sys);
-          truthX = conv.x;
-          truthY = conv.y;
+          centerX = conv.x;
+          centerY = conv.y;
         }
-        minX = Math.min(minX, truthX);
-        maxX = Math.max(maxX, truthX);
-        minY = Math.min(minY, truthY);
-        maxY = Math.max(maxY, truthY);
-        hasTruth = true;
+        isPrecise = true;
       }
     }
 
-    // 3. Include Methods in bounds
-    if (analysisResults) {
-      analysisResults.forEach(res => {
-        minX = Math.min(minX, res.calculated.x);
-        maxX = Math.max(maxX, res.calculated.x);
-        minY = Math.min(minY, res.calculated.y);
-        maxY = Math.max(maxY, res.calculated.y);
-      });
+    if (!isPrecise) {
+      centerX = chartData.reduce((a, b) => a + b.x, 0) / chartData.length;
+      centerY = chartData.reduce((a, b) => a + b.y, 0) / chartData.length;
     }
 
-    // Adjust for square grid (equal units)
-    const rangeX = maxX - minX || 0.1;
-    const rangeY = maxY - minY || 0.1;
-    const maxRange = Math.max(rangeX, rangeY) * 1.2; // Add 20% margin
-    
-    const midX = (minX + maxX) / 2;
-    const midY = (minY + maxY) / 2;
-    
-    const finalMinX = midX - maxRange / 2;
-    const finalMinY = midY - maxRange / 2;
+    // 2. Calculate Deltas (Relative to Center)
+    let maxDelta = 0.1;
 
-    // Use Easting (Y) for X-Axis, Northing (X) for Y-Axis as per user's preference
-    const rawPoints = chartData.map(d => ({
-      ...d,
-      offsetX: d.y - finalMinY, // Easting
-      offsetY: d.x - finalMinX, // Northing
-    }));
+    const rawPoints = chartData.map(d => {
+      const dE = d.y - centerY; // Easting Delta
+      const dN = d.x - centerX; // Northing Delta
+      maxDelta = Math.max(maxDelta, Math.abs(dE), Math.abs(dN));
+      return { ...d, dE, dN };
+    });
 
-    const methodPoints = (analysisResults || []).map((res, index) => ({
-      ...res,
-      id: index + 1,
-      offsetX: res.calculated.y - finalMinY,
-      offsetY: res.calculated.x - finalMinX,
-      color: METHOD_COLORS[res.method] || '#94a3b8'
-    }));
+    const methodPoints = (analysisResults || []).map((res, index) => {
+      const dE = res.calculated.y - centerY;
+      const dN = res.calculated.x - centerX;
+      maxDelta = Math.max(maxDelta, Math.abs(dE), Math.abs(dN));
+      return {
+        ...res,
+        id: index + 1,
+        dE,
+        dN,
+        color: METHOD_COLORS[res.method] || '#94a3b8'
+      };
+    });
 
-    const truthPoint = hasTruth ? [{ 
-      offsetX: truthY - finalMinY, 
-      offsetY: truthX - finalMinX 
-    }] : [];
+    // Square range with symmetric bounds
+    const range = Math.ceil(maxDelta * 10) / 10 + 0.05;
 
     return { 
       rawPoints, 
       methodPoints, 
-      truthPoint,
-      range: maxRange
+      centerLabel: isPrecise ? 'KESİN NOKTA' : 'ORTALAMA',
+      range 
     };
   }, [chartData, analysisResults, analysisType, preciseN, preciseE, useLocal, location]);
 
@@ -519,168 +499,128 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 </div>
               )}
 
-              {/* Graphical Analysis Section */}
+              {/* Technical Analysis Pafta */}
               <div className="space-y-6">
-                {/* Chart 1: Raw Data Distribution */}
-                <div className="bg-slate-50 rounded-[2.5rem] p-6 border border-slate-100">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center text-slate-500">
-                      <i className="fas fa-satellite mr-2 text-blue-500 text-xs"></i>
-                      Ham Veri Dağılımı
-                    </h3>
-                    <button 
-                      onClick={() => exportChart(rawChartRef, 'ham-veri')}
-                      className="text-[9px] font-black text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg uppercase tracking-tighter hover:bg-blue-100 transition-all border border-blue-100/50"
-                    >
-                      <i className="fas fa-camera mr-1"></i> Grafiği İndir
-                    </button>
-                  </div>
-                  <div ref={rawChartRef} className="bg-white rounded-3xl p-4 shadow-inner ring-1 ring-slate-100/50">
-                    <div className="h-80 w-full flex justify-center">
-                      <div style={{ width: '100%', maxWidth: '320px', aspectRatio: '1/1' }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                          <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.15} />
-                            <XAxis 
-                              type="number" 
-                              dataKey="offsetX" 
-                              name="ΔE" 
-                              unit="m" 
-                              domain={[0, distributionData.range]} 
-                              tick={{fontSize: 8, fontWeight: 600}} 
-                              axisLine={false}
-                            />
-                            <YAxis 
-                              type="number" 
-                              dataKey="offsetY" 
-                              name="ΔN" 
-                              unit="m" 
-                              domain={[0, distributionData.range]} 
-                              tick={{fontSize: 8, fontWeight: 600}} 
-                              axisLine={false}
-                            />
-                            <ZAxis type="number" range={[40, 40]} />
-                            <Tooltip 
-                              cursor={{ strokeDasharray: '3 3' }} 
-                              content={({ active, payload }) => {
-                                if (active && payload && payload.length) {
-                                  const data = payload[0].payload;
-                                  return (
-                                    <div className="bg-white/95 backdrop-blur-sm p-3 rounded-2xl shadow-2xl border border-slate-100">
-                                      <p className="text-[10px] font-black text-slate-800 uppercase mb-1">Ham Veri #{data.id}</p>
-                                      <div className="text-[9px] space-y-0.5">
-                                        <p className="text-blue-600">E: {data.y.toFixed(4)}</p>
-                                        <p className="text-indigo-600">N: {data.x.toFixed(4)}</p>
-                                        <p className="text-slate-400">Acc: {data.acc?.toFixed(2)}m</p>
-                                      </div>
-                                    </div>
-                                  );
-                                }
-                                return null;
-                              }}
-                            />
-                            <Scatter name="Ham Veri" data={distributionData.rawPoints} fill="#3b82f6" fillOpacity={0.4} />
-                          </ScatterChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Chart 2: Method Comparison */}
-                <div className="bg-slate-50 rounded-[2.5rem] p-6 border border-slate-100">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center text-slate-500">
-                      <i className="fas fa-layer-group mr-2 text-indigo-500 text-xs"></i>
-                      Analiz Sonuçları Karşılaştırması
-                    </h3>
-                    <button 
-                      onClick={() => exportChart(comparisonChartRef, 'analiz-karsilastirma')}
-                      className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg uppercase tracking-tighter hover:bg-indigo-100 transition-all border border-indigo-100/50"
-                    >
-                      <i className="fas fa-camera mr-1"></i> Grafiği İndir
-                    </button>
-                  </div>
-                  <div ref={comparisonChartRef} className="bg-white rounded-3xl p-4 shadow-inner ring-1 ring-slate-100/50">
-                    <div className="h-80 w-full flex justify-center">
-                      <div style={{ width: '100%', maxWidth: '320px', aspectRatio: '1/1' }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                          <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.15} />
-                            <XAxis 
-                              type="number" 
-                              dataKey="offsetX" 
-                              name="ΔE" 
-                              unit="m" 
-                              domain={[0, distributionData.range]} 
-                              tick={{fontSize: 8, fontWeight: 600}} 
-                              axisLine={false}
-                            />
-                            <YAxis 
-                              type="number" 
-                              dataKey="offsetY" 
-                              name="ΔN" 
-                              unit="m" 
-                              domain={[0, distributionData.range]} 
-                              tick={{fontSize: 8, fontWeight: 600}} 
-                              axisLine={false}
-                            />
-                            <ZAxis type="number" range={[20, 400]} />
-                            <Tooltip 
-                              cursor={{ strokeDasharray: '3 3' }} 
-                              content={({ active, payload }) => {
-                                if (active && payload && payload.length) {
-                                  const data = payload[0].payload;
-                                  const isTruth = data.truth !== undefined;
-                                  return (
-                                    <div className="bg-white/95 backdrop-blur-sm p-3 rounded-2xl shadow-2xl border border-slate-100">
-                                      <p className="text-[10px] font-black text-slate-800 uppercase mb-1">
-                                        {isTruth ? "Kesin Koordinat" : `${data.id}. ${getMethodLabel(data.method)}`}
-                                      </p>
-                                      <div className="text-[9px] space-y-0.5">
-                                        <p className="text-blue-600">E: {data.offsetX.toFixed(4)}</p>
-                                        <p className="text-indigo-600">N: {data.offsetY.toFixed(4)}</p>
-                                      </div>
-                                    </div>
-                                  );
-                                }
-                                return null;
-                              }}
-                            />
-                            
-                            {/* Raw points as background */}
-                            <Scatter name="Ham Veri" data={distributionData.rawPoints} fill="#94a3b8" fillOpacity={0.1} />
-                            
-                            {/* Ground Truth */}
-                            {distributionData.truthPoint.length > 0 && (
-                              <Scatter 
-                                name="Kesin Nokta" 
-                                data={distributionData.truthPoint.map(p => ({ ...p, truth: true }))} 
-                                fill="#ef4444"
-                                shape="star"
-                              />
-                            )}
-
-                            {/* Method points with Numeric Labels */}
-                            <Scatter name="Yöntemler" data={distributionData.methodPoints}>
-                              {distributionData.methodPoints.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
-                              ))}
-                            </Scatter>
-                            {/* Second scatter just for labels to ensure they are on top */}
-                            <Scatter data={distributionData.methodPoints} shape={<CustomScatterLabel />} />
-                          </ScatterChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
+                <div className="bg-slate-900 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-all">
+                    <i className="fas fa-bullseye text-8xl text-blue-400"></i>
                   </div>
                   
-                  {/* Legend for numbers */}
-                  <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <div className="flex justify-between items-center mb-8 relative z-10">
+                    <div className="space-y-1">
+                      <h3 className="text-white font-black text-xs uppercase tracking-[0.3em]">Hassasiyet Analiz Paftası</h3>
+                      <p className="text-blue-400 text-[9px] font-bold uppercase tracking-widest">Referans: {distributionData.centerLabel}</p>
+                    </div>
+                    <button 
+                      onClick={() => exportChart(rawChartRef, 'teknik-analiz-paftasi')}
+                      className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all backdrop-blur-md border border-white/10"
+                    >
+                      <i className="fas fa-file-export mr-2"></i> Paftayı İndir
+                    </button>
+                  </div>
+
+                  <div ref={rawChartRef} className="bg-white rounded-3xl p-6 shadow-2xl aspect-square w-full max-w-sm mx-auto relative overflow-hidden ring-4 ring-white/10">
+                    {/* Technical Circles for Accuracy */}
+                    <div className="absolute inset-0 pointer-events-none opacity-[0.03] flex items-center justify-center">
+                      <div className="w-[20%] h-[20%] border border-black rounded-full"></div>
+                      <div className="absolute w-[40%] h-[40%] border border-black rounded-full"></div>
+                      <div className="absolute w-[60%] h-[60%] border border-black rounded-full"></div>
+                      <div className="absolute w-[80%] h-[80%] border border-black rounded-full"></div>
+                    </div>
+
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ScatterChart margin={{ top: 10, right: 10, bottom: 30, left: 30 }}>
+                        <CartesianGrid strokeDasharray="1 1" strokeOpacity={0.1} stroke="#000" />
+                        <XAxis 
+                          type="number" 
+                          dataKey="dE" 
+                          name="ΔE" 
+                          unit="m" 
+                          domain={[-distributionData.range, distributionData.range]} 
+                          tick={{fontSize: 7, fontWeight: 900}} 
+                          axisLine={{ stroke: '#cbd5e1' }}
+                          label={{ value: 'ΔE (Sağa) [m]', position: 'bottom', offset: 15, fontSize: 8, fontWeight: 900, fill: '#64748b' }}
+                        />
+                        <YAxis 
+                          type="number" 
+                          dataKey="dN" 
+                          name="ΔN" 
+                          unit="m" 
+                          domain={[-distributionData.range, distributionData.range]} 
+                          tick={{fontSize: 7, fontWeight: 900}} 
+                          axisLine={{ stroke: '#cbd5e1' }}
+                          label={{ value: 'ΔN (Yukarı) [m]', angle: -90, position: 'left', offset: 10, fontSize: 8, fontWeight: 900, fill: '#64748b' }}
+                        />
+                        <ZAxis type="number" range={[20, 300]} />
+                        <Tooltip 
+                          cursor={{ strokeDasharray: '2 2', stroke: '#94a3b8' }} 
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0].payload;
+                              const isMethod = data.method !== undefined;
+                              return (
+                                <div className="bg-slate-900 border border-white/10 text-white p-3 rounded-2xl shadow-2xl backdrop-blur-md z-50">
+                                  <p className="text-[9px] font-black uppercase text-blue-400 mb-2 pb-1 border-b border-white/5">
+                                    {isMethod ? `Yöntem: ${getMethodLabel(data.method)}` : `Ham Ölçüm #${data.id}`}
+                                  </p>
+                                  <div className="space-y-1 font-mono text-[9px]">
+                                    <div className="flex justify-between gap-4">
+                                      <span className="opacity-60 text-[8px] uppercase">Δ Sağa (E):</span>
+                                      <span className="font-black text-blue-400">{data.dE.toFixed(4)} m</span>
+                                    </div>
+                                    <div className="flex justify-between gap-4">
+                                      <span className="opacity-60 text-[8px] uppercase">Δ Yukarı (N):</span>
+                                      <span className="font-black text-indigo-400">{data.dN.toFixed(4)} m</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        
+                        <ReferenceLine x={0} stroke="#cbd5e1" strokeWidth={1} />
+                        <ReferenceLine y={0} stroke="#cbd5e1" strokeWidth={1} />
+                        
+                        {/* Layer 1: Raw Points Cloud */}
+                        <Scatter 
+                          name="Ham Ölçümler" 
+                          data={distributionData.rawPoints} 
+                          fill="#64748b" 
+                          fillOpacity={0.15} 
+                          shape="circle" 
+                        />
+                        
+                        {/* Layer 2: Method Aggregates */}
+                        {distributionData.methodPoints.map((mp) => (
+                          <Scatter 
+                            key={mp.method} 
+                            name={getMethodLabel(mp.method)} 
+                            data={[mp]} 
+                            fill={mp.color}
+                            shape="circle"
+                          />
+                        ))}
+
+                        {/* Layer 3: Numeric Labels for Methods */}
+                        <Scatter 
+                          data={distributionData.methodPoints} 
+                          shape={<CustomScatterLabel />} 
+                        />
+                      </ScatterChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Legend / Method Reference */}
+                  <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-3 bg-white/5 p-5 rounded-2xl border border-white/5">
                     {distributionData.methodPoints.map(m => (
-                      <div key={m.id} className="flex items-center gap-2">
-                        <span className="w-4 h-4 flex items-center justify-center rounded-full text-[8px] font-black text-white" style={{ backgroundColor: m.color }}>{m.id}</span>
-                        <span className="text-[8px] font-bold text-slate-500 uppercase truncate">{getMethodLabel(m.method)}</span>
+                      <div key={m.id} className="flex items-center gap-3">
+                        <div className="w-5 h-5 flex items-center justify-center rounded-lg text-[9px] font-black text-white shadow-lg" style={{ backgroundColor: m.color }}>{m.id}</div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-[8px] font-black text-white uppercase tracking-tighter truncate">{getMethodLabel(m.method)}</span>
+                          <span className="text-[7px] font-bold text-blue-400 uppercase tracking-widest">{m.errors?.dhz.toFixed(3)}m Hata</span>
+                        </div>
                       </div>
                     ))}
                   </div>
