@@ -3,6 +3,7 @@ import { SavedLocation, AppSettings } from '../types';
 import { downloadKML } from './KMLUtils';
 import { downloadExcel, downloadTechnicalReport } from './ExcelUtils';
 import { downloadTXT } from './TxtUtils';
+import DataAnalysisView from './DataAnalysisView';
 
 interface Props {
   locations: SavedLocation[];
@@ -15,6 +16,7 @@ const ExportUnifiedView: React.FC<Props> = ({ locations, settings }) => {
   
   const filteredPoints = locations.filter(l => l.folderName === selectedFolder);
   const [selectedPointId, setSelectedPointId] = useState<string>(filteredPoints.length > 0 ? filteredPoints[0].id : '');
+  const [showAnalysis, setShowAnalysis] = useState(false);
 
   // Reset selected point when folder changes
   React.useEffect(() => {
@@ -29,11 +31,28 @@ const ExportUnifiedView: React.FC<Props> = ({ locations, settings }) => {
   const getFiltered = () => filteredPoints;
   const getSelectedPoint = () => locations.find(l => l.id === selectedPointId);
 
+  const handleOpenAnalysis = () => {
+    const password = prompt("Analiz sayfasına giriş için şifreyi giriniz:");
+    if (password === "748123") {
+      setShowAnalysis(true);
+    } else if (password !== null) {
+      alert("Hatalı şifre!");
+    }
+  };
+
   const hasSelection = !!selectedFolder;
   const hasPointSelection = !!selectedPointId;
 
   return (
     <div className="space-y-8 pb-10 max-w-sm mx-auto w-full">
+      {showAnalysis && getSelectedPoint() && (
+        <DataAnalysisView 
+          location={getSelectedPoint()!} 
+          settings={settings} 
+          onClose={() => setShowAnalysis(false)} 
+        />
+      )}
+
       <div className="space-y-3">
         {uniqueFolders.length > 0 ? (
           <div className="relative">
@@ -131,6 +150,19 @@ const ExportUnifiedView: React.FC<Props> = ({ locations, settings }) => {
               <i className="fas fa-microscope text-xl"></i>
             </div>
             <span className="tracking-tight">Ölçüm Raporu (.XLSX)</span>
+          </button>
+
+          <button 
+            onClick={handleOpenAnalysis} 
+            disabled={!hasPointSelection} 
+            className={`w-full py-3 md:py-4 px-6 text-white rounded-xl md:rounded-2xl font-black text-sm md:text-base uppercase flex items-center gap-5 transition-all duration-300 shadow-xl ${
+              hasPointSelection ? 'bg-amber-600 shadow-amber-200 active:scale-[0.98]' : 'bg-slate-200 opacity-40 grayscale cursor-not-allowed shadow-none'
+            }`}
+          >
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/30 shrink-0">
+              <i className="fas fa-chart-line text-xl"></i>
+            </div>
+            <span className="tracking-tight">Hassas Analiz (AR-GE)</span>
           </button>
         </div>
       </div>
