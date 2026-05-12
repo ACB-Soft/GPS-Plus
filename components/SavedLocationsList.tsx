@@ -3,6 +3,7 @@ import { SavedLocation, AppSettings } from '../types';
 import { convertCoordinate } from '../utils/CoordinateUtils';
 import { getAccuracyColor } from '../utils/StyleUtils';
 import { useOrthometricHeight } from '../hooks/useGeoid';
+import { calculateMaxDistance } from '../utils/MathUtils';
 
 interface Props {
   locations: SavedLocation[];
@@ -33,6 +34,20 @@ const SavedLocationItem: React.FC<{
 
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState(l.name);
+
+  // Re-calculate accuracy based on spread if samples are present
+  const dynamicAccuracy = React.useMemo(() => {
+    if (!l.samples || l.samples.length <= 1) return l.accuracy;
+    
+    // Filter samples by accuracy limit
+    const limit = l.accuracyLimit || 5.0;
+    const reliableSamples = l.samples.filter(s => s.accuracy <= limit);
+    
+    if (reliableSamples.length <= 1) return l.accuracy;
+    
+    const maxSpread = calculateMaxDistance(reliableSamples);
+    return Math.max(l.accuracy, maxSpread);
+  }, [l.accuracy, l.samples, l.accuracyLimit]);
 
   const handleSave = () => {
     if (newName.trim() && newName !== l.name) {
@@ -157,7 +172,7 @@ const SavedLocationItem: React.FC<{
             </div>
             <div className="flex flex-col">
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Hassasiyet</span>
-              <p className={`text-[14px] mono-font font-black leading-tight ${getAccuracyColor(l.accuracy)}`}>±{l.accuracy.toFixed(1)}m</p>
+              <p className={`text-[14px] mono-font font-black leading-tight ${getAccuracyColor(dynamicAccuracy)}`}>±{dynamicAccuracy.toFixed(1)}m</p>
             </div>
           </div>
           <div className="mt-4 pt-4 border-t border-slate-50 flex flex-col gap-2">

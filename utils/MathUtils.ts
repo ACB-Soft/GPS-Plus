@@ -109,6 +109,23 @@ export function calculateResult(
   return { result: resultData, usedIndices };
 }
 
+export function calculateMaxDistance(samples: Coordinate[]): number {
+  if (samples.length <= 1) return 0;
+  
+  let maxDist = 0;
+  const meanLat = samples.reduce((a, b) => a + b.lat, 0) / samples.length;
+  
+  for (let i = 0; i < samples.length; i++) {
+    for (let j = i + 1; j < samples.length; j++) {
+      const dLat = (samples[i].lat - samples[j].lat) * 111320;
+      const dLng = (samples[i].lng - samples[j].lng) * 111320 * Math.cos(meanLat * Math.PI / 180);
+      const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+      if (dist > maxDist) maxDist = dist;
+    }
+  }
+  return maxDist;
+}
+
 export function calculateAverage(samples: Coordinate[]): Coordinate {
   const validAltitudes = samples.filter(s => s.altitude !== null);
   const validAltAccuracies = samples.filter(s => s.altitudeAccuracy !== null);

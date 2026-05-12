@@ -4,6 +4,7 @@ import L from 'leaflet';
 import { SavedLocation, AppSettings } from '../types';
 import { convertCoordinate } from '../utils/CoordinateUtils';
 import { useOrthometricHeight } from '../hooks/useGeoid';
+import { calculateMaxDistance } from '../utils/MathUtils';
 
 
 // Map rendering fix for modals
@@ -38,6 +39,22 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
   
   const geoidInfo = useOrthometricHeight(location.altitude, location.lat, location.lng);
   const displayHeight = isOrthometric ? geoidInfo.orthometricHeight : geoidInfo.ellipsoidalHeight;
+  
+  // Re-calculate accuracy based on spread if samples are present
+  // This ensures old data also reflects the "Max(Statistical, MaxDistance)" logic
+  const dynamicAccuracy = React.useMemo(() => {
+    if (!location.samples || location.samples.length <= 1) return location.accuracy;
+    
+    // Filter samples by accuracy limit as per user's latest logic
+    const limit = location.accuracyLimit || 5.0;
+    const reliableSamples = location.samples.filter(s => s.accuracy <= limit);
+    
+    if (reliableSamples.length <= 1) return location.accuracy;
+    
+    const maxSpread = calculateMaxDistance(reliableSamples);
+    // Return the maximum of saved accuracy (statistical) and the physical spread
+    return Math.max(location.accuracy, maxSpread);
+  }, [location.accuracy, location.samples, location.accuracyLimit]);
 
   const getMapProviderInfo = () => {
     const provider = localStorage.getItem('default_map_provider') || 'Google Hybrid';
@@ -86,17 +103,17 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
               <div className="text-xl md:text-2xl font-black text-blue-600 mono-font leading-none">{displayHeight !== null ? displayHeight.toFixed(heightPrecision) : '---'}<span className="text-[10px] ml-1">m</span></div>
             </div>
             <div className={`p-4 md:p-5 rounded-2xl md:rounded-3xl border text-left transition-colors shadow-sm ${
-              location.accuracy <= 10 ? 'bg-emerald-50/50 border-emerald-100' : 
-              location.accuracy <= 20 ? 'bg-amber-50/50 border-amber-100' : 'bg-rose-50/50 border-rose-100'
+              dynamicAccuracy <= 10 ? 'bg-emerald-50/50 border-emerald-100' : 
+              dynamicAccuracy <= 20 ? 'bg-amber-50/50 border-amber-100' : 'bg-rose-50/50 border-rose-100'
             }`}>
               <div className={`text-[9px] md:text-[10px] font-black uppercase mb-1 leading-none ${
-                location.accuracy <= 10 ? 'text-emerald-500' : 
-                location.accuracy <= 20 ? 'text-amber-500' : 'text-rose-500'
+                dynamicAccuracy <= 10 ? 'text-emerald-500' : 
+                dynamicAccuracy <= 20 ? 'text-amber-500' : 'text-rose-500'
               }`}>Hassasiyet</div>
               <div className={`text-xl md:text-2xl font-black mono-font leading-none ${
-                location.accuracy <= 10 ? 'text-emerald-600' : 
-                location.accuracy <= 20 ? 'text-amber-600' : 'text-rose-600'
-              }`}>±{location.accuracy.toFixed(1)}<span className="text-[10px] ml-1">m</span></div>
+                dynamicAccuracy <= 10 ? 'text-emerald-600' : 
+                dynamicAccuracy <= 20 ? 'text-amber-600' : 'text-rose-600'
+              }`}>±{dynamicAccuracy.toFixed(1)}<span className="text-[10px] ml-1">m</span></div>
             </div>
           </div>
         </div>
@@ -160,7 +177,7 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
             />
             <Circle 
               center={[location.lat, location.lng]} 
-              radius={location.accuracy} 
+              radius={dynamicAccuracy} 
               pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.2 }} 
             />
             <MapResizer />
@@ -171,10 +188,10 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
               <div className="flex flex-col">
                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Hassasiyet</p>
                 <p className={`text-base font-black mono-font leading-none ${
-                  location.accuracy <= 10 ? 'text-emerald-600' : 
-                  location.accuracy <= 20 ? 'text-amber-600' : 'text-rose-600'
+                  dynamicAccuracy <= 10 ? 'text-emerald-600' : 
+                  dynamicAccuracy <= 20 ? 'text-amber-600' : 'text-rose-600'
                 }`}>
-                  ±{location.accuracy.toFixed(1)}m
+                  ±{dynamicAccuracy.toFixed(1)}m
                 </p>
               </div>
               <div className="text-right flex-1 min-w-0">
