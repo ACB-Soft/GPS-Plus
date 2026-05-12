@@ -24,6 +24,17 @@ const MapResizer = () => {
   return null;
 };
 
+const MapSetBounds = ({ points }: { points: [number, number][] }) => {
+  const map = useMap();
+  React.useEffect(() => {
+    if (points.length > 0) {
+      const bounds = L.latLngBounds(points);
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 19 });
+    }
+  }, [points, map]);
+  return null;
+};
+
 const METHOD_COLORS: Record<string, string> = {
   ARITHMETIC_MEAN: '#ec4899',
   KDE: '#06b6d4',
@@ -80,6 +91,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [preciseN, setPreciseN] = useState<string>(''); // Northing (X)
   const [preciseE, setPreciseE] = useState<string>(''); // Easting (Y)
   const [preciseZ, setPreciseZ] = useState<string>('');
+  const [preciseWgs, setPreciseWgs] = useState<[number, number] | null>(null);
   
   const [analysisResults, setAnalysisResults] = useState<any[] | null>(null);
 
@@ -137,9 +149,17 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       const converted = convertCoordinate(pn, pe, testSys);
       refX = converted.y; // Northing (Yukarı/X)
       refY = converted.x; // Easting (Sağa/Y)
+      setPreciseWgs([pn, pe]);
     } else {
       refX = pn; // Yukarı (X)
       refY = pe; // Sağa (Y)
+      
+      // Calculate WGS84 for map display
+      import('../utils/CoordinateUtils').then(m => {
+        const roughCenter = calculateAverage(location.samples!);
+        const back = m.convertToWGS84(pe, pn, sys, Math.round(roughCenter.lng / 3) * 3);
+        setPreciseWgs([back.lat, back.lng]);
+      });
     }
 
     const results = methods.map(method => {
@@ -159,9 +179,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
       return {
         method,
+        lat: result.lat,
+        lng: result.lng,
         calculated: {
-          x: useLocal ? calcMeter.x : result.lat, // x is Sağa (Y) / Lat? Wait. 
-          y: useLocal ? calcMeter.y : result.lng, // y is Yukarı (X) / Lng?
+          x: useLocal ? calcMeter.x : result.lat, 
+          y: useLocal ? calcMeter.y : result.lng, 
           z: calcZ
         },
         errors: { dx, dy, dz, dhz }
@@ -307,6 +329,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       const conv = convertCoordinate(result.lat, result.lng, sys);
       return {
         method,
+        lat: result.lat,
+        lng: result.lng,
         calculated: {
           x: conv.x,
           y: conv.y,
@@ -339,23 +363,42 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
         <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 no-scrollbar">
           
           {/* STEP 1: Method Selection */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">1. Analiz Yöntemini Seçin</label>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-3">
               <button 
                 onClick={() => { setAnalysisType('precise'); setAnalysisResults(null); }}
                 className={`flex-1 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all border-2 ${analysisType === 'precise' ? 'bg-blue-600 text-white border-blue-600 shadow-xl shadow-blue-100' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
               >
                 <i className="fas fa-bullseye mr-2"></i>
-                Kesin Koordinatlı
+                Kesin Koordinatlı (Hata Analizi)
               </button>
               <button 
                 onClick={() => { setAnalysisType('normal'); setAnalysisResults(null); }}
                 className={`flex-1 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all border-2 ${analysisType === 'normal' ? 'bg-blue-600 text-white border-blue-600 shadow-xl shadow-blue-100' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
               >
                 <i className="fas fa-chart-line mr-2"></i>
-                Normal Analiz
+                Normal Karşılaştırmalı Analiz
               </button>
+            </div>
+            
+            {/* Info Box about Hybrid Models */}
+            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-3">
+               <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Model Açıklamaları</h4>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-[9px] font-black text-emerald-600 uppercase">Geodetis-Hybrid</p>
+                    <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
+                      DBSCAN kümeleme ile kaba hataları eler, Baarda etkisiyle geometrik ağırlık verir ve fiziksel sensör hassasiyetini ($1/acc^2$) hesaba katar.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[9px] font-black text-blue-600 uppercase">Statistic-Hybrid</p>
+                    <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
+                      Mahalanobis kovaryansı ile istatistiksel aykırı puanları zayıflatır, RANSAC konsensüsü ile en tutarlı grubu bulur ve Huber optimizasyonu uygular.
+                    </p>
+                  </div>
+               </div>
             </div>
           </div>
 
@@ -795,7 +838,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
             </style>
 
             <MapContainer 
-              center={analysisType === 'precise' && useLocal ? [parseFloat(preciseN), parseFloat(preciseE)] : [location.lat, location.lng]} 
+              center={[location.lat, location.lng]} 
               zoom={20} 
               maxZoom={40}
               style={{ height: '100%', width: '100%' }}
@@ -811,16 +854,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               
               {/* Raw Samples Cloud (Filtered by Accuracy Limit) */}
               {location.samples?.filter(s => s.accuracy <= (location.accuracyLimit || 5.0)).map((s, idx) => {
-                let pos: [number, number] = [s.lat, s.lng];
-                if (useLocal) {
-                  const conv = convertCoordinate(s.lat, s.lng, location.coordinateSystem || 'ITRF96_3');
-                  pos = [conv.y, conv.x]; // Use local grid coordinates (Y as Lat-ish, X as Lng-ish)
-                }
-
                 return (
                   <Marker 
                     key={`raw-${idx}`}
-                    position={pos} 
+                    position={[s.lat, s.lng]} 
                     icon={L.divIcon({
                       className: 'raw-marker',
                       html: `<div style="width: 6px; height: 6px; background: rgba(0,0,0,0.15); border: 0.5px solid rgba(0,0,0,0.3); border-radius: 50%;"></div>`,
@@ -839,9 +876,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               })}
 
               {/* Ground Truth IF Precise */}
-              {analysisType === 'precise' && (
+              {analysisType === 'precise' && preciseWgs && (
                 <Marker 
-                  position={[parseFloat(preciseN), parseFloat(preciseE)]} 
+                  position={preciseWgs} 
                   icon={L.divIcon({
                     className: 'precise-marker',
                     html: `<div class="triangle-up"></div>`,
@@ -863,19 +900,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
               {/* Algorithm Results */}
               {analysisResults.map((res, index) => {
-                let pos: [number, number];
-                if (useLocal) {
-                   // Res.calculated.x is Sağa (Y), y is Yukarı (X)
-                   pos = [res.calculated.y, res.calculated.x];
-                } else {
-                   // Res.calculated.x is Lat, y is Lng
-                   pos = [res.calculated.x, res.calculated.y];
-                }
-                
                 return (
                   <Marker 
                     key={res.method}
-                    position={pos} 
+                    position={[res.lat, res.lng]} 
                     icon={L.divIcon({
                       className: 'method-marker',
                       html: `<div style="width: 22px; height: 22px; background: ${METHOD_COLORS[res.method]}; border: 2.5px solid white; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.2); display: flex; align-items: center; justify-center; color: white; font-size: 11px; font-weight: 900; line-height: 1;">${index + 1}</div>`,
@@ -903,6 +931,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 );
               })}
 
+              <MapSetBounds points={[
+                ...location.samples!.filter(s => s.accuracy <= (location.accuracyLimit || 5.0)).map(s => [s.lat, s.lng] as [number, number]),
+                ...analysisResults.map(r => [r.lat, r.lng] as [number, number]),
+                ...(analysisType === 'precise' && preciseWgs ? [preciseWgs] : [])
+              ]} />
               <MapResizer />
             </MapContainer>
 
