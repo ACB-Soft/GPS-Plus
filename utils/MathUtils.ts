@@ -39,31 +39,18 @@ export function calculateResult(
       resultData = calculateAverage(sourceData);
       break;
     case 'GEODETIS_HYBRID':
-      // 1. DBSCAN: Remove secondary clusters/noise
-      const dbscanPass = applyDBSCANFilter(sourceData);
-      if (dbscanPass.length < 5) {
-        // Fallback to robust if cluster too small
-        const res = robustEstimation(dbscanPass);
-        resultData = res.result;
-        finalCalculatedUsedIndices = res.usedIndices;
-      } else {
-        // 2. Baarda: Remove individual geodetic outliers
-        const baardaPass = applyBaardaFilter(dbscanPass);
-        // 3. Robust: Final robust estimation
-        const res = robustEstimation(baardaPass);
-        resultData = res.result;
-        finalCalculatedUsedIndices = res.usedIndices;
-      }
+      // GEODETIS-HYBRID (DBSCAN + Baarda + Weighted Robust)
+      // Instead of pruning, we assign a "Geodetic Reliability Score"
+      const geodeticResults = calculateGeodetisHybrid(sourceData);
+      resultData = geodeticResults.result;
+      finalCalculatedUsedIndices = geodeticResults.usedIndices;
       break;
     case 'STATISTIC_HYBRID':
-      // 1. Mahalanobis: Global statistical outlier removal
-      const mahaPass = applyMahalanobisFilter(sourceData);
-      // 2. RANSAC: Consensus based model finding
-      const ransacPass = applyRANSACFilter(mahaPass);
-      // 3. L1-Norm / Huber: Final optimization
-      const l1Res = applyL1HuberEstimation(ransacPass);
-      resultData = l1Res.result;
-      finalCalculatedUsedIndices = l1Res.usedIndices;
+      // STATISTIC-HYBRID (Mahalanobis + RANSAC + Huber)
+      // Focus on statistical weights and consensus
+      const statisticalResults = calculateStatisticHybrid(sourceData);
+      resultData = statisticalResults.result;
+      finalCalculatedUsedIndices = statisticalResults.usedIndices;
       break;
     case 'KDE':
       const kde = applyKDEEstimation(sourceData);
@@ -588,6 +575,94 @@ function applyKDEEstimation(samples: Coordinate[]): { result: Coordinate; usedIn
   return { result: calculateAverage(inliers), usedIndices };
 }
 
+
+/**
+ * GEODETIS-HYBRID (DBSCAN + Baarda + Weighted Robust)
+ */
+function calculateGeodetisHybrid(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
+
+  const sensorWeights = samples.map(s => 1 / Math.pow(s.accuracy || 0.1, 2));
+  const mainCluster = applyDBSCANFilter(samples);
+  const dbscanWeights = samples.map(s => mainCluster.includes(s) ? 1.0 : 0.2);
+
+  const avgRes = calculateAverage(samples);
+  const meanLat = avgRes.lat;
+  const meanLng = avgRes.lng;
+  
+  const baardaWeights = samples.map(s => {
+    const dLat = (s.lat - meanLat) * 111320;
+    const dLng = (s.lng - meanLng) * 111320 * Math.cos(meanLat * Math.PI / 180);
+    const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+    const stdRes = dist / 5.0; 
+    return Math.exp(-0.5 * Math.pow(stdRes / 3.0, 2)); 
+  });
+
+  const finalWeights = samples.map((_, i) => sensorWeights[i] * dbscanWeights[i] * baardaWeights[i]);
+  const sumW = finalWeights.reduce((a, b) => a + b, 0);
+
+  const result: Coordinate = {
+    ...avgRes,
+    lat: samples.reduce((a, b, i) => a + b.lat * finalWeights[i], 0) / sumW,
+    lng: samples.reduce((a, b, i) => a + b.lng * finalWeights[i], 0) / sumW,
+    timestamp: Date.now()
+  };
+
+  return { result, usedIndices: samples.map((_, i) => i) };
+}
+
+/**
+ * STATISTIC-HYBRID (Mahalanobis + RANSAC + Huber Optimization)
+ */
+function calculateStatisticHybrid(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
+
+  const consensusPoints = applyRANSACFilter(samples);
+  const ransacWeights = samples.map(s => consensusPoints.includes(s) ? 1.0 : 0.1);
+
+  const avgRes = calculateAverage(samples);
+  const meanLat = avgRes.lat;
+  const meanLng = avgRes.lng;
+  
+  let varLat = 0, varLng = 0, covLatLng = 0;
+  for (const s of samples) {
+    const dLat = (s.lat - meanLat);
+    const dLng = (s.lng - meanLng);
+    varLat += dLat * dLat;
+    varLng += dLng * dLng;
+    covLatLng += dLat * dLng;
+  }
+  const n = samples.length;
+  varLat /= (n-1); varLng /= (n-1); covLatLng /= (n-1);
+  const det = (varLat * varLng) - (covLatLng * covLatLng);
+  
+  let mahaWeights = samples.map(() => 1.0);
+  if (Math.abs(det) > 1e-25) {
+    const invVarLat = varLng / det;
+    const invVarLng = varLat / det;
+    const invCovLatLng = -covLatLng / det;
+    
+    mahaWeights = samples.map(s => {
+      const dLat = s.lat - meanLat;
+      const dLng = s.lng - meanLng;
+      const d2 = (dLat * invVarLat * dLat) + (2 * dLat * invCovLatLng * dLng) + (dLng * invVarLng * dLng);
+      return 1 / (1 + d2/9.21);
+    });
+  }
+
+  const sensorWeights = samples.map(s => 1 / Math.pow(s.accuracy || 0.1, 2));
+  const finalWeights = samples.map((_, i) => sensorWeights[i] * ransacWeights[i] * mahaWeights[i]);
+  const sumW = finalWeights.reduce((a, b) => a + b, 0);
+
+  const result: Coordinate = {
+    ...avgRes,
+    lat: samples.reduce((a, b, i) => a + b.lat * finalWeights[i], 0) / sumW,
+    lng: samples.reduce((a, b, i) => a + b.lng * finalWeights[i], 0) / sumW,
+    timestamp: Date.now()
+  };
+
+  return { result, usedIndices: samples.map((_, i) => i) };
+}
 
 /**
  * Calculates variance of coordinates in meters
