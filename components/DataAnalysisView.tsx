@@ -86,12 +86,19 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [preciseZ, setPreciseZ] = useState<string>('');
   
   const [analysisResults, setAnalysisResults] = useState<any[] | null>(null);
+
+  const bestMethod = useMemo(() => {
+    if (!analysisResults || analysisResults.length === 0) return null;
+    const sorted = [...analysisResults].sort((a,b) => (a.errors?.dhz || 0) - (b.errors?.dhz || 0));
+    return sorted[0].method;
+  }, [analysisResults]);
+
   const useLocal = useMemo(() => {
     if (!location) return true;
     return location.coordinateSystem !== 'WGS84';
   }, [location]);
 
-  const methods: CalculationMethod[] = [
+  const methods = useMemo<CalculationMethod[]>(() => [
     'ARITHMETIC_MEAN', 
     'LEAST_SQUARES', 
     'ROBUST', 
@@ -100,20 +107,20 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     'DBSCAN', 
     'RANSAC', 
     'KDE'
-  ];
+  ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
-    switch(m) {
-      case 'ARITHMETIC_MEAN': return "Aritmetik Ortalama";
-      case 'LEAST_SQUARES': return "Dengelenmiş E.K.K.";
-      case 'ROBUST': return "Robust Kestirim";
-      case 'BAARDA': return "Baarda Hata Analizi";
-      case 'L1_HUBER': return "L1-Norm Çözümü";
-      case 'DBSCAN': return "DBSCAN Kümeleme";
-      case 'RANSAC': return "RANSAC Konsensüs";
-      case 'KDE': return "Yoğunluk Dağılımı";
-      default: return m;
-    }
+    const labels: Record<string, string> = {
+      'ARITHMETIC_MEAN': "Aritmetik Ortalama",
+      'LEAST_SQUARES': "Dengelenmiş E.K.K.",
+      'ROBUST': "Robust Kestirim",
+      'BAARDA': "Baarda Hata Analizi",
+      'L1_HUBER': "L1-Norm Çözümü",
+      'DBSCAN': "DBSCAN Kümeleme",
+      'RANSAC': "RANSAC Konsensüs",
+      'KDE': "Yoğunluk Dağılımı"
+    };
+    return labels[m] || m;
   };
 
   const calculateAllMethods = () => {
@@ -180,18 +187,22 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     if (!location || !location.samples) return [];
     
     const sys = location.coordinateSystem || 'ITRF96_3';
+    const limit = location.accuracyLimit || 5.0;
     
-    return location.samples.map((s, idx) => {
-      const conv = convertCoordinate(s.lat, s.lng, sys);
-      return {
-        id: idx + 1,
-        x: conv.x,
-        y: conv.y,
-        alt: s.altitude || 0,
-        acc: s.accuracy,
-        time: new Date(s.timestamp).toLocaleTimeString()
-      };
-    });
+    // Filter by accuracy limit
+    return location.samples
+      .filter(s => s.accuracy <= limit)
+      .map((s, idx) => {
+        const conv = convertCoordinate(s.lat, s.lng, sys);
+        return {
+          id: idx + 1,
+          x: conv.x,
+          y: conv.y,
+          alt: s.altitude || 0,
+          acc: s.accuracy,
+          time: new Date(s.timestamp).toLocaleTimeString()
+        };
+      });
   }, [location]);
 
   const distributionData = useMemo(() => {
@@ -472,7 +483,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
           )}
 
           {/* STEP 5: Results and Visualization */}
-          {analysisResults && (
+          {analysisResults && analysisResults.length > 0 && (
             <div className="space-y-6 animate-in slide-in-from-top-4 duration-500">
               <div className="flex items-center justify-between px-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">5. Analiz Sonuçları</label>
@@ -499,7 +510,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     </thead>
                     <tbody>
                       {analysisResults.map((res, idx) => {
-                        const isBest = res.method === analysisResults.sort((a,b) => (a.errors?.dhz || 0) - (b.errors?.dhz || 0))[0].method;
+                        const isBest = res.method === bestMethod;
                         return (
                           <tr key={res.method} className={`border-b border-slate-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
                             <td className="p-4 font-black text-[11px] text-slate-800">{getMethodLabel(res.method)}</td>
@@ -713,7 +724,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     <div className="text-center w-full">
                       <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Yatayda En Başarılı Algoritma</p>
                       <p className="text-xl font-black uppercase">
-                        {getMethodLabel(analysisResults.sort((a,b) => (a.errors?.dhz || 0) - (b.errors?.dhz || 0))[0].method)}
+                        {getMethodLabel(bestMethod as any)}
                       </p>
                     </div>
                     <button 
@@ -740,7 +751,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               </p>
             </div>
           )}
-
         </div>
       </div>
 
@@ -797,8 +807,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 maxZoom={40}
               />
               
-              {/* Raw Samples Cloud */}
-              {location.samples?.map((s, idx) => (
+              {/* Raw Samples Cloud (Filtered by Accuracy Limit) */}
+              {location.samples?.filter(s => s.accuracy <= (location.accuracyLimit || 5.0)).map((s, idx) => (
                 <Marker 
                   key={`raw-${idx}`}
                   position={[s.lat, s.lng]} 
@@ -811,7 +821,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 >
                   <Popup>
                     <div className="p-2">
-                      <p className="text-[10px] font-black uppercase text-slate-500 mb-1">Ham Ölçüm #{idx+1}</p>
+                      <p className="text-[10px] font-black uppercase text-slate-500 mb-1">Ham Ölçüm (Güvenilir) #{idx+1}</p>
                       <p className="text-xs font-bold font-mono">Hass: ±{s.accuracy.toFixed(2)}m</p>
                     </div>
                   </Popup>

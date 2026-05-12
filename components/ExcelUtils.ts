@@ -232,6 +232,8 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     ["Koordinat Sistemi:", sys],
     ["Ölçüm Süresi:", `${location.measurementDuration || 0} sn`],
     ["Hassasiyet Eşiği:", `${accuracyLimit} m`],
+    ["Hassasiyet Hesaplama Metodu:", "Max(İstatistiksel Hassasiyet, Maksimum Örnek Yayılımı)"],
+    ["Veri Filtreleme:", `Sadece hassasiyeti ${accuracyLimit}m altındaki veriler analize dahil edilmiştir.`],
     ["Toplam Örnek Sayısı:", location.samples.length],
     [],
     ["No", "Saat", header1, header2, isOrthometricSetting ? "Yükseklik (m)" : "Elipsoidal Yükseklik (m)", "Hassasiyet (m)", "Dikey Hass. (m)", "Durum"],
@@ -322,6 +324,7 @@ export const downloadCombinedAnalysisReport = (
   // --- SAYFA 2: İSTATİSTİKSEL ANALİZ VE AR-GE SONUÇLARI ---
   const calculationMethod = location.calculationMethod || 'ARITHMETIC_MEAN';
   const bestMethod = results.sort((a,b) => a.errors.dhz - b.errors.dhz)[0];
+  const accuracyLimit = location.accuracyLimit || 5.0;
 
   const analysisData: any[][] = [
     ["DETAYLI İSTATİSTİKSEL ANALİZ VE ALGORİTMA PERFORMANS RAPORU"],
@@ -344,6 +347,8 @@ export const downloadCombinedAnalysisReport = (
     [preciseCoords.x, preciseCoords.y, preciseCoords.z],
     [],
     ["3. ALGORİTMA BAZLI HATA ANALİZİ (KIYASLAMA)"],
+    ["Hassasiyet Hesaplama Metodu:", "Max(İstatistiksel Hassasiyet, Maksimum Örnek Yayılımı)"],
+    ["Veri Filtreleme:", `Analizde sadece hassasiyeti ${accuracyLimit}m altındaki veriler kullanılmıştır.`],
     ["Yöntem", preciseCoords.isWgs84 ? "Enlem (Lat)" : "Sağa (Y)", preciseCoords.isWgs84 ? "Boylam (Lng)" : "Yukarı (X)", preciseCoords.isWgs84 ? "Alt (Elip.H)" : "Kot (Z)", "ΔX (m)", "ΔY (m)", "ΔDüşey (m)", "Yatay Hata (m)", "DURUM"],
     ...results.map(res => [
       getMethodName(res.method),
@@ -377,7 +382,6 @@ export const downloadCombinedAnalysisReport = (
     ["Gözlem Süresi (sn)", "Hesaplanan X/Lat", "Hesaplanan Y/Lng", "Hesaplanan Z/H", "Yatay Hata (m)", "Düşey Hata (m)", "Örnek Sayısı"],
   ];
 
-  const accuracyLimit = location.accuracyLimit || 5.0;
   const targetMethod = bestMethod.method;
   
   // Reference values in meters for comparison

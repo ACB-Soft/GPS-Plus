@@ -172,17 +172,23 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
               lastSavedPositionRef.current.accuracy !== current.accuracy;
 
             if (isDifferent) {
-              samplesRef.current.push({
-                lat: pos.coords.latitude, 
-                lng: pos.coords.longitude,
-                accuracy: pos.coords.accuracy, 
-                altitude: pos.coords.altitude, 
-                altitudeAccuracy: pos.coords.altitudeAccuracy,
-                timestamp: Date.now()
-              });
-              lastSavedPositionRef.current = current;
-              lastSaveTimestampRef.current = Date.now();
-              setSampleCount(samplesRef.current.length);
+              // ONLY SAVE IF IT SATISFIES THE DETERMINED LIMITS
+              const isAccOk = current.accuracy <= accuracyLimit;
+              const isGnssOk = !gnssOnlySetting || (pos.coords.altitude !== null && pos.coords.altitude !== 0);
+
+              if (isAccOk && isGnssOk) {
+                samplesRef.current.push({
+                  lat: pos.coords.latitude, 
+                  lng: pos.coords.longitude,
+                  accuracy: pos.coords.accuracy, 
+                  altitude: pos.coords.altitude, 
+                  altitudeAccuracy: pos.coords.altitudeAccuracy,
+                  timestamp: Date.now()
+                });
+                lastSavedPositionRef.current = current;
+                lastSaveTimestampRef.current = Date.now();
+                setSampleCount(samplesRef.current.length);
+              }
             }
           }
         },
@@ -216,14 +222,20 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
 
     if (samples.length === 0 && lastPositionRef.current) {
       const p = lastPositionRef.current;
-      samples.push({ 
-        lat: p.coords.latitude, 
-        lng: p.coords.longitude, 
-        accuracy: p.coords.accuracy, 
-        altitude: p.coords.altitude, 
-        altitudeAccuracy: p.coords.altitudeAccuracy,
-        timestamp: Date.now() 
-      });
+      // Only add manually if it satisfies the accuracy limit and GNSS requirements
+      const isAccOk = p.coords.accuracy <= accuracyLimit;
+      const isGnssOk = !gnssOnlySetting || (p.coords.altitude !== null && p.coords.altitude !== 0);
+      
+      if (isAccOk && isGnssOk) {
+        samples.push({ 
+          lat: p.coords.latitude, 
+          lng: p.coords.longitude, 
+          accuracy: p.coords.accuracy, 
+          altitude: p.coords.altitude, 
+          altitudeAccuracy: p.coords.altitudeAccuracy,
+          timestamp: Date.now() 
+        });
+      }
     }
     if (samples.length === 0) {
       alert("Konum verisi alınamadı.");
@@ -284,8 +296,8 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
         const isActuallySatellite = !gnssOnlySetting || 
           (lastPositionRef.current && lastPositionRef.current.coords.altitude !== null && lastPositionRef.current.coords.altitude !== 0);
 
-        // --- HİBRİT MANTIK: 5 Saniyede Bir Zorunlu Kayıt (Farklı veri gelmediyse) ---
-        if (isActuallySatellite && lastPositionRef.current && (now - lastSaveTimestampRef.current >= 5000)) {
+        // --- HİBRİT MANTIK: 5 Saniyede Bir Zorunlu Kayıt (Farklı veri gelmediyse ve hassasiyet uygunsa) ---
+        if (isActuallySatellite && isAccuracyOkRef.current && lastPositionRef.current && (now - lastSaveTimestampRef.current >= 5000)) {
           const p = lastPositionRef.current;
           samplesRef.current.push({
             lat: p.coords.latitude, 
