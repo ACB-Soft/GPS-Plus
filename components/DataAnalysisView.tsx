@@ -625,6 +625,20 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         <ReferenceLine x={0} stroke="#cbd5e1" strokeWidth={1} />
                         <ReferenceLine y={0} stroke="#cbd5e1" strokeWidth={1} />
                         
+                        {/* Layer 0: Ground Truth Point */}
+                        {analysisType === 'precise' && (
+                          <Scatter 
+                            name="KESİN NOKTA (REF)" 
+                            data={[{ dE: 0, dN: 0 }]} 
+                            fill="#10b981" 
+                            shape="diamond" 
+                            line={false}
+                          >
+                            {/* Inner glow for reference */}
+                            <Cell fill="#10b981" stroke="#059669" strokeWidth={2} />
+                          </Scatter>
+                        )}
+
                         {/* Layer 1: Raw Points Cloud */}
                         <Scatter 
                           name="Ham Ölçümler" 
@@ -781,7 +795,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
             </style>
 
             <MapContainer 
-              center={[location.lat, location.lng]} 
+              center={analysisType === 'precise' && useLocal ? [parseFloat(preciseN), parseFloat(preciseE)] : [location.lat, location.lng]} 
               zoom={20} 
               maxZoom={40}
               style={{ height: '100%', width: '100%' }}
@@ -796,25 +810,33 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               />
               
               {/* Raw Samples Cloud (Filtered by Accuracy Limit) */}
-              {location.samples?.filter(s => s.accuracy <= (location.accuracyLimit || 5.0)).map((s, idx) => (
-                <Marker 
-                  key={`raw-${idx}`}
-                  position={[s.lat, s.lng]} 
-                  icon={L.divIcon({
-                    className: 'raw-marker',
-                    html: `<div style="width: 6px; height: 6px; background: rgba(0,0,0,0.15); border: 0.5px solid rgba(0,0,0,0.3); border-radius: 50%;"></div>`,
-                    iconSize: [6, 6],
-                    iconAnchor: [3, 3]
-                  })}
-                >
-                  <Popup>
-                    <div className="p-2">
-                      <p className="text-[10px] font-black uppercase text-slate-500 mb-1">Ham Ölçüm (Güvenilir) #{idx+1}</p>
-                      <p className="text-xs font-bold font-mono">Hass: ±{s.accuracy.toFixed(2)}m</p>
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
+              {location.samples?.filter(s => s.accuracy <= (location.accuracyLimit || 5.0)).map((s, idx) => {
+                let pos: [number, number] = [s.lat, s.lng];
+                if (useLocal) {
+                  const conv = convertCoordinate(s.lat, s.lng, location.coordinateSystem || 'ITRF96_3');
+                  pos = [conv.y, conv.x]; // Use local grid coordinates (Y as Lat-ish, X as Lng-ish)
+                }
+
+                return (
+                  <Marker 
+                    key={`raw-${idx}`}
+                    position={pos} 
+                    icon={L.divIcon({
+                      className: 'raw-marker',
+                      html: `<div style="width: 6px; height: 6px; background: rgba(0,0,0,0.15); border: 0.5px solid rgba(0,0,0,0.3); border-radius: 50%;"></div>`,
+                      iconSize: [6, 6],
+                      iconAnchor: [3, 3]
+                    })}
+                  >
+                    <Popup>
+                      <div className="p-2">
+                        <p className="text-[10px] font-black uppercase text-slate-500 mb-1">Ham Ölçüm (Güvenilir) #{idx+1}</p>
+                        <p className="text-xs font-bold font-mono">Hass: ±{s.accuracy.toFixed(2)}m</p>
+                      </div>
+                    </Popup>
+                  </Marker>
+                );
+              })}
 
               {/* Ground Truth IF Precise */}
               {analysisType === 'precise' && (
@@ -829,8 +851,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 >
                   <Popup>
                     <div className="p-2 text-center">
-                      <p className="text-xs font-black text-emerald-600 mb-1">KESİN KOORDİNAT</p>
-                      <p className="text-[10px] font-bold text-slate-500">Referans Nirengi Noktası</p>
+                      <p className="text-xs font-black text-emerald-600 mb-1">KESİN KOORDİNAT (REFERANS)</p>
+                      <p className="text-[10px] font-bold text-slate-500">Nirengi Noktası (Referans)</p>
+                      <p className="text-[9px] font-mono mt-1">
+                        {useLocal ? `N: ${preciseN} \nE: ${preciseE}` : `Lat: ${preciseN} \nLng: ${preciseE}`}
+                      </p>
                     </div>
                   </Popup>
                 </Marker>
@@ -838,12 +863,19 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
               {/* Algorithm Results */}
               {analysisResults.map((res, index) => {
-                const { result } = calculateResult(location.samples!, res.method as any, location.accuracyLimit || 5.0);
+                let pos: [number, number];
+                if (useLocal) {
+                   // Res.calculated.x is Sağa (Y), y is Yukarı (X)
+                   pos = [res.calculated.y, res.calculated.x];
+                } else {
+                   // Res.calculated.x is Lat, y is Lng
+                   pos = [res.calculated.x, res.calculated.y];
+                }
                 
                 return (
                   <Marker 
                     key={res.method}
-                    position={[result.lat, result.lng]} 
+                    position={pos} 
                     icon={L.divIcon({
                       className: 'method-marker',
                       html: `<div style="width: 22px; height: 22px; background: ${METHOD_COLORS[res.method]}; border: 2.5px solid white; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.2); display: flex; align-items: center; justify-center; color: white; font-size: 11px; font-weight: 900; line-height: 1;">${index + 1}</div>`,
