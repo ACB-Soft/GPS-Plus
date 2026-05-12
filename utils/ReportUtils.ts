@@ -175,7 +175,22 @@ export const generateTechnicalReport = () => {
       <li><span class="bold">Safe Export:</span> Dosya üretilirken karakter kodlaması (UTF-8) korunarak Türkçe karakter sorunu ekarte edilir.</li>
     </ul>
 
-    <h2>11. HASSASİYET İPUÇLARI VE SAHA PROTOKOLLERİ</h2>
+    <h2>11. HASSASİYET HESAPLAMA METODOLOJİSİ (YATAY HASSASİYET)</h2>
+    <p>Uygulama, kullanıcıya sunulan "Yatay Hassasiyet" (Horizontal Precision) değerini hesaplarken, sadece donanımsal veriye güvenmek yerine hibrit bir matematiksel model kullanır. Bu model, iki temel bileşenin bileşkesinden oluşur:</p>
+    <ul>
+      <li><span class="bold">1. İstatistiksel Belirsizlik Tahmini:</span> GNSS alıcısından gelen anlık hata paylarının (σ_sensor) ortalaması ve toplanan verilerin kendi içindeki standart hatası (SEM - Standard Error of Mean) birleştirilir. Bu, verilerin tekrarlanabilirliğini ölçer.
+        <div class="formula">σ_stat = √[ (SEM)² + (σ_avg / √n)² ]</div>
+      </li>
+      <li><span class="bold">2. Fiziksel Yayılım (Maksimum Mesafe):</span> Kullanıcının belirlediği hassasiyet limitine uyan ("Güvenilir") ham veriler arasındaki en uzak iki nokta arasındaki fiziksel mesafe hesaplanır. Bu, GPS sinyalindeki yavaş sürüklenmeleri (Drift) veya ani sıçramaları (Multipath) tespit etmek için en kritik parametredir.
+        <div class="formula">d_max = Max( Distance(P_i, P_j) ) , ∀ i,j ∈ Güvenilir_Veriler</div>
+      </li>
+      <li><span class="bold">Nihai Karar Mekanizması:</span> Uygulama, risk analizini en üst seviyede tutmak için bu iki değerden hangisi büyükse onu kullanıcıya "Hassasiyet" olarak sunar.
+        <div class="formula">Nihai_Hassasiyet = Max( σ_stat, d_max )</div>
+      </li>
+    </ul>
+    <p>Bu metodoloji sayesinde, örneğin sensörler 3 metre hata payı bildirse bile, eğer ham veriler arasında 8 metrelik bir fiziksel yayılım varsa, uygulama kullanıcıya ±8.0m uyarısı vererek yanıltıcı hassasiyetlerin önüne geçer.</p>
+
+    <h2>12. HASSASİYET İPUÇLARI VE SAHA PROTOKOLLERİ</h2>
     <p>En iyi sonuçlar için mühendis tavsiyeleri:</p>
     <ul>
       <li><span class="bold">Anten Görüşü:</span> Cihaz gökyüzünün en az %80'ini doğrudan görebilmelidir.</li>
@@ -183,10 +198,10 @@ export const generateTechnicalReport = () => {
       <li><span class="bold">Multi-path Analizi:</span> Büyük cam cepheli binaların yanında yansıyan sinyaller koordinatı kaydırabilir; bu alanlarda DBSCAN filtresi özellikle aktif edilmelidir.</li>
     </ul>
 
-    <h2>12. TEKNİK GÖRSEL ARAYÜZ VE OPERASYONEL EKRAN ANALİZİ</h2>
+    <h2>13. TEKNİK GÖRSEL ARAYÜZ VE OPERASYONEL EKRAN ANALİZİ</h2>
     <p>Uygulamanın kullanıcı arayüzü, karmaşık jeodezik verileri sahada anlaşılır kılmak için "Bilgi Hiyerarşisi" prensibiyle tasarlanmıştır. Aşağıda ana operasyonel ekranların teknik açıklamaları ve görsel yerleşimleri sunulmuştur:</p>
 
-    <h3>12.1 Onboarding ve Hazırlık Ekranı</h3>
+    <h3>13.1 Onboarding ve Hazırlık Ekranı</h3>
     <table style="border: none;">
       <tr>
         <td style="border: 2pt dashed #ccc; width: 40%; text-align: center; vertical-align: middle; height: 300pt;">
@@ -205,7 +220,7 @@ export const generateTechnicalReport = () => {
       </tr>
     </table>
 
-    <h3>12.2 Dashboard (Proje Yönetim Paneli)</h3>
+    <h3>13.2 Dashboard (Proje Yönetim Paneli)</h3>
     <table style="border: none;">
       <tr>
         <td style="border: 2pt dashed #ccc; width: 40%; text-align: center; vertical-align: middle; height: 300pt;">
@@ -224,7 +239,7 @@ export const generateTechnicalReport = () => {
       </tr>
     </table>
 
-    <h3>12.3 Ölçüm (GNSS) ve Veri Kaydedici</h3>
+    <h3>13.3 Ölçüm (GNSS) ve Veri Kaydedici</h3>
     <table style="border: none;">
       <tr>
         <td style="border: 2pt dashed #ccc; width: 40%; text-align: center; vertical-align: middle; height: 300pt;">
@@ -245,7 +260,7 @@ export const generateTechnicalReport = () => {
 
     <div class="page-break"></div>
 
-    <h3>12.4 Aplikasyon (Stakeout) ve Navigasyon</h3>
+    <h3>13.4 Aplikasyon (Stakeout) ve Navigasyon</h3>
     <table style="border: none;">
       <tr>
         <td style="border: 2pt dashed #ccc; width: 40%; text-align: center; vertical-align: middle; height: 300pt;">
@@ -264,7 +279,7 @@ export const generateTechnicalReport = () => {
       </tr>
     </table>
 
-    <h2>13. UYGULAMA DOSYA YAPISI VE MODÜLER MİMARİ</h2>
+    <h2>14. UYGULAMA DOSYA YAPISI VE MODÜLER MİMARİ</h2>
     <p>${FULL_BRAND} yazılım mimarisi, "Separation of Concerns" (Sorumlulukların Ayrılması) prensibiyle modüler bir yapıda tasarlanmıştır. Bu yapı, her bir jeodezik fonksiyonun izole bir şekilde test edilmesine ve geliştirilmesine olanak tanır:</p>
     <ul>
       <li><span class="bold">/utils/MathUtils.ts (İstatistik ve Hesaplama Çekirdeği):</span> Uygulamanın beynidir. Aritmetik Ortalama, Robust Tahminleme, KDE, RANSAC, Mahalanobis ve DBSCAN gibi tüm ileri düzey istatistiksel algoritmalar bu dosyada kodlanmıştır. Sinyal işlemenin matematiksel doğrulanması burada gerçekleşir.</li>
@@ -277,12 +292,12 @@ export const generateTechnicalReport = () => {
       <li><span class="bold">/utils/ReportUtils.ts (Teknik Rapor Oluşturucu):</span> Şu an okumakta olduğunuz dökümantasyonun dinamik olarak üretilmesini sağlar. Yazılımın tüm teknik parametrelerini profesyonel bir formatta PDF/DOC çıktılarına hazırlar.</li>
     </ul>
 
-    <h2>14. SONUÇ</h2>
+    <h2>15. SONUÇ</h2>
     <p>
       ${FULL_BRAND}, Harita Mühendisliği’nin karmaşık matematiksel dünyasını, son kullanıcının mobil cihazındaki kullanıcı dostu bir arayüze sığdırmıştır. TG-20 jeoid desteği, 7 parametreli Bursa-Wolf dönüşümü ve gelişmiş istatistiksel filtreleme sistemleri ile sahadaki veri üretim süreçlerini hızlandırır ve güvenilir kılar. Bu teknik döküman, uygulamanın bilimsel temellere dayalı operasyonel gücünün bir beyanıdır.
     </p>
 
-    <h2>15. KAYNAKÇA VE AKADEMİK ATIFLAR</h2>
+    <h2>16. KAYNAKÇA VE AKADEMİK ATIFLAR</h2>
     <p>Bu uygulamada kullanılan algoritmalar, jeodezik modeller ve yazılım kütüphaneleri aşağıdaki temel literatüre dayanmaktadır:</p>
     <ul>
       <li><span class="bold">Huber, P. J. (1981).</span> Robust Statistics. John Wiley & Sons. (M-Estimators ve Robust Tahminleme yöntemleri için).</li>
