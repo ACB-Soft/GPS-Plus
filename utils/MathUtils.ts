@@ -77,10 +77,53 @@ export function calculateAverage(samples: Coordinate[]): Coordinate {
   const validAltitudes = samples.filter(s => s.altitude !== null);
   const validAltAccuracies = samples.filter(s => s.altitudeAccuracy !== null);
 
+  const meanLat = samples.reduce((a, b) => a + b.lat, 0) / samples.length;
+  const meanLng = samples.reduce((a, b) => a + b.lng, 0) / samples.length;
+
+  // Calculate Yatay Hassasiyet (Horizontal Precision)
+  // We use the root-mean-square of residuals plus the standard error of reported accuracies
+  const residualsInMeters = samples.map(s => {
+    const dLat = (s.lat - meanLat) * 111320;
+    const dLng = (s.lng - meanLng) * 111320 * Math.cos(meanLat * Math.PI / 180);
+    return dLat * dLat + dLng * dLng;
+  });
+  
+  const hVariance = residualsInMeters.reduce((a, b) => a + b, 0) / Math.max(1, samples.length - 1);
+  const hStdDev = Math.sqrt(hVariance);
+  
+  const avgSensorAccuracy = samples.reduce((a, b) => a + b.accuracy, 0) / samples.length;
+  
+  // Statistical accuracy estimate: Combine spatial dispersion with reported sensor uncertainty
+  // For n > 1, we use a combined uncertainty model
+  let finalAccuracy = avgSensorAccuracy;
+  if (samples.length > 1) {
+    // SEM (Standard Error of Mean) concept: Dispersion divided by sqrt(n)
+    // plus the mean reported accuracy weighted by the number of samples
+    const standardError = hStdDev / Math.sqrt(samples.length);
+    finalAccuracy = Math.sqrt(Math.pow(standardError, 2) + Math.pow(avgSensorAccuracy / Math.sqrt(samples.length), 2));
+    
+    // Calculate max distance between any two points (as per user request: "en uzak 2 nokta arası mesafe")
+    let maxDistance = 0;
+    for (let i = 0; i < samples.length; i++) {
+      for (let j = i + 1; j < samples.length; j++) {
+        const dLat = (samples[i].lat - samples[j].lat) * 111320;
+        const dLng = (samples[i].lng - samples[j].lng) * 111320 * Math.cos(meanLat * Math.PI / 180);
+        const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+        if (dist > maxDistance) maxDistance = dist;
+      }
+    }
+    
+    // User formula: FinalAccuracy = Max(Hesaplanan İstatistiksel Hassasiyet, maxDistance)
+    finalAccuracy = Math.max(finalAccuracy, maxDistance);
+
+    // Ensure it doesn't drop below a realistic threshold for consumer GPS (0.1m)
+    finalAccuracy = Math.max(0.1, finalAccuracy);
+  }
+
   return {
-    lat: samples.reduce((a, b) => a + b.lat, 0) / samples.length,
-    lng: samples.reduce((a, b) => a + b.lng, 0) / samples.length,
-    accuracy: samples.reduce((a, b) => a + b.accuracy, 0) / samples.length,
+    lat: meanLat,
+    lng: meanLng,
+    accuracy: finalAccuracy,
     altitude: validAltitudes.length > 0 
       ? validAltitudes.reduce((a, b) => a + (b.altitude || 0), 0) / validAltitudes.length 
       : null,

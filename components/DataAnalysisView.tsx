@@ -104,14 +104,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
   const getMethodLabel = (m: CalculationMethod) => {
     switch(m) {
-      case 'ARITHMETIC_MEAN': return "Aritmetik";
-      case 'LEAST_SQUARES': return "E.K.K.";
-      case 'ROBUST': return "Robust";
-      case 'BAARDA': return "Baarda";
-      case 'L1_HUBER': return "L1-Norm";
-      case 'DBSCAN': return "DBSCAN";
-      case 'RANSAC': return "RANSAC";
-      case 'KDE': return "KDE";
+      case 'ARITHMETIC_MEAN': return "Aritmetik Ortalama";
+      case 'LEAST_SQUARES': return "Dengelenmiş E.K.K.";
+      case 'ROBUST': return "Robust Kestirim";
+      case 'BAARDA': return "Baarda Hata Analizi";
+      case 'L1_HUBER': return "L1-Norm Çözümü";
+      case 'DBSCAN': return "DBSCAN Kümeleme";
+      case 'RANSAC': return "RANSAC Konsensüs";
+      case 'KDE': return "Yoğunluk Dağılımı";
       default: return m;
     }
   };
@@ -877,27 +877,27 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
             </MapContainer>
 
             {/* Legend Overlay */}
-            <div className="absolute bottom-6 right-6 z-[10000] w-[200px]">
-              <div className="bg-white/95 backdrop-blur-md p-4 rounded-3xl shadow-2xl border border-slate-100">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 border-b pb-2">Analiz Lejantı</p>
-                <div className="space-y-3">
+            <div className="absolute bottom-6 right-6 z-[10000] w-[120px]">
+              <div className="bg-white/95 backdrop-blur-md p-2.5 rounded-2xl shadow-xl border border-slate-100">
+                <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1.5 border-b pb-1">Lejant</p>
+                <div className="space-y-1.5">
                   {analysisType === 'precise' && (
-                    <div className="flex items-center gap-3">
-                      <div className="triangle-up" style={{ transform: 'scale(0.5)', marginBottom: '-8px' }}></div>
-                      <span className="text-[10px] font-black text-emerald-600 uppercase">Referans</span>
+                    <div className="flex items-center gap-2">
+                      <div className="triangle-up" style={{ transform: 'scale(0.3)', marginBottom: '-12px', marginLeft: '-6px' }}></div>
+                      <span className="text-[8px] font-black text-emerald-600 uppercase">REF.</span>
                     </div>
                   )}
                   {analysisResults.map((res, idx) => (
-                    <div key={res.method} className="flex items-center gap-3">
-                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{ backgroundColor: METHOD_COLORS[res.method] }}>
+                    <div key={res.method} className="flex items-center gap-2">
+                      <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-bold text-white shrink-0" style={{ backgroundColor: METHOD_COLORS[res.method] }}>
                         {idx + 1}
                       </div>
-                      <span className="text-[10px] font-black text-slate-700 truncate">{getMethodLabel(res.method as any)}</span>
+                      <span className="text-[8px] font-black text-slate-600 truncate">{getMethodLabel(res.method as any)}</span>
                     </div>
                   ))}
-                  <div className="flex items-center gap-3 pt-2 border-t">
-                    <div className="w-2 h-2 rounded-full bg-slate-300"></div>
-                    <span className="text-[9px] font-bold text-slate-400">Ham Gözlemler</span>
+                  <div className="flex items-center gap-2 pt-1 border-t">
+                    <div className="w-1 h-1 rounded-full bg-slate-300"></div>
+                    <span className="text-[7px] font-bold text-slate-400 uppercase">HAM VERİ</span>
                   </div>
                 </div>
               </div>
