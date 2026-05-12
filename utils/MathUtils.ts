@@ -30,47 +30,83 @@ export function calculateResult(
   let finalSamples = sourceData;
   let usedIndices: number[] = [];
 
+  let resultData: Coordinate;
+  let finalCalculatedUsedIndices: number[] | null = null;
+
   switch (method) {
     case 'ARITHMETIC_MEAN':
       finalSamples = sourceData;
+      resultData = calculateAverage(sourceData);
       break;
     case 'LEAST_SQUARES':
-      // Weighted Least Squares based on accuracy
-      return weightedLeastSquares(sourceData);
+      const ls = weightedLeastSquares(sourceData);
+      resultData = ls.result;
+      finalCalculatedUsedIndices = ls.usedIndices;
+      break;
     case 'ROBUST':
-      // Robust estimation using M-estimators (simplified Huber weights)
-      return robustEstimation(sourceData);
+      const robust = robustEstimation(sourceData);
+      resultData = robust.result;
+      finalCalculatedUsedIndices = robust.usedIndices;
+      break;
     case 'BAARDA':
-      // Baarda's Data Snooping (Recursive outlier removal based on standardized residuals)
       finalSamples = applyBaardaFilter(sourceData);
+      resultData = calculateAverage(finalSamples);
       break;
     case 'L1_HUBER':
-      // L1-Norm / Huber M-Estimation (Robust minimization of absolute errors)
-      return applyL1HuberEstimation(sourceData);
+      const l1 = applyL1HuberEstimation(sourceData);
+      resultData = l1.result;
+      finalCalculatedUsedIndices = l1.usedIndices;
+      break;
     case 'DBSCAN':
-      // Clustering to find the main core of points
       finalSamples = applyDBSCANFilter(sourceData);
+      resultData = calculateAverage(finalSamples);
       break;
     case 'RANSAC':
-      // Robust estimation by finding maximum consensus
       finalSamples = applyRANSACFilter(sourceData);
+      resultData = calculateAverage(finalSamples);
       break;
     case 'KDE':
-      // Kernel Density Estimation to find the densest area
-      return applyKDEEstimation(sourceData);
+      const kde = applyKDEEstimation(sourceData);
+      resultData = kde.result;
+      finalCalculatedUsedIndices = kde.usedIndices;
+      break;
     default:
       finalSamples = sourceData;
+      resultData = calculateAverage(sourceData);
   }
 
-  // Determine which indices were used
-  usedIndices = samples
-    .map((s, idx) => finalSamples.includes(s) ? idx : -1)
-    .filter(idx => idx !== -1);
+  // Determine which indices were used if not already determined by the method
+  if (finalCalculatedUsedIndices === null) {
+    usedIndices = samples
+      .map((s, idx) => finalSamples.includes(s) ? idx : -1)
+      .filter(idx => idx !== -1);
+  } else {
+    usedIndices = finalCalculatedUsedIndices;
+  }
 
-  // Calculate average of final samples
-  const result = calculateAverage(finalSamples);
+  // CRITICAL: Calculate max distance between any two points in the filtered source data
+  // (As per user request: "en uzak 2 nokta arası mesafe")
+  // We use sourceData (which filters by accuracy limit) to analyze the spread of reliable observations.
+  let maxDistance = 0;
+  if (sourceData.length > 1) {
+    const meanLat = sourceData.reduce((a, b) => a + b.lat, 0) / sourceData.length;
+    for (let i = 0; i < sourceData.length; i++) {
+      for (let j = i + 1; j < sourceData.length; j++) {
+        const dLat = (sourceData[i].lat - sourceData[j].lat) * 111320;
+        const dLng = (sourceData[i].lng - sourceData[j].lng) * 111320 * Math.cos(meanLat * Math.PI / 180);
+        const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+        if (dist > maxDistance) maxDistance = dist;
+      }
+    }
+  }
 
-  return { result, usedIndices };
+  // Final Accuracy formula: Max(Statistical Estimation, Max Distance observed in source data)
+  resultData.accuracy = Math.max(resultData.accuracy, maxDistance);
+  
+  // Ensure it doesn't drop below a realistic threshold (0.1m)
+  resultData.accuracy = Math.max(0.1, resultData.accuracy);
+
+  return { result: resultData, usedIndices };
 }
 
 export function calculateAverage(samples: Coordinate[]): Coordinate {
@@ -101,23 +137,6 @@ export function calculateAverage(samples: Coordinate[]): Coordinate {
     // plus the mean reported accuracy weighted by the number of samples
     const standardError = hStdDev / Math.sqrt(samples.length);
     finalAccuracy = Math.sqrt(Math.pow(standardError, 2) + Math.pow(avgSensorAccuracy / Math.sqrt(samples.length), 2));
-    
-    // Calculate max distance between any two points (as per user request: "en uzak 2 nokta arası mesafe")
-    let maxDistance = 0;
-    for (let i = 0; i < samples.length; i++) {
-      for (let j = i + 1; j < samples.length; j++) {
-        const dLat = (samples[i].lat - samples[j].lat) * 111320;
-        const dLng = (samples[i].lng - samples[j].lng) * 111320 * Math.cos(meanLat * Math.PI / 180);
-        const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-        if (dist > maxDistance) maxDistance = dist;
-      }
-    }
-    
-    // User formula: FinalAccuracy = Max(Hesaplanan İstatistiksel Hassasiyet, maxDistance)
-    finalAccuracy = Math.max(finalAccuracy, maxDistance);
-
-    // Ensure it doesn't drop below a realistic threshold for consumer GPS (0.1m)
-    finalAccuracy = Math.max(0.1, finalAccuracy);
   }
 
   return {
