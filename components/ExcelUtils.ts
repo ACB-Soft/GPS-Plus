@@ -9,13 +9,9 @@ import { geoidService } from '../services/GeoidService';
 const getMethodName = (m: CalculationMethod) => {
   switch(m) {
     case 'ARITHMETIC_MEAN': return "Aritmetik Ortalama";
-    case 'LEAST_SQUARES': return "En Küçük Kareler";
-    case 'ROBUST': return "Robust Yöntem";
-    case 'BAARDA': return "Baarda (Veri Eleme)";
-    case 'L1_HUBER': return "L1-Norm (Huber)";
-    case 'DBSCAN': return "DBSCAN Kümeleme";
-    case 'RANSAC': return "RANSAC (Konsensüs)";
-    case 'KDE': return "KDE (Yoğunluk)";
+    case 'GEODETIS_HYBRID': return "Geodetis-Hybrid";
+    case 'STATISTIC_HYBRID': return "Statistic-Hybrid";
+    case 'KDE': return "Kernel Density (KDE)";
     default: return m;
   }
 };
@@ -129,7 +125,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   // --- İstatistiksel Ön Hazırlık ---
   const accuracyLimit = location.accuracyLimit || 5.0;
   
-  const methods: CalculationMethod[] = ['ARITHMETIC_MEAN', 'LEAST_SQUARES', 'ROBUST', 'BAARDA', 'L1_HUBER', 'DBSCAN', 'RANSAC', 'KDE'];
+  const methods: CalculationMethod[] = ['ARITHMETIC_MEAN', 'KDE', 'GEODETIS_HYBRID', 'STATISTIC_HYBRID'];
   const methodResults = methods.map(method => {
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
     const { x, y } = convertCoordinate(result.lat, result.lng, sys);

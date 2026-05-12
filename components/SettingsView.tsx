@@ -231,13 +231,9 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
                   <option value="ARITHMETIC_MEAN">1. Yöntem: Aritmetik Ortalama</option>
-                  <option value="LEAST_SQUARES">2. Yöntem: En Küçük Kareler</option>
-                  <option value="ROBUST">3. Yöntem: Robust Yöntem</option>
-                  <option value="BAARDA">4. Yöntem: Baarda (Veri Eleme)</option>
-                  <option value="L1_HUBER">5. Yöntem: L1-Norm (Huber)</option>
-                  <option value="DBSCAN">6. Yöntem: DBSCAN Kümeleme</option>
-                  <option value="RANSAC">7. Yöntem: RANSAC (Konsensüs)</option>
-                  <option value="KDE">8. Yöntem: KDE (Yoğunluk)</option>
+                  <option value="KDE">2. Yöntem: Kernel Density (KDE)</option>
+                  <option value="GEODETIS_HYBRID">3. Yöntem: Geodetis-Hybrid</option>
+                  <option value="STATISTIC_HYBRID">4. Yöntem: Statistic-Hybrid</option>
                 </select>
               </div>
 

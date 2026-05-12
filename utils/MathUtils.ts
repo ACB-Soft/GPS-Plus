@@ -38,32 +38,32 @@ export function calculateResult(
       finalSamples = sourceData;
       resultData = calculateAverage(sourceData);
       break;
-    case 'LEAST_SQUARES':
-      const ls = weightedLeastSquares(sourceData);
-      resultData = ls.result;
-      finalCalculatedUsedIndices = ls.usedIndices;
+    case 'GEODETIS_HYBRID':
+      // 1. DBSCAN: Remove secondary clusters/noise
+      const dbscanPass = applyDBSCANFilter(sourceData);
+      if (dbscanPass.length < 5) {
+        // Fallback to robust if cluster too small
+        const res = robustEstimation(dbscanPass);
+        resultData = res.result;
+        finalCalculatedUsedIndices = res.usedIndices;
+      } else {
+        // 2. Baarda: Remove individual geodetic outliers
+        const baardaPass = applyBaardaFilter(dbscanPass);
+        // 3. Robust: Final robust estimation
+        const res = robustEstimation(baardaPass);
+        resultData = res.result;
+        finalCalculatedUsedIndices = res.usedIndices;
+      }
       break;
-    case 'ROBUST':
-      const robust = robustEstimation(sourceData);
-      resultData = robust.result;
-      finalCalculatedUsedIndices = robust.usedIndices;
-      break;
-    case 'BAARDA':
-      finalSamples = applyBaardaFilter(sourceData);
-      resultData = calculateAverage(finalSamples);
-      break;
-    case 'L1_HUBER':
-      const l1 = applyL1HuberEstimation(sourceData);
-      resultData = l1.result;
-      finalCalculatedUsedIndices = l1.usedIndices;
-      break;
-    case 'DBSCAN':
-      finalSamples = applyDBSCANFilter(sourceData);
-      resultData = calculateAverage(finalSamples);
-      break;
-    case 'RANSAC':
-      finalSamples = applyRANSACFilter(sourceData);
-      resultData = calculateAverage(finalSamples);
+    case 'STATISTIC_HYBRID':
+      // 1. Mahalanobis: Global statistical outlier removal
+      const mahaPass = applyMahalanobisFilter(sourceData);
+      // 2. RANSAC: Consensus based model finding
+      const ransacPass = applyRANSACFilter(mahaPass);
+      // 3. L1-Norm / Huber: Final optimization
+      const l1Res = applyL1HuberEstimation(ransacPass);
+      resultData = l1Res.result;
+      finalCalculatedUsedIndices = l1Res.usedIndices;
       break;
     case 'KDE':
       const kde = applyKDEEstimation(sourceData);
@@ -168,6 +168,54 @@ export function calculateAverage(samples: Coordinate[]): Coordinate {
       : null,
     timestamp: Date.now()
   };
+}
+
+/**
+ * Mahalanobis Distance Filter
+ * Removes points based on their multivariate statistical distance from the group.
+ */
+function applyMahalanobisFilter(samples: Coordinate[]): Coordinate[] {
+  if (samples.length < 10) return samples;
+
+  const meanLat = samples.reduce((a, b) => a + b.lat, 0) / samples.length;
+  const meanLng = samples.reduce((a, b) => a + b.lng, 0) / samples.length;
+
+  // Covariance Matrix (Simple 2x2 for Lat/Lng)
+  let varLat = 0, varLng = 0, covLatLng = 0;
+  for (const s of samples) {
+    const dLat = (s.lat - meanLat);
+    const dLng = (s.lng - meanLng);
+    varLat += dLat * dLat;
+    varLng += dLng * dLng;
+    covLatLng += dLat * dLng;
+  }
+  const n = samples.length;
+  varLat /= (n - 1);
+  varLng /= (n - 1);
+  covLatLng /= (n - 1);
+
+  // Det(S)
+  const det = (varLat * varLng) - (covLatLng * covLatLng);
+  if (Math.abs(det) < 1e-20) return samples; // Singular or nearly singular
+
+  // Inverse Matrix
+  const invVarLat = varLng / det;
+  const invVarLng = varLat / det;
+  const invCovLatLng = -covLatLng / det;
+
+  // Calculate distances
+  const distances = samples.map(s => {
+    const dLat = s.lat - meanLat;
+    const dLng = s.lng - meanLng;
+    // (x-m)T * S^-1 * (x-m)
+    return (dLat * invVarLat * dLat) + (2 * dLat * invCovLatLng * dLng) + (dLng * invVarLng * dLng);
+  });
+
+  // Chi-Square threshold for 2 DOF at alpha=0.01 is 9.21
+  const threshold = 9.21;
+  const filtered = samples.filter((_, i) => distances[i] <= threshold);
+
+  return filtered.length > 5 ? filtered : samples;
 }
 
 /**

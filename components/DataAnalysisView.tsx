@@ -25,14 +25,10 @@ const MapResizer = () => {
 };
 
 const METHOD_COLORS: Record<string, string> = {
-  ARITHMETIC_MEAN: '#ef4444',
-  LEAST_SQUARES: '#3b82f6',
-  ROBUST: '#10b981',
-  BAARDA: '#f59e0b',
-  L1_HUBER: '#8b5cf6',
-  DBSCAN: '#6366f1',
-  RANSAC: '#ec4899',
-  KDE: '#06b6d4'
+  ARITHMETIC_MEAN: '#ec4899',
+  KDE: '#06b6d4',
+  GEODETIS_HYBRID: '#10b981',
+  STATISTIC_HYBRID: '#3b82f6'
 };
 
 const CustomScatterLabel = (props: any) => {
@@ -100,25 +96,17 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
   const methods = useMemo<CalculationMethod[]>(() => [
     'ARITHMETIC_MEAN', 
-    'LEAST_SQUARES', 
-    'ROBUST', 
-    'BAARDA', 
-    'L1_HUBER',
-    'DBSCAN', 
-    'RANSAC', 
-    'KDE'
+    'KDE',
+    'GEODETIS_HYBRID', 
+    'STATISTIC_HYBRID'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
     const labels: Record<string, string> = {
       'ARITHMETIC_MEAN': "Aritmetik Ortalama",
-      'LEAST_SQUARES': "Dengelenmiş E.K.K.",
-      'ROBUST': "Robust Kestirim",
-      'BAARDA': "Baarda Hata Analizi",
-      'L1_HUBER': "L1-Norm Çözümü",
-      'DBSCAN': "DBSCAN Kümeleme",
-      'RANSAC': "RANSAC Konsensüs",
-      'KDE': "Yoğunluk Dağılımı"
+      'KDE': "Kernel Density (KDE)",
+      'GEODETIS_HYBRID': "Geodetis-Hybrid",
+      'STATISTIC_HYBRID': "Statistic-Hybrid"
     };
     return labels[m] || m;
   };
