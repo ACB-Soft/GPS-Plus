@@ -117,10 +117,41 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-amber-200">
               <i className="fas fa-signal"></i>
             </div>
-            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Hassasiyet İpuçları</h3>
+            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Hassasiyet & Güvenilirlik</h3>
           </div>
           
           <div className="soft-card p-6 space-y-4 border-l-4 border-l-amber-500">
+            <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100 space-y-3">
+              <h4 className="text-xs font-black text-amber-700 uppercase tracking-widest">Sinyal Güvenilirlik Analizi</h4>
+              <p className="text-[11px] text-slate-700 font-medium leading-relaxed">
+                Uygulama, ölçüm sırasında sadece sensörden gelen hata payına bakmaz; aynı zamanda toplanan koordinatların birbirine olan mesafesini (Saçılım/Spread) analiz ederek <b>Multipath (Sinyal Yansıması)</b> riskini değerlendirir:
+              </p>
+              
+              <div className="space-y-2">
+                <div className="flex items-start gap-2">
+                   <div className="w-2 h-2 bg-emerald-500 rounded-full mt-1 shrink-0"></div>
+                   <div className="flex-1">
+                      <p className="text-[10px] font-black text-emerald-700 uppercase">Güvenilir Veri (Yeşil)</p>
+                      <p className="text-[9px] text-slate-600 font-medium">Veri saçılımı, sensör hassasiyeti ile uyumlu (1.5x limit dahilinde). Veriler tutarlı.</p>
+                   </div>
+                </div>
+                <div className="flex items-start gap-2">
+                   <div className="w-2 h-2 bg-amber-500 rounded-full mt-1 shrink-0"></div>
+                   <div className="flex-1">
+                      <p className="text-[10px] font-black text-amber-700 uppercase">Tutarsız Veri (Turuncu)</p>
+                      <p className="text-[9px] text-slate-600 font-medium">Saçılım, sensör hassasiyetinin 1.5 katını aşıyor. Multipath etkisi olabilir. Açık alanda tekrar önerilir.</p>
+                   </div>
+                </div>
+                <div className="flex items-start gap-2">
+                   <div className="w-2 h-2 bg-rose-500 rounded-full mt-1 shrink-0"></div>
+                   <div className="flex-1">
+                      <p className="text-[10px] font-black text-rose-700 uppercase">Kritik Tutarsızlık (Kırmızı)</p>
+                      <p className="text-[9px] text-slate-600 font-medium">Saçılım, sensör hassasiyetinin 3 katından fazla. Veriler yüksek oranda sapmalı. Açık alana geçerek ölçümü tekrarlayın.</p>
+                   </div>
+                </div>
+              </div>
+            </div>
+
             <div className="flex gap-4">
               <i className="fas fa-cloud-sun text-amber-600 mt-1 text-lg"></i>
               <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">

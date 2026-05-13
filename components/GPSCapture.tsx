@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Coordinate, SavedLocation, CalculationMethod } from '../types';
-import { calculateResult } from '../utils/MathUtils';
+import { calculateResult, calculateMaxDistance } from '../utils/MathUtils';
 import { convertToMSL } from './GeoidUtils';
 import { getAccuracyColor, getAccuracyBg } from '../utils/StyleUtils';
 import GlobalFooter from './GlobalFooter';
@@ -42,6 +42,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   const [measurementDuration, setMeasurementDuration] = useState(parseInt(localStorage.getItem('default_duration') || '5'));
   const [seconds, setSeconds] = useState(parseInt(localStorage.getItem('default_duration') || '5'));
   const [sampleCount, setSampleCount] = useState(0);
+  const [reliabilityStatus, setReliabilityStatus] = useState<'GOOD' | 'WARNING' | 'CRITICAL' | 'UNKNOWN'>('UNKNOWN');
   const [instantAccuracy, setInstantAccuracy] = useState<number | null>(null);
   const [waitingForSignal, setWaitingForSignal] = useState(true);
   const [captureError, setCaptureError] = useState<string | null>(null);
@@ -188,6 +189,16 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                 lastSavedPositionRef.current = current;
                 lastSaveTimestampRef.current = Date.now();
                 setSampleCount(samplesRef.current.length);
+
+                // Check reliability
+                if (samplesRef.current.length >= 5) {
+                   const maxDist = calculateMaxDistance(samplesRef.current);
+                   const avgAcc = samplesRef.current.reduce((a, b) => a + b.accuracy, 0) / samplesRef.current.length;
+                   
+                   if (maxDist > avgAcc * 3) setReliabilityStatus('CRITICAL');
+                   else if (maxDist > avgAcc * 1.5) setReliabilityStatus('WARNING');
+                   else setReliabilityStatus('GOOD');
+                }
               }
             }
           }
@@ -314,6 +325,16 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
             accuracy: p.coords.accuracy
           };
           setSampleCount(samplesRef.current.length);
+
+          // Check reliability (repeated for mandatory saves)
+          if (samplesRef.current.length >= 5) {
+            const maxDist = calculateMaxDistance(samplesRef.current);
+            const avgAcc = samplesRef.current.reduce((a, b) => a + b.accuracy, 0) / samplesRef.current.length;
+            
+            if (maxDist > avgAcc * 3) setReliabilityStatus('CRITICAL');
+            else if (maxDist > avgAcc * 1.5) setReliabilityStatus('WARNING');
+            else setReliabilityStatus('GOOD');
+          }
         }
 
         // Sadece hassasiyet uygunsa geri sayımı ilerlet
@@ -360,6 +381,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       setSampleCount(0);
     }
 
+    setReliabilityStatus('UNKNOWN');
     setSeconds(measurementDuration);
     if (lastPositionRef.current && instantAccuracy !== null) setWaitingForSignal(false);
     else setWaitingForSignal(true);
@@ -474,8 +496,8 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
               </span>
 
               {instantAccuracy !== null && (
-                 <div className={`absolute -bottom-4 px-5 py-2.5 rounded-2xl border-2 shadow-xl flex items-center gap-2.5 animate-in fade-in zoom-in ${getAccuracyBg(instantAccuracy)}`}>
-                    <div className={`w-2.5 h-2.5 rounded-full ${getAccuracyColor(instantAccuracy).replace('text','bg')} animate-pulse`}></div>
+                 <div className={`absolute -bottom-2 px-5 py-2 rounded-2xl border-2 shadow-xl flex items-center gap-2.5 animate-in fade-in zoom-in z-30 ${getAccuracyBg(instantAccuracy)}`}>
+                    <div className={`w-2 h-2 rounded-full ${getAccuracyColor(instantAccuracy).replace('text','bg')} animate-pulse`}></div>
                     <span className={`text-[12px] md:text-[14px] font-black mono-font ${getAccuracyColor(instantAccuracy)}`}>±{instantAccuracy.toFixed(1)}m</span>
                  </div>
               )}
@@ -552,6 +574,29 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
               </div>
             ) : (
               <div className="space-y-4 py-2">
+                {reliabilityStatus !== 'UNKNOWN' && (
+                  <div className="animate-in slide-in-from-top-2">
+                     <div className={`mx-auto px-4 py-3 rounded-2xl border-2 flex items-center gap-3 shadow-lg w-full max-w-[280px] ${
+                       reliabilityStatus === 'CRITICAL' ? 'bg-rose-50 border-rose-200 text-rose-700' : 
+                       reliabilityStatus === 'WARNING' ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                     }`}>
+                        <i className={`fas ${reliabilityStatus === 'CRITICAL' ? 'fa-triangle-exclamation' : reliabilityStatus === 'WARNING' ? 'fa-circle-info' : 'fa-circle-check'} text-lg shrink-0`}></i>
+                        <div className="flex flex-col items-start text-left">
+                          <span className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">
+                            {reliabilityStatus === 'CRITICAL' ? 'KRİTİK TUTARSIZLIK' : reliabilityStatus === 'WARNING' ? 'TUTARSIZ VERİ' : 'GÜVENİLİR VERİ'}
+                          </span>
+                          <span className="text-[8px] font-bold leading-tight uppercase opacity-90">
+                            {reliabilityStatus === 'CRITICAL' 
+                              ? 'Toplanan veriler yüksek sinyal sapmaları içeriyor! Ölçümün açık bir alanda tekrarlanması önerilir.' 
+                              : reliabilityStatus === 'WARNING' 
+                                ? 'Toplanan veriler sinyal sapmaları içeriyor! Ölçümün açık bir alanda tekrarlanması önerilir.' 
+                                : 'Toplanan veriler belirlediğiniz hassasiyet limitine uygun.'}
+                          </span>
+                        </div>
+                     </div>
+                  </div>
+                )}
+
                 {instantAccuracy !== null && instantAccuracy > accuracyLimit ? (
                   <div className="animate-pulse space-y-1">
                     <p className="font-black text-amber-600 text-[12px] md:text-[13px] uppercase tracking-[0.2em] leading-none">Hassasiyet Bekleniyor...</p>
@@ -576,7 +621,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                 <button 
                   onClick={() => processSamples()}
                   disabled={sampleCount === 0}
-                  className="mx-auto mt-2 py-3 px-8 bg-blue-600 text-white rounded-2xl font-black text-[11px] md:text-[12px] active:scale-[0.96] disabled:opacity-50 transition-all uppercase tracking-[0.2em] leading-none shadow-xl shadow-blue-100 flex items-center justify-center gap-2 whitespace-nowrap"
+                  className="mx-auto mt-2 py-3 px-8 bg-blue-600 text-white rounded-2xl font-black text-[11px] md:text-[12px] active:scale-[0.96] disabled:opacity-50 transition-all uppercase tracking-[0.2em] leading-none shadow-xl shadow-blue-100 flex items-center justify-center gap-2 whitespace-nowrap w-full max-w-[280px]"
                 >
                   <i className="fas fa-check-circle"></i>
                   Hemen Bitir ve Kaydet

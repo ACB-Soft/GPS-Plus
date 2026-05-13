@@ -184,11 +184,15 @@ export const generateTechnicalReport = () => {
       <li><span class="bold">2. Fiziksel Yayılım (Maksimum Mesafe):</span> Kullanıcının belirlediği hassasiyet limitine uyan ("Güvenilir") ham veriler arasındaki en uzak iki nokta arasındaki fiziksel mesafe hesaplanır. Bu, GPS sinyalindeki yavaş sürüklenmeleri (Drift) veya ani sıçramaları (Multipath) tespit etmek için en kritik parametredir.
         <div class="formula">d_max = Max( Distance(P_i, P_j) ) , ∀ i,j ∈ Güvenilir_Veriler</div>
       </li>
-      <li><span class="bold">Nihai Karar Mekanizması:</span> Uygulama, risk analizini en üst seviyede tutmak için bu iki değerden hangisi büyükse onu kullanıcıya "Hassasiyet" olarak sunar.
-        <div class="formula">Nihai_Hassasiyet = Max( σ_stat, d_max )</div>
-      </li>
     </ul>
-    <p>Bu metodoloji sayesinde, örneğin sensörler 3 metre hata payı bildirse bile, eğer ham veriler arasında 8 metrelik bir fiziksel yayılım varsa, uygulama kullanıcıya ±8.0m uyarısı vererek yanıltıcı hassasiyetlerin önüne geçer.</p>
+
+    <h3>11.1 Sinyal Güvenilirlik Analizi ve Multipath Denetimi</h3>
+    <p>Uygulama, veri bütünlüğünü korumak için "Saçılım Oran Analizi" (Spread Ratio Analysis) gerçekleştirir. Bu analiz, fiziksel yayılımın (d_max) sensör hassasiyetine (σ_avg) olan oranını (R) hesaplar:</p>
+    <ul>
+      <li><span class="bold">Yeşil Seviye (R ≤ 1.5):</span> Güvenilir Veri. Fiziksel saçılım, sensörün hata payıyla uyumlu limitler içindedir. Multipath riski düşüktür.</li>
+      <li><span class="bold">Turuncu Seviye (1.5 < R ≤ 3.0):</span> Tutarsız Veri. Sensör düşük hata payı bildirmesine rağmen, veriler fiziksel olarak geniş bir alana yayılmıştır. Bu durum binalardan veya engellerden yansıyan (Multipath) sinyallerin varlığına işaret eder.</li>
+      <li><span class="bold">Kırmızı Seviye (R > 3.0):</span> Kritik Tutarsızlık. Veriler arasında ekstrem sapmalar mevcuttur. Ölçümün tamamen açık bir alanda tekrarlanması zorunludur.</li>
+    </ul>
 
     <h2>12. HASSASİYET İPUÇLARI VE SAHA PROTOKOLLERİ</h2>
     <p>En iyi sonuçlar için mühendis tavsiyeleri:</p>

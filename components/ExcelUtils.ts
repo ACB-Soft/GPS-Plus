@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import { SavedLocation, AppSettings, CalculationMethod } from '../types';
 import { convertCoordinate } from '../utils/CoordinateUtils';
-import { calculateResult, calculateVariance } from '../utils/MathUtils';
+import { calculateResult, calculateVariance, calculateMaxDistance } from '../utils/MathUtils';
 import { FULL_BRAND } from '../version';
 import { getCorrectedHeight, getEllipsoidalHeight } from './GeoidUtils';
 import { geoidService } from '../services/GeoidService';
@@ -59,6 +59,16 @@ export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings
     const accuracy = loc.accuracy.toFixed(2);
     const duration = (loc.measurementDuration || 0).toString();
 
+    let reliabilityLabel = "UNKNOWN";
+    if (loc.samples && loc.samples.length >= 5) {
+      const maxSpread = calculateMaxDistance(loc.samples);
+      const avgAcc = loc.samples.reduce((a, b) => a + b.accuracy, 0) / loc.samples.length;
+      const ratio = maxSpread / (avgAcc || 0.1);
+      if (ratio > 3) reliabilityLabel = "DÜŞÜK (KRİTİK)";
+      else if (ratio > 1.5) reliabilityLabel = "ORTA (TUTARSIZ)";
+      else reliabilityLabel = "YÜKSEK (GÜVENLİ)";
+    }
+
     const displayHeight = heightType === 'orthometric' ? orthometricH : ellipsoidalH;
 
     return [
@@ -70,6 +80,7 @@ export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings
       undulationVal,
       accuracy,
       duration,
+      reliabilityLabel,
       new Date(loc.timestamp).toLocaleString('tr-TR')
     ];
   });
@@ -78,7 +89,7 @@ export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings
     ["Proje Adı:", projectName],
     ["Koordinat Sistemi:", projectSystem],
     [], 
-    ["Nokta İsmi", header1, header2, "Yükseklik (m)", "Elipsoidal Yükseklik (m)", "Ondülasyon (m)", "Hassasiyet (m)", "Gözlem Süresi (sn)", "Tarih"],
+    ["Nokta İsmi", header1, header2, "Yükseklik (m)", "Elipsoidal Yükseklik (m)", "Ondülasyon (m)", "Hassasiyet (m)", "Gözlem Süresi (sn)", "Güvenilirlik", "Tarih"],
     ...dataRows
   ];
 
@@ -222,6 +233,20 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     ];
   });
 
+  // --- Sinyal Güvenilirlik (Multipath) Analizi ---
+  const maxSpreadAll = calculateMaxDistance(location.samples);
+  const avgAccAll = location.samples.reduce((a, b) => a + b.accuracy, 0) / location.samples.length;
+  const spreadRatio = maxSpreadAll / (avgAccAll || 0.1);
+  let relLevel = "YÜKSEK (GÜVENLİ)";
+  let relMsg = "Veri saçılımı hassasiyet limitleri dahilinde. Sinyal yansıması (Multipath) riski düşük.";
+  if (spreadRatio > 3) {
+    relLevel = "DÜŞÜK (KRİTİK)";
+    relMsg = "Kritik sinyal sapması! Saçılım, raporlanan hassasiyetin 3 katından fazla. Veriler güvenilir değil.";
+  } else if (spreadRatio > 1.5) {
+    relLevel = "ORTA (TUTARSIZ)";
+    relMsg = "Şüpheli veri yayılımı. Sensör hassasiyetine oranla yüksek saçılım tespit edildi. Multipath etkisi olabilir.";
+  }
+
   const ws_data = [
     ["ÖLÇÜM RAPORU"],
     ["Nokta Adı:", location.name],
@@ -229,9 +254,11 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     ["Koordinat Sistemi:", sys],
     ["Ölçüm Süresi:", `${location.measurementDuration || 0} sn`],
     ["Hassasiyet Eşiği:", `${accuracyLimit} m`],
-    ["Hassasiyet Hesaplama Metodu:", "Max(İstatistiksel Hassasiyet, Maksimum Örnek Yayılımı)"],
-    ["Veri Filtreleme:", `Sadece hassasiyeti ${accuracyLimit}m altındaki veriler analize dahil edilmiştir.`],
-    ["Toplam Örnek Sayısı:", location.samples.length],
+    ["Sinyal Güvenilirliği:", relLevel],
+    ["Güvenilirlik Açıklaması:", relMsg],
+    ["Maksimum Yayılım (Spread):", `${maxSpreadAll.toFixed(2)} m`],
+    ["Ortalama Sensör Hassasiyeti:", `${avgAccAll.toFixed(2)} m`],
+    ["Yayılım / Hassasiyet Oranı:", spreadRatio.toFixed(2)],
     [],
     ["No", "Saat", header1, header2, isOrthometricSetting ? "Yükseklik (m)" : "Elipsoidal Yükseklik (m)", "Hassasiyet (m)", "Dikey Hass. (m)", "Durum"],
     ...dataRows,

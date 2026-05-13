@@ -4,7 +4,7 @@ import { saveAs } from 'file-saver';
 import { SavedLocation, AppSettings, CalculationMethod } from '../types';
 import { geoidService } from '../services/GeoidService';
 import { convertCoordinate } from '../utils/CoordinateUtils';
-import { calculateResult, calculateAverage } from '../utils/MathUtils';
+import { calculateResult, calculateAverage, calculateMaxDistance } from '../utils/MathUtils';
 import { downloadCombinedAnalysisReport } from './ExcelUtils';
 import { 
   ScatterChart, Scatter, LineChart, Line, XAxis, YAxis, ZAxis, CartesianGrid, 
@@ -196,6 +196,23 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     setAnalysisResults(results);
   };
 
+  const multipathAnalysis = useMemo(() => {
+    if (!location || !location.samples || location.samples.length < 5) return null;
+    
+    // We use ALL samples for reliability check to detect raw signal issues (Multipath)
+    const maxSpread = calculateMaxDistance(location.samples);
+    const avgSensorAcc = location.samples.reduce((a, b) => a + b.accuracy, 0) / location.samples.length;
+    const ratio = maxSpread / (avgSensorAcc || 0.1);
+    
+    return {
+      maxSpread,
+      avgSensorAcc,
+      ratio,
+      isRisk: ratio > 1.5,
+      isCritical: ratio > 3.0
+    };
+  }, [location]);
+
   const chartData = useMemo(() => {
     if (!location || !location.samples) return [];
     
@@ -365,6 +382,59 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 no-scrollbar">
           
+          {/* Multipath / Reliability Analysis */}
+          {multipathAnalysis && (
+            <div className={`p-5 rounded-[2rem] border-2 animate-in slide-in-from-top-4 ${
+              multipathAnalysis.isCritical ? 'bg-rose-50 border-rose-100' : 
+              multipathAnalysis.isRisk ? 'bg-amber-50 border-amber-100' : 'bg-emerald-50 border-emerald-100'
+            }`}>
+              <div className="flex items-center gap-4 mb-3">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${
+                  multipathAnalysis.isCritical ? 'bg-rose-100 text-rose-600' : 
+                  multipathAnalysis.isRisk ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
+                }`}>
+                  <i className={`fas ${multipathAnalysis.isCritical ? 'fa-triangle-exclamation' : multipathAnalysis.isRisk ? 'fa-circle-exclamation' : 'fa-circle-check'} text-xl`}></i>
+                </div>
+                <div className="flex-1">
+                  <h3 className={`text-[11px] font-black uppercase tracking-widest leading-none mb-1 ${
+                    multipathAnalysis.isCritical ? 'text-rose-700' : multipathAnalysis.isRisk ? 'text-amber-700' : 'text-emerald-700'
+                  }`}>Sinyal Güvenilirlik Analizi</h3>
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest opacity-80 leading-none">Multipath & Saçılım Kontrolü</p>
+                </div>
+                <div className="text-right">
+                   <div className={`text-sm font-black mono-font ${
+                     multipathAnalysis.isCritical ? 'text-rose-600' : multipathAnalysis.isRisk ? 'text-amber-600' : 'text-emerald-600'
+                   }`}>
+                     {multipathAnalysis.isCritical ? '%20DÜŞÜK' : multipathAnalysis.isRisk ? '%65 ORTA' : '%98 YÜKSEK'}
+                   </div>
+                   <p className="text-[7px] font-black text-slate-400 uppercase tracking-tighter">Güven Skoru</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="bg-white/60 p-3 rounded-xl border border-white/80">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter mb-1">Max Saçılım (Spread)</p>
+                  <p className="text-sm font-black text-slate-900 mono-font">±{multipathAnalysis.maxSpread.toFixed(2)}m</p>
+                </div>
+                <div className="bg-white/60 p-3 rounded-xl border border-white/80">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter mb-1">Raporlanan Hass.</p>
+                  <p className="text-sm font-black text-slate-900 mono-font">±{multipathAnalysis.avgSensorAcc.toFixed(2)}m</p>
+                </div>
+              </div>
+
+              {multipathAnalysis.isRisk && (
+                <div className="bg-white/40 p-3 rounded-xl border-white/60 border">
+                   <p className="text-[9px] font-bold text-slate-700 leading-relaxed italic">
+                    <i className="fas fa-info-circle mr-2"></i>
+                    {multipathAnalysis.isCritical 
+                      ? 'Kritik sinyal tutarsızlığı: Saçılım alanı sensör hassasiyetinden 3 kat daha geniş. Yüksek ihtimalle binalardan yansıyan hatalı (multipath) veriler ölçüme karışmış. Ölçümün açık alanda tekrarlanması önerilir.' 
+                      : 'Şüpheli veri dağılımı: Sensör küçük bir hata payı bildirmesine rağmen veriler geniş bir alana yayılmış. Multipath etkisi olabilir.'}
+                   </p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* STEP 1: Method Selection */}
           <div className="space-y-4">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">1. Analiz Yöntemini Seçin</label>

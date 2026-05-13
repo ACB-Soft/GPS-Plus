@@ -51,6 +51,17 @@ const SavedLocationItem: React.FC<{
     return Math.max(l.accuracy, maxSpread, avgSensorAcc);
   }, [l.accuracy, l.samples, l.accuracyLimit]);
 
+  // Reliability calculation logic same as ResultCard
+  const reliability = React.useMemo(() => {
+    if (!l.samples || l.samples.length < 5) return 'UNKNOWN';
+    const maxSpread = calculateMaxDistance(l.samples);
+    const avgSensorAcc = l.samples.reduce((a, b) => a + b.accuracy, 0) / l.samples.length;
+    
+    if (maxSpread > avgSensorAcc * 3) return 'LOW';
+    if (maxSpread > avgSensorAcc * 1.5) return 'MEDIUM';
+    return 'HIGH';
+  }, [l.samples]);
+
   const handleSave = () => {
     if (newName.trim() && newName !== l.name) {
       onRenamePoint(l.id, newName.trim());
@@ -166,16 +177,29 @@ const SavedLocationItem: React.FC<{
       </div>
       {expanded && (
         <div className="px-5 pb-5 animate-in fade-in duration-300">
-          <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
+          <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100 mb-3">
             {renderCoordinates(l)}
+          </div>
+          <div className="grid grid-cols-3 gap-2">
             <div className="flex flex-col">
               <span className="text-[9px] font-black text-slate-400 tracking-widest leading-none mb-0.5">{isOrthometric ? 'YÜKSEKLİK' : 'h-ELİPSOİD'}</span>
-              <p className="text-[14px] mono-font text-blue-600 font-black leading-tight">{displayHeight !== null ? `${displayHeight.toFixed(heightPrecision)}m` : '---'}</p>
+              <p className="text-[13px] md:text-[14px] mono-font text-blue-600 font-black leading-tight">{displayHeight !== null ? `${displayHeight.toFixed(heightPrecision)}m` : '---'}</p>
             </div>
             <div className="flex flex-col">
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Hassasiyet</span>
-              <p className={`text-[14px] mono-font font-black leading-tight ${getAccuracyColor(dynamicAccuracy)}`}>±{dynamicAccuracy.toFixed(1)}m</p>
+              <p className={`text-[13px] md:text-[14px] mono-font font-black leading-tight ${getAccuracyColor(dynamicAccuracy)}`}>±{dynamicAccuracy.toFixed(1)}m</p>
             </div>
+            {reliability !== 'UNKNOWN' && (
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">GPS Sinyali</span>
+                <p className={`text-[9px] font-black uppercase tracking-widest leading-tight mt-0.5 ${
+                  reliability === 'HIGH' ? 'text-emerald-600' :
+                  reliability === 'MEDIUM' ? 'text-amber-600' : 'text-rose-600'
+                }`}>
+                  {reliability === 'HIGH' ? 'GÜVENLİ' : reliability === 'MEDIUM' ? 'ORTA GÜVEN' : 'GÜVENSİZ'}
+                </p>
+              </div>
+            )}
           </div>
           <div className="mt-4 pt-4 border-t border-slate-50 flex flex-col gap-2">
             <button 
