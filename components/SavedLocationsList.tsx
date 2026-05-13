@@ -46,7 +46,9 @@ const SavedLocationItem: React.FC<{
     if (reliableSamples.length <= 1) return l.accuracy;
     
     const maxSpread = calculateMaxDistance(reliableSamples);
-    return Math.max(l.accuracy, maxSpread);
+    const avgSensorAcc = reliableSamples.reduce((a, b) => a + b.accuracy, 0) / reliableSamples.length;
+    // Return the maximum of saved accuracy (statistical), physical spread, and sensor baseline
+    return Math.max(l.accuracy, maxSpread, avgSensorAcc);
   }, [l.accuracy, l.samples, l.accuracyLimit]);
 
   const handleSave = () => {

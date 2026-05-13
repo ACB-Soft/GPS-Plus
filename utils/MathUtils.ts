@@ -87,8 +87,10 @@ export function calculateResult(
     }
   }
 
-  // Final Accuracy formula: Max(Statistical Estimation, Max Distance observed in source data)
-  resultData.accuracy = Math.max(resultData.accuracy, maxDistance);
+  // Final Accuracy formula: Max(Statistical Estimation, Max Distance, Average Sensor Accuracy)
+  // This ensures we don't report better precision than the sensor actually reports during measurement.
+  const avgSensorAccuracy = sourceData.reduce((a, b) => a + b.accuracy, 0) / sourceData.length;
+  resultData.accuracy = Math.max(resultData.accuracy, maxDistance, avgSensorAccuracy);
   
   // Ensure it doesn't drop below a realistic threshold (0.1m)
   resultData.accuracy = Math.max(0.1, resultData.accuracy);

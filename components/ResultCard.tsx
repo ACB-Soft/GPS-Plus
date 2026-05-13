@@ -52,8 +52,9 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
     if (reliableSamples.length <= 1) return location.accuracy;
     
     const maxSpread = calculateMaxDistance(reliableSamples);
-    // Return the maximum of saved accuracy (statistical) and the physical spread
-    return Math.max(location.accuracy, maxSpread);
+    const avgSensorAcc = reliableSamples.reduce((a, b) => a + b.accuracy, 0) / reliableSamples.length;
+    // Return the maximum of saved accuracy (statistical), physical spread, and sensor baseline
+    return Math.max(location.accuracy, maxSpread, avgSensorAcc);
   }, [location.accuracy, location.samples, location.accuracyLimit]);
 
   const getMapProviderInfo = () => {
