@@ -88,7 +88,7 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
   }, [location.samples, location.accuracy]);
 
   useEffect(() => {
-    if (reliability === 'LOW') {
+    if (reliability === 'LOW' || reliability === 'MEDIUM') {
       setShowWarning(true);
     }
   }, [reliability]);
@@ -245,30 +245,58 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
       {showWarning && (
         <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"></div>
-          <div className="relative bg-white rounded-[32px] p-6 w-full max-w-sm shadow-2xl border border-rose-100 animate-in zoom-in duration-300">
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center border border-rose-100 mb-2">
-                <i className="fas fa-satellite-dish text-rose-500 text-2xl animate-pulse"></i>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Düşük Sinyal Kalitesi!</h3>
-                <p className="text-sm font-medium text-slate-600 leading-relaxed">
-                  Ölçüm sırasında çevresel faktörler nedeniyle <span className="font-bold text-rose-600 underline decoration-2 underline-offset-2">Multipath (Yansıma)</span> hatası tespit edildi. 
-                </p>
-                <div className="bg-rose-50 p-3 rounded-2xl border border-rose-100 mt-2">
-                  <p className="text-[11px] font-bold text-rose-700 leading-tight">
-                    Gerçek konumunuz gösterilenden farklı olabilir. Ölçümü gökyüzü açık, ferah bir alanda tekrarlamanız önerilir.
-                  </p>
+          
+          {reliability === 'LOW' ? (
+            <div className="relative bg-white rounded-[32px] p-6 w-full max-w-sm shadow-2xl border border-rose-100 animate-in zoom-in duration-300">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center border border-rose-100 mb-2">
+                  <i className="fas fa-satellite-dish text-rose-500 text-2xl animate-pulse"></i>
                 </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Düşük Sinyal Kalitesi!</h3>
+                  <p className="text-sm font-medium text-slate-600 leading-relaxed">
+                    Ölçüm sırasında çevresel faktörler nedeniyle <span className="font-bold text-rose-600 underline decoration-2 underline-offset-2">Multipath (Yansıma)</span> hatası tespit edildi. 
+                  </p>
+                  <div className="bg-rose-50 p-3 rounded-2xl border border-rose-100 mt-2">
+                    <p className="text-[11px] font-bold text-rose-700 leading-tight">
+                      Gerçek konumunuz gösterilenden farklı olabilir. Ölçümü gökyüzü açık bir alanda tekrarlamanız önerilir.
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowWarning(false)}
+                  className="w-full h-14 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-slate-200"
+                >
+                  ANLADIM
+                </button>
               </div>
-              <button 
-                onClick={() => setShowWarning(false)}
-                className="w-full h-14 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-slate-200"
-              >
-                ANLADIM
-              </button>
             </div>
-          </div>
+          ) : (
+            <div className="relative bg-white rounded-[32px] p-6 w-full max-w-sm shadow-2xl border border-amber-100 animate-in zoom-in duration-300">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center border border-amber-100 mb-2">
+                  <i className="fas fa-satellite-dish text-amber-500 text-2xl animate-pulse"></i>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Orta Sinyal Kalitesi!</h3>
+                  <p className="text-sm font-medium text-slate-600 leading-relaxed">
+                    Ölçüm sırasında çevresel faktörler nedeniyle <span className="font-bold text-amber-600 underline decoration-2 underline-offset-2">Multipath (Yansıma)</span> hatası tespit edildi.
+                  </p>
+                  <div className="bg-amber-50 p-3 rounded-2xl border border-amber-100 mt-2">
+                    <p className="text-[11px] font-bold text-amber-700 leading-tight">
+                      Gerçek konumunuz gösterilenden farklı olabilir. Ölçümü gökyüzü açık bir alanda tekrarlamanız önerilir.
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowWarning(false)}
+                  className="w-full h-14 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-slate-200"
+                >
+                  ANLADIM
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </>
