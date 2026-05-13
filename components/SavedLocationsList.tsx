@@ -61,7 +61,6 @@ const SavedLocationItem: React.FC<{
     if (samples.length >= 3) {
       const maxSpread = calculateMaxDistance(samples);
       if (maxSpread > 20 || maxSpread > avgSensorAcc * 3) return 'LOW';
-      if (maxSpread > avgSensorAcc * 1.5) return 'MEDIUM';
     }
 
     if (avgSensorAcc > 10) return 'MEDIUM';

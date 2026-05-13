@@ -198,7 +198,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                    const maxDist = calculateMaxDistance(currentSamples);
                    
                    if (maxDist > 20 || maxDist > currentAvgAcc * 3) setReliabilityStatus('CRITICAL');
-                   else if (maxDist > currentAvgAcc * 1.5 || currentAvgAcc > 10 || currentSamples.length < 5) setReliabilityStatus('WARNING');
+                   else if (currentAvgAcc > 10 || currentSamples.length < 5) setReliabilityStatus('WARNING');
                    else setReliabilityStatus('GOOD');
                 } else if (currentAvgAcc > 10 || currentSamples.length > 0) {
                   setReliabilityStatus('WARNING');
@@ -340,7 +340,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
             const maxDist = calculateMaxDistance(currentSamples);
             
             if (maxDist > 20 || maxDist > currentAvgAcc * 3) setReliabilityStatus('CRITICAL');
-            else if (maxDist > currentAvgAcc * 1.5 || currentAvgAcc > 10 || currentSamples.length < 5) setReliabilityStatus('WARNING');
+            else if (currentAvgAcc > 10 || currentSamples.length < 5) setReliabilityStatus('WARNING');
             else setReliabilityStatus('GOOD');
           } else if (currentAvgAcc > 10 || currentSamples.length > 0) {
             setReliabilityStatus('WARNING');

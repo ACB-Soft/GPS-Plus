@@ -194,7 +194,6 @@ export const generateTechnicalReport = () => {
         <ul>
           <li>σ_avg > 10m durumu: Donanımsal hassasiyetin mühendislik standartları için sınır değerde (10m+) olduğunu gösterir.</li>
           <li>n < 5 durumu: Güçlü bir istatistiksel sonuç üretmek için veri sayısının yetersiz olduğunu (Veri Az) belirtir.</li>
-          <li>1.5 < (d_max / σ_avg) ≤ 3.0 durumu: Sensör düşük hata payı bildirse dahi, verilerin fiziksel yayılımının uyumsuz olduğunu (Early Multipath) işaret eder.</li>
         </ul>
       </li>
       <li><span class="bold">Güvensiz Seviye (Kırmızı):</span> d_max > 20m veya d_max > σ_avg * 3.0 durumu. Cihaz yüksek hassasiyet bildirse dahi (Örn: 2m hassasiyet raporlanırken verilerin 6m+ alana yayılması), sinyal yansıması (Multipath) nedeniyle koordinatların gerçek konumdan saptığı matematiksel olarak kanıtlanmıştır. Bu durumda kullanıcıya "Düşük Sinyal Kalitesi" pop-up uyarısı gösterilir.</li>
