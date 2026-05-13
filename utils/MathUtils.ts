@@ -38,6 +38,14 @@ export function calculateResult(
       finalSamples = sourceData;
       resultData = calculateAverage(sourceData);
       break;
+    case 'MEDIAN':
+      finalSamples = sourceData;
+      resultData = calculateMedian(sourceData);
+      break;
+    case 'MODE':
+      finalSamples = sourceData;
+      resultData = calculateMode(sourceData);
+      break;
     case 'GEODETIS_HYBRID':
       // GEODETIS-HYBRID (DBSCAN + Baarda + Weighted Robust)
       // Instead of pruning, we assign a "Geodetic Reliability Score"
@@ -681,4 +689,79 @@ export function calculateVariance(samples: Coordinate[], mean: Coordinate): numb
   
   return residuals.reduce((a, b) => a + b, 0) / (samples.length - 1);
 }
+
+/**
+ * Calculates median values for coordinates
+ */
+export function calculateMedian(samples: Coordinate[]): Coordinate {
+  if (samples.length === 0) return { lat: 0, lng: 0, accuracy: 0, altitude: null, altitudeAccuracy: null, timestamp: Date.now() };
+  
+  const lats = [...samples].map(s => s.lat).sort((a, b) => a - b);
+  const lngs = [...samples].map(s => s.lng).sort((a, b) => a - b);
+  const alts = samples.filter(s => s.altitude !== null).map(s => s.altitude as number).sort((a, b) => a - b);
+  
+  const mid = Math.floor(samples.length / 2);
+  const medianLat = samples.length % 2 !== 0 ? lats[mid] : (lats[mid - 1] + lats[mid]) / 2;
+  const medianLng = samples.length % 2 !== 0 ? lngs[mid] : (lngs[mid - 1] + lngs[mid]) / 2;
+  
+  let medianAlt: number | null = null;
+  if (alts.length > 0) {
+    const aMid = Math.floor(alts.length / 2);
+    medianAlt = alts.length % 2 !== 0 ? alts[aMid] : (alts[aMid - 1] + alts[aMid]) / 2;
+  }
+  
+  return {
+    ...samples[0],
+    lat: medianLat,
+    lng: medianLng,
+    altitude: medianAlt,
+    timestamp: Date.now()
+  };
+}
+
+/**
+ * Calculates mode (most frequent) values for coordinates using binning
+ */
+export function calculateMode(samples: Coordinate[]): Coordinate {
+  if (samples.length === 0) return { lat: 0, lng: 0, accuracy: 0, altitude: null, altitudeAccuracy: null, timestamp: Date.now() };
+  
+  // Use 6 decimal places for grouping (~11cm precision) for GPS data
+  const precision = 6;
+  const round = (val: number) => Math.round(val * Math.pow(10, precision)) / Math.pow(10, precision);
+  
+  const counts: Record<string, number> = {};
+  samples.forEach(s => {
+    const key = `${round(s.lat)},${round(s.lng)}`;
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  
+  let maxCount = 0;
+  let modeKeys: string[] = [];
+  
+  for (const key in counts) {
+    if (counts[key] > maxCount) {
+      maxCount = counts[key];
+      modeKeys = [key];
+    } else if (counts[key] === maxCount) {
+      modeKeys.push(key);
+    }
+  }
+  
+  // Average the top modes
+  let sumLat = 0;
+  let sumLng = 0;
+  modeKeys.forEach(key => {
+    const [lat, lng] = key.split(',').map(Number);
+    sumLat += lat;
+    sumLng += lng;
+  });
+  
+  return {
+    ...samples[0],
+    lat: sumLat / modeKeys.length,
+    lng: sumLng / modeKeys.length,
+    timestamp: Date.now()
+  };
+}
+
 
