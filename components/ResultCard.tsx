@@ -78,6 +78,7 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
     if (samples.length >= 3) {
       const maxSpread = calculateMaxDistance(samples);
       if (maxSpread > 20 || maxSpread > avgSensorAcc * 3) return 'LOW';
+      if (maxSpread > 10) return 'MEDIUM';
     }
 
     if (avgSensorAcc > 10) return 'MEDIUM';

@@ -193,6 +193,7 @@ export const generateTechnicalReport = () => {
       <li><span class="bold">Orta Güven / Veri Az (Turuncu):</span> 
         <ul>
           <li>σ_avg > 10m durumu: Donanımsal hassasiyetin mühendislik standartları için sınır değerde (10m+) olduğunu gösterir.</li>
+          <li>d_max > 10m durumu: Verilerin fiziksel yayılımının 10 metreyi aşarak tutarlılığın azaldığını gösterir.</li>
           <li>n < 5 durumu: Güçlü bir istatistiksel sonuç üretmek için veri sayısının yetersiz olduğunu (Veri Az) belirtir.</li>
         </ul>
       </li>
