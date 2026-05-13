@@ -27,6 +27,7 @@ interface Props {
 
 const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = false, onCloseMap }) => {
   const [showMap, setShowMap] = useState(initialShowMap);
+  const [showWarning, setShowWarning] = useState(false);
   const { x, y, labelX, labelY, zone } = convertCoordinate(location.lat, location.lng, location.coordinateSystem || 'WGS84');
   const isUTM = location.coordinateSystem && location.coordinateSystem !== 'WGS84';
   
@@ -74,17 +75,23 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
       ? samples.reduce((a, b) => a + b.accuracy, 0) / samples.length 
       : location.accuracy;
 
-    if (avgSensorAcc > 20) return 'LOW';
-    if (samples.length < 3) return 'UNKNOWN';
-    
-    const maxSpread = calculateMaxDistance(samples);
-    
-    if (maxSpread > avgSensorAcc * 3) return 'LOW';
-    if (maxSpread > avgSensorAcc * 1.5) return 'MEDIUM';
+    if (samples.length >= 3) {
+      const maxSpread = calculateMaxDistance(samples);
+      if (maxSpread > avgSensorAcc * 3) return 'LOW';
+      if (maxSpread > avgSensorAcc * 1.5) return 'MEDIUM';
+    }
+
     if (avgSensorAcc > 10) return 'MEDIUM';
+    if (samples.length < 5) return 'UNKNOWN';
     
     return 'HIGH';
   }, [location.samples, location.accuracy]);
+
+  useEffect(() => {
+    if (reliability === 'LOW') {
+      setShowWarning(true);
+    }
+  }, [reliability]);
 
   const mapInfo = getMapProviderInfo();
 
@@ -99,8 +106,8 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
             </div>
             <div className={`inline-flex items-center justify-center px-4 py-1.5 rounded-full border shadow-sm min-w-[100px] ${
                 reliability === 'HIGH' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
-                reliability === 'MEDIUM' ? 'bg-amber-50 border-amber-100 text-amber-600' : 
-                reliability === 'LOW' ? 'bg-rose-50 border-rose-100 text-rose-600' : 'bg-slate-50 border-slate-100 text-slate-400'
+                reliability === 'MEDIUM' || reliability === 'UNKNOWN' ? 'bg-amber-50 border-amber-100 text-amber-600' : 
+                'bg-rose-50 border-rose-100 text-rose-600'
               }`}>
                 <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] leading-none">
                   {reliability === 'HIGH' ? 'GÜVENLİ' : 
@@ -230,6 +237,36 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Nokta Adı</p>
                 <p className="text-sm font-black text-slate-900 truncate leading-none">{location.name}</p>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showWarning && (
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"></div>
+          <div className="relative bg-white rounded-[32px] p-6 w-full max-w-sm shadow-2xl border border-rose-100 animate-in zoom-in duration-300">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center border border-rose-100 mb-2">
+                <i className="fas fa-satellite-dish text-rose-500 text-2xl animate-pulse"></i>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Düşük Sinyal Kalitesi!</h3>
+                <p className="text-sm font-medium text-slate-600 leading-relaxed">
+                  Ölçüm sırasında çevresel faktörler nedeniyle <span className="font-bold text-rose-600 underline decoration-2 underline-offset-2">Multipath (Yansıma)</span> hatası tespit edildi. 
+                </p>
+                <div className="bg-rose-50 p-3 rounded-2xl border border-rose-100 mt-2">
+                  <p className="text-[11px] font-bold text-rose-700 leading-tight">
+                    Gerçek konumunuz gösterilenden farklı olabilir. Ölçümü gökyüzü açık, ferah bir alanda tekrarlamanız önerilir.
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowWarning(false)}
+                className="w-full h-14 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-slate-200"
+              >
+                ANLADIM
+              </button>
             </div>
           </div>
         </div>

@@ -58,14 +58,14 @@ const SavedLocationItem: React.FC<{
       ? samples.reduce((a, b) => a + b.accuracy, 0) / samples.length 
       : l.accuracy;
 
-    if (avgSensorAcc > 20) return 'LOW';
-    if (samples.length < 3) return 'UNKNOWN';
-    
-    const maxSpread = calculateMaxDistance(samples);
-    
-    if (maxSpread > avgSensorAcc * 3) return 'LOW';
-    if (maxSpread > avgSensorAcc * 1.5) return 'MEDIUM';
+    if (samples.length >= 3) {
+      const maxSpread = calculateMaxDistance(samples);
+      if (maxSpread > avgSensorAcc * 3) return 'LOW';
+      if (maxSpread > avgSensorAcc * 1.5) return 'MEDIUM';
+    }
+
     if (avgSensorAcc > 10) return 'MEDIUM';
+    if (samples.length < 5) return 'UNKNOWN';
     
     return 'HIGH';
   }, [l.samples, l.accuracy]);
@@ -201,8 +201,8 @@ const SavedLocationItem: React.FC<{
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">GPS Sinyali</span>
                 <p className={`text-[9px] font-black uppercase tracking-widest leading-tight mt-0.5 ${
                   reliability === 'HIGH' ? 'text-emerald-600' :
-                  reliability === 'MEDIUM' ? 'text-amber-600' : 
-                  reliability === 'LOW' ? 'text-rose-600' : 'text-slate-400'
+                  reliability === 'MEDIUM' || reliability === 'UNKNOWN' ? 'text-amber-600' : 
+                  'text-rose-600'
                 }`}>
                   {reliability === 'HIGH' ? 'GÜVENLİ' : 
                    reliability === 'MEDIUM' ? 'ORTA GÜVEN' : 
