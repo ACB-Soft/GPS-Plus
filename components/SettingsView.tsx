@@ -234,8 +234,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                   <option value="MEDIAN">2. Yöntem: Medyan</option>
                   <option value="MID_RANGE">3. Yöntem: Mid-range (Maks-Min)</option>
                   <option value="KDE">4. Yöntem: Kernel Density (KDE)</option>
-                  <option value="GEODETIS_HYBRID">5. Yöntem: Geodetis-Hybrid</option>
-                  <option value="STATISTIC_HYBRID">6. Yöntem: Statistic-Hybrid</option>
+                  <option value="KALMAN_LSE_HYBRID">5. Yöntem: Kalman+LSE Hibrit</option>
                 </select>
               </div>
 

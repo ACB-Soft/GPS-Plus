@@ -40,8 +40,7 @@ const METHOD_COLORS: Record<string, string> = {
   MEDIAN: '#8b5cf6',
   MID_RANGE: '#f59e0b',
   KDE: '#06b6d4',
-  GEODETIS_HYBRID: '#10b981',
-  STATISTIC_HYBRID: '#3b82f6'
+  KALMAN_LSE_HYBRID: '#6366f1'
 };
 
 const CustomScatterLabel = (props: any) => {
@@ -113,8 +112,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     'MEDIAN',
     'MID_RANGE',
     'KDE',
-    'GEODETIS_HYBRID', 
-    'STATISTIC_HYBRID'
+    'KALMAN_LSE_HYBRID'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
@@ -123,8 +121,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       'MEDIAN': "Medyan",
       'MID_RANGE': "Mid-range (Maks-Min)",
       'KDE': "Kernel Density (KDE)",
-      'GEODETIS_HYBRID': "Geodetis-Hybrid",
-      'STATISTIC_HYBRID': "Statistic-Hybrid"
+      'KALMAN_LSE_HYBRID': "Kalman+LSE Hibrit"
     };
     return labels[m] || m;
   };
@@ -388,20 +385,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               </button>
             </div>
             
-            {/* Info Box about Hybrid Models */}
+            {/* Info Box about Specialized Models */}
             <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-3">
                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Model Açıklamaları</h4>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-1">
-                    <p className="text-[9px] font-black text-emerald-600 uppercase">Geodetis-Hybrid</p>
+                    <p className="text-[9px] font-black text-indigo-600 uppercase">Kalman+LSE Hibrit</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      DBSCAN kümeleme ile kaba hataları eler, Baarda etkisiyle geometrik ağırlık verir ve fiziksel sensör hassasiyetini ($1/acc^2$) hesaba katar.
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[9px] font-black text-blue-600 uppercase">Statistic-Hybrid</p>
-                    <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      Mahalanobis kovaryansı ile istatistiksel aykırı puanları zayıflatır, RANSAC konsensüsü ile en tutarlı grubu bulur ve Huber optimizasyonu uygular.
+                      Statik Kalman filtresi ile sinyal gürültüsünü sönümler, Baarda testi ile aykırı değerleri ayıklar ve En Küçük Kareler yöntemiyle en olası koordinatı belirler.
                     </p>
                   </div>
                </div>

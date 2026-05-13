@@ -11,8 +11,7 @@ const getMethodName = (m: CalculationMethod) => {
     case 'ARITHMETIC_MEAN': return "Aritmetik Ortalama";
     case 'MEDIAN': return "Medyan";
     case 'MID_RANGE': return "Mid-range (Maks-Min)";
-    case 'GEODETIS_HYBRID': return "Geodetis-Hybrid";
-    case 'STATISTIC_HYBRID': return "Statistic-Hybrid";
+    case 'KALMAN_LSE_HYBRID': return "Kalman+LSE Hibrit";
     case 'KDE': return "Kernel Density (KDE)";
     default: return m;
   }
@@ -127,7 +126,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   // --- İstatistiksel Ön Hazırlık ---
   const accuracyLimit = location.accuracyLimit || 5.0;
   
-  const methods: CalculationMethod[] = ['ARITHMETIC_MEAN', 'MEDIAN', 'MID_RANGE', 'KDE', 'GEODETIS_HYBRID', 'STATISTIC_HYBRID'];
+  const methods: CalculationMethod[] = ['ARITHMETIC_MEAN', 'MEDIAN', 'MID_RANGE', 'KDE', 'KALMAN_LSE_HYBRID'];
   const methodResults = methods.map(method => {
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
     const { x, y } = convertCoordinate(result.lat, result.lng, sys);
