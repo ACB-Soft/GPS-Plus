@@ -21,6 +21,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
   const [heightType, setHeightType] = useState(localStorage.getItem('default_height_type') || 'orthometric');
   const [calculationMethod, setCalculationMethod] = useState(localStorage.getItem('default_calculation_method') || 'ARITHMETIC_MEAN');
   const [gnssOnlyMode, setGnssOnlyMode] = useState(localStorage.getItem('default_gnss_only_mode') === 'true');
+  const [showOnboarding, setShowOnboarding] = useState(localStorage.getItem('show_onboarding_every_time') !== 'false');
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   
   const [modal, setModal] = useState<{
@@ -49,7 +50,8 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
     localStorage.setItem('default_height_type', heightType);
     localStorage.setItem('default_calculation_method', calculationMethod);
     localStorage.setItem('default_gnss_only_mode', gnssOnlyMode.toString());
-  }, [coordinateSystem, accuracyLimit, measurementDuration, mapProvider, audioEnabled, vibrationEnabled, screenAlwaysOn, locationPrecision, heightPrecision, heightType, calculationMethod, gnssOnlyMode]);
+    localStorage.setItem('show_onboarding_every_time', showOnboarding.toString());
+  }, [coordinateSystem, accuracyLimit, measurementDuration, mapProvider, audioEnabled, vibrationEnabled, screenAlwaysOn, locationPrecision, heightPrecision, heightType, calculationMethod, gnssOnlyMode, showOnboarding]);
 
   const handleResetSettings = () => {
     if (confirm('Tüm ayarlar fabrika ayarlarına sıfırlanacak. Emin misiniz?')) {
@@ -66,6 +68,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
       localStorage.removeItem('default_height_type');
       localStorage.removeItem('default_calculation_method');
       localStorage.removeItem('default_gnss_only_mode');
+      localStorage.removeItem('show_onboarding_every_time');
 
       // Reset state
       setCoordinateSystem('ITRF96');
@@ -80,6 +83,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
       setHeightType('orthometric');
       setCalculationMethod('ARITHMETIC_MEAN');
       setGnssOnlyMode(false);
+      setShowOnboarding(true);
 
       setModal({ show: true, type: 'success', message: 'Ayarlar başarıyla sıfırlandı.' });
     }
@@ -374,6 +378,20 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                   className={`w-12 h-6 rounded-full transition-all relative ${screenAlwaysOn ? 'bg-blue-600' : 'bg-slate-300'}`}
                 >
                   <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${screenAlwaysOn ? 'right-1' : 'left-1'}`}></div>
+                </button>
+              </div>
+
+              {/* Onboarding Ekranı */}
+              <div className="flex items-center justify-between h-12 px-4 bg-slate-100 rounded-2xl border border-slate-100 shadow-sm">
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold text-slate-900 leading-none">Onboarding Ekranı</span>
+                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Her açılışta göster</span>
+                </div>
+                <button 
+                  onClick={() => setShowOnboarding(!showOnboarding)}
+                  className={`w-12 h-6 rounded-full transition-all relative ${showOnboarding ? 'bg-blue-600' : 'bg-slate-300'}`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${showOnboarding ? 'right-1' : 'left-1'}`}></div>
                 </button>
               </div>
             </div>

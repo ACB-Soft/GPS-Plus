@@ -57,4 +57,5 @@ export interface AppSettings {
   heightPrecision: number;
   heightType: 'orthometric' | 'ellipsoidal';
   gnssOnlyMode: boolean;
+  showOnboarding: boolean;
 }

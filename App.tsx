@@ -46,6 +46,7 @@ const App = () => {
     heightType: (localStorage.getItem('default_height_type') as 'orthometric' | 'ellipsoidal') || 'orthometric',
     calculationMethod: (localStorage.getItem('default_calculation_method') || 'ARITHMETIC_MEAN') as any,
     gnssOnlyMode: localStorage.getItem('default_gnss_only_mode') === 'true',
+    showOnboarding: localStorage.getItem('show_onboarding_every_time') !== 'false',
   }));
 
   // Navigation wrapper to sync with browser history
@@ -75,10 +76,15 @@ const App = () => {
   useEffect(() => {
     geoidService.initialize();
 
-    // Always start with onboarding as requested
-    setView('onboarding');
+    const showOnboardingEveryTime = localStorage.getItem('show_onboarding_every_time') !== 'false';
+    const onboardingDone = localStorage.getItem('onboarding_v5.0_done') === 'true';
+    
+    // Start with onboarding if not done or if requested to show every time
+    const initialView = (!onboardingDone || showOnboardingEveryTime) ? 'onboarding' : 'dashboard';
+    
+    setView(initialView);
     setSubView(null);
-    window.history.replaceState({ view: 'onboarding', subView: null, index: 0 }, '');
+    window.history.replaceState({ view: initialView, subView: null, index: 0 }, '');
 
     const handlePopState = (event: PopStateEvent) => {
       if (event.state && event.state.view) {
@@ -301,6 +307,7 @@ const App = () => {
                 heightType: (localStorage.getItem('default_height_type') as 'orthometric' | 'ellipsoidal') || 'orthometric',
                 calculationMethod: (localStorage.getItem('default_calculation_method') || 'ARITHMETIC_MEAN') as any,
                 gnssOnlyMode: localStorage.getItem('default_gnss_only_mode') === 'true',
+                showOnboarding: localStorage.getItem('show_onboarding_every_time') === 'true',
               });
               window.history.back();
             }} 
