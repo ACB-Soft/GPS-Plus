@@ -42,9 +42,9 @@ export function calculateResult(
       finalSamples = sourceData;
       resultData = calculateMedian(sourceData);
       break;
-    case 'MODE':
+    case 'MID_RANGE':
       finalSamples = sourceData;
-      resultData = calculateMode(sourceData);
+      resultData = calculateMidRange(sourceData);
       break;
     case 'GEODETIS_HYBRID':
       // GEODETIS-HYBRID (DBSCAN + Baarda + Weighted Robust)
@@ -720,48 +720,34 @@ export function calculateMedian(samples: Coordinate[]): Coordinate {
 }
 
 /**
- * Calculates mode (most frequent) values for coordinates using binning
+ * Calculates Mid-range values (average of min and max) for coordinates
  */
-export function calculateMode(samples: Coordinate[]): Coordinate {
+export function calculateMidRange(samples: Coordinate[]): Coordinate {
   if (samples.length === 0) return { lat: 0, lng: 0, accuracy: 0, altitude: null, altitudeAccuracy: null, timestamp: Date.now() };
   
-  // Use 6 decimal places for grouping (~11cm precision) for GPS data
-  const precision = 6;
-  const round = (val: number) => Math.round(val * Math.pow(10, precision)) / Math.pow(10, precision);
+  const lats = samples.map(s => s.lat);
+  const lngs = samples.map(s => s.lng);
+  const alts = samples.filter(s => s.altitude !== null).map(s => s.altitude as number);
   
-  const counts: Record<string, number> = {};
-  samples.forEach(s => {
-    const key = `${round(s.lat)},${round(s.lng)}`;
-    counts[key] = (counts[key] || 0) + 1;
-  });
+  const midLat = (Math.min(...lats) + Math.max(...lats)) / 2;
+  const midLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
   
-  let maxCount = 0;
-  let modeKeys: string[] = [];
-  
-  for (const key in counts) {
-    if (counts[key] > maxCount) {
-      maxCount = counts[key];
-      modeKeys = [key];
-    } else if (counts[key] === maxCount) {
-      modeKeys.push(key);
-    }
+  let midAlt: number | null = null;
+  if (alts.length > 0) {
+    midAlt = (Math.min(...alts) + Math.max(...alts)) / 2;
   }
   
-  // Average the top modes
-  let sumLat = 0;
-  let sumLng = 0;
-  modeKeys.forEach(key => {
-    const [lat, lng] = key.split(',').map(Number);
-    sumLat += lat;
-    sumLng += lng;
-  });
+  const avg = calculateAverage(samples);
   
   return {
-    ...samples[0],
-    lat: sumLat / modeKeys.length,
-    lng: sumLng / modeKeys.length,
+    ...avg,
+    lat: midLat,
+    lng: midLng,
+    altitude: midAlt,
     timestamp: Date.now()
   };
 }
+
+
 
 

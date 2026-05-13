@@ -232,7 +232,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                 >
                   <option value="ARITHMETIC_MEAN">1. Yöntem: Aritmetik Ortalama</option>
                   <option value="MEDIAN">2. Yöntem: Medyan</option>
-                  <option value="MODE">3. Yöntem: Mod</option>
+                  <option value="MID_RANGE">3. Yöntem: Mid-range (Maks-Min)</option>
                   <option value="KDE">4. Yöntem: Kernel Density (KDE)</option>
                   <option value="GEODETIS_HYBRID">5. Yöntem: Geodetis-Hybrid</option>
                   <option value="STATISTIC_HYBRID">6. Yöntem: Statistic-Hybrid</option>

@@ -38,7 +38,7 @@ const MapSetBounds = ({ points }: { points: [number, number][] }) => {
 const METHOD_COLORS: Record<string, string> = {
   ARITHMETIC_MEAN: '#ec4899',
   MEDIAN: '#8b5cf6',
-  MODE: '#f59e0b',
+  MID_RANGE: '#f59e0b',
   KDE: '#06b6d4',
   GEODETIS_HYBRID: '#10b981',
   STATISTIC_HYBRID: '#3b82f6'
@@ -111,7 +111,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const methods = useMemo<CalculationMethod[]>(() => [
     'ARITHMETIC_MEAN', 
     'MEDIAN',
-    'MODE',
+    'MID_RANGE',
     'KDE',
     'GEODETIS_HYBRID', 
     'STATISTIC_HYBRID'
@@ -121,7 +121,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     const labels: Record<string, string> = {
       'ARITHMETIC_MEAN': "Aritmetik Ortalama",
       'MEDIAN': "Medyan",
-      'MODE': "Mod",
+      'MID_RANGE': "Mid-range (Maks-Min)",
       'KDE': "Kernel Density (KDE)",
       'GEODETIS_HYBRID': "Geodetis-Hybrid",
       'STATISTIC_HYBRID': "Statistic-Hybrid"
