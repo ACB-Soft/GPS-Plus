@@ -187,11 +187,17 @@ export const generateTechnicalReport = () => {
     </ul>
 
     <h3>11.1 Sinyal Güvenilirlik Analizi ve Multipath Denetimi</h3>
-    <p>Uygulama, veri bütünlüğünü korumak için "Saçılım Oran Analizi" (Spread Ratio Analysis) gerçekleştirir. Bu analiz, fiziksel yayılımın (d_max) sensör hassasiyetine (σ_avg) olan oranını (R) hesaplar:</p>
+    <p>Uygulama, veri bütünlüğünü korumak için hibrit bir "Güvenilirlik Değerlendirme Algoritması" (Reliability Assessment Algorithm) kullanır. Bu sistem, donanımsal hassasiyet verilerini (σ_avg), fiziksel yayılım (d_max) ve veri yoğunluğu (n) ile çapraz sorgulayarak sinyal kalitesini şu şekilde kategorize eder:</p>
     <ul>
-      <li><span class="bold">Yeşil Seviye (R ≤ 1.5):</span> Güvenilir Veri. Fiziksel saçılım, sensörün hata payıyla uyumlu limitler içindedir. Multipath riski düşüktür.</li>
-      <li><span class="bold">Turuncu Seviye (1.5 < R ≤ 3.0):</span> Tutarsız Veri. Sensör düşük hata payı bildirmesine rağmen, veriler fiziksel olarak geniş bir alana yayılmıştır. Bu durum binalardan veya engellerden yansıyan (Multipath) sinyallerin varlığına işaret eder.</li>
-      <li><span class="bold">Kırmızı Seviye (R > 3.0):</span> Kritik Tutarsızlık. Veriler arasında ekstrem sapmalar mevcuttur. Ölçümün tamamen açık bir alanda tekrarlanması zorunludur.</li>
+      <li><span class="bold">Güvenli Seviye (Yeşil):</span> d_max ≤ σ_avg * 1.5 ve σ_avg ≤ 10m ve n ≥ 5 veri. Fiziksel saçılım tutarlı, hassasiyet yüksek ve istatistiksel populasyon yeterli seviyededir. Multipath riski minimumdur.</li>
+      <li><span class="bold">Orta Güven / Veri Az (Turuncu):</span> 
+        <ul>
+          <li>σ_avg > 10m durumu: Donanımsal hassasiyetin mühendislik standartları için sınır değerde (10m+) olduğunu gösterir.</li>
+          <li>n < 5 durumu: Güçlü bir istatistiksel sonuç üretmek için veri sayısının yetersiz olduğunu (Veri Az) belirtir.</li>
+          <li>1.5 < (d_max / σ_avg) ≤ 3.0 durumu: Sensör düşük hata payı bildirse dahi, verilerin fiziksel yayılımının uyumsuz olduğunu (Early Multipath) işaret eder.</li>
+        </ul>
+      </li>
+      <li><span class="bold">Güvensiz Seviye (Kırmızı):</span> d_max > 20m veya d_max > σ_avg * 3.0 durumu. Cihaz yüksek hassasiyet bildirse dahi (Örn: 2m hassasiyet raporlanırken verilerin 6m+ alana yayılması), sinyal yansıması (Multipath) nedeniyle koordinatların gerçek konumdan saptığı matematiksel olarak kanıtlanmıştır. Bu durumda kullanıcıya "Düşük Sinyal Kalitesi" pop-up uyarısı gösterilir.</li>
     </ul>
 
     <h2>12. HASSASİYET İPUÇLARI VE SAHA PROTOKOLLERİ</h2>
@@ -217,8 +223,8 @@ export const generateTechnicalReport = () => {
           <span class="bold">Teknik Betimleme:</span>
           <ul>
             <li><span class="bold">Sistem İzinleri:</span> Hassas konum ve dosya erişim izinlerinin "Mühendislik Modu" için neden gerekli olduğunu kullanıcıya açıklar.</li>
+            <li><span class="bold">Gösterim Kontrolü:</span> Ayarlar sayfasından "Onboarding Ekranını Her Açılışta Göster" seçeneği ile bu ekranın uygulama başlangıcındaki davranışı manuel olarak yönetilebilir.</li>
             <li><span class="bold">Initial Sync:</span> TG-20 jeoid grid verilerinin yerel veritabanına ilk senkronizasyon sürecini yönetir.</li>
-            <li><span class="bold">UI/UX Hedefi:</span> Sahaya çıkmadan önce cihazın jeodezik hesaplamalara hazır olduğunu (Ready to Measure) teyit eder.</li>
           </ul>
         </td>
       </tr>
@@ -278,6 +284,25 @@ export const generateTechnicalReport = () => {
             <li><span class="bold">Hedefleme Radarı:</span> Mevcut konumun hedefe göre bağıl vektörünü (Azimut/Mesafe) görselleştiren "Targeting Radar" katmanı.</li>
             <li><span class="bold">Sanal Ufuk:</span> Jalon dikliğini kontrol etmek için ivmeölçer verisini kullanan su terazisi simülasyonu.</li>
             <li><span class="bold">Sesli/Titreşimli Geri Bildirim:</span> Hedefe yaklaştıkça frekansı artan uyarı sinyalleri ile kullanıcının ekrana bakmadan aplikasyon yapabilmesine olanak tanır.</li>
+          </ul>
+        </td>
+      </tr>
+    </table>
+
+    <h3>13.5 Kritik Uyarı ve Multipath Bildirim Sistemi</h3>
+    <table style="border: none;">
+      <tr>
+        <td style="border: 2pt dashed #ccc; width: 40%; text-align: center; vertical-align: middle; height: 150pt;">
+          <br><br>
+          <span style="color: #999;">[BURAYA MULTIPATH UYARI POPUP GÖRÜNTÜSÜ GELECEK]</span>
+          <br><br>
+        </td>
+        <td style="border: none; padding-left: 20pt;">
+          <span class="bold">Teknik Betimleme:</span>
+          <ul>
+            <li><span class="bold">Anlık Denetim:</span> Ölçüm bittiğinde verilerin saçılımı (spread) donanımsal hassasiyetin 3 katını aşıyorsa sistem otomatik bir engelleyici mesaj (Modal) çıkarır.</li>
+            <li><span class="bold">Kullanıcı Farkındalığı:</span> "Ölçüm sırasında çevresel faktörler nedeniyle Multipath (Yansıma) hatası tespit edildi" uyarısı ile kullanıcının yanıltıcı hassasiyet verilerine güvenmesi engellenir.</li>
+            <li><span class="bold">Karar Destek:</span> Kullanıcıya ölçümü daha açık bir alanda tekrarlaması yönünde mühendislik tavsiyesi sunulur.</li>
           </ul>
         </td>
       </tr>
