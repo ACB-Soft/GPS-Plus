@@ -51,16 +51,24 @@ const SavedLocationItem: React.FC<{
     return Math.max(l.accuracy, maxSpread, avgSensorAcc);
   }, [l.accuracy, l.samples, l.accuracyLimit]);
 
-  // Reliability calculation logic same as ResultCard
+  // Reliability calculation logic
   const reliability = React.useMemo(() => {
-    if (!l.samples || l.samples.length < 5) return 'UNKNOWN';
-    const maxSpread = calculateMaxDistance(l.samples);
-    const avgSensorAcc = l.samples.reduce((a, b) => a + b.accuracy, 0) / l.samples.length;
+    const samples = l.samples || [];
+    const avgSensorAcc = samples.length > 0 
+      ? samples.reduce((a, b) => a + b.accuracy, 0) / samples.length 
+      : l.accuracy;
+
+    if (avgSensorAcc > 20) return 'LOW';
+    if (samples.length < 3) return 'UNKNOWN';
+    
+    const maxSpread = calculateMaxDistance(samples);
     
     if (maxSpread > avgSensorAcc * 3) return 'LOW';
     if (maxSpread > avgSensorAcc * 1.5) return 'MEDIUM';
+    if (avgSensorAcc > 10) return 'MEDIUM';
+    
     return 'HIGH';
-  }, [l.samples]);
+  }, [l.samples, l.accuracy]);
 
   const handleSave = () => {
     if (newName.trim() && newName !== l.name) {
@@ -189,17 +197,18 @@ const SavedLocationItem: React.FC<{
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Hassasiyet</span>
               <p className={`text-[13px] md:text-[14px] mono-font font-black leading-tight ${getAccuracyColor(dynamicAccuracy)}`}>±{dynamicAccuracy.toFixed(1)}m</p>
             </div>
-            {reliability !== 'UNKNOWN' && (
-              <div className="flex flex-col">
+            <div className="flex flex-col">
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">GPS Sinyali</span>
                 <p className={`text-[9px] font-black uppercase tracking-widest leading-tight mt-0.5 ${
                   reliability === 'HIGH' ? 'text-emerald-600' :
-                  reliability === 'MEDIUM' ? 'text-amber-600' : 'text-rose-600'
+                  reliability === 'MEDIUM' ? 'text-amber-600' : 
+                  reliability === 'LOW' ? 'text-rose-600' : 'text-slate-400'
                 }`}>
-                  {reliability === 'HIGH' ? 'GÜVENLİ' : reliability === 'MEDIUM' ? 'ORTA GÜVEN' : 'GÜVENSİZ'}
+                  {reliability === 'HIGH' ? 'GÜVENLİ' : 
+                   reliability === 'MEDIUM' ? 'ORTA GÜVEN' : 
+                   reliability === 'LOW' ? 'GÜVENSİZ' : 'VERİ AZ'}
                 </p>
               </div>
-            )}
           </div>
           <div className="mt-4 pt-4 border-t border-slate-50 flex flex-col gap-2">
             <button 

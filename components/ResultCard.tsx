@@ -69,16 +69,22 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
   };
 
   const reliability = React.useMemo(() => {
-    if (!location.samples || location.samples.length < 5) return 'UNKNOWN';
+    const samples = location.samples || [];
+    const avgSensorAcc = samples.length > 0 
+      ? samples.reduce((a, b) => a + b.accuracy, 0) / samples.length 
+      : location.accuracy;
+
+    if (avgSensorAcc > 20) return 'LOW';
+    if (samples.length < 3) return 'UNKNOWN';
     
-    // We use ALL samples for reliability check to detect raw signal issues (Multipath)
-    const maxSpread = calculateMaxDistance(location.samples);
-    const avgSensorAcc = location.samples.reduce((a, b) => a + b.accuracy, 0) / location.samples.length;
+    const maxSpread = calculateMaxDistance(samples);
     
     if (maxSpread > avgSensorAcc * 3) return 'LOW';
     if (maxSpread > avgSensorAcc * 1.5) return 'MEDIUM';
+    if (avgSensorAcc > 10) return 'MEDIUM';
+    
     return 'HIGH';
-  }, [location.samples]);
+  }, [location.samples, location.accuracy]);
 
   const mapInfo = getMapProviderInfo();
 
@@ -91,16 +97,17 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                <span className="text-[10px] md:text-[11px] font-black text-emerald-600 uppercase tracking-[0.2em] leading-none">Kayıt Edildi</span>
             </div>
-            {reliability !== 'UNKNOWN' && (
-              <div className={`inline-flex items-center justify-center px-4 py-1.5 rounded-full border shadow-sm min-w-[100px] ${
+            <div className={`inline-flex items-center justify-center px-4 py-1.5 rounded-full border shadow-sm min-w-[100px] ${
                 reliability === 'HIGH' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
-                reliability === 'MEDIUM' ? 'bg-amber-50 border-amber-100 text-amber-600' : 'bg-rose-50 border-rose-100 text-rose-600'
+                reliability === 'MEDIUM' ? 'bg-amber-50 border-amber-100 text-amber-600' : 
+                reliability === 'LOW' ? 'bg-rose-50 border-rose-100 text-rose-600' : 'bg-slate-50 border-slate-100 text-slate-400'
               }`}>
                 <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] leading-none">
-                  {reliability === 'HIGH' ? 'GÜVENLİ' : reliability === 'MEDIUM' ? 'ORTA GÜVEN' : 'GÜVENSİZ'}
+                  {reliability === 'HIGH' ? 'GÜVENLİ' : 
+                   reliability === 'MEDIUM' ? 'ORTA GÜVEN' : 
+                   reliability === 'LOW' ? 'GÜVENSİZ' : 'VERİ AZ'}
                 </span>
               </div>
-            )}
           </div>
           <div className="space-y-1">
             <p className="text-[14px] md:text-[16px] font-black text-slate-400 uppercase tracking-[0.3em] leading-none">{location.folderName}</p>
