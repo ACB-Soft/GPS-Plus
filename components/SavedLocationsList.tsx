@@ -47,9 +47,9 @@ const SavedLocationItem: React.FC<{
     
     const maxSpread = calculateMaxDistance(reliableSamples);
     const avgSensorAcc = reliableSamples.reduce((a, b) => a + b.accuracy, 0) / reliableSamples.length;
-    // Return the maximum of saved accuracy (statistical), physical spread, and sensor baseline
-    return Math.max(l.accuracy, maxSpread, avgSensorAcc);
-  }, [l.accuracy, l.samples, l.accuracyLimit]);
+    // Return the maximum of physical spread and sensor baseline as per user request
+    return Math.max(maxSpread, avgSensorAcc);
+  }, [l.samples, l.accuracyLimit]);
 
   // Reliability calculation logic
   const reliability = React.useMemo(() => {
@@ -58,15 +58,19 @@ const SavedLocationItem: React.FC<{
       ? samples.reduce((a, b) => a + b.accuracy, 0) / samples.length 
       : l.accuracy;
 
-    if (samples.length >= 3) {
-      const maxSpread = calculateMaxDistance(samples);
-      if (maxSpread > 20 || maxSpread > avgSensorAcc * 3) return 'LOW';
-      if (maxSpread > 10) return 'MEDIUM';
+    const maxSpread = samples.length >= 3 ? calculateMaxDistance(samples) : 0;
+
+    // RULE 1: UNSAFE (GÜVENSİZ)
+    if (avgSensorAcc > 20 || maxSpread > 20 || (samples.length >= 3 && maxSpread > avgSensorAcc * 3)) {
+      return 'LOW';
     }
 
-    if (avgSensorAcc > 10) return 'MEDIUM';
-    if (samples.length < 5) return 'UNKNOWN';
+    // RULE 2: ORTA GÜVEN / VERİ AZ
+    if (avgSensorAcc > 10 || maxSpread > 10 || samples.length < 5) {
+      return 'MEDIUM';
+    }
     
+    // RULE 3: GÜVENLİ
     return 'HIGH';
   }, [l.samples, l.accuracy]);
 

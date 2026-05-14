@@ -197,8 +197,8 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                 if (currentSamples.length >= 3) {
                    const maxDist = calculateMaxDistance(currentSamples);
                    
-                   if (maxDist > 20 || maxDist > currentAvgAcc * 3) setReliabilityStatus('CRITICAL');
-                   else if (maxDist > 10 || currentAvgAcc > 10 || currentSamples.length < 5) setReliabilityStatus('WARNING');
+                   if (currentAvgAcc > 20 || maxDist > 20 || maxDist > currentAvgAcc * 3) setReliabilityStatus('CRITICAL');
+                   else if (currentAvgAcc > 10 || maxDist > 10 || currentSamples.length < 5) setReliabilityStatus('WARNING');
                    else setReliabilityStatus('GOOD');
                 } else if (currentAvgAcc > 10 || currentSamples.length > 0) {
                   setReliabilityStatus('WARNING');
@@ -339,8 +339,8 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
           if (currentSamples.length >= 3) {
             const maxDist = calculateMaxDistance(currentSamples);
             
-            if (maxDist > 20 || maxDist > currentAvgAcc * 3) setReliabilityStatus('CRITICAL');
-            else if (maxDist > 10 || currentAvgAcc > 10 || currentSamples.length < 5) setReliabilityStatus('WARNING');
+            if (currentAvgAcc > 20 || maxDist > 20 || maxDist > currentAvgAcc * 3) setReliabilityStatus('CRITICAL');
+            else if (currentAvgAcc > 10 || maxDist > 10 || currentSamples.length < 5) setReliabilityStatus('WARNING');
             else setReliabilityStatus('GOOD');
           } else if (currentAvgAcc > 10 || currentSamples.length > 0) {
             setReliabilityStatus('WARNING');
@@ -595,14 +595,16 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                         <i className={`fas ${reliabilityStatus === 'CRITICAL' ? 'fa-triangle-exclamation' : reliabilityStatus === 'WARNING' ? 'fa-circle-info' : 'fa-circle-check'} text-lg shrink-0`}></i>
                         <div className="flex flex-col items-start text-left">
                           <span className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">
-                            {reliabilityStatus === 'CRITICAL' ? 'KRİTİK TUTARSIZLIK' : reliabilityStatus === 'WARNING' ? 'TUTARSIZ VERİ' : 'GÜVENİLİR VERİ'}
+                            {reliabilityStatus === 'CRITICAL' ? 'DÜŞÜK SİNYAL KALİTESİ' : reliabilityStatus === 'WARNING' ? (sampleCount < 5 ? 'YETERSİZ KONUM VERİSİ' : 'ORTA SİNYAL KALİTESİ') : 'GÜÇLÜ SİNYAL KALİTESİ'}
                           </span>
-                          <span className="text-[8px] font-bold leading-tight uppercase opacity-90">
+                          <span className="text-[8px] font-bold leading-tight opacity-90">
                             {reliabilityStatus === 'CRITICAL' 
-                              ? 'Toplanan veriler yüksek sinyal sapmaları içeriyor! Ölçümün açık bir alanda tekrarlanması önerilir.' 
+                              ? 'Ölçüm sırasında çevresel ve donanımsal faktörler nedeniyle hatalar tespit edildi, ölçümün açık bir alanda tekrarlanması önerilir!' 
                               : reliabilityStatus === 'WARNING' 
-                                ? 'Toplanan veriler sinyal sapmaları içeriyor! Ölçümün açık bir alanda tekrarlanması önerilir.' 
-                                : 'Toplanan veriler belirlediğiniz hassasiyet limitine uygun.'}
+                                ? (sampleCount < 5 
+                                    ? 'Ölçüm sırasında çevresel veya donanımsal faktörler nedeniyle yeterli sayıda konum verisi toplanamadı, ölçüm süresinin uzatılması önerilir!' 
+                                    : 'Ölçüm sırasında çevresel ve donanımsal faktörler nedeniyle hatalar tespit edildi, ölçümün açık bir alanda tekrarlanması önerilir!')
+                                : 'Toplanan veriler hassasiyet limitlerine uygun görünüyor.'}
                           </span>
                         </div>
                      </div>

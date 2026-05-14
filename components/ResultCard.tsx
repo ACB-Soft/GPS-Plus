@@ -54,9 +54,9 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
     
     const maxSpread = calculateMaxDistance(reliableSamples);
     const avgSensorAcc = reliableSamples.reduce((a, b) => a + b.accuracy, 0) / reliableSamples.length;
-    // Return the maximum of saved accuracy (statistical), physical spread, and sensor baseline
-    return Math.max(location.accuracy, maxSpread, avgSensorAcc);
-  }, [location.accuracy, location.samples, location.accuracyLimit]);
+    // Return the maximum of physical spread and sensor baseline as per user request
+    return Math.max(maxSpread, avgSensorAcc);
+  }, [location.samples, location.accuracyLimit]);
 
   const getMapProviderInfo = () => {
     const provider = localStorage.getItem('default_map_provider') || 'Google Hybrid';
@@ -75,15 +75,19 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
       ? samples.reduce((a, b) => a + b.accuracy, 0) / samples.length 
       : location.accuracy;
 
-    if (samples.length >= 3) {
-      const maxSpread = calculateMaxDistance(samples);
-      if (maxSpread > 20 || maxSpread > avgSensorAcc * 3) return 'LOW';
-      if (maxSpread > 10) return 'MEDIUM';
+    const maxSpread = samples.length >= 3 ? calculateMaxDistance(samples) : 0;
+
+    // RULE 1: UNSAFE (GÜVENSİZ)
+    if (avgSensorAcc > 20 || maxSpread > 20 || (samples.length >= 3 && maxSpread > avgSensorAcc * 3)) {
+      return 'LOW';
     }
 
-    if (avgSensorAcc > 10) return 'MEDIUM';
-    if (samples.length < 5) return 'UNKNOWN';
+    // RULE 2: ORTA GÜVEN / VERİ AZ
+    if (avgSensorAcc > 10 || maxSpread > 10 || samples.length < 5) {
+      return 'MEDIUM';
+    }
     
+    // RULE 3: GÜVENLİ
     return 'HIGH';
   }, [location.samples, location.accuracy]);
 
@@ -255,7 +259,7 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
                 <div className="space-y-2">
                   <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Düşük Sinyal Kalitesi!</h3>
                   <p className="text-sm font-medium text-slate-600 leading-relaxed">
-                    Ölçüm sırasında çevresel faktörler nedeniyle <span className="font-bold text-rose-600 underline decoration-2 underline-offset-2">Multipath (Yansıma)</span> hatası tespit edildi. 
+                    Ölçüm sırasında çevresel ve donanımsal faktörler nedeniyle hatalar tespit edildi.
                   </p>
                   <div className="bg-rose-50 p-3 rounded-2xl border border-rose-100 mt-2">
                     <p className="text-[11px] font-bold text-rose-700 leading-tight">
@@ -280,7 +284,7 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
                 <div className="space-y-2">
                   <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Orta Sinyal Kalitesi!</h3>
                   <p className="text-sm font-medium text-slate-600 leading-relaxed">
-                    Ölçüm sırasında çevresel faktörler nedeniyle <span className="font-bold text-amber-600 underline decoration-2 underline-offset-2">Multipath (Yansıma)</span> hatası tespit edildi.
+                    Ölçüm sırasında çevresel ve donanımsal faktörler nedeniyle hatalar tespit edildi.
                   </p>
                   <div className="bg-amber-50 p-3 rounded-2xl border border-amber-100 mt-2">
                     <p className="text-[11px] font-bold text-amber-700 leading-tight">

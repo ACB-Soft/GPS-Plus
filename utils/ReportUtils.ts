@@ -176,28 +176,29 @@ export const generateTechnicalReport = () => {
     </ul>
 
     <h2>11. HASSASİYET HESAPLAMA METODOLOJİSİ (YATAY HASSASİYET)</h2>
-    <p>Uygulama, kullanıcıya sunulan "Yatay Hassasiyet" (Horizontal Precision) değerini hesaplarken, sadece donanımsal veriye güvenmek yerine hibrit bir matematiksel model kullanır. Bu model, iki temel bileşenin bileşkesinden oluşur:</p>
+    <p>Uygulama, kullanıcıya sunulan "Yatay Hassasiyet" (Horizontal Precision) değerini hesaplarken, cihazın bildirdiği ham verilere ek olarak matematiksel bir "Maksimum Değer Formülü" kullanır. Bu formül, teorik hata payı ile pratik saçılımı kıyaslayarak en muhafazakar (en güvenli) sonucu üretir:</p>
+    
+    <div class="formula">Hassasiyet = Max( d_max, σ_avg )</div>
+
+    <p>Burada bileşenler şu şekilde tanımlanır:</p>
     <ul>
-      <li><span class="bold">1. İstatistiksel Belirsizlik Tahmini:</span> GNSS alıcısından gelen anlık hata paylarının (σ_sensor) ortalaması ve toplanan verilerin kendi içindeki standart hatası (SEM - Standard Error of Mean) birleştirilir. Bu, verilerin tekrarlanabilirliğini ölçer.
-        <div class="formula">σ_stat = √[ (SEM)² + (σ_avg / √n)² ]</div>
-      </li>
-      <li><span class="bold">2. Fiziksel Yayılım (Maksimum Mesafe):</span> Kullanıcının belirlediği hassasiyet limitine uyan ("Güvenilir") ham veriler arasındaki en uzak iki nokta arasındaki fiziksel mesafe hesaplanır. Bu, GPS sinyalindeki yavaş sürüklenmeleri (Drift) veya ani sıçramaları (Multipath) tespit etmek için en kritik parametredir.
-        <div class="formula">d_max = Max( Distance(P_i, P_j) ) , ∀ i,j ∈ Güvenilir_Veriler</div>
-      </li>
+      <li><span class="bold">1. Ortalama Donanımsal Hassasiyet (σ_avg):</span> GNSS çipsetinin her bir örnek için raporladığı donanımsal hata paylarının aritmetik ortalamasıdır. Bu değer, uydu geometrisi (DOP) ve sinyal gücü bazlı teorik belirsizliği temsil eder.</li>
+      <li><span class="bold">2. Maksimum Saçılım / Yayılım (d_max):</span> Kullanıcının belirlediği hassasiyet limitine uyan ham veriler arasındaki en uzak iki nokta arasındaki fiziksel mesafedir. Bu parametre, sinyaldeki "Multipath" (Yansıma) veya "Drift" (Sürüklenme) hatalarını pratik olarak ölçer.</li>
     </ul>
+    <p>Sonuç olarak; eğer cihaz 2 metre hassasiyet bildirmesine rağmen veriler 6 metrelik bir alana yayılıyorsa, uygulama kullanıcıya 6 metre hassasiyet raporlayarak yanıltıcı sonuçların önüne geçer.</p>
 
     <h3>11.1 Sinyal Güvenilirlik Analizi ve Multipath Denetimi</h3>
     <p>Uygulama, veri bütünlüğünü korumak için hibrit bir "Güvenilirlik Değerlendirme Algoritması" (Reliability Assessment Algorithm) kullanır. Bu sistem, donanımsal hassasiyet verilerini (σ_avg), fiziksel yayılım (d_max) ve veri yoğunluğu (n) ile çapraz sorgulayarak sinyal kalitesini şu şekilde kategorize eder:</p>
     <ul>
-      <li><span class="bold">Güvenli Seviye (Yeşil):</span> d_max ≤ σ_avg * 1.5 ve σ_avg ≤ 10m ve n ≥ 5 veri. Fiziksel saçılım tutarlı, hassasiyet yüksek ve istatistiksel populasyon yeterli seviyededir. Multipath riski minimumdur.</li>
+      <li><span class="bold">Güvenli Seviye (Yeşil):</span> σ_avg ≤ 10m ve d_max ≤ 10m ve n ≥ 5 veri. Fiziksel saçılım tutarlı, hassasiyet yüksek ve istatistiksel populasyon yeterli seviyededir. Multipath riski minimumdur.</li>
       <li><span class="bold">Orta Güven / Veri Az (Turuncu):</span> 
         <ul>
-          <li>σ_avg > 10m durumu: Donanımsal hassasiyetin mühendislik standartları için sınır değerde (10m+) olduğunu gösterir.</li>
-          <li>d_max > 10m durumu: Verilerin fiziksel yayılımının 10 metreyi aşarak tutarlılığın azaldığını gösterir.</li>
+          <li>10m < σ_avg ≤ 20m durumu: Donanımsal hassasiyetin mühendislik standartları için orta seviyede olduğunu gösterir.</li>
+          <li>10m < d_max ≤ 20m durumu: Verilerin fiziksel yayılımının arttığını ancak henüz kritik seviyeye ulaşmadığını gösterir.</li>
           <li>n < 5 durumu: Güçlü bir istatistiksel sonuç üretmek için veri sayısının yetersiz olduğunu (Veri Az) belirtir.</li>
         </ul>
       </li>
-      <li><span class="bold">Güvensiz Seviye (Kırmızı):</span> d_max > 20m veya d_max > σ_avg * 3.0 durumu. Cihaz yüksek hassasiyet bildirse dahi (Örn: 2m hassasiyet raporlanırken verilerin 6m+ alana yayılması), sinyal yansıması (Multipath) nedeniyle koordinatların gerçek konumdan saptığı matematiksel olarak kanıtlanmıştır. Bu durumda kullanıcıya "Düşük Sinyal Kalitesi" pop-up uyarısı gösterilir.</li>
+      <li><span class="bold">Güvensiz Seviye (Kırmızı):</span> σ_avg > 20m veya d_max > 20m veya d_max > σ_avg * 3.0 durumu. Cihaz yüksek hassasiyet bildirse dahi (Örn: 2m hassasiyet raporlanırken verilerin 6m+ alana yayılması), sinyal yansıması (Multipath) veya donanımsal yetersizlik nedeniyle koordinatların gerçek konumdan saptığı matematiksel olarak kanıtlanmıştır.</li>
     </ul>
 
     <h2>12. HASSASİYET İPUÇLARI VE SAHA PROTOKOLLERİ</h2>
@@ -301,7 +302,7 @@ export const generateTechnicalReport = () => {
           <span class="bold">Teknik Betimleme:</span>
           <ul>
             <li><span class="bold">Anlık Denetim:</span> Ölçüm bittiğinde verilerin saçılımı (spread) donanımsal hassasiyetin 3 katını aşıyorsa sistem otomatik bir engelleyici mesaj (Modal) çıkarır.</li>
-            <li><span class="bold">Kullanıcı Farkındalığı:</span> "Ölçüm sırasında çevresel faktörler nedeniyle Multipath (Yansıma) hatası tespit edildi" uyarısı ile kullanıcının yanıltıcı hassasiyet verilerine güvenmesi engellenir.</li>
+            <li><span class="bold">Kullanıcı Farkındalığı:</span> "Ölçüm sırasında çevresel ve donanımsal faktörler nedeniyle hatalar tespit edildi" uyarısı ile kullanıcının yanıltıcı hassasiyet verilerine güvenmesi engellenir.</li>
             <li><span class="bold">Karar Destek:</span> Kullanıcıya ölçümü daha açık bir alanda tekrarlaması yönünde mühendislik tavsiyesi sunulur.</li>
           </ul>
         </td>

@@ -122,7 +122,18 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
           
           <div className="soft-card p-6 space-y-4 border-l-4 border-l-amber-500">
             <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100 space-y-3">
-              <h4 className="text-xs font-black text-amber-700 uppercase tracking-widest">Sinyal Güvenilirlik Analizi</h4>
+              <h4 className="text-xs font-black text-amber-700 uppercase tracking-widest">Hassasiyet Nasıl Hesaplanır?</h4>
+              <p className="text-[11px] text-slate-700 font-medium leading-relaxed">
+                Uygulama, ekranda gördüğünüz nihai <b>Hassasiyet</b> değerini şu formülle belirler:
+              </p>
+              <div className="bg-white/50 p-2 rounded-lg border border-amber-100 text-center">
+                <code className="text-[10px] font-black text-amber-800 tracking-wider">Hassasiyet = Max(Saçılım, Donanımsal Hata)</code>
+              </div>
+              <p className="text-[10px] text-slate-600 font-medium leading-tight italic">
+                * Eğer sensör 2m hata payı diyorsa ancak veriler 6m'ye yayılıyorsa, gerçek hata payınız 6m olarak kabul edilir.
+              </p>
+              
+              <h4 className="text-xs font-black text-amber-700 uppercase tracking-widest pt-2">Sinyal Güvenilirlik Analizi</h4>
               <p className="text-[11px] text-slate-700 font-medium leading-relaxed">
                 Uygulama, ölçüm sırasında sadece sensörden gelen hata payına bakmaz; aynı zamanda toplanan koordinatların birbirine olan mesafesini (Saçılım/Spread) analiz ederek <b>Multipath (Sinyal Yansıması)</b> riskini değerlendirir:
               </p>
@@ -132,21 +143,21 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                    <div className="w-2 h-2 bg-emerald-500 rounded-full mt-1 shrink-0"></div>
                    <div className="flex-1">
                       <p className="text-[10px] font-black text-emerald-700 uppercase">Güvenilir Veri (Yeşil)</p>
-                      <p className="text-[9px] text-slate-600 font-medium">Veri saçılımı, sensör hassasiyeti ile uyumlu (1.5x limit dahilinde). Veriler tutarlı.</p>
+                      <p className="text-[9px] text-slate-600 font-medium">Hassasiyet ≤ 10m, Veri Saçılımı ≤ 10m ve Veri Sayısı ≥ 5. Veriler yüksek tutarlılıktadır.</p>
                    </div>
                 </div>
                 <div className="flex items-start gap-2">
                    <div className="w-2 h-2 bg-amber-500 rounded-full mt-1 shrink-0"></div>
                    <div className="flex-1">
-                      <p className="text-[10px] font-black text-amber-700 uppercase">Tutarsız Veri (Turuncu)</p>
-                      <p className="text-[9px] text-slate-600 font-medium">Saçılım, sensör hassasiyetinin 1.5 katını aşıyor. Multipath etkisi olabilir. Açık alanda tekrar önerilir.</p>
+                      <p className="text-[10px] font-black text-amber-700 uppercase">Orta Güven / Veri Az (Turuncu)</p>
+                      <p className="text-[9px] text-slate-600 font-medium">Hassasiyet veya Saçılım 10-20m arası VEYA Veri Sayısı 5'ten az. Veriler orta tutarlılıktadır.</p>
                    </div>
                 </div>
                 <div className="flex items-start gap-2">
                    <div className="w-2 h-2 bg-rose-500 rounded-full mt-1 shrink-0"></div>
                    <div className="flex-1">
                       <p className="text-[10px] font-black text-rose-700 uppercase">Kritik Tutarsızlık (Kırmızı)</p>
-                      <p className="text-[9px] text-slate-600 font-medium">Saçılım, sensör hassasiyetinin 3 katından fazla. Veriler yüksek oranda sapmalı. Açık alana geçerek ölçümü tekrarlayın.</p>
+                      <p className="text-[9px] text-slate-600 font-medium">Hassasiyet veya Saçılım 20m'den büyük VEYA Saçılım, Hassasiyetin 3 katından fazla. Veriler yüksek oranda sapmalı ve güvensizdir.</p>
                    </div>
                 </div>
               </div>
