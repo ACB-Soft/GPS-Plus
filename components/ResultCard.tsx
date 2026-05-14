@@ -78,12 +78,12 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
     const maxSpread = samples.length >= 3 ? calculateMaxDistance(samples) : 0;
 
     // RULE 1: UNSAFE (GÜVENSİZ)
-    if (avgSensorAcc > 20 || maxSpread > 20 || (samples.length >= 3 && maxSpread > avgSensorAcc * 3)) {
+    if (avgSensorAcc > 20 || maxSpread > 30 || (samples.length >= 3 && maxSpread > avgSensorAcc * 3)) {
       return 'LOW';
     }
 
     // RULE 2: ORTA GÜVEN / VERİ AZ
-    if (avgSensorAcc > 10 || maxSpread > 10 || samples.length < 5) {
+    if (avgSensorAcc > 10 || maxSpread > 15 || samples.length < 5) {
       return 'MEDIUM';
     }
     

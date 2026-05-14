@@ -138,26 +138,26 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 Uygulama, ölçüm sırasında sadece sensörden gelen hata payına bakmaz; aynı zamanda toplanan koordinatların birbirine olan mesafesini (Saçılım/Spread) analiz ederek <b>Multipath (Sinyal Yansıması)</b> riskini değerlendirir:
               </p>
               
-              <div className="space-y-2">
+                <div className="space-y-2">
                 <div className="flex items-start gap-2">
                    <div className="w-2 h-2 bg-emerald-500 rounded-full mt-1 shrink-0"></div>
                    <div className="flex-1">
                       <p className="text-[10px] font-black text-emerald-700 uppercase">Güvenilir Veri (Yeşil)</p>
-                      <p className="text-[9px] text-slate-600 font-medium">Hassasiyet ≤ 10m, Veri Saçılımı ≤ 10m ve Veri Sayısı ≥ 5. Veriler yüksek tutarlılıktadır.</p>
+                      <p className="text-[9px] text-slate-600 font-medium">Hassasiyet &le; 10m, Veri Saçılımı &le; 15m ve Veri Sayısı &ge; 5. Veriler yüksek tutarlılıktadır.</p>
                    </div>
                 </div>
                 <div className="flex items-start gap-2">
                    <div className="w-2 h-2 bg-amber-500 rounded-full mt-1 shrink-0"></div>
                    <div className="flex-1">
                       <p className="text-[10px] font-black text-amber-700 uppercase">Orta Güven / Veri Az (Turuncu)</p>
-                      <p className="text-[9px] text-slate-600 font-medium">Hassasiyet veya Saçılım 10-20m arası VEYA Veri Sayısı 5'ten az. Veriler orta tutarlılıktadır.</p>
+                      <p className="text-[9px] text-slate-600 font-medium">Hassasiyet 10-20m arası VEYA Saçılım 15-30m arası VEYA Veri Sayısı 5'ten az. Veriler orta tutarlılıktadır.</p>
                    </div>
                 </div>
                 <div className="flex items-start gap-2">
                    <div className="w-2 h-2 bg-rose-500 rounded-full mt-1 shrink-0"></div>
                    <div className="flex-1">
                       <p className="text-[10px] font-black text-rose-700 uppercase">Kritik Tutarsızlık (Kırmızı)</p>
-                      <p className="text-[9px] text-slate-600 font-medium">Hassasiyet veya Saçılım 20m'den büyük VEYA Saçılım, Hassasiyetin 3 katından fazla. Veriler yüksek oranda sapmalı ve güvensizdir.</p>
+                      <p className="text-[9px] text-slate-600 font-medium">Hassasiyet &gt; 20m VEYA Saçılım &gt; 30m VEYA Saçılım, Hassasiyetin 3 katından fazla. Veriler yüksek oranda sapmalı ve güvensizdir.</p>
                    </div>
                 </div>
               </div>

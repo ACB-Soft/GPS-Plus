@@ -190,15 +190,15 @@ export const generateTechnicalReport = () => {
     <h3>11.1 Sinyal Güvenilirlik Analizi ve Multipath Denetimi</h3>
     <p>Uygulama, veri bütünlüğünü korumak için hibrit bir "Güvenilirlik Değerlendirme Algoritması" (Reliability Assessment Algorithm) kullanır. Bu sistem, donanımsal hassasiyet verilerini (σ_avg), fiziksel yayılım (d_max) ve veri yoğunluğu (n) ile çapraz sorgulayarak sinyal kalitesini şu şekilde kategorize eder:</p>
     <ul>
-      <li><span class="bold">Güvenli Seviye (Yeşil):</span> σ_avg ≤ 10m ve d_max ≤ 10m ve n ≥ 5 veri. Fiziksel saçılım tutarlı, hassasiyet yüksek ve istatistiksel populasyon yeterli seviyededir. Multipath riski minimumdur.</li>
+      <li><span class="bold">Güvenli Seviye (Yeşil):</span> σ_avg ≤ 10m ve d_max ≤ 15m ve n ≥ 5 veri. Fiziksel saçılım tutarlı, hassasiyet yüksek ve istatistiksel populasyon yeterli seviyededir. Multipath riski minimumdur.</li>
       <li><span class="bold">Orta Güven / Veri Az (Turuncu):</span> 
         <ul>
           <li>10m < σ_avg ≤ 20m durumu: Donanımsal hassasiyetin mühendislik standartları için orta seviyede olduğunu gösterir.</li>
-          <li>10m < d_max ≤ 20m durumu: Verilerin fiziksel yayılımının arttığını ancak henüz kritik seviyeye ulaşmadığını gösterir.</li>
+          <li>15m < d_max ≤ 30m durumu: Verilerin fiziksel yayılımının arttığını ancak henüz kritik seviyeye ulaşmadığını gösterir.</li>
           <li>n < 5 durumu: Güçlü bir istatistiksel sonuç üretmek için veri sayısının yetersiz olduğunu (Veri Az) belirtir.</li>
         </ul>
       </li>
-      <li><span class="bold">Güvensiz Seviye (Kırmızı):</span> σ_avg > 20m veya d_max > 20m veya d_max > σ_avg * 3.0 durumu. Cihaz yüksek hassasiyet bildirse dahi (Örn: 2m hassasiyet raporlanırken verilerin 6m+ alana yayılması), sinyal yansıması (Multipath) veya donanımsal yetersizlik nedeniyle koordinatların gerçek konumdan saptığı matematiksel olarak kanıtlanmıştır.</li>
+      <li><span class="bold">Güvensiz Seviye (Kırmızı):</span> σ_avg > 20m veya d_max > 30m veya d_max > σ_avg * 3.0 durumu. Cihaz yüksek hassasiyet bildirse dahi (Örn: 2m hassasiyet raporlanırken verilerin 6m+ alana yayılması), sinyal yansıması (Multipath) veya donanımsal yetersizlik nedeniyle koordinatların gerçek konumdan saptığı matematiksel olarak kanıtlanmıştır.</li>
     </ul>
 
     <h2>12. HASSASİYET İPUÇLARI VE SAHA PROTOKOLLERİ</h2>
