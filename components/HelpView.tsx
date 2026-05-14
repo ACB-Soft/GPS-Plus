@@ -34,7 +34,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
           
           <div className="space-y-4">
             {/* Ölçüm Yap */}
-            <div className="soft-card p-4 space-y-3 border-l-4 border-l-indigo-500">
+            <div className="soft-card p-4 space-y-3">
               <h4 className="font-black text-slate-900 text-base uppercase flex items-center gap-2">
                 <span className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs">1</span>
                 Ölçüm Yap
@@ -53,7 +53,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             </div>
 
             {/* Aplikasyon Yap */}
-            <div className="soft-card p-4 space-y-3 border-l-4 border-l-indigo-500">
+            <div className="soft-card p-4 space-y-3">
               <h4 className="font-black text-slate-900 text-base uppercase flex items-center gap-2">
                 <span className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs">2</span>
                 Aplikasyon Yap
@@ -74,7 +74,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             </div>
 
             {/* Kayıtlı Ölçümler */}
-            <div className="soft-card p-4 space-y-3 border-l-4 border-l-indigo-500">
+            <div className="soft-card p-4 space-y-3">
               <h4 className="font-black text-slate-900 text-base uppercase flex items-center gap-2">
                 <span className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs">3</span>
                 Kayıtlı Ölçümler
@@ -91,7 +91,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             </div>
 
             {/* Veri Aktar */}
-            <div className="soft-card p-4 space-y-3 border-l-4 border-l-indigo-500">
+            <div className="soft-card p-4 space-y-3">
               <h4 className="font-black text-slate-900 text-base uppercase flex items-center gap-2">
                 <span className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs">4</span>
                 Veri Aktar
@@ -120,7 +120,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Hassasiyet & Güvenilirlik</h3>
           </div>
           
-          <div className="soft-card p-6 space-y-4 border-l-4 border-l-amber-500">
+          <div className="soft-card p-6 space-y-4">
             <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100 space-y-3">
               <h4 className="text-xs font-black text-amber-700 uppercase tracking-widest">Hassasiyet Nasıl Hesaplanır?</h4>
               <p className="text-[11px] text-slate-700 font-medium leading-relaxed">
@@ -193,7 +193,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Konum Teknolojisi</h3>
           </div>
           
-          <div className="soft-card p-6 space-y-4 border-l-4 border-l-slate-700">
+          <div className="soft-card p-6 space-y-4">
             <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify mb-4">
               Uygulama, en yüksek hassasiyeti sağlamak için <b>Hibrit (Karma) Konumlama</b> teknolojisini kullanır. Bu teknoloji, aşağıdaki 4 kaynağı birleştirerek çalışır:
             </p>
