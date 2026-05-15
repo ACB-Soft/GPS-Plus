@@ -215,7 +215,9 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                   onChange={(e) => setAccuracyLimit(e.target.value)}
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
-                  {[2, 3, 4, 5, 10, 25, 50, 100].map(v => <option key={v} value={v.toString()}>{v} metre</option>)}
+                  {[2, 3, 4, 5, 10, 25, 50, 100].map(v => (
+                    <option key={v} value={v.toFixed(1)}>{v.toFixed(1)} metre</option>
+                  ))}
                 </select>
               </div>
 

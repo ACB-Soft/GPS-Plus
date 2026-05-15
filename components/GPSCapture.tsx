@@ -178,7 +178,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
             if (isDifferent) {
               // ONLY SAVE IF IT SATISFIES THE DETERMINED LIMITS
               const isAccOk = current.accuracy <= accuracyLimit;
-              const isGnssOk = !gnssOnlySetting || (pos.coords.altitude !== null && pos.coords.altitude !== 0);
+              const isGnssOk = !settings.gnssOnlyMode || (pos.coords.altitude !== null && pos.coords.altitude !== 0);
 
               if (isAccOk && isGnssOk) {
                 samplesRef.current.push({
@@ -244,7 +244,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       const p = lastPositionRef.current;
       // Only add manually if it satisfies the accuracy limit and GNSS requirements
       const isAccOk = p.coords.accuracy <= accuracyLimit;
-      const isGnssOk = !gnssOnlySetting || (p.coords.altitude !== null && p.coords.altitude !== 0);
+      const isGnssOk = !settings.gnssOnlyMode || (p.coords.altitude !== null && p.coords.altitude !== 0);
       
       if (isAccOk && isGnssOk) {
         samples.push({ 
@@ -292,18 +292,18 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       }
     }
 
-    onComplete(avg, folderName, pointName, '', coordinateSystem, actualDuration, samples, usedIndices, accuracyLimit, calculationMethod, gnssOnlySetting);
+    onComplete(avg, folderName, pointName, '', coordinateSystem, actualDuration, samples, usedIndices, accuracyLimit, calculationMethod);
     releaseWakeLock();
-  }, [folderName, pointName, coordinateSystem, measurementDuration, seconds, onComplete, accuracyLimit, gnssOnlySetting]);
+  }, [folderName, pointName, coordinateSystem, measurementDuration, seconds, onComplete, accuracyLimit, settings.gnssOnlyMode, settings.calculationMethod, settings.alertsEnabled, settings.vibrationEnabled]);
 
   // Ref to track accuracy validity without triggering effect re-runs
   const isAccuracyOkRef = useRef(false);
 
   useEffect(() => {
     const isAccOk = instantAccuracy !== null && instantAccuracy <= accuracyLimit;
-    const isGnssOk = !gnssOnlySetting || (lastPositionRef.current && lastPositionRef.current.coords.altitude !== null && lastPositionRef.current.coords.altitude !== 0);
+    const isGnssOk = !settings.gnssOnlyMode || (lastPositionRef.current && lastPositionRef.current.coords.altitude !== null && lastPositionRef.current.coords.altitude !== 0);
     isAccuracyOkRef.current = isAccOk && isGnssOk;
-  }, [instantAccuracy, accuracyLimit, gnssOnlySetting]);
+  }, [instantAccuracy, accuracyLimit, settings.gnssOnlyMode]);
 
   useEffect(() => {
     let timer: any;
@@ -313,7 +313,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
         const now = Date.now();
         
         // --- GNSS Only Modu Kontrolü ---
-        const isActuallySatellite = !gnssOnlySetting || 
+        const isActuallySatellite = !settings.gnssOnlyMode || 
           (lastPositionRef.current && lastPositionRef.current.coords.altitude !== null && lastPositionRef.current.coords.altitude !== 0);
 
         // --- HİBRİT MANTIK: 5 Saniyede Bir Zorunlu Kayıt (Farklı veri gelmediyse ve hassasiyet uygunsa) ---
@@ -621,7 +621,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                       Mevcut hassasiyet (±{instantAccuracy.toFixed(1)}m),<br/>belirlenen {accuracyLimit}m limitinden yüksek.
                     </p>
                   </div>
-                ) : gnssOnlySetting && (!lastPositionRef.current || lastPositionRef.current.coords.altitude === null || lastPositionRef.current.coords.altitude === 0) ? (
+                ) : settings.gnssOnlyMode && (!lastPositionRef.current || lastPositionRef.current.coords.altitude === null || lastPositionRef.current.coords.altitude === 0) ? (
                   <div className="animate-pulse space-y-1">
                     <p className="font-black text-blue-600 text-[12px] md:text-[13px] uppercase tracking-[0.2em] leading-none">Uydu Kilidi Bekleniyor...</p>
                     <p className="text-slate-400 text-[10px] font-bold leading-tight uppercase tracking-widest px-4">
