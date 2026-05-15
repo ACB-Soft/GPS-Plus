@@ -115,9 +115,40 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
         <section className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-amber-200">
-              <i className="fas fa-signal"></i>
+              <i className="fas fa-lightbulb"></i>
             </div>
-            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Hassasiyet & Güvenilirlik</h3>
+            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Hassasiyet İpuçları</h3>
+          </div>
+          
+          <div className="soft-card p-6 space-y-4">
+            <div className="flex gap-4">
+              <i className="fas fa-cloud-sun text-amber-600 mt-1 text-lg"></i>
+              <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
+                <b>Açık Gökyüzü:</b> En iyi sonuçlar için binalardan, ağaçlardan ve metal yapılardan uzak, gökyüzünü doğrudan gören alanlarda ölçüm yapın.
+              </p>
+            </div>
+            <div className="flex gap-4">
+              <i className="fas fa-mobile-alt text-amber-600 mt-1 text-lg"></i>
+              <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
+                <b>Bekleme Süresi:</b> Uygulamayı açtıktan sonra GPS sinyalinin "oturması" için yaklaşık 30 saniye beklemek hassasiyeti 2-5 metreye kadar düşürebilir.
+              </p>
+            </div>
+            <div className="flex gap-4">
+              <i className="fas fa-battery-three-quarters text-amber-600 mt-1 text-lg"></i>
+              <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
+                <b>Güç Modu:</b> Cihazınızın "Düşük Güç Modu"nda olmaması gerekir, çünkü bu mod GPS güncelleme sıklığını azaltabilir.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Hassasiyet Hesabı */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-200">
+              <i className="fas fa-chart-line"></i>
+            </div>
+            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Hassasiyet Hesabı</h3>
           </div>
           
           <div className="soft-card p-6 space-y-4">
@@ -162,35 +193,16 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 </div>
               </div>
             </div>
-
-            <div className="flex gap-4">
-              <i className="fas fa-cloud-sun text-amber-600 mt-1 text-lg"></i>
-              <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
-                <b>Açık Gökyüzü:</b> En iyi sonuçlar için binalardan, ağaçlardan ve metal yapılardan uzak, gökyüzünü doğrudan gören alanlarda ölçüm yapın.
-              </p>
-            </div>
-            <div className="flex gap-4">
-              <i className="fas fa-mobile-alt text-amber-600 mt-1 text-lg"></i>
-              <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
-                <b>Bekleme Süresi:</b> Uygulamayı açtıktan sonra GPS sinyalinin "oturması" için yaklaşık 30 saniye beklemek hassasiyeti 2-5 metreye kadar düşürebilir.
-              </p>
-            </div>
-            <div className="flex gap-4">
-              <i className="fas fa-battery-three-quarters text-amber-600 mt-1 text-lg"></i>
-              <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
-                <b>Güç Modu:</b> Cihazınızın "Düşük Güç Modu"nda olmaması gerekir, çünkü bu mod GPS güncelleme sıklığını azaltabilir.
-              </p>
-            </div>
           </div>
         </section>
 
-        {/* Hesaplama Yöntemleri */}
+        {/* Konum Hesabı */}
         <section className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
               <i className="fas fa-calculator"></i>
             </div>
-            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Konum Hesaplama Yöntemleri</h3>
+            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Konum Hesabı</h3>
           </div>
           
           <div className="soft-card p-6 space-y-4">
