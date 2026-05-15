@@ -38,27 +38,30 @@ export function calculateResult(
       finalSamples = sourceData;
       resultData = calculateAverage(sourceData);
       break;
-    case 'MEDIAN':
-      finalSamples = sourceData;
-      resultData = calculateMedian(sourceData);
+    case 'WEIGHTED_LSE':
+      const lseResult = calculateWeightedLSE(sourceData);
+      resultData = lseResult.result;
+      finalCalculatedUsedIndices = lseResult.usedIndices;
       break;
-    case 'MID_RANGE':
-      finalSamples = sourceData;
-      resultData = calculateMidRange(sourceData);
+    case 'HUBER_M':
+      const huberResult = calculateHuberM(sourceData);
+      resultData = huberResult.result;
+      finalCalculatedUsedIndices = huberResult.usedIndices;
       break;
     case 'KDE':
       const kde = applyKDEEstimation(sourceData);
       resultData = kde.result;
       finalCalculatedUsedIndices = kde.usedIndices;
       break;
-    case 'KALMAN_LSE_HYBRID':
-      const kalmanLse = calculateKalmanLseHybrid(sourceData);
-      resultData = kalmanLse.result;
-      finalCalculatedUsedIndices = kalmanLse.usedIndices;
+    case 'RANSAC':
+      const ransacResult = calculateRANSAC(sourceData);
+      resultData = ransacResult.result;
+      finalCalculatedUsedIndices = ransacResult.usedIndices;
       break;
     default:
-      finalSamples = sourceData;
-      resultData = calculateAverage(sourceData);
+      const defaultLse = calculateWeightedLSE(sourceData);
+      resultData = defaultLse.result;
+      finalCalculatedUsedIndices = defaultLse.usedIndices;
   }
 
   // Determine which indices were used if not already determined by the method
@@ -220,6 +223,94 @@ function applyBaardaFilter(samples: Coordinate[]): Coordinate[] {
  * KDE (Kernel Density Estimation)
  * Finds the point with the highest local density using a Gaussian kernel
  */
+/**
+ * Weighted Least Squares (WLS)
+ * Uses 1/accuracy^2 as weights for balancing.
+ */
+function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length === 0) return { result: samples[0], usedIndices: [0] };
+  
+  const weights = samples.map(s => 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
+  const sumW = weights.reduce((a, b) => a + b, 0);
+  
+  const meanLat = samples.reduce((a, s, i) => a + s.lat * weights[i], 0) / sumW;
+  const meanLng = samples.reduce((a, s, i) => a + s.lng * weights[i], 0) / sumW;
+  
+  const validAltitudes = samples.filter(s => s.altitude !== null);
+  const meanAlt = validAltitudes.length > 0
+    ? validAltitudes.reduce((a, s) => a + (s.altitude || 0), 0) / validAltitudes.length
+    : null;
+    
+  const result: Coordinate = {
+    ...samples[0],
+    lat: meanLat,
+    lng: meanLng,
+    altitude: meanAlt,
+    timestamp: Date.now()
+  };
+  
+  // For weighted mean, we effectively use all samples but treat them with weights
+  // For reporting used indices, we return all
+  return { result, usedIndices: samples.map((_, i) => i) };
+}
+
+/**
+ * Huber M-Estimation
+ * Robust estimation that reduces the weight of outliers iteratively.
+ */
+function calculateHuberM(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length < 3) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
+
+  let currentLat = samples.reduce((a, b) => a + b.lat, 0) / samples.length;
+  let currentLng = samples.reduce((a, b) => a + b.lng, 0) / samples.length;
+  
+  const k = 1.345; // Huber tuning constant
+  let iterations = 0;
+  const maxIterations = 10;
+  
+  while (iterations < maxIterations) {
+    const residuals = samples.map(s => {
+      const dLat = (s.lat - currentLat) * 111320;
+      const dLng = (s.lng - currentLng) * 111320 * Math.cos(currentLat * Math.PI / 180);
+      return Math.sqrt(dLat * dLat + dLng * dLng);
+    });
+    
+    // Estimate scale (MAD - Median Absolute Deviation)
+    const sortedResiduals = [...residuals].sort((a, b) => a - b);
+    const medianResidual = sortedResiduals[Math.floor(residuals.length / 2)];
+    const scale = medianResidual / 0.6745 || 1.0;
+    
+    // Calculate weights based on Huber loss function
+    const weights = residuals.map(r => {
+      const u = r / scale;
+      return Math.abs(u) <= k ? 1 : k / Math.abs(u);
+    });
+    
+    const sumW = weights.reduce((a, b) => a + b, 0);
+    const nextLat = samples.reduce((a, s, i) => a + s.lat * weights[i], 0) / sumW;
+    const nextLng = samples.reduce((a, s, i) => a + s.lng * weights[i], 0) / sumW;
+    
+    // Converge if change is very small (< 1mm)
+    const dLat = (nextLat - currentLat) * 111320;
+    const dLng = (nextLng - currentLng) * 111320 * Math.cos(currentLat * Math.PI / 180);
+    if (Math.sqrt(dLat * dLat + dLng * dLng) < 0.001) break;
+    
+    currentLat = nextLat;
+    currentLng = nextLng;
+    iterations++;
+  }
+
+  const result = calculateAverage(samples);
+  result.lat = currentLat;
+  result.lng = currentLng;
+  
+  return { result, usedIndices: samples.map((_, i) => i) };
+}
+
+/**
+ * KDE (Kernel Density Estimation)
+ * Finds the point with the highest local density using a Gaussian kernel.
+ */
 function applyKDEEstimation(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
   if (samples.length === 0) return { result: samples[0], usedIndices: [0] };
   if (samples.length === 1) return { result: samples[0], usedIndices: [0] };
@@ -237,39 +328,67 @@ function applyKDEEstimation(samples: Coordinate[]): { result: Coordinate; usedIn
   let maxDensity = -1;
   let bestPointIdx = 0;
 
-  // Calculate density for each point based on all others
   for (let i = 0; i < samples.length; i++) {
     let density = 0;
     for (let j = 0; j < samples.length; j++) {
       const dLat = (samples[i].lat - samples[j].lat) / hLat;
       const dLng = (samples[i].lng - samples[j].lng) / hLng;
-      
-      // Gaussian kernel: (1/sqrt(2pi)) * exp(-0.5 * u^2)
-      // We can skip the constant factor as we only care about the max
       density += Math.exp(-0.5 * (dLat * dLat + dLng * dLng));
     }
-    
     if (density > maxDensity) {
       maxDensity = density;
       bestPointIdx = i;
     }
   }
 
-  // The result is the point with the highest density
-  // But to be more "smooth", let's take a weighted average around that peak
   const peak = samples[bestPointIdx];
   const threshold = Math.sqrt(hLat * hLat + hLng * hLng) * 2;
   const inliers: Coordinate[] = samples.filter(s => 
     Math.sqrt(Math.pow(s.lat - peak.lat, 2) + Math.pow(s.lng - peak.lng, 2)) <= threshold
   );
 
-  const usedIndices = samples
-    .map((s, idx) => inliers.includes(s) ? idx : -1)
-    .filter(idx => idx !== -1);
-
-  return { result: calculateAverage(inliers), usedIndices };
+  return { result: calculateAverage(inliers), usedIndices: samples.map((s, idx) => inliers.includes(s) ? idx : -1).filter(idx => idx !== -1) };
 }
 
+/**
+ * RANSAC (Random Sample Consensus)
+ * Finds the largest cluster of points within a tolerance.
+ */
+function calculateRANSAC(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length < 3) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
+
+  const avgAccuracy = samples.reduce((a, b) => a + b.accuracy, 0) / samples.length;
+  // Dynamic threshold: Based on average accuracy of sensors
+  const threshold = Math.max(2.0, avgAccuracy * 1.5); 
+  
+  let bestInliers: number[] = [];
+  const iterations = Math.min(20, samples.length * 2);
+
+  for (let i = 0; i < iterations; i++) {
+    // Pick a random sample as the model center
+    const pivotIdx = Math.floor(Math.random() * samples.length);
+    const pivot = samples[pivotIdx];
+    
+    const currentInliers: number[] = [];
+    for (let j = 0; j < samples.length; j++) {
+      const s = samples[j];
+      const dLat = (s.lat - pivot.lat) * 111320;
+      const dLng = (s.lng - pivot.lng) * 111320 * Math.cos(pivot.lat * Math.PI / 180);
+      const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+      
+      if (dist <= threshold) {
+        currentInliers.push(j);
+      }
+    }
+    
+    if (currentInliers.length > bestInliers.length) {
+      bestInliers = currentInliers;
+    }
+  }
+
+  const inlierSamples = bestInliers.map(idx => samples[idx]);
+  return { result: calculateAverage(inlierSamples), usedIndices: bestInliers };
+}
 
 /**
  * Calculates variance of coordinates in meters
@@ -285,112 +404,6 @@ export function calculateVariance(samples: Coordinate[], mean: Coordinate): numb
   });
   
   return residuals.reduce((a, b) => a + b, 0) / (samples.length - 1);
-}
-
-/**
- * Calculates median values for coordinates
- */
-export function calculateMedian(samples: Coordinate[]): Coordinate {
-  if (samples.length === 0) return { lat: 0, lng: 0, accuracy: 0, altitude: null, altitudeAccuracy: null, timestamp: Date.now() };
-  
-  const lats = [...samples].map(s => s.lat).sort((a, b) => a - b);
-  const lngs = [...samples].map(s => s.lng).sort((a, b) => a - b);
-  const alts = samples.filter(s => s.altitude !== null).map(s => s.altitude as number).sort((a, b) => a - b);
-  
-  const mid = Math.floor(samples.length / 2);
-  const medianLat = samples.length % 2 !== 0 ? lats[mid] : (lats[mid - 1] + lats[mid]) / 2;
-  const medianLng = samples.length % 2 !== 0 ? lngs[mid] : (lngs[mid - 1] + lngs[mid]) / 2;
-  
-  let medianAlt: number | null = null;
-  if (alts.length > 0) {
-    const aMid = Math.floor(alts.length / 2);
-    medianAlt = alts.length % 2 !== 0 ? alts[aMid] : (alts[aMid - 1] + alts[aMid]) / 2;
-  }
-  
-  return {
-    ...samples[0],
-    lat: medianLat,
-    lng: medianLng,
-    altitude: medianAlt,
-    timestamp: Date.now()
-  };
-}
-
-/**
- * Calculates Mid-range values (average of min and max) for coordinates
- */
-export function calculateMidRange(samples: Coordinate[]): Coordinate {
-  if (samples.length === 0) return { lat: 0, lng: 0, accuracy: 0, altitude: null, altitudeAccuracy: null, timestamp: Date.now() };
-  
-  const lats = samples.map(s => s.lat);
-  const lngs = samples.map(s => s.lng);
-  const alts = samples.filter(s => s.altitude !== null).map(s => s.altitude as number);
-  
-  const midLat = (Math.min(...lats) + Math.max(...lats)) / 2;
-  const midLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
-  
-  let midAlt: number | null = null;
-  if (alts.length > 0) {
-    midAlt = (Math.min(...alts) + Math.max(...alts)) / 2;
-  }
-  
-  const avg = calculateAverage(samples);
-  
-  return {
-    ...avg,
-    lat: midLat,
-    lng: midLng,
-    altitude: midAlt,
-    timestamp: Date.now()
-  };
-}
-
-/**
- * KALMAN + LSE HYBRID Method
- * 1. Accuracy Filter (Done in pre-step)
- * 2. Static Kalman Filtering (Smoothing)
- * 3. Baarda Robust Outlier Detection
- * 4. Final Weighted Average
- */
-function calculateKalmanLseHybrid(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
-
-  // Sort chronologically for Kalman Filter
-  const timeSorted = [...samples].sort((a, b) => a.timestamp - b.timestamp);
-  
-  // 1. Static Kalman Filtering (Smoothing spatial variations)
-  const smoothedSamples = applyStaticKalmanFilter(timeSorted);
-
-  // 2. Outlier Detection using Baarda on the smoothed data
-  // This identifies problematic samples even after smoothing
-  const baardaFiltered = applyBaardaFilter(smoothedSamples);
-  
-  // Map back to original indices to find out "which original samples" are contributing
-  // We consider a sample "used" if its smoothed version survived the Baarda filter
-  const usedIndices: number[] = [];
-  samples.forEach((s, idx) => {
-    // Basic pointer comparison or ID comparison if available
-    // Since we clone objects during smoothing, we check timestamp/original stats
-    const match = baardaFiltered.find(b => b.timestamp === s.timestamp && Math.abs(b.accuracy - s.accuracy) < 0.0001);
-    if (match) usedIndices.push(idx);
-  });
-
-  // 3. Final Result: Weighted Average of the CLEAN original samples
-  const cleanOriginals = usedIndices.map(idx => samples[idx]);
-  if (cleanOriginals.length === 0) return { result: calculateAverage(samples), usedIndices: [0] };
-
-  const weights = cleanOriginals.map(s => 1 / Math.pow(s.accuracy || 0.1, 2));
-  const sumW = weights.reduce((a, b) => a + b, 0);
-  const avgOrig = calculateAverage(cleanOriginals);
-
-  const result: Coordinate = {
-    ...avgOrig,
-    lat: cleanOriginals.reduce((a, b, i) => a + b.lat * weights[i], 0) / sumW,
-    lng: cleanOriginals.reduce((a, b, i) => a + b.lng * weights[i], 0) / sumW,
-    timestamp: Date.now()
-  };
-
-  return { result, usedIndices };
 }
 
 /**

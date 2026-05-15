@@ -260,7 +260,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       return;
     }
 
-    const calculationMethod = (localStorage.getItem('default_calculation_method') || 'ARITHMETIC_MEAN') as CalculationMethod;
+    const calculationMethod = (localStorage.getItem('default_calculation_method') || 'WEIGHTED_LSE') as CalculationMethod;
     const { result: avg, usedIndices } = calculateResult(samples, calculationMethod, accuracyLimit, gnssOnlySetting);
 
     // Feedback (Sound/Vibration)

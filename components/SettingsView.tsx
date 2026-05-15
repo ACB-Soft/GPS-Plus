@@ -19,7 +19,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
   const [locationPrecision, setLocationPrecision] = useState(localStorage.getItem('default_location_precision') || '2');
   const [heightPrecision, setHeightPrecision] = useState(localStorage.getItem('default_height_precision') || '1');
   const [heightType, setHeightType] = useState(localStorage.getItem('default_height_type') || 'orthometric');
-  const [calculationMethod, setCalculationMethod] = useState(localStorage.getItem('default_calculation_method') || 'ARITHMETIC_MEAN');
+  const [calculationMethod, setCalculationMethod] = useState(localStorage.getItem('default_calculation_method') || 'WEIGHTED_LSE');
   const [gnssOnlyMode, setGnssOnlyMode] = useState(localStorage.getItem('default_gnss_only_mode') === 'true');
   const [showOnboarding, setShowOnboarding] = useState(localStorage.getItem('show_onboarding_every_time') !== 'false');
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
@@ -81,7 +81,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
       setLocationPrecision('2');
       setHeightPrecision('1');
       setHeightType('orthometric');
-      setCalculationMethod('ARITHMETIC_MEAN');
+      setCalculationMethod('WEIGHTED_LSE');
       setGnssOnlyMode(false);
       setShowOnboarding(true);
 
@@ -227,7 +227,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
               </div>
 
               {/* Hesaplama Yöntemi */}
-              <div className="space-y-1">
+               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Hesaplama Yöntemi</label>
                 <select 
                   value={calculationMethod}
@@ -235,10 +235,10 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
                   <option value="ARITHMETIC_MEAN">1. Yöntem: Aritmetik Ortalama</option>
-                  <option value="MEDIAN">2. Yöntem: Medyan</option>
-                  <option value="MID_RANGE">3. Yöntem: Mid-range (Maks-Min)</option>
+                  <option value="WEIGHTED_LSE">2. Yöntem: Ağırlıklı Dengeleme (Varsayılan)</option>
+                  <option value="HUBER_M">3. Yöntem: Huber M-Estimation</option>
                   <option value="KDE">4. Yöntem: Kernel Density (KDE)</option>
-                  <option value="KALMAN_LSE_HYBRID">5. Yöntem: Kalman+LSE Hibrit</option>
+                  <option value="RANSAC">5. Yöntem: RANSAC Analizi</option>
                 </select>
               </div>
 
