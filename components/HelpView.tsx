@@ -23,7 +23,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
 
       <div className="flex-1 px-8 overflow-y-auto no-scrollbar py-4">
         <div className="max-w-sm mx-auto w-full space-y-10">
-          {/* Kullanım Kılavuzu */}
+          {/* Nasıl Kullanılır? */}
         <section className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
@@ -46,9 +46,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <br/>
                 • <b>Koordinat Sistemi:</b> WGS84 (Enlem-Boylam), ITRF96 (3 derece), ED50 (3 derece) veya ED50 (6 derece) sistemlerinden birini seçin. Proje bir kez oluşturulduğunda sistem değiştirilemez.
                 <br/>
-                • <b>Ölçüm Süreci:</b> "Ölçümü Başlat" dediğinizde belirlediğiniz hassasiyette (2-100 m) ve belirlediğiniz sürede (5-30 sn) veri toplama süreci başlatılır. Uygulama bu aşamada konum örneği alarak verilerin ortalamasını hesaplar. En doğru sonuç için cihazı sabit bir zeminde ve açık bir alanda tutun.
-                <br/>
-                • <b>Hızlı Erişim:</b> Uygulama, ana ekrandayken GPS sinyalini arka planda hazırlamaya başlar. Bu sayede ölçüme geçtiğinizde daha hızlı sonuç alırsınız.
+                • <b>Ölçüm Süreci:</b> "Ölçümü Başlat" dediğinizde belirlediğiniz hassasiyette (2-100 m) ve belirlediğiniz sürede (5-120 sn) veri toplama süreci başlatılır. Uygulama bu aşamada konum örneği alarak verilerin ortalamasını hesaplar. En doğru sonuç için cihazı sabit bir zeminde ve açık bir alanda tutun.
               </p>
             </div>
 
@@ -64,8 +62,6 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 • <b>Nokta Seçimi:</b> Proje listenizden hedeflediğiniz noktayı seçin.
                 <br/>
                 • <b>Canlı Rehberlik:</b> Ekranın ortasındaki pusula benzeri gösterge size gitmeniz gereken yönü gösterir.
-                <br/>
-                • <b>Ekranı Açık Tut:</b> Aplikasyon sırasında ekranın kapanmasını önlemek için güneş/ay ikonuna tıklayarak "Ekranı Açık Tut" özelliğini aktif edebilirsiniz.
                 <br/>
                 • <b>Mesafe Takibi:</b> Hedefe olan kuş uçuşu mesafeniz (metre cinsinden) anlık olarak güncellenir. Uygulamanın metre hassasiyetinde çalıştığını unutmayın.
                 <br/>
@@ -101,7 +97,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <br/><br/>
                 • <b>Google Earth (.kml):</b> Noktalarınızı uydu görüntüsü üzerinde görmek için ideal format.
                 <br/>
-                • <b>Excel (.xlsx):</b> Nokta adı, koordinatlar (X, Y, Z), hassasiyet ve tarih bilgilerini içeren detaylı tablo.
+                • <b>Excel (.xlsx):</b> Nokta adı, koordinatlar (Y, X, Z), hassasiyet ve tarih bilgilerini içeren detaylı tablo.
                 <br/>
                 • <b>Metin (.txt):</b> Ham veri formatında (Ad, Y, X, Z) hızlı paylaşım.
                 <br/>
@@ -151,44 +147,45 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Hassasiyet Hesabı</h3>
           </div>
           
-          <div className="soft-card p-6 space-y-4">
-            <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100 space-y-3">
-              <h4 className="text-xs font-black text-amber-700 uppercase tracking-widest">Hassasiyet Nasıl Hesaplanır?</h4>
+          <div className="soft-card p-6 space-y-6">
+            <div className="space-y-3">
               <p className="text-[11px] text-slate-700 font-medium leading-relaxed">
                 Uygulama, ekranda gördüğünüz nihai <b>Hassasiyet</b> değerini şu formülle belirler:
               </p>
-              <div className="bg-white/50 p-2 rounded-lg border border-amber-100 text-center">
-                <code className="text-[10px] font-black text-amber-800 tracking-wider">Hassasiyet = Max(Saçılım, Donanımsal Hata)</code>
+              <div className="bg-white p-3 rounded-xl border border-slate-100 text-center shadow-sm">
+                <code className="text-[10px] font-black text-blue-800 tracking-wider">Hassasiyet = Max(Veri Saçılımı, Donanımsal Hata)</code>
               </div>
               <p className="text-[10px] text-slate-600 font-medium leading-tight italic">
-                * Eğer sensör 2m hata payı diyorsa ancak veriler 6m'ye yayılıyorsa, gerçek hata payınız 6m olarak kabul edilir.
+                * Örneğin; sensör 2m hata payı diyorsa ancak ham veriler 6m'ye yayılıyorsa, gerçek hata payınız 6m olarak kabul edilir.
               </p>
+            </div>
               
-              <h4 className="text-xs font-black text-amber-700 uppercase tracking-widest pt-2">Sinyal Güvenilirlik Analizi</h4>
+            <div className="space-y-3 border-t border-slate-100 pt-4">
+              <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">Sinyal Güvenilirlik Analizi</h4>
               <p className="text-[11px] text-slate-700 font-medium leading-relaxed">
                 Uygulama, ölçüm sırasında sadece sensörden gelen hata payına bakmaz; aynı zamanda toplanan koordinatların birbirine olan mesafesini (Saçılım/Spread) analiz ederek <b>Multipath (Sinyal Yansıması)</b> riskini değerlendirir:
               </p>
               
-                <div className="space-y-2">
+              <div className="space-y-2">
                 <div className="flex items-start gap-2">
                    <div className="w-2 h-2 bg-emerald-500 rounded-full mt-1 shrink-0"></div>
                    <div className="flex-1">
                       <p className="text-[10px] font-black text-emerald-700 uppercase">Güvenilir Veri (Yeşil)</p>
-                      <p className="text-[9px] text-slate-600 font-medium">Hassasiyet &le; 10m, Veri Saçılımı &le; 15m ve Veri Sayısı &ge; 5. Veriler yüksek tutarlılıktadır.</p>
+                      <p className="text-[9px] text-slate-600 font-medium">Veriler yüksek tutarlılıktadır.<br/>Hassasiyet &le; 10m, Veri Saçılımı &le; 15m ve Veri Sayısı &ge; 5</p>
                    </div>
                 </div>
                 <div className="flex items-start gap-2">
                    <div className="w-2 h-2 bg-amber-500 rounded-full mt-1 shrink-0"></div>
                    <div className="flex-1">
-                      <p className="text-[10px] font-black text-amber-700 uppercase">Orta Güven / Veri Az (Turuncu)</p>
-                      <p className="text-[9px] text-slate-600 font-medium">Hassasiyet 10-20m arası VEYA Saçılım 15-30m arası VEYA Veri Sayısı 5'ten az. Veriler orta tutarlılıktadır.</p>
+                      <p className="text-[10px] font-black text-amber-700 uppercase">Orta Güvenli Veri / Veri Az (Turuncu)</p>
+                      <p className="text-[9px] text-slate-600 font-medium">Veriler orta tutarlılıktadır.<br/>Hassasiyet 10-20m arası veya Saçılım 15-30m arası veya Veri Sayısı 5'ten az.</p>
                    </div>
                 </div>
                 <div className="flex items-start gap-2">
                    <div className="w-2 h-2 bg-rose-500 rounded-full mt-1 shrink-0"></div>
                    <div className="flex-1">
-                      <p className="text-[10px] font-black text-rose-700 uppercase">Kritik Tutarsızlık (Kırmızı)</p>
-                      <p className="text-[9px] text-slate-600 font-medium">Hassasiyet &gt; 20m VEYA Saçılım &gt; 30m VEYA Saçılım, Hassasiyetin 3 katından fazla. Veriler yüksek oranda sapmalı ve güvensizdir.</p>
+                      <p className="text-[10px] font-black text-rose-700 uppercase">Güvensiz Veri (Kırmızı)</p>
+                      <p className="text-[9px] text-slate-600 font-medium">Veriler yüksek oranda sapmalı ve güvensizdir.<br/>Hassasiyet &gt; 20m veya Saçılım &gt; 30m veya Saçılım, Hassasiyetin 3 katından fazla.</p>
                    </div>
                 </div>
               </div>
@@ -241,7 +238,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
               <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                 <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight mb-2">4. Kernel Density (KDE)</h4>
                 <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                  Mekansal yoğunluk analizi yapar. Verilerin en çok kümelendiği "tepe noktasını" (Mode) bularak rastgele sıçramaları eler.
+                  Mekansal yoğunluk analizi yapar. Verilerin en çok kümelendiği "tepe noktasını" bularak rastgele sıçramaları eler.
                 </p>
               </div>
 
@@ -286,7 +283,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                   <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">2. Baz İstasyonları</h4>
                 </div>
                 <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                  Uyduların görülemediği kapalı alanlarda veya tünellerde, telefonunuzun bağlı olduğu baz istasyonlarına göre yaklaşık konum belirler.
+                  Uyduların görülemediği kapalı alanlarda veya tünellerde, telefonunuzun bağlı olduğu baz istasyonlarına göre yaklaşık konum belirler. Hassiyeti düşüktür.
                 </p>
               </div>
 
@@ -296,7 +293,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                   <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">3. Wi-Fi Ağları</h4>
                 </div>
                 <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                  Şehir içinde bina aralarında, çevredeki kablosuz ağların sinyal gücünü kullanarak konumu keskinleştirir (IPS).
+                  Şehir içinde bina aralarında, çevredeki kablosuz ağların sinyal gücünü kullanarak konumu keskinleştirir (IPS). Hassiyeti oldukça düşüktür.
                 </p>
               </div>
 
@@ -306,20 +303,20 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                   <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">4. A-GPS (İnternet)</h4>
                 </div>
                 <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                  İnternet üzerinden güncel uydu yörünge verilerini (almanak) indirerek, GPS'in saniyeler içinde kilitlenmesini (Fix) sağlar.
+                  İnternet üzerinden güncel uydu yörünge verilerini (almanak) indirerek, GPS'in saniyeler içinde kilitlenmesini (Fix) sağlar. Hassiyeti oldukça düşüktür.
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Teknik Bilgiler */}
+        {/* Koordinat Dönüşüm Altyapısı */}
         <section className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center text-white shadow-lg shadow-slate-400">
               <i className="fas fa-microchip"></i>
             </div>
-            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Teknik Altyapı</h3>
+            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Koordinat Dönüşüm Altyapısı</h3>
           </div>
           
           <div className="bg-slate-100 border border-slate-200 rounded-2xl p-6 space-y-6 shadow-inner">
@@ -438,7 +435,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
           </div>
           <div className="soft-card p-6 space-y-4">
             <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
-              Bu uygulama, saha çalışmalarında hızlı ve pratik koordinat ölçümü, aplikasyon ve veri yönetimi sağlamak amacıyla geliştirilmiştir. Uygulama ile ilgili herhangi bir sorun yaşıyorsanız veya bir özellik isteğiniz varsa e-posta yoluyla iletişime geçebilirsiniz.
+              Bu uygulama, saha çalışmalarında hızlı ve pratik koordinat ölçümü, aplikasyon ve veri yönetimi sağlamak ve basit CBS verisi toplamak amacıyla geliştirilmiştir. Uygulama ile ilgili herhangi bir sorun yaşıyorsanız veya bir özellik isteğiniz varsa e-posta yoluyla iletişime geçebilirsiniz.
             </p>
             <div className="flex flex-col">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">İletişim</span>
