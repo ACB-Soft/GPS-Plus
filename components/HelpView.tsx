@@ -184,6 +184,65 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
           </div>
         </section>
 
+        {/* Hesaplama Yöntemleri */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+              <i className="fas fa-calculator"></i>
+            </div>
+            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Konum Hesaplama Yöntemleri</h3>
+          </div>
+          
+          <div className="soft-card p-6 space-y-4">
+            <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
+              Uygulama, toplanan ham GPS verilerini nihai bir koordinata dönüştürmek için 5 farklı matematiksel model sunar. Bu yöntemleri <b>Ayarlar</b> menüsünden değiştirebilirsiniz:
+            </p>
+            
+            <div className="space-y-4">
+              <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">1. Aritmetik Ortalama</h4>
+                  <span className="text-[9px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">TEMEL</span>
+                </div>
+                <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                  Veri setindeki tüm koordinatların basit aritmetik ortalamasını hesaplar. Tüm veriler eşit ağırlığa sahiptir.
+                </p>
+              </div>
+
+              <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm ring-1 ring-blue-50">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight">2. Ağırlıklı Dengeleme</h4>
+                  <span className="text-[9px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold">VARSAYILAN</span>
+                </div>
+                <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                  (Weighted Least Squares) Hassasiyeti yüksek (hata payı düşük) olan verilere daha fazla ağırlık vererek dengeleme yapar. En kararlı sonuçları üretir.
+                </p>
+              </div>
+
+              <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight mb-2">3. Huber M-Estimation</h4>
+                <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                  İstatistiksel olarak "aykırı" kabul edilen hatalı verilerin (outliers) ağırlığını otomatik olarak düşüren, gürültülü sinyallere dirençli robust bir yöntemdir.
+                </p>
+              </div>
+
+              <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight mb-2">4. Kernel Density (KDE)</h4>
+                <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                  Mekansal yoğunluk analizi yapar. Verilerin en çok kümelendiği "tepe noktasını" (Mode) bularak rastgele sıçramaları eler.
+                </p>
+              </div>
+
+              <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight mb-2">5. RANSAC Analizi</h4>
+                <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                  "Random Sample Consensus" algoritması ile veriler arasındaki en büyük tutarlı kümeyi bulur ve bu küme dışındaki sapmaları tamamen yok sayar.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Konum Teknolojisi */}
         <section className="space-y-4">
           <div className="flex items-center gap-3">

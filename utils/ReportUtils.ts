@@ -118,28 +118,21 @@ export const generateTechnicalReport = () => {
     <div class="page-break"></div>
 
     <h2>6. İSTATİSTİKSEL ANALİZ VE VERİ AYIKLAMA METODOLOJİLERİ</h2>
-    <p>Hatalı sinyalleri (Outliers) temizlemek ve en doğru sonucu üretmek için ${FULL_BRAND}, kullanıcıya 8 farklı ileri düzey istatistiksel yöntem sunar. Bu yöntemler, farklı arazi ve sinyal koşullarına göre optimize edilmiştir:</p>
+    <p>Hatalı sinyalleri (Outliers) temizlemek ve en doğru sonucu üretmek için ${FULL_BRAND}, kullanıcıya 5 farklı ileri düzey istatistiksel yöntem sunar. Bu yöntemler, farklı arazi ve sinyal koşullarına göre optimize edilmiştir:</p>
     <ul>
-      <li><span class="bold">1. Aritmetik Ortalama:</span> Veri kümesindeki düşük hassasiyetli veriler elendikten sonra, kalan tüm verilerin matematiksel ortalaması alınarak nihai koordinat hesaplanır.
+      <li><span class="bold">1. Aritmetik Ortalama:</span> Veri setindeki tüm değerlerin basit aritmetik ortalamasını hesaplar. Düşük hassasiyetli veriler ön filtreleme ile elendikten sonra kalan tüm veriler eşit ağırlığa sahiptir.
         <div class="formula">μ = (1/n) * Σ xᵢ</div>
       </li>
-      <li><span class="bold">2. Ağırlıklı En Küçük Kareler (Weighted Least Squares):</span> Her bir GNSS örneği, kendi anlık hassasiyet değerinin karesiyle ters orantılı olarak ağırlıklandırılır (W = 1/σ²). Bu sayede daha düşük hata payına sahip "kaliteli" sinyaller, hesaplama sonucuna matematiksel olarak daha fazla etki eder.
-        <div class="formula">x̂ = (Σ wᵢ xᵢ) / (Σ wᵢ) , burada wᵢ = 1/σᵢ²</div>
+      <li><span class="bold">2. Ağırlıklı En Küçük Kareler (Weighted Least Squares):</span> Yatay hassasiyet (acc) değerlerini kullanarak ağırlıklı dengeleme yapar. Ağırlıklar P = 1/acc² olarak alınır. Daha düşük hata payına sahip "kaliteli" sinyaller, hesaplama sonucuna matematiksel olarak daha fazla etki eder.
+        <div class="formula">x̂ = (Σ Pᵢ xᵢ) / (Σ Pᵢ) , burada Pᵢ = 1/σᵢ²</div>
       </li>
-      <li><span class="bold">3. Robust Yöntem (M-Estimators):</span> Huber ağırlık fonksiyonu kullanılarak gerçekleştirilen bu yöntemde, sapan değerlerin etkisi doğrusal değil, belirli bir eşikten sonra sınırlı hale getirilir. Yinelemeli (iterative) hesaplama ile sapan verilere rağmen en kararlı konum kestirimi yapılır.
+      <li><span class="bold">3. Huber M-Estimation:</span> Aykırı değerlere dirençli (robust) bir yapı kurar. Belirlenen bir eşik değerinden (k = 1.345σ) uzak olan noktaların ağırlığını lineer olarak azaltan Huber kayıp fonksiyonunu iteratif olarak uygular. Sapan verilere rağmen en kararlı konum kestirimi yapılır.
         <div class="formula">ρ(e) = { 0.5 * e² (|e| ≤ k); k * |e| - 0.5 * k² (|e| > k) }</div>
       </li>
-      <li><span class="bold">4. Mahalanobis Uzaklık Analizi:</span> Koordinatların kovaryans matrisi üzerinden çok boyutlu uzaklık analizi yapılır. Korelasyonu bozan ve gürültü içeren veriler, koordinat sisteminin geometrik yapısına göre tespit edilerek elenir.
-        <div class="formula">d² = (x - μ)ᵀ S⁻¹ (x - μ)</div>
-      </li>
-      <li><span class="bold">5. DBSCAN (Density-Based Clustering):</span> Koordinat uzayındaki yoğunluk analizi yapılarak ana "çekirdek küme" tespit edilir. Yansıma (multi-path) nedeniyle oluşan küme dışı sıçramalı veriler "gürültü" (noise) olarak işaretlenerek hesaba katılmaz. Algoritma, ε (epsilon) yarıçap komşuluğundaki MinPts (Minimum Nokta) parametrelerine dayanır.</li>
-      <li><span class="bold">6. RANSAC (Random Sample Consensus):</span> Rastgele örnekleme ve konsensüs prensibiyle çalışır. Veri kümesi içindeki en büyük uyumlu grubu (inliers) tespit eder. Sıçramalı ve hatalı verilerin (outliers) yoğun olduğu zorlu arazi koşullarında en güvenilir sonuçlardan birini üretir.</li>
-      <li><span class="bold">7. KDE (Kernel Density Estimation):</span> Çekirdek yoğunluk kestirimi ile verilerin dağılım olasılığı hesaplanır. Matematiksel olarak olasılığın en yüksek olduğu "zirve noktası" nihai koordinat olarak belirlenir.
+      <li><span class="bold">4. Kernel Density Estimation (KDE):</span> Verilerin mekansal yoğunluğunu hesaplar. Gaussian kernel kullanarak enlem/boylam düzleminde yoğunluğun tepe yaptığı (Mode) noktayı bulur. Rastgele sıçramaları eleyerek kümelenmenin merkezini tespit eder.
         <div class="formula">f̂(x) = (1 / nh) * Σ K((x - xᵢ) / h)</div>
       </li>
-      <li><span class="bold">8. Median + MAD (Median Absolute Deviation):</span> Aşırı uç değerlere karşı en dirençli yöntemdir. Medyan üzerinden hesaplanan mutlak sapma (MAD) değerini kullanarak, verilerin merkezine en yakın "sağlam" (robust) grubu filtreler.
-        <div class="formula">MAD = median(|xᵢ - median(X)|)</div>
-      </li>
+      <li><span class="bold">5. RANSAC (Random Sample Consensus):</span> Belirli bir tolerans (inlier threshold) dahilinde en fazla noktayı içeren "tutarlı kümeyi" bulmak için rastgele örnekleme yapar. Algoritma, cihazın o anki ortalama hassasiyet değerine göre dinamik bir tolerans eşiği belirler ve en büyük inlier kümesinin ortalamasını sonuç olarak döndürür.</li>
     </ul>
 
     <h2>7. ÖLÇÜM MANTIĞI VE VERİ İŞLEME DİSİPLİNLERİ</h2>
@@ -206,7 +199,7 @@ export const generateTechnicalReport = () => {
     <ul>
       <li><span class="bold">Anten Görüşü:</span> Cihaz gökyüzünün en az %80'ini doğrudan görebilmelidir.</li>
       <li><span class="bold">Isınma (Warm-Up):</span> GNSS çipsetinin ephemeris verilerini indirmesi için uygulama açıldıktan sonra ilk ölçümden önce 1 dk beklenmelidir.</li>
-      <li><span class="bold">Multi-path Analizi:</span> Büyük cam cepheli binaların yanında yansıyan sinyaller koordinatı kaydırabilir; bu alanlarda DBSCAN filtresi özellikle aktif edilmelidir.</li>
+      <li><span class="bold">Multi-path Analizi:</span> Büyük cam cepheli binaların yanında yansıyan sinyaller koordinatı kaydırabilir; bu alanlarda RANSAC veya Huber M-Estimation filtresi özellikle aktif edilmelidir.</li>
     </ul>
 
     <h2>13. TEKNİK GÖRSEL ARAYÜZ VE OPERASYONEL EKRAN ANALİZİ</h2>
@@ -312,7 +305,7 @@ export const generateTechnicalReport = () => {
     <h2>14. UYGULAMA DOSYA YAPISI VE MODÜLER MİMARİ</h2>
     <p>${FULL_BRAND} yazılım mimarisi, "Separation of Concerns" (Sorumlulukların Ayrılması) prensibiyle modüler bir yapıda tasarlanmıştır. Bu yapı, her bir jeodezik fonksiyonun izole bir şekilde test edilmesine ve geliştirilmesine olanak tanır:</p>
     <ul>
-      <li><span class="bold">/utils/MathUtils.ts (İstatistik ve Hesaplama Çekirdeği):</span> Uygulamanın beynidir. Aritmetik Ortalama, Robust Tahminleme, KDE, RANSAC, Mahalanobis ve DBSCAN gibi tüm ileri düzey istatistiksel algoritmalar bu dosyada kodlanmıştır. Sinyal işlemenin matematiksel doğrulanması burada gerçekleşir.</li>
+      <li><span class="bold">/utils/MathUtils.ts (İstatistik ve Hesaplama Çekirdeği):</span> Uygulamanın beynidir. Aritmetik Ortalama, Ağırlıklı Dengeleme (WLS), Huber M-Estimation, KDE ve RANSAC gibi tüm ileri düzey istatistiksel algoritmalar bu dosyada kodlanmıştır. Sinyal işlemenin matematiksel doğrulanması burada gerçekleşir.</li>
       <li><span class="bold">/utils/CoordinateUtils.ts (Projeksiyon ve Dönüşüm Katmanı):</span> Proj4 kütüphanesi entegrasyonu ile WGS84, ITRF96, ED50 gibi koordinat sistemleri arasındaki geçişleri yönetir. Dilim orta meridyeni (DOM) hesaplamaları ve TM projeksiyon dönüşümleri bu modülün sorumluluğundadır.</li>
       <li><span class="bold">/components/GeoidUtils.ts (Yükseklik Modeli Yönetimi):</span> Elipsoidal yükseklik verisini, TG-20 ve EGM96 modellerini kullanarak fiziksel (ortometrik) yüksekliğe dönüştüren yardımcı fonksiyondur. Cihazın yerel yüksekliğini global datum ile senkronize eder.</li>
       <li><span class="bold">/components/ExcelUtils.ts (Veri Raporlama ve Excel Dökümü):</span> Toplanan verilerin mühendislik standartlarına uygun Excel (.xlsx) formatına dönüştürülmesini sağlar. Kolon yapıları, veri tipleri ve istatistiksel özet tabloları bu modülde yapılandırılır.</li>
@@ -333,7 +326,6 @@ export const generateTechnicalReport = () => {
       <li><span class="bold">Huber, P. J. (1981).</span> Robust Statistics. John Wiley & Sons. (M-Estimators ve Robust Tahminleme yöntemleri için).</li>
       <li><span class="bold">Hampel, F. R. (1974).</span> The influence curve and its role in robust estimation. Journal of the American Statistical Association. (Median Absolute Deviation - MAD yöntemi için).</li>
       <li><span class="bold">Fischler, M. A., & Bolles, R. C. (1981).</span> Random sample consensus: a paradigm for model fitting with applications to image analysis and automated cartography. Communications of the ACM. (RANSAC algoritması için).</li>
-      <li><span class="bold">Ester, M., Kriegel, H. P., Sander, J., & Xu, X. (1996).</span> A density-based algorithm for discovering clusters in large spatial databases with noise. In KDD. (DBSCAN kümeleme analizi için).</li>
       <li><span class="bold">Silverman, B. W. (1986).</span> Density Estimation for Statistics and Data Analysis. CRC Press. (Kernel Density Estimation - KDE yöntemleri için).</li>
       <li><span class="bold">Kaplan, E. D., & Hegarty, C. (2017).</span> Understanding GPS/GNSS: Principles and Applications. Artech House. (Hata modelleri ve sinyal işleme prensipleri için).</li>
       <li><span class="bold">Teunissen, P. J. G. (2000).</span> The Least-Squares Equation. Delft University Press. (En Küçük Kareler yöntemi jeodezik uygulamaları için).</li>
