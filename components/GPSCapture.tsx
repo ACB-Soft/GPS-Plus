@@ -13,10 +13,10 @@ interface Props {
   existingLocations: SavedLocation[];
   currentStep?: 'SELECT_MODE' | 'FORM' | 'READY' | 'COUNTDOWN';
   onNavigate: (step: 'SELECT_MODE' | 'FORM' | 'READY' | 'COUNTDOWN') => void;
-  gnssOnlySetting?: boolean;
+  settings: any;
 }
 
-const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = false, existingLocations, currentStep, onNavigate, gnssOnlySetting = false }) => {
+const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = false, existingLocations, currentStep, onNavigate, settings }) => {
   const [step, setStep] = useState<'SELECT_MODE' | 'FORM' | 'READY' | 'COUNTDOWN'>(currentStep || (isContinuing ? 'READY' : 'SELECT_MODE'));
   const [isNewProject, setIsNewProject] = useState(!isContinuing);
 
@@ -39,8 +39,8 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
 
   const [coordinateSystem, setCoordinateSystem] = useState(getInitialSystem());
   const [accuracyLimit, setAccuracyLimit] = useState(parseFloat(localStorage.getItem('default_accuracy_limit') || '5.0'));
-  const [measurementDuration, setMeasurementDuration] = useState(parseInt(localStorage.getItem('default_duration') || '5'));
-  const [seconds, setSeconds] = useState(parseInt(localStorage.getItem('default_duration') || '5'));
+  const [measurementDuration, setMeasurementDuration] = useState(parseInt(localStorage.getItem('default_duration') || '15'));
+  const [seconds, setSeconds] = useState(parseInt(localStorage.getItem('default_duration') || '15'));
   const [sampleCount, setSampleCount] = useState(0);
   const [reliabilityStatus, setReliabilityStatus] = useState<'GOOD' | 'WARNING' | 'CRITICAL' | 'UNKNOWN'>('UNKNOWN');
   const [instantAccuracy, setInstantAccuracy] = useState<number | null>(null);
@@ -55,6 +55,9 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   const wakeLockRef = useRef<any>(null);
 
   const requestWakeLock = async () => {
+    const screenAlwaysOn = settings.screenAlwaysOn;
+    if (!screenAlwaysOn) return;
+    
     if ('wakeLock' in navigator) {
       try {
         wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
@@ -260,12 +263,12 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       return;
     }
 
-    const calculationMethod = (localStorage.getItem('default_calculation_method') || 'WEIGHTED_LSE') as CalculationMethod;
-    const { result: avg, usedIndices } = calculateResult(samples, calculationMethod, accuracyLimit, gnssOnlySetting);
+    const calculationMethod = settings.calculationMethod;
+    const { result: avg, usedIndices } = calculateResult(samples, calculationMethod, accuracyLimit, settings.gnssOnlyMode);
 
-    // Feedback (Sound/Vibration)
-    const audioEnabled = localStorage.getItem('default_audio_feedback_enabled') === 'true';
-    const vibrationEnabled = localStorage.getItem('default_vibration_feedback_enabled') === 'true';
+    // Feedback (Sound/Vibration) - Sync with Settings defaults
+    const audioEnabled = settings.alertsEnabled;
+    const vibrationEnabled = settings.vibrationEnabled;
 
     if (vibrationEnabled && navigator.vibrate) {
       navigator.vibrate([200, 100, 200]);

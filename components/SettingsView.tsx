@@ -10,12 +10,12 @@ interface Props {
 
 const SettingsView: React.FC<Props> = ({ onBack }) => {
   const [coordinateSystem, setCoordinateSystem] = useState(localStorage.getItem('default_coord_system') || 'WGS84');
-  const [accuracyLimit, setAccuracyLimit] = useState(localStorage.getItem('default_accuracy_limit') || '10');
-  const [measurementDuration, setMeasurementDuration] = useState(localStorage.getItem('default_duration') || '10');
+  const [accuracyLimit, setAccuracyLimit] = useState(localStorage.getItem('default_accuracy_limit') || '5.0');
+  const [measurementDuration, setMeasurementDuration] = useState(localStorage.getItem('default_duration') || '15');
   const [mapProvider, setMapProvider] = useState(localStorage.getItem('default_map_provider') || 'Google Hybrid');
-  const [audioEnabled, setAudioEnabled] = useState(localStorage.getItem('default_audio_feedback_enabled') === 'true');
+  const [audioEnabled, setAudioEnabled] = useState(localStorage.getItem('default_audio_feedback_enabled') !== 'false');
   const [vibrationEnabled, setVibrationEnabled] = useState(localStorage.getItem('default_vibration_feedback_enabled') === 'true');
-  const [screenAlwaysOn, setScreenAlwaysOn] = useState(localStorage.getItem('default_screen_always_on') === 'true');
+  const [screenAlwaysOn, setScreenAlwaysOn] = useState(localStorage.getItem('default_screen_always_on') !== 'false');
   const [locationPrecision, setLocationPrecision] = useState(localStorage.getItem('default_location_precision') || '2');
   const [heightPrecision, setHeightPrecision] = useState(localStorage.getItem('default_height_precision') || '1');
   const [heightType, setHeightType] = useState(localStorage.getItem('default_height_type') || 'orthometric');
@@ -56,7 +56,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
   const handleResetSettings = () => {
     if (confirm('Tüm ayarlar fabrika ayarlarına sıfırlanacak. Emin misiniz?')) {
       // Clear localStorage defaults
-      localStorage.removeItem('default_coordinate_system');
+      localStorage.removeItem('default_coord_system');
       localStorage.removeItem('default_accuracy_limit');
       localStorage.removeItem('default_duration');
       localStorage.removeItem('default_map_provider');
@@ -70,14 +70,14 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
       localStorage.removeItem('default_gnss_only_mode');
       localStorage.removeItem('show_onboarding_every_time');
 
-      // Reset state
-      setCoordinateSystem('ITRF96');
+      // Reset state to synchronized defaults
+      setCoordinateSystem('WGS84');
       setAccuracyLimit('5.0');
-      setMeasurementDuration('5');
-      setMapProvider('osm');
+      setMeasurementDuration('15');
+      setMapProvider('Google Hybrid');
       setAudioEnabled(true);
-      setVibrationEnabled(true);
-      setScreenAlwaysOn(false);
+      setVibrationEnabled(false);
+      setScreenAlwaysOn(true);
       setLocationPrecision('2');
       setHeightPrecision('1');
       setHeightType('orthometric');
@@ -85,7 +85,12 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
       setGnssOnlyMode(false);
       setShowOnboarding(true);
 
-      setModal({ show: true, type: 'success', message: 'Ayarlar başarıyla sıfırlandı.' });
+      setModal({ 
+        isOpen: true, 
+        title: 'Başarılı',
+        type: 'success', 
+        message: 'Ayarlar başarıyla sıfırlandı.' 
+      });
     }
   };
 

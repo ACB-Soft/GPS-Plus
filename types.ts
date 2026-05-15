@@ -51,6 +51,7 @@ export interface AppSettings {
   defaultMeasurementDuration: number;
   calculationMethod: CalculationMethod;
   alertsEnabled: boolean;
+  vibrationEnabled: boolean;
   screenAlwaysOn: boolean;
   mapProvider: string;
   locationPrecision: number;

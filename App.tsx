@@ -36,15 +36,16 @@ const App = () => {
   const [stakeoutInitialPoint, setStakeoutInitialPoint] = useState<StakeoutPoint | null>(null);
   const [settings, setSettings] = useState<AppSettings>(() => ({
     defaultCoordinateSystem: localStorage.getItem('default_coord_system') || 'WGS84',
-    defaultAccuracyLimit: parseFloat(localStorage.getItem('default_accuracy_limit') || '10'),
-    defaultMeasurementDuration: parseInt(localStorage.getItem('default_duration') || '10'),
-    alertsEnabled: localStorage.getItem('default_audio_feedback_enabled') === 'true',
-    screenAlwaysOn: localStorage.getItem('default_screen_always_on') === 'true',
+    defaultAccuracyLimit: parseFloat(localStorage.getItem('default_accuracy_limit') || '5.0'),
+    defaultMeasurementDuration: parseInt(localStorage.getItem('default_duration') || '15'),
+    alertsEnabled: localStorage.getItem('default_audio_feedback_enabled') !== 'false',
+    vibrationEnabled: localStorage.getItem('default_vibration_feedback_enabled') === 'true',
+    screenAlwaysOn: localStorage.getItem('default_screen_always_on') !== 'false',
     mapProvider: localStorage.getItem('default_map_provider') || 'Google Hybrid',
     locationPrecision: parseInt(localStorage.getItem('default_location_precision') || '2'),
     heightPrecision: parseInt(localStorage.getItem('default_height_precision') || '1'),
     heightType: (localStorage.getItem('default_height_type') as 'orthometric' | 'ellipsoidal') || 'orthometric',
-    calculationMethod: (localStorage.getItem('default_calculation_method') || 'ARITHMETIC_MEAN') as any,
+    calculationMethod: (localStorage.getItem('default_calculation_method') || 'WEIGHTED_LSE') as any,
     gnssOnlyMode: localStorage.getItem('default_gnss_only_mode') === 'true',
     showOnboarding: localStorage.getItem('show_onboarding_every_time') !== 'false',
   }));
@@ -297,17 +298,18 @@ const App = () => {
               // Refresh settings when coming back from settings
               setSettings({
                 defaultCoordinateSystem: localStorage.getItem('default_coord_system') || 'WGS84',
-                defaultAccuracyLimit: parseFloat(localStorage.getItem('default_accuracy_limit') || '10'),
-                defaultMeasurementDuration: parseInt(localStorage.getItem('default_duration') || '10'),
-                alertsEnabled: localStorage.getItem('default_audio_feedback_enabled') === 'true',
-                screenAlwaysOn: localStorage.getItem('default_screen_always_on') === 'true',
+                defaultAccuracyLimit: parseFloat(localStorage.getItem('default_accuracy_limit') || '5.0'),
+                defaultMeasurementDuration: parseInt(localStorage.getItem('default_duration') || '15'),
+                alertsEnabled: localStorage.getItem('default_audio_feedback_enabled') !== 'false',
+                vibrationEnabled: localStorage.getItem('default_vibration_feedback_enabled') === 'true',
+                screenAlwaysOn: localStorage.getItem('default_screen_always_on') !== 'false',
                 mapProvider: localStorage.getItem('default_map_provider') || 'Google Hybrid',
                 locationPrecision: parseInt(localStorage.getItem('default_location_precision') || '2'),
                 heightPrecision: parseInt(localStorage.getItem('default_height_precision') || '1'),
                 heightType: (localStorage.getItem('default_height_type') as 'orthometric' | 'ellipsoidal') || 'orthometric',
-                calculationMethod: (localStorage.getItem('default_calculation_method') || 'ARITHMETIC_MEAN') as any,
+                calculationMethod: (localStorage.getItem('default_calculation_method') || 'WEIGHTED_LSE') as any,
                 gnssOnlyMode: localStorage.getItem('default_gnss_only_mode') === 'true',
-                showOnboarding: localStorage.getItem('show_onboarding_every_time') === 'true',
+                showOnboarding: localStorage.getItem('show_onboarding_every_time') !== 'false',
               });
               window.history.back();
             }} 
@@ -336,7 +338,7 @@ const App = () => {
               isContinuing={isContinuing}
               currentStep={subView as any}
               onNavigate={(step) => navigateTo('capture', step)}
-              gnssOnlySetting={settings.gnssOnlyMode}
+              settings={settings}
             />
           </div>
         )}
