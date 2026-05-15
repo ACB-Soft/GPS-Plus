@@ -37,10 +37,10 @@ const MapSetBounds = ({ points }: { points: [number, number][] }) => {
 
 const METHOD_COLORS: Record<string, string> = {
   ARITHMETIC_MEAN: '#ec4899',
-  MEDIAN: '#8b5cf6',
-  MID_RANGE: '#f59e0b',
+  WEIGHTED_LSE: '#8b5cf6',
+  HUBER_M: '#f59e0b',
   KDE: '#06b6d4',
-  KALMAN_LSE_HYBRID: '#6366f1'
+  RANSAC: '#6366f1'
 };
 
 const CustomScatterLabel = (props: any) => {
@@ -109,19 +109,19 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
   const methods = useMemo<CalculationMethod[]>(() => [
     'ARITHMETIC_MEAN', 
-    'MEDIAN',
-    'MID_RANGE',
+    'WEIGHTED_LSE',
+    'HUBER_M',
     'KDE',
-    'KALMAN_LSE_HYBRID'
+    'RANSAC'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
     const labels: Record<string, string> = {
       'ARITHMETIC_MEAN': "Aritmetik Ortalama",
-      'MEDIAN': "Medyan",
-      'MID_RANGE': "Mid-range (Maks-Min)",
+      'WEIGHTED_LSE': "Ağırlıklı Dengeleme",
+      'HUBER_M': "Huber M-Tahmincisi",
       'KDE': "Kernel Density (KDE)",
-      'KALMAN_LSE_HYBRID': "Kalman+LSE Hibrit"
+      'RANSAC': "RANSAC Analizi"
     };
     return labels[m] || m;
   };
@@ -460,9 +460,15 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Model Açıklamaları</h4>
                <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-1">
-                    <p className="text-[9px] font-black text-indigo-600 uppercase">Kalman+LSE Hibrit</p>
+                    <p className="text-[9px] font-black text-indigo-600 uppercase">RANSAC Analizi</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      Statik Kalman filtresi ile sinyal gürültüsünü sönümler, Baarda testi ile aykırı değerleri ayıklar ve En Küçük Kareler yöntemiyle en olası koordinatı belirler.
+                      Rastgele örneklem birliği (RANSAC), veri setindeki aykırı değerleri (outliers) otomatik olarak ayıklayarak en büyük tutarlı koordinat kümesini belirler.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[9px] font-black text-amber-600 uppercase">Huber M-Tahmincisi</p>
+                    <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
+                      Sağlam (Robust) istatistik yöntemi; merkeze yakın verilere tam ağırlık verirken, şüpheli uç değerlerin etkisini kademeli olarak azaltır.
                     </p>
                   </div>
                </div>
