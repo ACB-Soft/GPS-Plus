@@ -163,37 +163,47 @@ export function calculateAverage(samples: Coordinate[]): Coordinate {
 
 /**
  * Baarda's Outlier Test (Reliability Theory)
- * Recursive process to remove one outlier at a time until no kaba hata exists.
+ * Recursive process to remove one outlier at a time until no "Gross Error" exists.
  */
 function calculateBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  if (samples.length < 4) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
+  // We need at least 5 samples to perform reliable statistical cleaning
+  if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
 
   let currentSamples = samples.map((s, idx) => ({ ...s, _originalIdx: idx }));
-  const criticalValue = 3.29; // Approximately for 0.1% significance
+  
+  // Critical Value: 3.29 is 99.9% but can be too aggressive for field data.
+  // Using ~4.0 (higher threshold) for better resistance against "over-cleaning".
+  const criticalValue = 3.8; 
+  
+  // Sigma Floor: To prevent infinite recursive cleaning when data is already very consistent.
+  // If the unit weight standard deviation drops below 0.1m, tiny differences become huge outliers.
+  const sigmaFloor = 0.15; 
 
-  while (currentSamples.length > 4) {
-    // 1. Calculate weighted mean (L2)
+  while (currentSamples.length > 5) {
+    // 1. Calculate weighted mean
     const weights = currentSamples.map(s => 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
     const sumW = weights.reduce((a, b) => a + b, 0);
     const meanLat = currentSamples.reduce((a, b, i) => a + b.lat * weights[i], 0) / sumW;
     const meanLng = currentSamples.reduce((a, b, i) => a + b.lng * weights[i], 0) / sumW;
 
-    // 2. Calculate residuals (v = l_cap - l)
+    // 2. Calculate residuals (v_i) in meters
     const residuals = currentSamples.map(s => {
       const dLat = (s.lat - meanLat) * 111320;
       const dLng = (s.lng - meanLng) * 111320 * Math.cos(meanLat * Math.PI / 180);
-      return Math.sqrt(dLat * dLat + dLng * dLng);
+      return Math.sqrt(dLat * dLat + dLng * dLng); // Radial residual
     });
 
-    // 3. Sigma0 estimate (Standard deviation of unit weight)
+    // 3. Sigma-0 estimation (Standard deviation of unit weight)
     const vTPv = residuals.reduce((a, v, i) => a + v * v * weights[i], 0);
-    const sigma0 = Math.sqrt(vTPv / (currentSamples.length - 1));
+    // Dynamic sigma estimation with a floor to prevent blowing up the standardized residuals
+    const sigma0 = Math.max(sigmaFloor, Math.sqrt(vTPv / (currentSamples.length - 1)));
 
     // 4. Standardized residuals (w_i = v_i / (sigma0 * sqrt(q_vv)))
     const standardizedResiduals = currentSamples.map((s, i) => {
       const p_i = weights[i];
       const q_ii = (1 - p_i / sumW); 
-      return residuals[i] / (sigma0 * Math.sqrt(q_ii) || 1e-9);
+      // Reliability cofactor q_ii represents how much of the error is detectable
+      return residuals[i] / (sigma0 * Math.sqrt(Math.abs(q_ii)) || 1e-9);
     });
 
     // 5. Find the worst offender
@@ -206,8 +216,8 @@ function calculateBaarda(samples: Coordinate[]): { result: Coordinate; usedIndic
       }
     }
 
-    // 6. Test
-    if (maxW > criticalValue) {
+    // 6. Test with a cap on discard amount (don't discard more than 60% of original data)
+    if (maxW > criticalValue && currentSamples.length > samples.length * 0.4) {
       currentSamples.splice(worstIdx, 1);
     } else {
       break; 
