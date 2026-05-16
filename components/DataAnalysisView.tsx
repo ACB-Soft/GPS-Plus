@@ -219,21 +219,49 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     const sys = location.coordinateSystem || 'ITRF96_3';
     const limit = location.accuracyLimit || 5.0;
     
+    // Determine the Ground Truth if available for time-series error calculation
+    let refN = 0; // Northing (Yukarı)
+    let refE = 0; // Easting (Sağa)
+    let hasRef = false;
+
+    if (analysisType === 'precise') {
+      const pn = parseFloat(preciseN);
+      const pe = parseFloat(preciseE);
+      if (!isNaN(pn) && !isNaN(pe)) {
+        if (useLocal) {
+          refN = pn; 
+          refE = pe; 
+        } else {
+          const conv = convertCoordinate(pn, pe, sys);
+          refN = conv.y; 
+          refE = conv.x; 
+        }
+        hasRef = true;
+      }
+    }
+
     // Filter by accuracy limit
     return location.samples
       .filter(s => s.accuracy <= limit)
       .map((s, idx) => {
         const conv = convertCoordinate(s.lat, s.lng, sys);
+        let errorHz = 0;
+        if (hasRef) {
+          const dn = refN - conv.y;
+          const de = refE - conv.x;
+          errorHz = Math.sqrt(dn*dn + de*de);
+        }
         return {
           id: idx + 1,
-          x: conv.x,
-          y: conv.y,
+          x: conv.x, // Sağa (Y)
+          y: conv.y, // Yukarı (X)
           alt: s.altitude || 0,
           acc: s.accuracy,
-          time: new Date(s.timestamp).toLocaleTimeString()
+          time: new Date(s.timestamp).toLocaleTimeString(),
+          errorHz: errorHz
         };
       });
-  }, [location]);
+  }, [location, analysisType, preciseN, preciseE, useLocal]);
 
   const distributionData = useMemo(() => {
     if (chartData.length === 0) return { rawPoints: [], methodPoints: [], centerPoint: [], range: 0.5 };
@@ -817,7 +845,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           <XAxis dataKey="time" hide />
                           <YAxis domain={['auto', 'auto']} tick={{fontSize: 8}} axisLine={false} width={45} />
                           <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontWeight: 'bold' }} />
-                          <Line type="monotone" dataKey="x" stroke="#6366f1" strokeWidth={2} dot={false} />
+                          <Line type="monotone" dataKey="y" stroke="#6366f1" strokeWidth={2} dot={false} />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
@@ -834,12 +862,38 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           <XAxis dataKey="time" hide />
                           <YAxis domain={['auto', 'auto']} tick={{fontSize: 8}} axisLine={false} width={45} />
                           <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontWeight: 'bold' }} />
-                          <Line type="monotone" dataKey="y" stroke="#f59e0b" strokeWidth={2} dot={false} />
+                          <Line type="monotone" dataKey="x" stroke="#f59e0b" strokeWidth={2} dot={false} />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
                 </div>
+
+                {analysisType === 'precise' && (
+                  <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200">
+                    <h3 className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] mb-4">
+                      <i className="fas fa-chart-line mr-2"></i>
+                      Zamana Bağlı Sİstematik Yatay Hata (ΔHz)
+                    </h3>
+                    <div className="h-48 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
+                          <XAxis dataKey="time" hide />
+                          <YAxis domain={[0, 'auto']} tick={{fontSize: 8}} axisLine={false} width={45} unit="m" />
+                          <Tooltip 
+                            contentStyle={{ borderRadius: '1rem', border: 'none', fontWeight: 'black', background: '#0f172a', color: '#fff' }} 
+                            formatter={(value: number) => [`${value.toFixed(3)} m`, 'Yatay Hata']}
+                          />
+                          <Line type="monotone" dataKey="errorHz" stroke="#f43f5e" strokeWidth={3} dot={false} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <p className="text-[9px] text-slate-500 font-bold mt-2 text-center uppercase tracking-tight">
+                      * Her bir ölçüm noktasının kesin koordinata olan mesafesinin zamanla değişimi
+                    </p>
+                  </div>
+                )}
               </div>
 
                 <div className="bg-blue-600 p-6 rounded-[2rem] text-white flex flex-col items-center gap-6 shadow-xl shadow-blue-100">

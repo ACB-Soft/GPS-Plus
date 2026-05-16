@@ -409,15 +409,18 @@ export const downloadCombinedAnalysisReport = (
   const targetMethod = bestMethod.method;
   
   // Reference values in meters for comparison
-  let rX = preciseCoords.x;
-  let rY = preciseCoords.y;
-  let rZ = preciseCoords.z;
+  let refNorth = 0;
+  let refEast = 0;
+  let refZ = preciseCoords.z;
   const testSys = preciseCoords.isWgs84 ? 'ITRF96_3' : sys;
 
   if (preciseCoords.isWgs84) {
     const converted = convertCoordinate(preciseCoords.x, preciseCoords.y, testSys);
-    rX = converted.x;
-    rY = converted.y;
+    refNorth = converted.y; // Northing (Yukarı)
+    refEast = converted.x;  // Easting (Sağa)
+  } else {
+    refNorth = preciseCoords.x; // Northing (Yukarı)
+    refEast = preciseCoords.y;  // Easting (Sağa)
   }
 
   timeSteps.forEach(t => {
@@ -428,10 +431,11 @@ export const downloadCombinedAnalysisReport = (
     const { result } = calculateResult(slice, targetMethod, accuracyLimit);
     const convResult = convertCoordinate(result.lat, result.lng, testSys);
     
-    const dx = rX - convResult.x;
-    const dy = rY - convResult.y;
-    const dz = rZ - (result.altitude || 0);
-    const dhz = Math.sqrt(dx*dx + dy*dy);
+    // convResult.y is Northing, convResult.x is Easting
+    const dn = refNorth - convResult.y;
+    const de = refEast - convResult.x;
+    const dz = refZ - (result.altitude || 0);
+    const dhz = Math.sqrt(dn*dn + de*de);
 
     const dispConv = convertCoordinate(result.lat, result.lng, sys);
 
