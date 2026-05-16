@@ -251,9 +251,9 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
               </div>
 
               <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight mb-2">4. Kernel Density (KDE)</h4>
+                <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight mb-2">4. Baarda Analizi</h4>
                 <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                  Mekansal yoğunluk analizi yapar. Verilerin en çok kümelendiği "tepe noktasını" bularak rastgele sıçramaları eler.
+                  Baarda Kaba Hata Testi (Reliability Theory) kullanarak veri setindeki istatistiksel aykırı koordinatları tek tek ayıklar. Jeodezik dengeleme standartlarına uygun güvenilirlik analizi yapar.
                 </p>
               </div>
 

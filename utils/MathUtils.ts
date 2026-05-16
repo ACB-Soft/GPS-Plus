@@ -48,10 +48,10 @@ export function calculateResult(
       resultData = huberResult.result;
       finalCalculatedUsedIndices = huberResult.usedIndices;
       break;
-    case 'KDE':
-      const kde = applyKDEEstimation(sourceData);
-      resultData = kde.result;
-      finalCalculatedUsedIndices = kde.usedIndices;
+    case 'BAARDA':
+      const baarda = calculateBaarda(sourceData);
+      resultData = baarda.result;
+      finalCalculatedUsedIndices = baarda.usedIndices;
       break;
     case 'RANSAC':
       const ransacResult = calculateRANSAC(sourceData);
@@ -162,25 +162,23 @@ export function calculateAverage(samples: Coordinate[]): Coordinate {
 }
 
 /**
- * Standardized Residuals
+ * Baarda's Outlier Test (Reliability Theory)
  * Recursive process to remove one outlier at a time until no kaba hata exists.
  */
-function applyBaardaFilter(samples: Coordinate[]): Coordinate[] {
-  if (samples.length < 5) return samples;
+function calculateBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length < 4) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
 
-  let currentSamples = [...samples];
-  const alpha = 0.001; // Significance level
+  let currentSamples = samples.map((s, idx) => ({ ...s, _originalIdx: idx }));
   const criticalValue = 3.29; // Approximately for 0.1% significance
 
   while (currentSamples.length > 4) {
     // 1. Calculate weighted mean (L2)
-    const weights = currentSamples.map(s => 1 / Math.pow(s.accuracy || 0.1, 2));
+    const weights = currentSamples.map(s => 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
     const sumW = weights.reduce((a, b) => a + b, 0);
     const meanLat = currentSamples.reduce((a, b, i) => a + b.lat * weights[i], 0) / sumW;
     const meanLng = currentSamples.reduce((a, b, i) => a + b.lng * weights[i], 0) / sumW;
 
     // 2. Calculate residuals (v = l_cap - l)
-    // We treat Lat and Lng separately or as a vector. For simplicity in geodetic work, we check distance.
     const residuals = currentSamples.map(s => {
       const dLat = (s.lat - meanLat) * 111320;
       const dLng = (s.lng - meanLng) * 111320 * Math.cos(meanLat * Math.PI / 180);
@@ -192,10 +190,9 @@ function applyBaardaFilter(samples: Coordinate[]): Coordinate[] {
     const sigma0 = Math.sqrt(vTPv / (currentSamples.length - 1));
 
     // 4. Standardized residuals (w_i = v_i / (sigma0 * sqrt(q_vv)))
-    // Simplified q_vv (cofactor of residual) for a simple mean: q_ii = (1 - p_i / [sum P])
     const standardizedResiduals = currentSamples.map((s, i) => {
       const p_i = weights[i];
-      const q_ii = (1 - p_i / sumW); // Cofactor of residual for mean
+      const q_ii = (1 - p_i / sumW); 
       return residuals[i] / (sigma0 * Math.sqrt(q_ii) || 1e-9);
     });
 
@@ -213,11 +210,14 @@ function applyBaardaFilter(samples: Coordinate[]): Coordinate[] {
     if (maxW > criticalValue) {
       currentSamples.splice(worstIdx, 1);
     } else {
-      break; // No more outliers detected
+      break; 
     }
   }
 
-  return currentSamples;
+  const finalIndices = currentSamples.map(s => s._originalIdx);
+  const result = calculateAverage(currentSamples);
+  
+  return { result, usedIndices: finalIndices };
 }
 /**
  * KDE (Kernel Density Estimation)
@@ -305,49 +305,6 @@ function calculateHuberM(samples: Coordinate[]): { result: Coordinate; usedIndic
   result.lng = currentLng;
   
   return { result, usedIndices: samples.map((_, i) => i) };
-}
-
-/**
- * KDE (Kernel Density Estimation)
- * Finds the point with the highest local density using a Gaussian kernel.
- */
-function applyKDEEstimation(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  if (samples.length === 0) return { result: samples[0], usedIndices: [0] };
-  if (samples.length === 1) return { result: samples[0], usedIndices: [0] };
-
-  const lats = samples.map(s => s.lat);
-  const lngs = samples.map(s => s.lng);
-  
-  // Silverman's Rule for Bandwidth
-  const stdLat = Math.sqrt(lats.reduce((a, b) => a + Math.pow(b - (lats.reduce((x, y) => x + y) / lats.length), 2), 0) / lats.length) || 1e-7;
-  const stdLng = Math.sqrt(lngs.reduce((a, b) => a + Math.pow(b - (lngs.reduce((x, y) => x + y) / lngs.length), 2), 0) / lngs.length) || 1e-7;
-  
-  const hLat = 1.06 * stdLat * Math.pow(samples.length, -0.2);
-  const hLng = 1.06 * stdLng * Math.pow(samples.length, -0.2);
-
-  let maxDensity = -1;
-  let bestPointIdx = 0;
-
-  for (let i = 0; i < samples.length; i++) {
-    let density = 0;
-    for (let j = 0; j < samples.length; j++) {
-      const dLat = (samples[i].lat - samples[j].lat) / hLat;
-      const dLng = (samples[i].lng - samples[j].lng) / hLng;
-      density += Math.exp(-0.5 * (dLat * dLat + dLng * dLng));
-    }
-    if (density > maxDensity) {
-      maxDensity = density;
-      bestPointIdx = i;
-    }
-  }
-
-  const peak = samples[bestPointIdx];
-  const threshold = Math.sqrt(hLat * hLat + hLng * hLng) * 2;
-  const inliers: Coordinate[] = samples.filter(s => 
-    Math.sqrt(Math.pow(s.lat - peak.lat, 2) + Math.pow(s.lng - peak.lng, 2)) <= threshold
-  );
-
-  return { result: calculateAverage(inliers), usedIndices: samples.map((s, idx) => inliers.includes(s) ? idx : -1).filter(idx => idx !== -1) };
 }
 
 /**

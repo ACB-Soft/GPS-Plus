@@ -39,7 +39,7 @@ const METHOD_COLORS: Record<string, string> = {
   ARITHMETIC_MEAN: '#ec4899',
   WEIGHTED_LSE: '#8b5cf6',
   HUBER_M: '#f59e0b',
-  KDE: '#06b6d4',
+  BAARDA: '#06b6d4',
   RANSAC: '#6366f1'
 };
 
@@ -111,7 +111,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     'ARITHMETIC_MEAN', 
     'WEIGHTED_LSE',
     'HUBER_M',
-    'KDE',
+    'BAARDA',
     'RANSAC'
   ], []);
 
@@ -120,7 +120,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       'ARITHMETIC_MEAN': "Aritmetik Ortalama",
       'WEIGHTED_LSE': "Ağırlıklı Dengeleme",
       'HUBER_M': "Huber M-Tahmincisi",
-      'KDE': "Kernel Density (KDE)",
+      'BAARDA': "Baarda Kaba Hata Testi",
       'RANSAC': "RANSAC Analizi"
     };
     return labels[m] || m;
@@ -469,6 +469,12 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     <p className="text-[9px] font-black text-amber-600 uppercase">Huber M-Tahmincisi</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
                       Sağlam (Robust) istatistik yöntemi; merkeze yakın verilere tam ağırlık verirken, şüpheli uç değerlerin etkisini kademeli olarak azaltır.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[9px] font-black text-cyan-600 uppercase">Baarda Kaba Hata Testi</p>
+                    <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
+                      Jeodezik Reliability Teorisi; standartlaştırılmış uyuşmazlık analizi yaparak hatalı ölçümleri istatistiksel kriterlere göre veri setinden temizler.
                     </p>
                   </div>
                </div>

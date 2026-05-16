@@ -244,7 +244,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                   <option value="ARITHMETIC_MEAN">1. Yöntem: Aritmetik Ortalama</option>
                   <option value="WEIGHTED_LSE">2. Yöntem: Ağırlıklı Dengeleme (Varsayılan)</option>
                   <option value="HUBER_M">3. Yöntem: Huber M-Estimation</option>
-                  <option value="KDE">4. Yöntem: Kernel Density (KDE)</option>
+                  <option value="BAARDA">4. Yöntem: Baarda Analizi (Kaba Hata Testi)</option>
                   <option value="RANSAC">5. Yöntem: RANSAC Analizi</option>
                 </select>
               </div>
