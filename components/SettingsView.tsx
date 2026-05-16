@@ -246,6 +246,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                   <option value="HUBER_M">3. Yöntem: Huber M-Estimation</option>
                   <option value="BAARDA">4. Yöntem: Baarda Analizi (Kaba Hata Testi)</option>
                   <option value="RANSAC">5. Yöntem: RANSAC Analizi</option>
+                  <option value="HYBRID_ROBUST_BAARDA">6. Yöntem: Hibrit Analiz (Robust+Baarda)</option>
                 </select>
               </div>
 

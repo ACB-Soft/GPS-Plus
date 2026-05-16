@@ -263,6 +263,13 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                   "Random Sample Consensus" algoritması ile veriler arasındaki en büyük tutarlı kümeyi bulur ve bu küme dışındaki sapmaları tamamen yok sayar.
                 </p>
               </div>
+
+              <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm ring-1 ring-emerald-50">
+                <h4 className="text-sm font-black text-emerald-700 uppercase tracking-tight mb-2">6. Hibrit Analiz (Robust+Baarda)</h4>
+                <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                  Huber M-Tahmincisi ile kaba hatalara karşı dirençli bir merkez belirler, ardından esnetilmiş Baarda testi ile veri kaybını minimize ederek en yüksek doğruluklu alt kümeyi oluşturur.
+                </p>
+              </div>
             </div>
           </div>
         </section>

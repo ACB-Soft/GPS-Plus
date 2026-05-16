@@ -58,6 +58,11 @@ export function calculateResult(
       resultData = ransacResult.result;
       finalCalculatedUsedIndices = ransacResult.usedIndices;
       break;
+    case 'HYBRID_ROBUST_BAARDA':
+      const hybridResult = calculateHybridRobustBaarda(sourceData);
+      resultData = hybridResult.result;
+      finalCalculatedUsedIndices = hybridResult.usedIndices;
+      break;
     default:
       const defaultLse = calculateWeightedLSE(sourceData);
       resultData = defaultLse.result;
@@ -308,9 +313,87 @@ function calculateHuberM(samples: Coordinate[]): { result: Coordinate; usedIndic
 }
 
 /**
- * RANSAC (Random Sample Consensus)
- * Finds the largest cluster of points within a tolerance.
+ * Hybrid Robust + Baarda Estimation
+ * Combines Huber M-Estimation for initial stability with a flexible 
+ * Baarda outlier test that prevents over-filtering.
  */
+function calculateHybridRobustBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
+
+  // 1. Initial Robust Estimate (Huber) to get a reliable cluster
+  const robustRes = calculateHuberM(samples);
+  const robustLat = robustRes.result.lat;
+  const robustLng = robustRes.result.lng;
+
+  // 2. Start with data that is reasonably close to robust estimate
+  // (Pre-filter extreme outliers to help Baarda converge better)
+  const residualsFromRobust = samples.map(s => {
+    const dLat = (s.lat - robustLat) * 111320;
+    const dLng = (s.lng - robustLng) * 111320 * Math.cos(robustLat * Math.PI / 180);
+    return Math.sqrt(dLat * dLat + dLng * dLng);
+  });
+  
+  const medianRes = [...residualsFromRobust].sort((a, b) => a - b)[Math.floor(samples.length / 2)];
+  const robustThreshold = Math.max(15, medianRes * 4); // Don't pre-filter too much
+
+  let currentSamples = samples
+    .map((s, idx) => ({ ...s, _originalIdx: idx, _initialRes: residualsFromRobust[idx] }))
+    .filter(s => s._initialRes <= robustThreshold);
+
+  if (currentSamples.length < 4) {
+    currentSamples = samples.map((s, idx) => ({ ...s, _originalIdx: idx, _initialRes: 0 }));
+  }
+
+  const originalCount = samples.length;
+  const criticalValue = 3.0; // As requested
+
+  // 3. Iterative Baarda Test with Safety Brake
+  while (currentSamples.length > 4) {
+    // Safety Brake: Don't delete more than 70% of original data
+    if (currentSamples.length < originalCount * 0.3) break;
+
+    const weights = currentSamples.map(s => 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
+    const sumW = weights.reduce((a, b) => a + b, 0);
+    const meanLat = currentSamples.reduce((a, b, i) => a + b.lat * weights[i], 0) / sumW;
+    const meanLng = currentSamples.reduce((a, b, i) => a + b.lng * weights[i], 0) / sumW;
+
+    const residuals = currentSamples.map(s => {
+      const dLat = (s.lat - meanLat) * 111320;
+      const dLng = (s.lng - meanLng) * 111320 * Math.cos(meanLat * Math.PI / 180);
+      return Math.sqrt(dLat * dLat + dLng * dLng);
+    });
+
+    const vTPv = residuals.reduce((a, v, i) => a + v * v * weights[i], 0);
+    // sigma0 estimate (Standard deviation of unit weight - A posteriori)
+    const sigma0 = Math.sqrt(vTPv / (currentSamples.length - 1));
+
+    const standardizedResiduals = currentSamples.map((s, i) => {
+      const p_i = weights[i];
+      const q_ii = (1 - p_i / sumW); 
+      return residuals[i] / (sigma0 * Math.sqrt(q_ii) || 1e-9);
+    });
+
+    let maxW = -1;
+    let worstIdx = -1;
+    for (let i = 0; i < standardizedResiduals.length; i++) {
+        if (standardizedResiduals[i] > maxW) {
+            maxW = standardizedResiduals[i];
+            worstIdx = i;
+        }
+    }
+
+    if (maxW > criticalValue) {
+        currentSamples.splice(worstIdx, 1);
+    } else {
+        break; 
+    }
+  }
+
+  const finalIndices = currentSamples.map(s => s._originalIdx);
+  const result = calculateAverage(currentSamples);
+  
+  return { result, usedIndices: finalIndices };
+}
 function calculateRANSAC(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
   if (samples.length < 3) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
 

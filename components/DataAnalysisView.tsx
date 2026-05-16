@@ -40,7 +40,8 @@ const METHOD_COLORS: Record<string, string> = {
   WEIGHTED_LSE: '#8b5cf6',
   HUBER_M: '#f59e0b',
   BAARDA: '#06b6d4',
-  RANSAC: '#6366f1'
+  RANSAC: '#6366f1',
+  HYBRID_ROBUST_BAARDA: '#10b981'
 };
 
 const CustomScatterLabel = (props: any) => {
@@ -112,7 +113,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     'WEIGHTED_LSE',
     'HUBER_M',
     'BAARDA',
-    'RANSAC'
+    'RANSAC',
+    'HYBRID_ROBUST_BAARDA'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
@@ -121,7 +123,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       'WEIGHTED_LSE': "Ağırlıklı Dengeleme",
       'HUBER_M': "Huber M-Tahmincisi",
       'BAARDA': "Baarda Kaba Hata Testi",
-      'RANSAC': "RANSAC Analizi"
+      'RANSAC': "RANSAC Analizi",
+      'HYBRID_ROBUST_BAARDA': "Hibrit Analiz (Robust+Baarda)"
     };
     return labels[m] || m;
   };
@@ -503,6 +506,12 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     <p className="text-[9px] font-black text-cyan-600 uppercase">Baarda Kaba Hata Testi</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
                       Jeodezik Reliability Teorisi; standartlaştırılmış uyuşmazlık analizi yaparak hatalı ölçümleri istatistiksel kriterlere göre veri setinden temizler.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[9px] font-black text-emerald-600 uppercase">Hibrit Analiz (Robust + Baarda)</p>
+                    <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
+                      Gelişmiş hibrit model; Huber M-Tahmincisi ile kararlı merkezi bulur, ardından esnetilmiş Baarda testi ile veri kaybını önleyerek hassas ayıklama yapar.
                     </p>
                   </div>
                </div>
