@@ -178,13 +178,11 @@ export function calculateAverage(samples: Coordinate[]): Coordinate {
 
 /**
  * Baarda's Outlier Test (Reliability Theory)
- * Recursive process to remove one outlier at a time until no kaba hata exists.
  */
-function calculateBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  if (samples.length < 4) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
+function calculateBaarda(samples: Coordinate[], criticalValue: number = 3.29): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length < 4) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => (samples[i] as any)._originalIdx ?? i) };
 
-  let currentSamples = samples.map((s, idx) => ({ ...s, _originalIdx: idx }));
-  const criticalValue = 3.29; // Approximately for 0.1% significance
+  let currentSamples = samples.map((s, idx) => ({ ...s, _originalIdx: (s as any)._originalIdx ?? idx }));
 
   while (currentSamples.length > 4) {
     // 1. Calculate weighted mean (L2)
@@ -229,7 +227,7 @@ function calculateBaarda(samples: Coordinate[]): { result: Coordinate; usedIndic
     }
   }
 
-  const finalIndices = currentSamples.map(s => s._originalIdx);
+  const finalIndices = currentSamples.map(s => (s as any)._originalIdx);
   const result = calculateAverage(currentSamples);
   
   return { result, usedIndices: finalIndices };
@@ -324,48 +322,42 @@ function calculateHuberM(samples: Coordinate[]): { result: Coordinate; usedIndic
 
 /**
  * Kalman Filter + Baarda Estimation
- * Applies a static Kalman Filter to smooth the data, then uses Baarda's test for outlier removal.
  */
 function calculateKalmanBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
   if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
   
-  // 1. Apply Static Kalman Filter
+  // 1. Initial Kalman smoothing
   const smoothed = applyStaticKalmanFilter(samples);
   
-  // 2. Apply Baarda to smoothed data
-  // We keep original indices to report them correctly
-  const baardaInput = smoothed.map((s, idx) => ({ ...s, _originalIdx: idx }));
-  const baardaRes = calculateBaarda(baardaInput as any);
-  
-  return { result: baardaRes.result, usedIndices: baardaRes.usedIndices };
+  // 2. Baarda on smoothed data with stricter threshold
+  const baardaRes = calculateBaarda(smoothed as any, 2.5);
+  return baardaRes;
 }
 
 /**
  * RANSAC + Baarda Estimation
- * Uses RANSAC to find the dominant cluster, then refines it with Baarda's test.
  */
 function calculateRANSACBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
   if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
 
-  // 1. Find inliers with RANSAC
+  // 1. RANSAC finds coarse cluster
   const ransac = calculateRANSAC(samples);
   const inliers = ransac.usedIndices.map(idx => ({ ...samples[idx], _originalIdx: idx }));
   
-  // 2. Refine with Baarda
-  const baardaRes = calculateBaarda(inliers as any);
-  
-  return { result: baardaRes.result, usedIndices: baardaRes.usedIndices };
+  // 2. Baarda refinement
+  return calculateBaarda(inliers as any, 3.29);
 }
 
 /**
  * DBSCAN + Baarda Estimation
- * Uses DBSCAN to find the largest density cluster, then applies Baarda's test to that cluster.
  */
 function calculateDBSCANBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
   if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
 
-  // 1. Simple DBSCAN implementation to find the largest cluster
-  const eps = 5.0; // 5 meters radius
+  // 1. DBSCAN with dynamic eps
+  const sortedAcc = [...samples].map(s => s.accuracy).sort((a,b) => a-b);
+  const medianAcc = sortedAcc[Math.floor(samples.length / 2)];
+  const eps = Math.max(3.0, medianAcc * 1.5); 
   const minPts = 3;
   
   const clusters: number[][] = [];
@@ -408,14 +400,10 @@ function calculateDBSCANBaarda(samples: Coordinate[]): { result: Coordinate; use
     }
   }
   
-  // Find largest cluster
   let largestCluster = clusters.sort((a,b) => b.length - a.length)[0] || samples.map((_, i) => i);
-  
-  // 2. Apply Baarda to largest cluster
   const clusterSamples = largestCluster.map(idx => ({ ...samples[idx], _originalIdx: idx }));
-  const baardaRes = calculateBaarda(clusterSamples as any);
   
-  return { result: baardaRes.result, usedIndices: baardaRes.usedIndices };
+  return calculateBaarda(clusterSamples as any, 3.29);
 }
 function calculateRANSAC(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
   if (samples.length < 3) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
