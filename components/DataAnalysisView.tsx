@@ -41,7 +41,9 @@ const METHOD_COLORS: Record<string, string> = {
   HUBER_M: '#f59e0b',
   BAARDA: '#06b6d4',
   RANSAC: '#6366f1',
-  HYBRID_ROBUST_BAARDA: '#10b981'
+  KALMAN_BAARDA: '#10b981',
+  RANSAC_BAARDA: '#f43f5e',
+  DBSCAN_BAARDA: '#8b5cf6'
 };
 
 const CustomScatterLabel = (props: any) => {
@@ -114,7 +116,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     'HUBER_M',
     'BAARDA',
     'RANSAC',
-    'HYBRID_ROBUST_BAARDA'
+    'KALMAN_BAARDA',
+    'RANSAC_BAARDA',
+    'DBSCAN_BAARDA'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
@@ -124,7 +128,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       'HUBER_M': "Huber M-Tahmincisi",
       'BAARDA': "Baarda Kaba Hata Testi",
       'RANSAC': "RANSAC Analizi",
-      'HYBRID_ROBUST_BAARDA': "Hibrit Analiz (Robust+Baarda)"
+      'KALMAN_BAARDA': "Hibrit (Kalman+Baarda)",
+      'RANSAC_BAARDA': "Hibrit (RANSAC+Baarda)",
+      'DBSCAN_BAARDA': "Hibrit (DBSCAN+Baarda)"
     };
     return labels[m] || m;
   };
@@ -509,9 +515,21 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[9px] font-black text-emerald-600 uppercase">Hibrit Analiz (Robust + Baarda)</p>
+                    <p className="text-[9px] font-black text-emerald-600 uppercase">Hibrit Analiz (Kalman + Baarda)</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      Gelişmiş hibrit model; Huber M-Tahmincisi ile kararlı merkezi bulur, ardından esnetilmiş Baarda testi ile veri kaybını önleyerek hassas ayıklama yapar.
+                      Kalman filtresi ile sinyal gürültüsünü (noise) temizler, ardından Baarda testi ile sarkan kaba hataları ayıklar.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[9px] font-black text-rose-600 uppercase">Hibrit Analiz (RANSAC + Baarda)</p>
+                    <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
+                      RANSAC ile en büyük tutarlı kümeyi bulur, Baarda ile bu küme içindeki hassas uyuşmazlıkları denetler.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[9px] font-black text-violet-600 uppercase">Hibrit Analiz (DBSCAN + Baarda)</p>
+                    <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
+                      Yoğunluk tabanlı kümeleme (DBSCAN) ile mekansal yığılmayı tespit eder ve Baarda ile en güvenilir çekirdek veriyi seçer.
                     </p>
                   </div>
                </div>

@@ -13,7 +13,9 @@ const getMethodName = (m: CalculationMethod) => {
     case 'HUBER_M': return "Huber M-Estimation";
     case 'BAARDA': return "Baarda Analizi (Kaba Hata Testi)";
     case 'RANSAC': return "RANSAC Analizi";
-    case 'HYBRID_ROBUST_BAARDA': return "Hibrit Analiz (Robust+Baarda)";
+    case 'KALMAN_BAARDA': return "Hibrit Analiz (Kalman+Baarda)";
+    case 'RANSAC_BAARDA': return "Hibrit Analiz (RANSAC+Baarda)";
+    case 'DBSCAN_BAARDA': return "Hibrit Analiz (DBSCAN+Baarda)";
     default: return m;
   }
 };
@@ -138,7 +140,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   // --- İstatistiksel Ön Hazırlık ---
   const accuracyLimit = location.accuracyLimit || 5.0;
   
-  const methods: CalculationMethod[] = ['ARITHMETIC_MEAN', 'WEIGHTED_LSE', 'HUBER_M', 'BAARDA', 'RANSAC', 'HYBRID_ROBUST_BAARDA'];
+  const methods: CalculationMethod[] = ['ARITHMETIC_MEAN', 'WEIGHTED_LSE', 'HUBER_M', 'BAARDA', 'RANSAC', 'KALMAN_BAARDA', 'RANSAC_BAARDA', 'DBSCAN_BAARDA'];
   const methodResults = methods.map(method => {
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
     const { x, y } = convertCoordinate(result.lat, result.lng, sys);
