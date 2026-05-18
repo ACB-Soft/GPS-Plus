@@ -44,17 +44,17 @@ export function calculateResult(
       resultData = lseResult.result;
       finalCalculatedUsedIndices = lseResult.usedIndices;
       break;
-    case 'KMEANS_HYBRID_K4':
-      const kmeansRes4 = calculateKMeansHybridInternal(sourceData, 4);
-      resultData = kmeansRes4.result;
-      finalCalculatedUsedIndices = kmeansRes4.usedIndices;
-      clusters = kmeansRes4.clusters;
+    case 'KMEANS_HYBRID_EPS1':
+      const kmeansRes1 = calculateKMeansHybridInternal(sourceData, 4, 1.0);
+      resultData = kmeansRes1.result;
+      finalCalculatedUsedIndices = kmeansRes1.usedIndices;
+      clusters = kmeansRes1.clusters;
       break;
-    case 'KMEANS_HYBRID_K8':
-      const kmeansRes8 = calculateKMeansHybridInternal(sourceData, 8);
-      resultData = kmeansRes8.result;
-      finalCalculatedUsedIndices = kmeansRes8.usedIndices;
-      clusters = kmeansRes8.clusters;
+    case 'KMEANS_HYBRID_EPS15':
+      const kmeansRes15 = calculateKMeansHybridInternal(sourceData, 4, 1.5);
+      resultData = kmeansRes15.result;
+      finalCalculatedUsedIndices = kmeansRes15.usedIndices;
+      clusters = kmeansRes15.clusters;
       break;
     default:
       const defaultLse = calculateWeightedLSE(sourceData);
@@ -213,12 +213,12 @@ export function calculateVariance(samples: Coordinate[], mean: Coordinate): numb
 /**
  * K-Means Hybrid Algorithm (Internal)
  * 1. Mid-Range Reference
- * 2. 1.5 * Eps Filtering
+ * 2. Eps Filtering (Parametric)
  * 3. K-Means (parametric k)
  * 4. Cluster Summaries (Weighted)
  * 5. Baarda Final Refinement
  */
-function calculateKMeansHybridInternal(samples: Coordinate[], k: number): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
+function calculateKMeansHybridInternal(samples: Coordinate[], k: number, epsMultiplier: number): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
   if (samples.length < k * 2) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
 
   // 1. Reference Point (Mid-Range)
@@ -227,9 +227,9 @@ function calculateKMeansHybridInternal(samples: Coordinate[], k: number): { resu
   const rLat = (Math.min(...lats) + Math.max(...lats)) / 2;
   const rLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
 
-  // 2. 1.5 * Eps Filtering
+  // 2. Parametric Eps Filtering
   const avgAcc = samples.reduce((a, b) => a + b.accuracy, 0) / samples.length;
-  const epsLimit = avgAcc * 1.5;
+  const epsLimit = avgAcc * epsMultiplier;
 
   const filteredWithIndices = samples.map((s, idx) => ({ s, idx })).filter(item => {
     const dLat = (item.s.lat - rLat) * 111320;

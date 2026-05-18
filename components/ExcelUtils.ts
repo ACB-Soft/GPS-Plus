@@ -10,8 +10,8 @@ const getMethodName = (m: CalculationMethod) => {
   switch(m) {
     case 'ARITHMETIC_MEAN': return "Aritmetik Ortalama";
     case 'WEIGHTED_LSE': return "Ağırlıklı Dengeleme";
-    case 'KMEANS_HYBRID_K4': return "Hibrit (Standart K-Means)";
-    case 'KMEANS_HYBRID_K8': return "Hibrit (Gelişmiş K-Means)";
+    case 'KMEANS_HYBRID_EPS1': return "Hibrit (1.0x Eps Filtre)";
+    case 'KMEANS_HYBRID_EPS15': return "Hibrit (1.5x Eps Filtre)";
     default: return m;
   }
 };
@@ -136,7 +136,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   // --- İstatistiksel Ön Hazırlık ---
   const accuracyLimit = location.accuracyLimit || 5.0;
   
-  const methods: CalculationMethod[] = ['ARITHMETIC_MEAN', 'WEIGHTED_LSE', 'KMEANS_HYBRID_K4', 'KMEANS_HYBRID_K8'];
+  const methods: CalculationMethod[] = ['ARITHMETIC_MEAN', 'WEIGHTED_LSE', 'KMEANS_HYBRID_EPS1', 'KMEANS_HYBRID_EPS15'];
   const methodResults = methods.map(method => {
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
     const { x, y } = convertCoordinate(result.lat, result.lng, sys);
