@@ -58,15 +58,10 @@ export function calculateResult(
       resultData = ransacResult.result;
       finalCalculatedUsedIndices = ransacResult.usedIndices;
       break;
-    case 'KALMAN_BAARDA':
-      const kalmanResult = calculateKalmanBaarda(sourceData);
-      resultData = kalmanResult.result;
-      finalCalculatedUsedIndices = kalmanResult.usedIndices;
-      break;
-    case 'RANSAC_BAARDA':
-      const ransacBaardaResult = calculateRANSACBaarda(sourceData);
-      resultData = ransacBaardaResult.result;
-      finalCalculatedUsedIndices = ransacBaardaResult.usedIndices;
+    case 'ADAPTIVE_VCE_LSE':
+      const vceResult = calculateAdaptiveVCE(sourceData);
+      resultData = vceResult.result;
+      finalCalculatedUsedIndices = vceResult.usedIndices;
       break;
     case 'DBSCAN_BAARDA':
       const dbscanBaardaResult = calculateDBSCANBaarda(sourceData);
@@ -321,31 +316,81 @@ function calculateHuberM(samples: Coordinate[]): { result: Coordinate; usedIndic
 }
 
 /**
- * Kalman Filter + Baarda Estimation
+ * Adaptive Robustified-LSE with Variance Component Estimation (VCE)
+ * This method dynamically adjusts weights based on residual analysis 
+ * and variance component estimation principles to handle mobile GPS noise.
  */
-function calculateKalmanBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
-  
-  // 1. Initial Kalman smoothing
-  const smoothed = applyStaticKalmanFilter(samples);
-  
-  // 2. Baarda on smoothed data with stricter threshold
-  const baardaRes = calculateBaarda(smoothed as any, 2.5);
-  return baardaRes;
-}
-
-/**
- * RANSAC + Baarda Estimation
- */
-function calculateRANSACBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+function calculateAdaptiveVCE(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
   if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
 
-  // 1. RANSAC finds coarse cluster
-  const ransac = calculateRANSAC(samples);
-  const inliers = ransac.usedIndices.map(idx => ({ ...samples[idx], _originalIdx: idx }));
+  // 1. Initial Weighted Mean
+  let currentLat = samples.reduce((a, s) => a + s.lat * (1/s.accuracy**2), 0) / samples.reduce((a, s) => a + 1/s.accuracy**2, 0);
+  let currentLng = samples.reduce((a, s) => a + s.lng * (1/s.accuracy**2), 0) / samples.reduce((a, s) => a + 1/s.accuracy**2, 0);
+
+  let iterations = 0;
+  const maxIterations = 15;
+  let weights = samples.map(s => 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
   
-  // 2. Baarda refinement
-  return calculateBaarda(inliers as any, 3.29);
+  while (iterations < maxIterations) {
+    const sumW = weights.reduce((a, b) => a + b, 0);
+    const meanLat = samples.reduce((a, s, i) => a + s.lat * weights[i], 0) / sumW;
+    const meanLng = samples.reduce((a, s, i) => a + s.lng * weights[i], 0) / sumW;
+
+    const residuals = samples.map(s => {
+      const dLat = (s.lat - meanLat) * 111320;
+      const dLng = (s.lng - meanLng) * 111320 * Math.cos(meanLat * Math.PI / 180);
+      return Math.sqrt(dLat * dLat + dLng * dLng);
+    });
+
+    // VCE: Estimate sigma0 from residuals to adapt weights
+    const vTPv = residuals.reduce((a, v, i) => a + v * v * weights[i], 0);
+    const sigma0_sq = vTPv / (samples.length - 1);
+    const sigma0 = Math.sqrt(sigma0_sq);
+
+    // IGG3 Robust weighting function
+    const k0 = 1.5;
+    const k1 = 3.0;
+    
+    let changed = false;
+    const nextWeights = samples.map((s, i) => {
+      const p_i = 1 / Math.pow(Math.max(0.1, s.accuracy), 2);
+      const v_i = residuals[i];
+      const standardized_v = v_i / (sigma0 || 1e-9);
+
+      let weight_factor = 1.0;
+      if (standardized_v <= k0) {
+        weight_factor = 1.0;
+      } else if (standardized_v <= k1) {
+        weight_factor = (k0 / standardized_v) * Math.pow((k1 - standardized_v) / (k1 - k0), 2);
+      } else {
+        weight_factor = 0.001; // Not zero
+      }
+      
+      const new_w = p_i * weight_factor;
+      if (Math.abs(new_w - weights[i]) > 1e-6) changed = true;
+      return new_w;
+    });
+
+    weights = nextWeights;
+    
+    const dLat = (meanLat - currentLat) * 111320;
+    const dLng = (meanLng - currentLng) * 111320 * Math.cos(currentLat * Math.PI / 180);
+    if (Math.sqrt(dLat * dLat + dLng * dLng) < 0.0005 && !changed) break;
+
+    currentLat = meanLat;
+    currentLng = meanLng;
+    iterations++;
+  }
+
+  const usedIndices = weights
+    .map((w, idx) => w > 0.01 ? idx : -1)
+    .filter(idx => idx !== -1);
+
+  const result = calculateAverage(samples.filter((_, i) => usedIndices.includes(i)));
+  result.lat = currentLat;
+  result.lng = currentLng;
+
+  return { result, usedIndices };
 }
 
 /**

@@ -41,8 +41,7 @@ const METHOD_COLORS: Record<string, string> = {
   HUBER_M: '#f59e0b',
   BAARDA: '#06b6d4',
   RANSAC: '#6366f1',
-  KALMAN_BAARDA: '#10b981',
-  RANSAC_BAARDA: '#f43f5e',
+  ADAPTIVE_VCE_LSE: '#10b981',
   DBSCAN_BAARDA: '#8b5cf6'
 };
 
@@ -116,8 +115,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     'HUBER_M',
     'BAARDA',
     'RANSAC',
-    'KALMAN_BAARDA',
-    'RANSAC_BAARDA',
+    'ADAPTIVE_VCE_LSE',
     'DBSCAN_BAARDA'
   ], []);
 
@@ -128,8 +126,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       'HUBER_M': "Huber M-Tahmincisi",
       'BAARDA': "Baarda Kaba Hata Testi",
       'RANSAC': "RANSAC Analizi",
-      'KALMAN_BAARDA': "Hibrit (Kalman+Baarda)",
-      'RANSAC_BAARDA': "Hibrit (RANSAC+Baarda)",
+      'ADAPTIVE_VCE_LSE': "Adaptif Robust-LSE (VCE)",
       'DBSCAN_BAARDA': "Hibrit (DBSCAN+Baarda)"
     };
     return labels[m] || m;
@@ -515,15 +512,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[9px] font-black text-emerald-600 uppercase">Hibrit Analiz (Kalman + Baarda)</p>
+                    <p className="text-[9px] font-black text-emerald-600 uppercase">Adaptif Robust-LSE (VCE)</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      Kalman filtresi ile sinyal gürültüsünü (noise) temizler, ardından Baarda testi ile sarkan kaba hataları ayıklar.
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[9px] font-black text-rose-600 uppercase">Hibrit Analiz (RANSAC + Baarda)</p>
-                    <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      RANSAC ile en büyük tutarlı kümeyi bulur, Baarda ile bu küme içindeki hassas uyuşmazlıkları denetler.
+                      Varyans Bileşeni Tahmini (VCE) ile ağırlıkları dinamik olarak normalize eden ve IGG3 robust fonksiyonu ile aykırı değerleri sönümleyen gelişmiş model.
                     </p>
                   </div>
                   <div className="space-y-1">

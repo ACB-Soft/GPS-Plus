@@ -265,23 +265,16 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
               </div>
 
               <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm ring-1 ring-emerald-50">
-                <h4 className="text-sm font-black text-emerald-700 uppercase tracking-tight mb-2">6. Hibrit (Kalman + Baarda)</h4>
+                <h4 className="text-sm font-black text-emerald-700 uppercase tracking-tight mb-2">6. Adaptif Robust-LSE (VCE)</h4>
                 <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                  Kalman filtresi ile sinyal gürültüsünü (noise) minimize eder, ardından Baarda testi ile sarkan kaba hataları temizleyerek yüksek doğruluk sağlar.
-                </p>
-              </div>
-
-              <div className="bg-white p-4 rounded-xl border border-rose-100 shadow-sm ring-1 ring-rose-50">
-                <h4 className="text-sm font-black text-rose-700 uppercase tracking-tight mb-2">7. Hibrit (RANSAC + Baarda)</h4>
-                <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                  RANSAC ile en büyük tutarlı veri grubunu belirler, Baarda testi ile bu grup içindeki hassas uyuşmazlıkları denetleyerek en güvenilir sonucu üretir.
+                  Varyans Bileşeni Tahmini (VCE) ile ağırlıkları dinamik olarak normalize eden ve IGG3 robust fonksiyonu ile aykırı değerleri sönümleyen geliştirilmiş en gelişmiş modelimizdir.
                 </p>
               </div>
 
               <div className="bg-white p-4 rounded-xl border border-violet-100 shadow-sm ring-1 ring-violet-50">
-                <h4 className="text-sm font-black text-violet-700 uppercase tracking-tight mb-2">8. Hibrit (DBSCAN + Baarda)</h4>
+                <h4 className="text-sm font-black text-violet-700 uppercase tracking-tight mb-2">7. Hibrit (DBSCAN + Baarda)</h4>
                 <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                  Yoğunluk tabanlı kümeleme (DBSCAN) ile mekansal yığılmanın merkezini bulur ve Baarda ile en güvenilir çekirdek veriyi seçerek hassas konum belirler.
+                  Yoğunluk tabanlı kümeleme (DBSCAN) ile mekansal yığılmanın merkezini bulur ve Baarda testi ile bu grup içindeki en güvenilir çekirdek veriyi ayıklar.
                 </p>
               </div>
             </div>
