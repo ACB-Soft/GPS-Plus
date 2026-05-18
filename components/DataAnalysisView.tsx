@@ -37,12 +37,7 @@ const MapSetBounds = ({ points }: { points: [number, number][] }) => {
 
 const METHOD_COLORS: Record<string, string> = {
   ARITHMETIC_MEAN: '#ec4899',
-  WEIGHTED_LSE: '#8b5cf6',
-  HUBER_M: '#f59e0b',
-  BAARDA: '#06b6d4',
-  RANSAC: '#6366f1',
-  ADAPTIVE_VCE_LSE: '#10b981',
-  DBSCAN_BAARDA: '#8b5cf6'
+  WEIGHTED_LSE: '#8b5cf6'
 };
 
 const CustomScatterLabel = (props: any) => {
@@ -111,23 +106,13 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
   const methods = useMemo<CalculationMethod[]>(() => [
     'ARITHMETIC_MEAN', 
-    'WEIGHTED_LSE',
-    'HUBER_M',
-    'BAARDA',
-    'RANSAC',
-    'ADAPTIVE_VCE_LSE',
-    'DBSCAN_BAARDA'
+    'WEIGHTED_LSE'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
     const labels: Record<string, string> = {
       'ARITHMETIC_MEAN': "Aritmetik Ortalama",
-      'WEIGHTED_LSE': "Ağırlıklı Dengeleme",
-      'HUBER_M': "Huber M-Tahmincisi",
-      'BAARDA': "Baarda Kaba Hata Testi",
-      'RANSAC': "RANSAC Analizi",
-      'ADAPTIVE_VCE_LSE': "Adaptif Robust-LSE (VCE)",
-      'DBSCAN_BAARDA': "Hibrit (DBSCAN+Baarda)"
+      'WEIGHTED_LSE': "Ağırlıklı Dengeleme"
     };
     return labels[m] || m;
   };
@@ -494,33 +479,15 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Model Açıklamaları</h4>
                <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-1">
-                    <p className="text-[9px] font-black text-indigo-600 uppercase">RANSAC Analizi</p>
+                    <p className="text-[9px] font-black text-pink-600 uppercase">Aritmetik Ortalama</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      Rastgele örneklem birliği (RANSAC), veri setindeki aykırı değerleri (outliers) otomatik olarak ayıklayarak en büyük tutarlı koordinat kümesini belirler.
+                      Tüm ham ölçümlerin ağırlıksız ortalamasını hesaplar. Veriler homojen olduğunda kararlıdır.
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[9px] font-black text-amber-600 uppercase">Huber M-Tahmincisi</p>
+                    <p className="text-[9px] font-black text-violet-600 uppercase">Ağırlıklı Dengeleme</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      Sağlam (Robust) istatistik yöntemi; merkeze yakın verilere tam ağırlık verirken, şüpheli uç değerlerin etkisini kademeli olarak azaltır.
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[9px] font-black text-cyan-600 uppercase">Baarda Kaba Hata Testi</p>
-                    <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      Jeodezik Reliability Teorisi; standartlaştırılmış uyuşmazlık analizi yaparak hatalı ölçümleri istatistiksel kriterlere göre veri setinden temizler.
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[9px] font-black text-emerald-600 uppercase">Adaptif Robust-LSE (VCE)</p>
-                    <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      Varyans Bileşeni Tahmini (VCE) ile ağırlıkları dinamik olarak normalize eden ve IGG3 robust fonksiyonu ile aykırı değerleri sönümleyen gelişmiş model.
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[9px] font-black text-violet-600 uppercase">Hibrit Analiz (DBSCAN + Baarda)</p>
-                    <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      Yoğunluk tabanlı kümeleme (DBSCAN) ile mekansal yığılmayı tespit eder ve Baarda ile en güvenilir çekirdek veriyi seçer.
+                      Ölçüm hassasiyetine (accuracy) göre ters ağırlıklı modelleme yaparak güvensiz verilerin etkisini azaltır.
                     </p>
                   </div>
                </div>

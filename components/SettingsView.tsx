@@ -243,11 +243,6 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                 >
                   <option value="ARITHMETIC_MEAN">1. Yöntem: Aritmetik Ortalama</option>
                   <option value="WEIGHTED_LSE">2. Yöntem: Ağırlıklı Dengeleme (Varsayılan)</option>
-                  <option value="HUBER_M">3. Yöntem: Huber M-Estimation</option>
-                  <option value="BAARDA">4. Yöntem: Baarda Analizi (Kaba Hata Testi)</option>
-                  <option value="RANSAC">5. Yöntem: RANSAC Analizi</option>
-                  <option value="ADAPTIVE_VCE_LSE">6. Yöntem: Adaptif Robust-LSE (VCE)</option>
-                  <option value="DBSCAN_BAARDA">7. Yöntem: Hibrit (DBSCAN + Baarda)</option>
                 </select>
               </div>
 

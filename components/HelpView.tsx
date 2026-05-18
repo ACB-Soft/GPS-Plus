@@ -242,41 +242,6 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                   (Weighted Least Squares) Hassasiyeti yüksek (hata payı düşük) olan verilere daha fazla ağırlık vererek dengeleme yapar. En kararlı sonuçları üretir.
                 </p>
               </div>
-
-              <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight mb-2">3. Huber M-Estimation</h4>
-                <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                  İstatistiksel olarak "aykırı" kabul edilen hatalı verilerin (outliers) ağırlığını otomatik olarak düşüren, gürültülü sinyallere dirençli robust bir yöntemdir.
-                </p>
-              </div>
-
-              <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight mb-2">4. Baarda Analizi</h4>
-                <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                  Baarda Kaba Hata Testi (Reliability Theory) kullanarak veri setindeki istatistiksel aykırı koordinatları tek tek ayıklar. Jeodezik dengeleme standartlarına uygun güvenilirlik analizi yapar.
-                </p>
-              </div>
-
-              <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight mb-2">5. RANSAC Analizi</h4>
-                <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                  "Random Sample Consensus" algoritması ile veriler arasındaki en büyük tutarlı kümeyi bulur ve bu küme dışındaki sapmaları tamamen yok sayar.
-                </p>
-              </div>
-
-              <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm ring-1 ring-emerald-50">
-                <h4 className="text-sm font-black text-emerald-700 uppercase tracking-tight mb-2">6. Adaptif Robust-LSE (VCE)</h4>
-                <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                  Varyans Bileşeni Tahmini (VCE) ile ağırlıkları dinamik olarak normalize eden ve IGG3 robust fonksiyonu ile aykırı değerleri sönümleyen geliştirilmiş en gelişmiş modelimizdir.
-                </p>
-              </div>
-
-              <div className="bg-white p-4 rounded-xl border border-violet-100 shadow-sm ring-1 ring-violet-50">
-                <h4 className="text-sm font-black text-violet-700 uppercase tracking-tight mb-2">7. Hibrit (DBSCAN + Baarda)</h4>
-                <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                  Yoğunluk tabanlı kümeleme (DBSCAN) ile mekansal yığılmanın merkezini bulur ve Baarda testi ile bu grup içindeki en güvenilir çekirdek veriyi ayıklar.
-                </p>
-              </div>
             </div>
           </div>
         </section>
