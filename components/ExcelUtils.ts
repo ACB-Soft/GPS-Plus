@@ -305,7 +305,7 @@ export const downloadCombinedAnalysisReport = (
   const sys = location.coordinateSystem || 'WGS84';
   const isWgsPoint = sys === 'WGS84';
 
-  // --- SAYFA 1: HAM ÖLÇÜM VERİLERİ (120 SN KAYIT) ---
+  // --- SAYFA 1: HAM ÖLÇÜM VERİLERİ (60 SN KAYIT) ---
   const headerX = isWgsPoint ? "Enlem (Lat)" : "Sağa (Y)";
   const headerY = isWgsPoint ? "Boylam (Lng)" : "Yukarı (X)";
 
@@ -396,7 +396,7 @@ export const downloadCombinedAnalysisReport = (
   XLSX.utils.book_append_sheet(workbook, wsAnalysis, "İstatistik ve Analiz");
 
   // --- SAYFA 3: ZAMAN BAZLI PERFORMANS ANALİZİ (SÜRE ETKİSİ) ---
-  const timeSteps = [5, 10, 15, 30, 45, 60, 90, 120].filter(t => t <= (location.measurementDuration || 0));
+  const timeSteps = [5, 10, 15, 30, 45, 60].filter(t => t <= (location.measurementDuration || 0));
   const timeSeriesData: any[][] = [
     ["ZAMAN BAZLI KONUMLANMA PERFORMANS ANALİZİ"],
     ["(En başarılı algoritma üzerinden zamana bağlı iyileşme)"],

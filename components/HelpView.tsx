@@ -46,7 +46,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <br/>
                 • <b>Koordinat Sistemi:</b> WGS84 (Enlem-Boylam), ITRF96 (3 derece), ED50 (3 derece) veya ED50 (6 derece) sistemlerinden birini seçin. Proje bir kez oluşturulduğunda sistem değiştirilemez.
                 <br/>
-                • <b>Ölçüm Süreci:</b> "Ölçümü Başlat" dediğinizde belirlediğiniz hassasiyette (2-100 m) ve belirlediğiniz sürede (5-120 sn) veri toplama süreci başlatılır. Uygulama bu aşamada konum örneği alarak verilerin ortalamasını hesaplar. En doğru sonuç için cihazı sabit bir zeminde ve açık bir alanda tutun.
+                • <b>Ölçüm Süreci:</b> "Ölçümü Başlat" dediğinizde belirlediğiniz hassasiyette (2-100 m) ve belirlediğiniz sürede (5-60 sn) veri toplama süreci başlatılır. Uygulama bu aşamada konum örneği alarak verilerin ortalamasını hesaplar. En doğru sonuç için cihazı sabit bir zeminde ve açık bir alanda tutun.
               </p>
             </div>
 

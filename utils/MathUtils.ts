@@ -217,66 +217,80 @@ function calculateMidDbscanBaarda(samples: Coordinate[]): { result: Coordinate; 
   const rLat = (Math.min(...lats) + Math.max(...lats)) / 2;
   const rLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
 
-  // Step 2: DBSCAN
+  // Step 2: DBSCAN with Dynamic EPS for more clusters
   const avgAcc = samples.reduce((a, b) => a + b.accuracy, 0) / samples.length;
-  const eps = avgAcc; 
+  const originalEps = avgAcc;
   const minPts = 4;
+  const maxPossibleClusters = Math.floor(samples.length / minPts);
+  const targetClusters = Math.min(4, maxPossibleClusters);
 
-  const clusters: number[][] = [];
-  const visited = new Set<number>();
-  
-  for (let i = 0; i < samples.length; i++) {
-    if (visited.has(i)) continue;
+  let currentEps = originalEps;
+  let finalValidClusters: number[][] = [];
+  const minEps = 0.5; // Do not go below 50cm precision threshold
+
+  // Iteratively reduce Eps to find more clusters (if possible)
+  while (currentEps >= minEps) {
+    const clusters: number[][] = [];
+    const visited = new Set<number>();
     
-    const neighbors = samples.map((s, idx) => {
-      const dLat = (s.lat - samples[i].lat) * 111320;
-      const dLng = (s.lng - samples[i].lng) * 111320 * Math.cos(samples[i].lat * Math.PI / 180);
-      const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-      return dist <= eps ? idx : -1;
-    }).filter(idx => idx !== -1);
-    
-    if (neighbors.length >= minPts) {
-      const cluster: number[] = [];
-      const q = [i];
-      visited.add(i);
+    for (let i = 0; i < samples.length; i++) {
+      if (visited.has(i)) continue;
       
-      while (q.length > 0) {
-        const next = q.shift()!;
-        cluster.push(next);
+      const neighbors = samples.map((s, idx) => {
+        const dLat = (s.lat - samples[i].lat) * 111320;
+        const dLng = (s.lng - samples[i].lng) * 111320 * Math.cos(samples[i].lat * Math.PI / 180);
+        const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+        return dist <= currentEps ? idx : -1;
+      }).filter(idx => idx !== -1);
+      
+      if (neighbors.length >= minPts) {
+        const cluster: number[] = [];
+        const q = [i];
+        visited.add(i);
         
-        const nextNeighbors = samples.map((s, idx) => {
-          const dLat = (s.lat - samples[next].lat) * 111320;
-          const dLng = (s.lng - samples[next].lng) * 111320 * Math.cos(samples[next].lat * Math.PI / 180);
-          const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-          return dist <= eps ? idx : -1;
-        }).filter(idx => idx !== -1);
-        
-        if (nextNeighbors.length >= minPts) {
-          for (const n of nextNeighbors) {
-            if (!visited.has(n)) {
-              visited.add(n);
-              q.push(n);
+        while (q.length > 0) {
+          const next = q.shift()!;
+          cluster.push(next);
+          
+          const nextNeighbors = samples.map((s, idx) => {
+            const dLat = (s.lat - samples[next].lat) * 111320;
+            const dLng = (s.lng - samples[next].lng) * 111320 * Math.cos(samples[next].lat * Math.PI / 180);
+            const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+            return dist <= currentEps ? idx : -1;
+          }).filter(idx => idx !== -1);
+          
+          if (nextNeighbors.length >= minPts) {
+            for (const n of nextNeighbors) {
+              if (!visited.has(n)) {
+                visited.add(n);
+                q.push(n);
+              }
             }
           }
         }
+        clusters.push(cluster);
       }
-      clusters.push(cluster);
     }
+
+    // Filter clusters that are "near" R (at least one point within 1.5 * Eps of R)
+    finalValidClusters = clusters.filter(cluster => {
+      return cluster.some(idx => {
+        const s = samples[idx];
+        const dLat = (s.lat - rLat) * 111320;
+        const dLng = (s.lng - rLng) * 111320 * Math.cos(rLat * Math.PI / 180);
+        const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+        return dist <= originalEps * 1.5;
+      });
+    });
+
+    if (finalValidClusters.length >= targetClusters || currentEps <= minEps) {
+      break; 
+    }
+    currentEps *= 0.75; // Try more granular search
   }
 
-  // Filter clusters that are "near" R (at least one point within EPS of R)
-  const validClusters = clusters.filter(cluster => {
-    return cluster.some(idx => {
-      const s = samples[idx];
-      const dLat = (s.lat - rLat) * 111320;
-      const dLng = (s.lng - rLng) * 111320 * Math.cos(rLat * Math.PI / 180);
-      const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-      return dist <= eps;
-    });
-  });
-
   // Summarize clusters
-  const clusterSummaries = validClusters.map(cluster => {
+  const clusterSummaries = finalValidClusters.map(cluster => {
     const clusterPoints = cluster.map(idx => samples[idx]);
     const weights = clusterPoints.map(p => 1 / Math.pow(Math.max(0.1, p.accuracy), 2));
     const sumW = weights.reduce((a, b) => a + b, 0);
