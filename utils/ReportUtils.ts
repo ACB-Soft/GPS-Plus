@@ -118,7 +118,7 @@ export const generateTechnicalReport = () => {
     <div class="page-break"></div>
 
     <h2>6. İSTATİSTİKSEL ANALİZ VE VERİ AYIKLAMA METODOLOJİLERİ</h2>
-    <p>Hatalı sinyalleri (Outliers) temizlemek ve en doğru sonucu üretmek için ${FULL_BRAND}, kullanıcıya 5 farklı ileri düzey istatistiksel yöntem sunar. Bu yöntemler, farklı arazi ve sinyal koşullarına göre optimize edilmiştir:</p>
+    <p>Hatalı sinyalleri (Outliers) temizlemek ve en doğru sonucu üretmek için ${FULL_BRAND}, kullanıcıya 3 farklı ileri düzey istatistiksel yöntem sunar. Bu yöntemler, farklı arazi ve sinyal koşullarına göre optimize edilmiştir:</p>
     <ul>
       <li><span class="bold">1. Aritmetik Ortalama:</span> Veri setindeki tüm değerlerin basit aritmetik ortalamasını hesaplar. Düşük hassasiyetli veriler ön filtreleme ile elendikten sonra kalan tüm veriler eşit ağırlığa sahiptir.
         <div class="formula">μ = (1/n) * Σ xᵢ</div>
@@ -126,13 +126,15 @@ export const generateTechnicalReport = () => {
       <li><span class="bold">2. Ağırlıklı En Küçük Kareler (Weighted Least Squares):</span> Yatay hassasiyet (acc) değerlerini kullanarak ağırlıklı dengeleme yapar. Ağırlıklar P = 1/acc² olarak alınır. Daha düşük hata payına sahip "kaliteli" sinyaller, hesaplama sonucuna matematiksel olarak daha fazla etki eder.
         <div class="formula">x̂ = (Σ Pᵢ xᵢ) / (Σ Pᵢ) , burada Pᵢ = 1/σᵢ²</div>
       </li>
-      <li><span class="bold">3. Huber M-Estimation:</span> Aykırı değerlere dirençli (robust) bir yapı kurar. Belirlenen bir eşik değerinden (k = 1.345σ) uzak olan noktaların ağırlığını lineer olarak azaltan Huber kayıp fonksiyonunu iteratif olarak uygular. Sapan verilere rağmen en kararlı konum kestirimi yapılır.
-        <div class="formula">ρ(e) = { 0.5 * e² (|e| ≤ k); k * |e| - 0.5 * k² (|e| > k) }</div>
+      <li><span class="bold">3. K-Means + Baarda Hibrit Modeli:</span> Uygulamanın en gelişmiş matematiksel modelidir. 5 aşamalı bir analiz süreci yürütür:
+        <ul>
+          <li><span class="bold">A. Referans Tespiti (Mid-Range):</span> Verilerin uzaydaki geometrik sınırları üzerinden bir merkez noktası belirler.</li>
+          <li><span class="bold">B. Sıkı Eleme (1.0 * Eps):</span> Referans noktasından, donanımsal ortalama hassasiyetin 1.0 katından daha uzak olan verileri "gürültü" olarak kabul eder ve eler.</li>
+          <li><span class="bold">C. K-Means Kümeleme:</span> Kalan kararlı verileri K-Means algoritması ile 4 bağımsız kümeye ayırarak yerel yoğunlukları tespit eder.</li>
+          <li><span class="bold">D. Küme Özetleme:</span> Her küme kendi içinde ağırlıklı dengeleme ile tek bir temsilci noktaya indirgenir.</li>
+          <li><span class="bold">E. Baarda Güvenilirlik Testi:</span> Elde edilen 4 özet nokta arasında istatistiksel uyuşmazlık testi (Baarda) yapılır. Matematiksel olarak uyumsuz olan kümeler nihai sonuçtan dışlanır.</li>
+        </ul>
       </li>
-      <li><span class="bold">4. Kernel Density Estimation (KDE):</span> Verilerin mekansal yoğunluğunu hesaplar. Gaussian kernel kullanarak enlem/boylam düzleminde yoğunluğun tepe yaptığı (Mode) noktayı bulur. Rastgele sıçramaları eleyerek kümelenmenin merkezini tespit eder.
-        <div class="formula">f̂(x) = (1 / nh) * Σ K((x - xᵢ) / h)</div>
-      </li>
-      <li><span class="bold">5. RANSAC (Random Sample Consensus):</span> Belirli bir tolerans (inlier threshold) dahilinde en fazla noktayı içeren "tutarlı kümeyi" bulmak için rastgele örnekleme yapar. Algoritma, cihazın o anki ortalama hassasiyet değerine göre dinamik bir tolerans eşiği belirler ve en büyük inlier kümesinin ortalamasını sonuç olarak döndürür.</li>
     </ul>
 
     <h2>7. ÖLÇÜM MANTIĞI VE VERİ İŞLEME DİSİPLİNLERİ</h2>

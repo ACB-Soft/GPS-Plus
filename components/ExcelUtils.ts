@@ -57,14 +57,19 @@ export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings
     const accuracy = loc.accuracy.toFixed(2);
     const duration = (loc.measurementDuration || 0).toString();
 
-    let reliabilityLabel = "UNKNOWN";
+    let reliabilityLabel = "";
     if (loc.samples && loc.samples.length >= 5) {
       const maxSpread = calculateMaxDistance(loc.samples);
       const avgAcc = loc.samples.reduce((a, b) => a + b.accuracy, 0) / loc.samples.length;
       const ratio = maxSpread / (avgAcc || 0.1);
-      if (ratio > 3) reliabilityLabel = "DÜŞÜK (KRİTİK)";
-      else if (ratio > 1.5) reliabilityLabel = "ORTA (TUTARSIZ)";
-      else reliabilityLabel = "YÜKSEK (GÜVENLİ)";
+      if (ratio > 3) reliabilityLabel = "GÜVENSİZ";
+      else if (ratio > 1.5) reliabilityLabel = "ORTA GÜVEN";
+      else reliabilityLabel = "GÜVENLİ";
+    } else {
+      // Fallback to single point accuracy if no samples or too few
+      if (loc.accuracy <= 3.0) reliabilityLabel = "GÜVENLİ";
+      else if (loc.accuracy <= 8.0) reliabilityLabel = "ORTA GÜVEN";
+      else reliabilityLabel = "GÜVENSİZ";
     }
 
     const displayHeight = heightType === 'orthometric' ? orthometricH : ellipsoidalH;
@@ -102,6 +107,7 @@ export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings
     { wch: 15 }, // Ondülasyon
     { wch: 15 }, // Hassasiyet
     { wch: 18 }, // Gözlem Süresi
+    { wch: 18 }, // Güvenilirlik
     { wch: 20 }, // Tarih
   ];
   worksheet['!cols'] = wscols;

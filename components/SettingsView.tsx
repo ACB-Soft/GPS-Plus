@@ -10,7 +10,7 @@ interface Props {
 
 const SettingsView: React.FC<Props> = ({ onBack }) => {
   const [coordinateSystem, setCoordinateSystem] = useState(localStorage.getItem('default_coord_system') || 'WGS84');
-  const [accuracyLimit, setAccuracyLimit] = useState(localStorage.getItem('default_accuracy_limit') || '5.0');
+  const [accuracyLimit, setAccuracyLimit] = useState(localStorage.getItem('default_accuracy_limit') || '5');
   const [measurementDuration, setMeasurementDuration] = useState(localStorage.getItem('default_duration') || '15');
   const [mapProvider, setMapProvider] = useState(localStorage.getItem('default_map_provider') || 'Google Hybrid');
   const [audioEnabled, setAudioEnabled] = useState(localStorage.getItem('default_audio_feedback_enabled') !== 'false');
@@ -72,7 +72,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
 
       // Reset state to synchronized defaults
       setCoordinateSystem('WGS84');
-      setAccuracyLimit('5.0');
+      setAccuracyLimit('5');
       setMeasurementDuration('15');
       setMapProvider('Google Hybrid');
       setAudioEnabled(true);
@@ -217,7 +217,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
                   {[2, 3, 4, 5, 10, 25, 50, 100].map(v => (
-                    <option key={v} value={v.toFixed(1)}>{v.toFixed(1)} metre</option>
+                    <option key={v} value={v.toString()}>{v} metre</option>
                   ))}
                 </select>
               </div>

@@ -38,7 +38,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   };
 
   const [coordinateSystem, setCoordinateSystem] = useState(getInitialSystem());
-  const [accuracyLimit, setAccuracyLimit] = useState(parseFloat(localStorage.getItem('default_accuracy_limit') || '5.0'));
+  const [accuracyLimit, setAccuracyLimit] = useState(parseFloat(localStorage.getItem('default_accuracy_limit') || '5'));
   const [measurementDuration, setMeasurementDuration] = useState(parseInt(localStorage.getItem('default_duration') || '15'));
   const [seconds, setSeconds] = useState(parseInt(localStorage.getItem('default_duration') || '15'));
   const [sampleCount, setSampleCount] = useState(0);

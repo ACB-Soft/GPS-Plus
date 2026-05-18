@@ -219,7 +219,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
           
           <div className="soft-card p-6 space-y-4">
             <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
-              Uygulama, toplanan ham GPS verilerini nihai bir koordinata dönüştürmek için 5 farklı matematiksel model sunar. Bu yöntemleri <b>Ayarlar</b> menüsünden değiştirebilirsiniz:
+              Uygulama, toplanan ham GPS verilerini nihai bir koordinata dönüştürmek için 3 farklı matematiksel model sunar. Bu yöntemleri <b>Ayarlar</b> menüsünden değiştirebilirsiniz:
             </p>
             
             <div className="space-y-4">
@@ -239,15 +239,38 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                   <span className="text-[9px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold">VARSAYILAN</span>
                 </div>
                 <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                  (Weighted Least Squares) Hassasiyeti yüksek (hata payı düşük) olan verilere daha fazla ağırlık vererek dengeleme yapar. En kararlı sonuçları üretir.
+                  Veri setindeki donanımsal hassasiyeti yüksek olan verilere daha fazla ağırlık vererek dengeleme yapar. En kararlı sonuçları üretir.
                 </p>
               </div>
 
               <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm ring-1 ring-blue-50">
-                <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight mb-2">3. K-Means+Baarda</h4>
-                <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                  İstatistiki olarak en gelişmiş modeldir. Mid-range referans noktası belirlenir ve donanımsal ortalama hassasiyetin 1.0 katı dışındaki noktalar filtrelenir. Kalan veri K-Means algoritması ile 4 kümeye ayrılır. Her kümede ağırlıklı dengeleme ile birer nokta ve hassasiyet belirlenir. Final koordinat Baarda testi ile uyuşan sonuçlar üzerinden hesaplanır.
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight">3. K-Means+Baarda</h4>
+                  <span className="text-[9px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">HİBRİT</span>
+                </div>
+                <p className="text-[11px] text-slate-600 font-medium leading-relaxed mb-3">
+                  İstatistik yöntemler kullanılarak uygulamaya özel olarak iyileştirilmiş hibrit bir yöntemdir.
                 </p>
+                <div className="bg-blue-50/50 rounded-lg p-3 space-y-2 border border-blue-100/50">
+                  <p className="text-[10px] font-black text-blue-800 uppercase tracking-widest">İşlem Adımları:</p>
+                  <ul className="space-y-1.5">
+                    <li className="text-[10px] text-slate-700 leading-tight">
+                       1-<b>Mid-Range:</b> Veri sınırları üzerinden tarafsız referans merkez noktası belirlenir.
+                    </li>
+                    <li className="text-[10px] text-slate-700 leading-tight">
+                       2-<b>Filtre:</b> Referans noktasına ortalama donanımsal hassasiyetten daha uzak noktalar elenir.
+                    </li>
+                    <li className="text-[10px] text-slate-700 leading-tight">
+                       3-<b>K-Means:</b> Temizlenmiş veri 4 bağımsız yoğunluk kümesine bölünür.
+                    </li>
+                    <li className="text-[10px] text-slate-700 leading-tight">
+                       4-<b>Ağırlıklı Özet:</b> Her küme kendi içinde ağırlıklı dengeleme ile tek bir noktaya dönüştürülür.
+                    </li>
+                    <li className="text-[10px] text-slate-700 leading-tight">
+                       5-<b>Baarda Testi:</b> 4 özet nokta arasında uyuşmazlık denetimi yapılarak sonuç konum hesaplanır.
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>

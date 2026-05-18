@@ -36,7 +36,7 @@ const App = () => {
   const [stakeoutInitialPoint, setStakeoutInitialPoint] = useState<StakeoutPoint | null>(null);
   const [settings, setSettings] = useState<AppSettings>(() => ({
     defaultCoordinateSystem: localStorage.getItem('default_coord_system') || 'WGS84',
-    defaultAccuracyLimit: parseFloat(localStorage.getItem('default_accuracy_limit') || '5.0'),
+    defaultAccuracyLimit: parseFloat(localStorage.getItem('default_accuracy_limit') || '5'),
     defaultMeasurementDuration: parseInt(localStorage.getItem('default_duration') || '15'),
     alertsEnabled: localStorage.getItem('default_audio_feedback_enabled') !== 'false',
     vibrationEnabled: localStorage.getItem('default_vibration_feedback_enabled') === 'true',
@@ -109,7 +109,7 @@ const App = () => {
       const updated = prevLocations.map(loc => {
         if (loc.samples && loc.samples.length > 0 && 
            (loc.calculationMethod !== settings.calculationMethod || loc.gnssOnlyMode !== settings.gnssOnlyMode)) {
-          const { result, usedIndices } = calculateResult(loc.samples, settings.calculationMethod, loc.accuracyLimit || 5.0, settings.gnssOnlyMode);
+          const { result, usedIndices } = calculateResult(loc.samples, settings.calculationMethod, loc.accuracyLimit || 5, settings.gnssOnlyMode);
           changed = true;
           return {
             ...loc,
@@ -130,7 +130,7 @@ const App = () => {
 
     if (lastResult && lastResult.samples && lastResult.samples.length > 0 && 
        (lastResult.calculationMethod !== settings.calculationMethod || lastResult.gnssOnlyMode !== settings.gnssOnlyMode)) {
-      const { result, usedIndices } = calculateResult(lastResult.samples, settings.calculationMethod, lastResult.accuracyLimit || 5.0, settings.gnssOnlyMode);
+      const { result, usedIndices } = calculateResult(lastResult.samples, settings.calculationMethod, lastResult.accuracyLimit || 5, settings.gnssOnlyMode);
       setLastResult({
         ...lastResult,
         lat: result.lat,
@@ -298,7 +298,7 @@ const App = () => {
               // Refresh settings when coming back from settings
               setSettings({
                 defaultCoordinateSystem: localStorage.getItem('default_coord_system') || 'WGS84',
-                defaultAccuracyLimit: parseFloat(localStorage.getItem('default_accuracy_limit') || '5.0'),
+                defaultAccuracyLimit: parseFloat(localStorage.getItem('default_accuracy_limit') || '5'),
                 defaultMeasurementDuration: parseInt(localStorage.getItem('default_duration') || '15'),
                 alertsEnabled: localStorage.getItem('default_audio_feedback_enabled') !== 'false',
                 vibrationEnabled: localStorage.getItem('default_vibration_feedback_enabled') === 'true',
