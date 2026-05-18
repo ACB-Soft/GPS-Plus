@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
 import { SavedLocation, AppSettings, CalculationMethod } from '../types';
-import { convertCoordinate } from '../utils/CoordinateUtils';
+import { convertCoordinate, getSystemDisplayLabel } from '../utils/CoordinateUtils';
 import { calculateResult, calculateVariance, calculateMaxDistance } from '../utils/MathUtils';
 import { FULL_BRAND } from '../version';
 import { getCorrectedHeight, getEllipsoidalHeight } from './GeoidUtils';
@@ -85,7 +85,7 @@ export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings
 
   const ws_data = [
     ["Proje Adı:", projectName],
-    ["Koordinat Sistemi:", projectSystem],
+    ["Koordinat Sistemi:", getSystemDisplayLabel(projectSystem)],
     [], 
     ["Nokta İsmi", header1, header2, "Yükseklik (m)", "Elipsoidal Yükseklik (m)", "Ondülasyon (m)", "Hassasiyet (m)", "Gözlem Süresi (sn)", "Güvenilirlik", "Tarih"],
     ...dataRows
@@ -249,7 +249,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     ["ÖLÇÜM RAPORU"],
     ["Nokta Adı:", location.name],
     ["Proje Adı:", location.folderName],
-    ["Koordinat Sistemi:", sys],
+    ["Koordinat Sistemi:", getSystemDisplayLabel(sys)],
     ["Ölçüm Süresi:", `${location.measurementDuration || 0} sn`],
     ["Hassasiyet Eşiği:", `${accuracyLimit} m`],
     ["Sinyal Güvenilirliği:", relLevel],
@@ -314,7 +314,7 @@ export const downloadCombinedAnalysisReport = (
     ["Nokta Adı:", location.name],
     ["Klasör:", location.folderName],
     ["Kayıt Tarihi:", new Date(location.timestamp).toLocaleString('tr-TR')],
-    ["Koordinat Sistemi:", sys],
+    ["Koordinat Sistemi:", getSystemDisplayLabel(sys)],
     ["Yükseklik Tipi:", isOrthometric ? "Ortometrik (Jeoid)" : "Elipsoidal"],
     [],
     ["GÖZLEM LİSTESİ (Tüm Örnekler)"],
@@ -354,7 +354,7 @@ export const downloadCombinedAnalysisReport = (
     ["Analiz Tarihi:", new Date().toLocaleString('tr-TR')],
     [],
     ["1. UYGULAMA ANA HESAPLAMA SONUÇLARI"],
-    ["Koordinat Sistemi:", sys],
+    ["Koordinat Sistemi:", getSystemDisplayLabel(sys)],
     ["Kullanılan Ana Yöntem:", getMethodName(calculationMethod)],
     ["Hesaplanan X/Lat:", location.lat.toFixed(sys === "WGS84" ? 8 : locPrecision)],
     ["Hesaplanan Y/Lng:", location.lng.toFixed(sys === "WGS84" ? 8 : locPrecision)],

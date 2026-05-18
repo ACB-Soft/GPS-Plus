@@ -3,7 +3,7 @@ import { toPng } from 'html-to-image';
 import { saveAs } from 'file-saver';
 import { SavedLocation, AppSettings, CalculationMethod } from '../types';
 import { geoidService } from '../services/GeoidService';
-import { convertCoordinate } from '../utils/CoordinateUtils';
+import { convertCoordinate, getSystemDisplayLabel } from '../utils/CoordinateUtils';
 import { calculateResult, calculateAverage, calculateMaxDistance } from '../utils/MathUtils';
 import { downloadCombinedAnalysisReport } from './ExcelUtils';
 import { 
@@ -556,7 +556,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
             <div className="space-y-4 pt-4 border-t border-slate-100">
               <div className="flex justify-between items-center px-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  4. Kesin Koordinat Girişi ({location?.coordinateSystem})
+                  4. Kesin Koordinat Girişi ({getSystemDisplayLabel(location?.coordinateSystem)})
                 </label>
               </div>
 

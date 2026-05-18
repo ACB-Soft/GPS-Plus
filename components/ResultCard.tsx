@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { SavedLocation, AppSettings } from '../types';
-import { convertCoordinate } from '../utils/CoordinateUtils';
+import { convertCoordinate, getSystemDisplayLabel } from '../utils/CoordinateUtils';
 import { useOrthometricHeight } from '../hooks/useGeoid';
 import { calculateMaxDistance } from '../utils/MathUtils';
 
@@ -129,7 +129,7 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
         <div className="space-y-4">
           {location.coordinateSystem && (
             <div className="text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] leading-none">
-              {location.coordinateSystem.replace(/_/g, ' ')} {zone && `(${zone})`}
+              {getSystemDisplayLabel(location.coordinateSystem)} {zone && `(${zone})`}
             </div>
           )}
           <div className="grid grid-cols-2 gap-3 md:gap-4">

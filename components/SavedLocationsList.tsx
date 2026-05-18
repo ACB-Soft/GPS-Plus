@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { SavedLocation, AppSettings } from '../types';
-import { convertCoordinate } from '../utils/CoordinateUtils';
+import { convertCoordinate, getSystemDisplayLabel } from '../utils/CoordinateUtils';
 import { getAccuracyColor } from '../utils/StyleUtils';
 import { useOrthometricHeight } from '../hooks/useGeoid';
 import { calculateMaxDistance } from '../utils/MathUtils';
@@ -274,7 +274,7 @@ const SavedLocationsList: React.FC<Props> = ({ locations, settings, onDelete, on
     if (locs.length === 0) return '';
     const sys = locs[0].coordinateSystem;
     const allSame = locs.every(l => l.coordinateSystem === sys);
-    return allSame ? sys?.replace(/_/g, ' ') : 'Karışık';
+    return allSame ? getSystemDisplayLabel(sys) : 'Karışık';
   };
 
   const getFolderZone = (locs: SavedLocation[]) => {

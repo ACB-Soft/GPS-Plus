@@ -709,10 +709,10 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Koordinat Sistemi</label>
                     <select value={manualSystem} onChange={e => setManualSystem(e.target.value)} className="w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none">
                       <option value="WGS84">WGS84 (Enlem-Boylam)</option>
-                      <option value="ITRF96_3">ITRF96 - 3°</option>
-                      <option value="ITRF96_6">ITRF96 - 6° (UTM)</option>
-                      <option value="ED50_3">ED50 - 3°</option>
-                      <option value="ED50_6">ED50 - 6° (UTM)</option>
+                      <option value="ITRF96_3">ITRF96 - 3° - TM</option>
+                      <option value="ITRF96_6">ITRF96 - 6° - UTM</option>
+                      <option value="ED50_3">ED50 - 3° - TM</option>
+                      <option value="ED50_6">ED50 - 6° - UTM</option>
                     </select>
                   </div>
 

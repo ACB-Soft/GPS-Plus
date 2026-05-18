@@ -24,6 +24,17 @@ const getDom6 = (lon: number) => {
     return zone * 6 - 183;
 };
 
+export const getSystemDisplayLabel = (system: string | undefined): string => {
+  if (!system || system === 'WGS84') return 'WGS84 (Enlem-Boylam)';
+  switch (system) {
+    case 'ITRF96_3': return 'ITRF96 - 3° - TM';
+    case 'ITRF96_6': return 'ITRF96 - 6° - UTM';
+    case 'ED50_3': return 'ED50 - 3° - TM';
+    case 'ED50_6': return 'ED50 - 6° - UTM';
+    default: return system.replace('_', ' ');
+  }
+};
+
 export const convertCoordinate = (lat: number, lng: number, system: string) => {
   if (!system || system === 'WGS84') {
     return { x: lat, y: lng, labelX: 'Enlem', labelY: 'Boylam', zone: '' };
