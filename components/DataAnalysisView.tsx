@@ -211,30 +211,31 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const multipathAnalysis = useMemo(() => {
     if (!location || !location.samples || location.samples.length < 5) return null;
     
-    // We use ALL samples for reliability check to detect raw signal issues (Multipath)
     const maxSpread = calculateMaxDistance(location.samples);
     const avgSensorAcc = location.samples.reduce((a, b) => a + b.accuracy, 0) / location.samples.length;
     const ratio = maxSpread / (avgSensorAcc || 0.1);
     
-    // Dynamic Confidence Score Calculation
-    // Base: 100%
-    // Penalty for dispersion: 1 / (1 + max(0, ratio - 0.8)) - allowing 20% slack
-    const dispersionPenalty = 1 / (1 + Math.max(0, ratio - 0.8));
+    // İyileştirilmiş Güven Skoru Formülü
+    // Tolerans: 3.0 (Hassasiyetin 3 katına kadar saçılımı normal kabul et)
+    const slack = 3.0;
+    const dispersionPenalty = 1 / (1 + Math.max(0, (ratio - slack) / 2));
     
-    // Sample Volume Factor: More samples = higher confidence in the statistical model
-    // 30 samples is considered excellent for these algorithms
+    // Veri Hacmi Katsayısı (30 örnekte tam verimlilik)
     const sampleFactor = Math.min(1.0, location.samples.length / 30);
-    const volumeBoost = 0.8 + (0.2 * sampleFactor);
+    const volumeBoost = 0.85 + (0.15 * sampleFactor);
     
-    const confidenceScore = Math.min(100, Math.max(5, 100 * dispersionPenalty * volumeBoost));
+    // Hassasiyet Kalitesi (0.5m - 5.0m arası lineer etki)
+    const accFactor = Math.max(0.7, Math.min(1.0, 5.0 / (avgSensorAcc || 5.0)));
+    
+    const confidenceScore = Math.min(100, Math.max(5, 100 * dispersionPenalty * volumeBoost * accFactor));
     
     return {
       maxSpread,
       avgSensorAcc,
       ratio,
       confidenceScore,
-      isRisk: confidenceScore < 70,
-      isCritical: confidenceScore < 40
+      isRisk: confidenceScore < 60,
+      isCritical: confidenceScore < 30
     };
   }, [location]);
 
@@ -458,52 +459,60 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
           
           {/* Multipath / Reliability Analysis */}
           {multipathAnalysis && (
-            <div className={`p-5 rounded-[2rem] border-2 animate-in slide-in-from-top-4 ${
+            <div className={`p-6 rounded-[2.5rem] border-2 animate-in slide-in-from-top-4 ${
               multipathAnalysis.isCritical ? 'bg-rose-50 border-rose-100' : 
               multipathAnalysis.isRisk ? 'bg-amber-50 border-amber-100' : 'bg-emerald-50 border-emerald-100'
             }`}>
-              <div className="flex items-center gap-4 mb-3">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${
-                  multipathAnalysis.isCritical ? 'bg-rose-100 text-rose-600' : 
-                  multipathAnalysis.isRisk ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
-                }`}>
-                  <i className={`fas ${multipathAnalysis.isCritical ? 'fa-triangle-exclamation' : multipathAnalysis.isRisk ? 'fa-circle-exclamation' : 'fa-circle-check'} text-xl`}></i>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-4">
+                  <div className={`w-14 h-14 rounded-3xl flex items-center justify-center shadow-2xl ${
+                    multipathAnalysis.isCritical ? 'bg-rose-100 text-rose-600' : 
+                    multipathAnalysis.isRisk ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
+                  }`}>
+                    <i className={`fas ${multipathAnalysis.isCritical ? 'fa-triangle-exclamation' : multipathAnalysis.isRisk ? 'fa-circle-exclamation' : 'fa-circle-check'} text-2xl`}></i>
+                  </div>
+                  <div>
+                    <h3 className={`text-sm font-black uppercase tracking-[0.2em] leading-none mb-1.5 ${
+                      multipathAnalysis.isCritical ? 'text-rose-700' : multipathAnalysis.isRisk ? 'text-amber-700' : 'text-emerald-700'
+                    }`}>Güvenilirlik Analizi</h3>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-80 leading-none">Multipath & Statistik Denetim</p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className={`text-[11px] font-black uppercase tracking-widest leading-none mb-1 ${
-                    multipathAnalysis.isCritical ? 'text-rose-700' : multipathAnalysis.isRisk ? 'text-amber-700' : 'text-emerald-700'
-                  }`}>Sinyal Güvenilirlik Analizi</h3>
-                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest opacity-80 leading-none">Multipath & Saçılım Kontrolü</p>
-                </div>
-                <div className="text-right">
-                   <div className={`text-sm font-black mono-font ${
+                <div className="text-right bg-white/40 p-3 rounded-2xl border border-white/60">
+                   <div className={`text-2xl font-black mono-font leading-none ${
                      multipathAnalysis.confidenceScore < 40 ? 'text-rose-600' : 
                      multipathAnalysis.confidenceScore < 75 ? 'text-amber-600' : 'text-emerald-600'
                    }`}>
-                     %{multipathAnalysis.confidenceScore.toFixed(1)}
+                     %{Math.round(multipathAnalysis.confidenceScore)}
                    </div>
-                   <p className="text-[7px] font-black text-slate-400 uppercase tracking-tighter">Güven Skoru</p>
+                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">GÜVEN SKORU</p>
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="bg-white/60 p-3 rounded-xl border border-white/80">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter mb-1">Max Saçılım (Spread)</p>
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="bg-white/60 p-4 rounded-2xl border border-white/80 shadow-sm flex flex-col items-center">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Max Saçılım</p>
                   <p className="text-sm font-black text-slate-900 mono-font">±{multipathAnalysis.maxSpread.toFixed(2)}m</p>
                 </div>
-                <div className="bg-white/60 p-3 rounded-xl border border-white/80">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter mb-1">Raporlanan Hass.</p>
+                <div className="bg-white/60 p-4 rounded-2xl border border-white/80 shadow-sm flex flex-col items-center">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Sensör Hass.</p>
                   <p className="text-sm font-black text-slate-900 mono-font">±{multipathAnalysis.avgSensorAcc.toFixed(2)}m</p>
+                </div>
+                <div className="bg-white/60 p-4 rounded-2xl border border-white/80 shadow-sm flex flex-col items-center">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Örnek Sayısı</p>
+                  <p className="text-sm font-black text-slate-900 mono-font">{location?.samples?.length || 0}</p>
                 </div>
               </div>
 
               {multipathAnalysis.isRisk && (
-                <div className="bg-white/40 p-3 rounded-xl border-white/60 border">
-                   <p className="text-[9px] font-bold text-slate-700 leading-relaxed italic">
-                    <i className="fas fa-info-circle mr-2"></i>
-                    {multipathAnalysis.isCritical 
-                      ? 'Kritik sinyal tutarsızlığı: Saçılım alanı sensör hassasiyetinden 3 kat daha geniş. Yüksek ihtimalle binalardan yansıyan hatalı (multipath) veriler ölçüme karışmış. Ölçümün açık alanda tekrarlanması önerilir.' 
-                      : 'Şüpheli veri dağılımı: Sensör küçük bir hata payı bildirmesine rağmen veriler geniş bir alana yayılmış. Multipath etkisi olabilir.'}
+                <div className="bg-white/80 p-4 rounded-2xl border-white border shadow-sm">
+                   <p className="text-[10px] font-bold text-slate-700 leading-relaxed italic flex gap-3">
+                    <i className={`fas fa-info-circle text-lg ${multipathAnalysis.isCritical ? 'text-rose-500' : 'text-amber-500'}`}></i>
+                    <span>
+                      {multipathAnalysis.isCritical 
+                        ? 'Kritik uyarı: Veri saçılımı ekstrem düzeyde. Ölçüm kalitesi güvenli sınırların altında kalmaktadır.' 
+                        : 'Ölçülen veriler sensörün bildirdiği hassasiyete göre daha geniş bir alana yayılmış durumda (Muhtemel Multipath).'}
+                    </span>
                    </p>
                 </div>
               )}

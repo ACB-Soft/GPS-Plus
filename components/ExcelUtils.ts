@@ -29,8 +29,11 @@ export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings
   const projectName = uniqueFolders.length === 1 ? uniqueFolders[0] : "Çoklu Proje Seçimi";
   
   let projectSystem = "Muhtelif";
+  let projectZone = "---";
   if (uniqueFolders.length === 1) {
      projectSystem = locations[0].coordinateSystem || 'WGS84';
+     const { zone } = convertCoordinate(locations[0].lat, locations[0].lng, projectSystem);
+     projectZone = zone || "---";
   }
 
   const isWGS84 = projectSystem === 'WGS84';
@@ -91,6 +94,7 @@ export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings
   const ws_data = [
     ["Proje Adı:", projectName],
     ["Koordinat Sistemi:", getSystemDisplayLabel(projectSystem)],
+    ["Dilim Numarası:", projectZone],
     [], 
     ["Nokta İsmi", header1, header2, "Yükseklik (m)", "Elipsoidal Yükseklik (m)", "Ondülasyon (m)", "Hassasiyet (m)", "Gözlem Süresi (sn)", "Güvenilirlik", "Tarih"],
     ...dataRows
@@ -256,6 +260,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     ["Nokta Adı:", location.name],
     ["Proje Adı:", location.folderName],
     ["Koordinat Sistemi:", getSystemDisplayLabel(sys)],
+    ["Dilim Numarası:", convertCoordinate(location.lat, location.lng, sys).zone || "---"],
     ["Ölçüm Süresi:", `${location.measurementDuration || 0} sn`],
     ["Hassasiyet Eşiği:", `${accuracyLimit} m`],
     ["Sinyal Güvenilirliği:", relLevel],
@@ -321,6 +326,7 @@ export const downloadCombinedAnalysisReport = (
     ["Klasör:", location.folderName],
     ["Kayıt Tarihi:", new Date(location.timestamp).toLocaleString('tr-TR')],
     ["Koordinat Sistemi:", getSystemDisplayLabel(sys)],
+    ["Dilim Numarası:", convertCoordinate(location.lat, location.lng, sys).zone || "---"],
     ["Yükseklik Tipi:", isOrthometric ? "Ortometrik (Jeoid)" : "Elipsoidal"],
     [],
     ["GÖZLEM LİSTESİ (Tüm Örnekler)"],

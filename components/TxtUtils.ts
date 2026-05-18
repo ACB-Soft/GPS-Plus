@@ -13,8 +13,11 @@ export const downloadTXT = (locations: SavedLocation[], settings: AppSettings) =
   const projectName = uniqueFolders.length === 1 ? uniqueFolders[0] : "Çoklu Proje Seçimi";
   
   let projectSystem = "Muhtelif";
+  let projectZone = "---";
   if (uniqueFolders.length === 1) {
      projectSystem = locations[0].coordinateSystem || 'WGS84';
+     const { zone } = convertCoordinate(locations[0].lat, locations[0].lng, projectSystem);
+     projectZone = zone || "---";
   }
 
   const isWGS84 = projectSystem === 'WGS84';
@@ -23,7 +26,8 @@ export const downloadTXT = (locations: SavedLocation[], settings: AppSettings) =
   const heightLabel = settings.heightType === 'orthometric' ? "Yükseklik (m)" : "Elipsoidal Yükseklik (m)";
 
   let content = `Proje Adi:\t${projectName}\n`;
-  content += `Koordinat Sistemi:\t${projectSystem}\n\n`;
+  content += `Koordinat Sistemi:\t${projectSystem}\n`;
+  content += `Dilim Numarasi:\t${projectZone}\n\n`;
   
   content += `Nokta\t${header1}\t${header2}\t${heightLabel}\n`;
   content += "----------------------------------------------------------------\n";
