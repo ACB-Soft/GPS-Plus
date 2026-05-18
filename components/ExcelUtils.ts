@@ -10,7 +10,8 @@ const getMethodName = (m: CalculationMethod) => {
   switch(m) {
     case 'ARITHMETIC_MEAN': return "Aritmetik Ortalama";
     case 'WEIGHTED_LSE': return "Ağırlıklı Dengeleme";
-    case 'MID_DBSCAN_BAARDA': return "Hibrit (Mid-DBSCAN+Baarda)";
+    case 'KMEANS_HYBRID_K4': return "Hibrit (Standart K-Means)";
+    case 'KMEANS_HYBRID_K8': return "Hibrit (Gelişmiş K-Means)";
     default: return m;
   }
 };
@@ -135,7 +136,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   // --- İstatistiksel Ön Hazırlık ---
   const accuracyLimit = location.accuracyLimit || 5.0;
   
-  const methods: CalculationMethod[] = ['ARITHMETIC_MEAN', 'WEIGHTED_LSE', 'MID_DBSCAN_BAARDA'];
+  const methods: CalculationMethod[] = ['ARITHMETIC_MEAN', 'WEIGHTED_LSE', 'KMEANS_HYBRID_K4', 'KMEANS_HYBRID_K8'];
   const methodResults = methods.map(method => {
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
     const { x, y } = convertCoordinate(result.lat, result.lng, sys);

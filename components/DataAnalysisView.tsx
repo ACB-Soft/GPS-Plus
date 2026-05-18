@@ -38,8 +38,8 @@ const MapSetBounds = ({ points }: { points: [number, number][] }) => {
 const METHOD_COLORS: Record<string, string> = {
   ARITHMETIC_MEAN: '#ec4899',
   WEIGHTED_LSE: '#8b5cf6',
-  MID_DBSCAN_BAARDA: '#10b981',
-  KMEANS_HYBRID: '#3b82f6'
+  KMEANS_HYBRID_K4: '#10b981',
+  KMEANS_HYBRID_K8: '#3b82f6'
 };
 
 const CLUSTER_COLORS = [
@@ -120,16 +120,16 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const methods = useMemo<CalculationMethod[]>(() => [
     'ARITHMETIC_MEAN', 
     'WEIGHTED_LSE',
-    'MID_DBSCAN_BAARDA',
-    'KMEANS_HYBRID'
+    'KMEANS_HYBRID_K4',
+    'KMEANS_HYBRID_K8'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
     const labels: Record<string, string> = {
       'ARITHMETIC_MEAN': "Aritmetik Ortalama",
       'WEIGHTED_LSE': "Ağırlıklı Dengeleme",
-      'MID_DBSCAN_BAARDA': "Hibrit (DBSCAN)",
-      'KMEANS_HYBRID': "Hibrit (K-Means)"
+      'KMEANS_HYBRID_K4': "Hibrit (Standart K-Means)",
+      'KMEANS_HYBRID_K8': "Hibrit (Gelişmiş K-Means)"
     };
     return labels[m] || m;
   };
@@ -179,7 +179,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       // 1. Calculate point for this method
       const { result, clusters } = calculateResult(location.samples!, method, accuracyLimit);
       
-      if ((method === 'MID_DBSCAN_BAARDA' || method === 'KMEANS_HYBRID') && clusters) {
+      if ((method === 'KMEANS_HYBRID_K4' || method === 'KMEANS_HYBRID_K8') && clusters) {
         dbscanResults = clusters;
       }
       
@@ -419,7 +419,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
     const results = methods.map(method => {
       const { result, clusters } = calculateResult(location.samples!, method, accuracyLimit);
-      if ((method === 'MID_DBSCAN_BAARDA' || method === 'KMEANS_HYBRID') && clusters) {
+      if ((method === 'KMEANS_HYBRID_K4' || method === 'KMEANS_HYBRID_K8') && clusters) {
         clusterResults = clusters;
       }
       const conv = convertCoordinate(result.lat, result.lng, sys);
@@ -550,15 +550,15 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[9px] font-black text-emerald-600 uppercase">Hibrit (DBSCAN)</p>
+                    <p className="text-[9px] font-black text-emerald-600 uppercase">Hibrit (Standart K-Means)</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      DBSCAN ile veriyi doğal kümelerine ayırır.
+                      Veriyi 4 kümeye bölerek yerel ağırlıklı merkezler üzerinden Baarda testi ile uyuşmazlık denetimi yapar.
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[9px] font-black text-blue-600 uppercase">Hibrit (K-Means)</p>
+                    <p className="text-[9px] font-black text-blue-600 uppercase">Hibrit (Gelişmiş K-Means)</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      Veriyi K-Means ile zorunlu 4 kümeye böler.
+                      Yüksek yoğunluklu veriler için 8 küme kullanarak en güvenilir segmente odaklanır.
                     </p>
                   </div>
                </div>

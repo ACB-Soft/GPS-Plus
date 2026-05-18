@@ -244,9 +244,16 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
               </div>
 
               <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm ring-1 ring-emerald-50">
-                <h4 className="text-sm font-black text-emerald-700 uppercase tracking-tight mb-2">3. Hibrit (Mid-DBSCAN + Baarda)</h4>
+                <h4 className="text-sm font-black text-emerald-700 uppercase tracking-tight mb-2">3. Hibrit (Standart K-Means)</h4>
                 <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                  Mid-Range koordinatlarını baz alarak veri setini donanımsal hassasiyet yarıçapında (Eps) kümelere ayırır. Her küme tek bir rafine noktaya dönüştürülür ve bu özet veri seti üzerinde Baarda uyuşmazlık testi uygulanarak en güvenilir final konumu hesaplanır.
+                  Referans noktası belirlenir ve donanımsal hassasiyetin 1.5 katı dışındaki noktalar filtrelenir. Kalan veri K-Means algoritması ile 4 kümeye ayrılır. Her kümede ağırlıklı dengeleme ile birer nokta ve hassasiyet belirlenir. Final koordinat Baarda testi ile uyuşan sonuçlar üzerinden hesaplanır. 30-50 veri seviyesinde idealdir.
+                </p>
+              </div>
+
+              <div className="bg-white p-4 rounded-xl border border-rose-100 shadow-sm ring-1 ring-rose-50">
+                <h4 className="text-sm font-black text-rose-700 uppercase tracking-tight mb-2">4. Hibrit (Gelişmiş K-Means)</h4>
+                <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                  Standart Hibrit yöntemi ile aynı mimariyi kullanır ancak veriyi 8 farklı alt kümeye ayırır. 60 ve daha fazla veri içeren büyük örneklemlerde mikro saçılımları yakalayarak daha rafine sonuçlar üretir.
                 </p>
               </div>
             </div>

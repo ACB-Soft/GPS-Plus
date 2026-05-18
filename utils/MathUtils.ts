@@ -44,17 +44,17 @@ export function calculateResult(
       resultData = lseResult.result;
       finalCalculatedUsedIndices = lseResult.usedIndices;
       break;
-    case 'MID_DBSCAN_BAARDA':
-      const hybridRes = calculateMidDbscanBaarda(sourceData);
-      resultData = hybridRes.result;
-      finalCalculatedUsedIndices = hybridRes.usedIndices;
-      clusters = hybridRes.clusters;
+    case 'KMEANS_HYBRID_K4':
+      const kmeansRes4 = calculateKMeansHybridInternal(sourceData, 4);
+      resultData = kmeansRes4.result;
+      finalCalculatedUsedIndices = kmeansRes4.usedIndices;
+      clusters = kmeansRes4.clusters;
       break;
-    case 'KMEANS_HYBRID':
-      const kmeansRes = calculateKMeansHybrid(sourceData);
-      resultData = kmeansRes.result;
-      finalCalculatedUsedIndices = kmeansRes.usedIndices;
-      clusters = kmeansRes.clusters;
+    case 'KMEANS_HYBRID_K8':
+      const kmeansRes8 = calculateKMeansHybridInternal(sourceData, 8);
+      resultData = kmeansRes8.result;
+      finalCalculatedUsedIndices = kmeansRes8.usedIndices;
+      clusters = kmeansRes8.clusters;
       break;
     default:
       const defaultLse = calculateWeightedLSE(sourceData);
@@ -211,149 +211,15 @@ export function calculateVariance(samples: Coordinate[], mean: Coordinate): numb
 }
 
 /**
- * Hybrid (Mid-DBSCAN + Baarda) Estimation
- * 1. Step: Mid-Range center calculation.
- * 2. Step: Reference-oriented DBSCAN (Eps = avg accuracy, MinPts = 4).
- * 3. Step: Summarize clusters and refine with Baarda test.
- */
-function calculateMidDbscanBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
-  if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
-
-  // Step 1: Mid-Range
-  const lats = samples.map(s => s.lat);
-  const lngs = samples.map(s => s.lng);
-  const rLat = (Math.min(...lats) + Math.max(...lats)) / 2;
-  const rLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
-
-  // Step 2: DBSCAN with Dynamic EPS for more clusters
-  const avgAcc = samples.reduce((a, b) => a + b.accuracy, 0) / samples.length;
-  const originalEps = avgAcc;
-  const minPts = 4;
-  const maxPossibleClusters = Math.floor(samples.length / minPts);
-  const targetClusters = Math.min(4, maxPossibleClusters);
-
-  let currentEps = originalEps;
-  let finalValidClusters: number[][] = [];
-  const minEps = 0.5; // Do not go below 50cm precision threshold
-
-  // Iteratively reduce Eps to find more clusters (if possible)
-  while (currentEps >= minEps) {
-    const clusters: number[][] = [];
-    const visited = new Set<number>();
-    
-    for (let i = 0; i < samples.length; i++) {
-      if (visited.has(i)) continue;
-      
-      const neighbors = samples.map((s, idx) => {
-        const dLat = (s.lat - samples[i].lat) * 111320;
-        const dLng = (s.lng - samples[i].lng) * 111320 * Math.cos(samples[i].lat * Math.PI / 180);
-        const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-        return dist <= currentEps ? idx : -1;
-      }).filter(idx => idx !== -1);
-      
-      if (neighbors.length >= minPts) {
-        const cluster: number[] = [];
-        const q = [i];
-        visited.add(i);
-        
-        while (q.length > 0) {
-          const next = q.shift()!;
-          cluster.push(next);
-          
-          const nextNeighbors = samples.map((s, idx) => {
-            const dLat = (s.lat - samples[next].lat) * 111320;
-            const dLng = (s.lng - samples[next].lng) * 111320 * Math.cos(samples[next].lat * Math.PI / 180);
-            const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-            return dist <= currentEps ? idx : -1;
-          }).filter(idx => idx !== -1);
-          
-          if (nextNeighbors.length >= minPts) {
-            for (const n of nextNeighbors) {
-              if (!visited.has(n)) {
-                visited.add(n);
-                q.push(n);
-              }
-            }
-          }
-        }
-        clusters.push(cluster);
-      }
-    }
-
-    // Filter clusters that are "near" R (at least one point within 1.5 * Eps of R)
-    finalValidClusters = clusters.filter(cluster => {
-      return cluster.some(idx => {
-        const s = samples[idx];
-        const dLat = (s.lat - rLat) * 111320;
-        const dLng = (s.lng - rLng) * 111320 * Math.cos(rLat * Math.PI / 180);
-        const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-        return dist <= originalEps * 1.5;
-      });
-    });
-
-    if (finalValidClusters.length >= targetClusters || currentEps <= minEps) {
-      break; 
-    }
-    currentEps *= 0.75; // Try more granular search
-  }
-
-  // Summarize clusters
-  const clusterSummaries = finalValidClusters.map(cluster => {
-    const clusterPoints = cluster.map(idx => samples[idx]);
-    const weights = clusterPoints.map(p => 1 / Math.pow(Math.max(0.1, p.accuracy), 2));
-    const sumW = weights.reduce((a, b) => a + b, 0);
-    
-    const cLat = clusterPoints.reduce((a, p, i) => a + p.lat * weights[i], 0) / sumW;
-    const cLng = clusterPoints.reduce((a, p, i) => a + p.lng * weights[i], 0) / sumW;
-    const cAcc = clusterPoints.reduce((a, p, i) => a + p.accuracy * weights[i], 0) / sumW;
-    
-    return {
-      lat: cLat,
-      lng: cLng,
-      accuracy: cAcc,
-      altitude: null,
-      altitudeAccuracy: null,
-      timestamp: Date.now(),
-      _originalIndices: cluster
-    };
-  });
-
-  if (clusterSummaries.length === 0) {
-    const fallback = calculateAverage(samples);
-    return { result: fallback, usedIndices: samples.map((_, i) => i) };
-  }
-
-  // Step 3: Baarda on summaries
-  const baardaInput = clusterSummaries.map((s, idx) => ({ ...s, _originalIdx: idx }));
-  const baardaRes = calculateBaardaInternal(baardaInput as any);
-  
-  const finalResult = { ...baardaRes.result };
-  
-  // Z calculation: Arithmetic mean of ALL samples (per user request)
-  const validAlts = samples.filter(s => s.altitude !== null);
-  finalResult.altitude = validAlts.length > 0
-    ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length
-    : null;
-
-  const finalUsedIndices = baardaRes.usedIndices.flatMap(i => (clusterSummaries[i] as any)._originalIndices);
-  
-  return { 
-    result: finalResult, 
-    usedIndices: [...new Set(finalUsedIndices)], 
-    clusters: finalValidClusters 
-  };
-}
-
-/**
- * K-Means Hybrid Algorithm
+ * K-Means Hybrid Algorithm (Internal)
  * 1. Mid-Range Reference
  * 2. 1.5 * Eps Filtering
- * 3. K-Means (k=4)
+ * 3. K-Means (parametric k)
  * 4. Cluster Summaries (Weighted)
  * 5. Baarda Final Refinement
  */
-function calculateKMeansHybrid(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
-  if (samples.length < 8) return calculateMidDbscanBaarda(samples);
+function calculateKMeansHybridInternal(samples: Coordinate[], k: number): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
+  if (samples.length < k * 2) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
 
   // 1. Reference Point (Mid-Range)
   const lats = samples.map(s => s.lat);
@@ -372,13 +238,12 @@ function calculateKMeansHybrid(samples: Coordinate[]): { result: Coordinate; use
     return dist <= epsLimit;
   });
 
-  if (filteredWithIndices.length < 5) return calculateMidDbscanBaarda(samples);
+  if (filteredWithIndices.length < k) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
 
   const filteredSamples = filteredWithIndices.map(f => f.s);
   const filteredIndices = filteredWithIndices.map(f => f.idx);
 
-  // 3. K-Means (k=4)
-  const k = 4;
+  // 3. K-Means
   const clusterAssignments = runKMeans(filteredSamples, k);
   
   const finalValidClusters: number[][] = Array.from({ length: k }, () => []);
