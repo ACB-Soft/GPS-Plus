@@ -8,7 +8,7 @@ export function calculateResult(
   method: CalculationMethod,
   accuracyLimit: number,
   gnssOnly: boolean = false
-): { result: Coordinate; usedIndices: number[] } {
+): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
   // Step 1: Filter by GNSS metadata if requested
   // GNSS usually provides altitude, while Wi-Fi/Network often doesn't in browsers
   let baseData = samples;
@@ -32,6 +32,7 @@ export function calculateResult(
 
   let resultData: Coordinate;
   let finalCalculatedUsedIndices: number[] | null = null;
+  let clusters: number[][] | undefined = undefined;
 
   switch (method) {
     case 'ARITHMETIC_MEAN':
@@ -47,6 +48,7 @@ export function calculateResult(
       const hybridRes = calculateMidDbscanBaarda(sourceData);
       resultData = hybridRes.result;
       finalCalculatedUsedIndices = hybridRes.usedIndices;
+      clusters = hybridRes.clusters;
       break;
     default:
       const defaultLse = calculateWeightedLSE(sourceData);
@@ -87,7 +89,7 @@ export function calculateResult(
   // Ensure it doesn't drop below a realistic threshold (0.1m)
   resultData.accuracy = Math.max(0.1, resultData.accuracy);
 
-  return { result: resultData, usedIndices };
+  return { result: resultData, usedIndices, clusters };
 }
 
 export function calculateMaxDistance(samples: Coordinate[]): number {
@@ -208,8 +210,8 @@ export function calculateVariance(samples: Coordinate[], mean: Coordinate): numb
  * 2. Step: Reference-oriented DBSCAN (Eps = avg accuracy, MinPts = 4).
  * 3. Step: Summarize clusters and refine with Baarda test.
  */
-function calculateMidDbscanBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
+function calculateMidDbscanBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
+  if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
 
   // Step 1: Mid-Range
   const lats = samples.map(s => s.lat);
@@ -329,7 +331,11 @@ function calculateMidDbscanBaarda(samples: Coordinate[]): { result: Coordinate; 
 
   const finalUsedIndices = baardaRes.usedIndices.flatMap(i => (clusterSummaries[i] as any)._originalIndices);
   
-  return { result: finalResult, usedIndices: [...new Set(finalUsedIndices)] };
+  return { 
+    result: finalResult, 
+    usedIndices: [...new Set(finalUsedIndices)], 
+    clusters: finalValidClusters 
+  };
 }
 
 function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndices: number[] } {

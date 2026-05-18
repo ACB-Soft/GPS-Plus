@@ -41,6 +41,16 @@ const METHOD_COLORS: Record<string, string> = {
   MID_DBSCAN_BAARDA: '#10b981'
 };
 
+const CLUSTER_COLORS = [
+  '#3b82f6', // Blue
+  '#ef4444', // Red
+  '#f59e0b', // Amber
+  '#8b5cf6', // Violet
+  '#ec4899', // Pink
+  '#06b6d4', // Cyan
+  '#10b981', // Emerald
+];
+
 const CustomScatterLabel = (props: any) => {
   const { cx, cy, payload } = props;
   if (!payload || !payload.id) return null;
@@ -93,6 +103,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [preciseWgs, setPreciseWgs] = useState<[number, number] | null>(null);
   
   const [analysisResults, setAnalysisResults] = useState<any[] | null>(null);
+  const [dbscanClusters, setDbscanClusters] = useState<number[][] | null>(null);
 
   const bestMethod = useMemo(() => {
     if (!analysisResults || analysisResults.length === 0) return null;
@@ -159,9 +170,15 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       });
     }
 
+    let dbscanResults: number[][] | null = null;
+
     const results = methods.map(method => {
       // 1. Calculate point for this method
-      const { result } = calculateResult(location.samples!, method, accuracyLimit);
+      const { result, clusters } = calculateResult(location.samples!, method, accuracyLimit);
+      
+      if (method === 'MID_DBSCAN_BAARDA' && clusters) {
+        dbscanResults = clusters;
+      }
       
       // 2. Convert result to comparison system (meters)
       const calcMeter = convertCoordinate(result.lat, result.lng, testSys);
@@ -188,6 +205,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     });
 
     setAnalysisResults(results);
+    setDbscanClusters(dbscanResults);
   };
 
   const multipathAnalysis = useMemo(() => {
@@ -248,27 +266,42 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     }
 
     // Filter by accuracy limit
-    return location.samples
-      .filter(s => s.accuracy <= limit)
-      .map((s, idx) => {
-        const conv = convertCoordinate(s.lat, s.lng, sys);
-        let errorHz = 0;
-        if (hasRef) {
-          const dn = refN - conv.y;
-          const de = refE - conv.x;
-          errorHz = Math.sqrt(dn*dn + de*de);
-        }
-        return {
-          id: idx + 1,
-          x: conv.x, // Sağa (Y)
-          y: conv.y, // Yukarı (X)
-          alt: s.altitude || 0,
-          acc: s.accuracy,
-          time: new Date(s.timestamp).toLocaleTimeString(),
-          errorHz: errorHz
-        };
-      });
-  }, [location, analysisType, preciseN, preciseE, useLocal]);
+    const accuracyFilteredIndices = location.samples
+      .map((s, idx) => s.accuracy <= limit ? idx : -1)
+      .filter(idx => idx !== -1);
+
+    return accuracyFilteredIndices.map((originalIdx, chartIdx) => {
+      const s = location.samples![originalIdx];
+      const conv = convertCoordinate(s.lat, s.lng, sys);
+      let errorHz = 0;
+      if (hasRef) {
+        const dn = refN - conv.y;
+        const de = refE - conv.x;
+        errorHz = Math.sqrt(dn*dn + de*de);
+      }
+      
+      // Find which cluster this point belongs to
+      let clusterId = -1;
+      if (dbscanClusters) {
+        dbscanClusters.forEach((cluster, cIdx) => {
+          if (cluster.includes(originalIdx)) {
+            clusterId = cIdx;
+          }
+        });
+      }
+
+      return {
+        id: originalIdx + 1,
+        x: conv.x, // Sağa (Y)
+        y: conv.y, // Yukarı (X)
+        alt: s.altitude || 0,
+        acc: s.accuracy,
+        time: new Date(s.timestamp).toLocaleTimeString(),
+        errorHz: errorHz,
+        clusterId
+      };
+    });
+  }, [location, analysisType, preciseN, preciseE, useLocal, dbscanClusters]);
 
   const distributionData = useMemo(() => {
     if (chartData.length === 0) return { rawPoints: [], methodPoints: [], centerPoint: [], range: 0.5 };
@@ -380,7 +413,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     const sys = location.coordinateSystem || 'ITRF96_3';
 
     const results = methods.map(method => {
-      const { result } = calculateResult(location.samples!, method, accuracyLimit);
+      const { result, clusters } = calculateResult(location.samples!, method, accuracyLimit);
+      if (method === 'MID_DBSCAN_BAARDA' && clusters) {
+        setDbscanClusters(clusters);
+      }
       const conv = convertCoordinate(result.lat, result.lng, sys);
       return {
         method,
@@ -528,6 +564,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     setSelectedFolder(e.target.value);
                     setSelectedPointId('');
                     setAnalysisResults(null);
+                    setDbscanClusters(null);
                   }}
                   className="w-full p-4 bg-slate-100 rounded-2xl font-bold text-slate-900 appearance-none border-2 border-transparent focus:border-blue-500 outline-none transition-all text-sm"
                 >
@@ -549,6 +586,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   onChange={(e) => {
                     setSelectedPointId(e.target.value);
                     setAnalysisResults(null);
+                    setDbscanClusters(null);
                   }}
                   disabled={!selectedFolder}
                   className="w-full p-4 bg-slate-100 rounded-2xl font-bold text-slate-900 appearance-none border-2 border-transparent focus:border-blue-500 outline-none transition-all text-sm disabled:opacity-50"
@@ -764,6 +802,12 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                     {isMethod ? `Yöntem: ${getMethodLabel(data.method)}` : `Ham Ölçüm #${data.id}`}
                                   </p>
                                   <div className="space-y-1 font-mono text-[9px]">
+                                    {!isMethod && data.clusterId !== -1 && (
+                                      <div className="flex justify-between gap-4 mb-1">
+                                        <span className="opacity-60 text-[8px] uppercase">Küme:</span>
+                                        <span className="font-black px-1 rounded" style={{ backgroundColor: CLUSTER_COLORS[data.clusterId % CLUSTER_COLORS.length], color: 'white' }}>#{data.clusterId + 1}</span>
+                                      </div>
+                                    )}
                                     <div className="flex justify-between gap-4">
                                       <span className="opacity-60 text-[8px] uppercase">Δ Sağa (E):</span>
                                       <span className="font-black text-blue-400">{data.dE.toFixed(4)} m</span>
@@ -797,14 +841,20 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           </Scatter>
                         )}
 
-                        {/* Layer 1: Raw Points Cloud */}
+                        {/* Layer 1: Raw Points Cloud (with cluster coloring) */}
                         <Scatter 
                           name="Ham Ölçümler" 
                           data={distributionData.rawPoints} 
-                          fill="#64748b" 
-                          fillOpacity={0.15} 
                           shape="circle" 
-                        />
+                        >
+                          {distributionData.rawPoints.map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={entry.clusterId !== -1 ? CLUSTER_COLORS[entry.clusterId % CLUSTER_COLORS.length] : '#64748b'} 
+                              fillOpacity={entry.clusterId !== -1 ? 0.6 : 0.15} 
+                            />
+                          ))}
+                        </Scatter>
                         
                         {/* Layer 2: Method Aggregates */}
                         {distributionData.methodPoints.map((mp) => (
@@ -833,11 +883,26 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         <div className="w-4 h-4 flex items-center justify-center rounded-md text-[8px] font-black text-white shadow-lg shrink-0" style={{ backgroundColor: m.color }}>{m.id}</div>
                         <div className="flex flex-col min-w-0">
                           <span className="text-[7px] font-black text-white uppercase tracking-tighter truncate leading-tight">{getMethodLabel(m.method)}</span>
-                          <span className="text-[6px] font-bold text-blue-400 uppercase tracking-widest leading-tight">{m.errors?.dhz.toFixed(3)}m</span>
+                          <span className="text-[6px] font-bold text-blue-400 uppercase tracking-widest leading-tight">{m.errors?.dhz ? `${m.errors.dhz.toFixed(3)}m` : 'Hesaplandı'}</span>
                         </div>
                       </div>
                     ))}
                   </div>
+
+                  {/* DBSCAN Clusters Info */}
+                  {dbscanClusters && dbscanClusters.length > 0 && (
+                    <div className="mt-2 p-3 bg-emerald-950/30 rounded-xl border border-emerald-500/20">
+                      <p className="text-[8px] font-black text-emerald-400 uppercase tracking-widest mb-2">DBSCAN Kümeleme Özeti</p>
+                      <div className="flex flex-wrap gap-3">
+                        {dbscanClusters.map((cluster, cIdx) => (
+                          <div key={cIdx} className="flex items-center gap-1.5">
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CLUSTER_COLORS[cIdx % CLUSTER_COLORS.length] }}></div>
+                            <span className="text-[8px] font-bold text-slate-300 uppercase">Küme {cIdx + 1}: {cluster.length} nokta</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
