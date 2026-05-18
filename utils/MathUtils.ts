@@ -50,6 +50,12 @@ export function calculateResult(
       finalCalculatedUsedIndices = hybridRes.usedIndices;
       clusters = hybridRes.clusters;
       break;
+    case 'KMEANS_HYBRID':
+      const kmeansRes = calculateKMeansHybrid(sourceData);
+      resultData = kmeansRes.result;
+      finalCalculatedUsedIndices = kmeansRes.usedIndices;
+      clusters = kmeansRes.clusters;
+      break;
     default:
       const defaultLse = calculateWeightedLSE(sourceData);
       resultData = defaultLse.result;
@@ -336,6 +342,149 @@ function calculateMidDbscanBaarda(samples: Coordinate[]): { result: Coordinate; 
     usedIndices: [...new Set(finalUsedIndices)], 
     clusters: finalValidClusters 
   };
+}
+
+/**
+ * K-Means Hybrid Algorithm
+ * 1. Mid-Range Reference
+ * 2. 1.5 * Eps Filtering
+ * 3. K-Means (k=4)
+ * 4. Cluster Summaries (Weighted)
+ * 5. Baarda Final Refinement
+ */
+function calculateKMeansHybrid(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
+  if (samples.length < 8) return calculateMidDbscanBaarda(samples);
+
+  // 1. Reference Point (Mid-Range)
+  const lats = samples.map(s => s.lat);
+  const lngs = samples.map(s => s.lng);
+  const rLat = (Math.min(...lats) + Math.max(...lats)) / 2;
+  const rLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
+
+  // 2. 1.5 * Eps Filtering
+  const avgAcc = samples.reduce((a, b) => a + b.accuracy, 0) / samples.length;
+  const epsLimit = avgAcc * 1.5;
+
+  const filteredWithIndices = samples.map((s, idx) => ({ s, idx })).filter(item => {
+    const dLat = (item.s.lat - rLat) * 111320;
+    const dLng = (item.s.lng - rLng) * 111320 * Math.cos(rLat * Math.PI / 180);
+    const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+    return dist <= epsLimit;
+  });
+
+  if (filteredWithIndices.length < 5) return calculateMidDbscanBaarda(samples);
+
+  const filteredSamples = filteredWithIndices.map(f => f.s);
+  const filteredIndices = filteredWithIndices.map(f => f.idx);
+
+  // 3. K-Means (k=4)
+  const k = 4;
+  const clusterAssignments = runKMeans(filteredSamples, k);
+  
+  const finalValidClusters: number[][] = Array.from({ length: k }, () => []);
+  clusterAssignments.forEach((cIdx, i) => {
+    finalValidClusters[cIdx].push(filteredIndices[i]);
+  });
+
+  // 4. Summarize Clusters
+  const clusterSummaries = finalValidClusters
+    .filter(cluster => cluster.length > 0)
+    .map(cluster => {
+      const clusterPoints = cluster.map(idx => samples[idx]);
+      const weights = clusterPoints.map(p => 1 / Math.pow(Math.max(0.1, p.accuracy), 2));
+      const sumW = weights.reduce((a, b) => a + b, 0);
+      
+      const cLat = clusterPoints.reduce((a, p, i) => a + p.lat * weights[i], 0) / sumW;
+      const cLng = clusterPoints.reduce((a, p, i) => a + p.lng * weights[i], 0) / sumW;
+      const cAcc = clusterPoints.reduce((a, p, i) => a + p.accuracy * weights[i], 0) / sumW;
+      
+      return {
+        lat: cLat,
+        lng: cLng,
+        accuracy: cAcc,
+        altitude: null,
+        altitudeAccuracy: null,
+        timestamp: Date.now(),
+        _originalIndices: cluster
+      };
+    });
+
+  // 5. Final Refinement (Baarda)
+  const baardaInput = clusterSummaries.map((s, idx) => ({ ...s, _originalIdx: idx }));
+  const baardaRes = calculateBaardaInternal(baardaInput as any);
+  
+  const finalResult = { ...baardaRes.result };
+  
+  // Z calculation
+  const validAlts = samples.filter(s => s.altitude !== null);
+  finalResult.altitude = validAlts.length > 0
+    ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length
+    : null;
+
+  const finalUsedIndices = baardaRes.usedIndices.flatMap(i => (clusterSummaries[i] as any)._originalIndices);
+  
+  return { 
+    result: finalResult, 
+    usedIndices: [...new Set(finalUsedIndices)], 
+    clusters: finalValidClusters.filter(c => c.length > 0)
+  };
+}
+
+/**
+ * Simple K-Means algorithm for 2D points (lat/lng)
+ */
+function runKMeans(samples: Coordinate[], k: number): number[] {
+  // Initialization: Forgy method (random samples as centroids)
+  let centroids = samples.slice(0, k).map(s => ({ lat: s.lat, lng: s.lng }));
+  if (samples.length > k) {
+    const step = Math.floor(samples.length / k);
+    centroids = Array.from({ length: k }, (_, i) => ({ 
+      lat: samples[i * step].lat, 
+      lng: samples[i * step].lng 
+    }));
+  }
+
+  let assignments = new Array(samples.length).fill(-1);
+  let changed = true;
+  let iterations = 0;
+  const maxIterations = 20;
+
+  while (changed && iterations < maxIterations) {
+    changed = false;
+    iterations++;
+
+    // Assignment step
+    for (let i = 0; i < samples.length; i++) {
+        let minDist = Infinity;
+        let bestK = 0;
+        for (let j = 0; j < k; j++) {
+            const dLat = (samples[i].lat - centroids[j].lat) * 111320;
+            const dLng = (samples[i].lng - centroids[j].lng) * 111320 * Math.cos(samples[i].lat * Math.PI / 180);
+            const dist = dLat * dLat + dLng * dLng;
+            if (dist < minDist) {
+                minDist = dist;
+                bestK = j;
+            }
+        }
+        if (assignments[i] !== bestK) {
+            assignments[i] = bestK;
+            changed = true;
+        }
+    }
+
+    // Update step
+    for (let j = 0; j < k; j++) {
+        const clusterPoints = samples.filter((_, i) => assignments[i] === j);
+        if (clusterPoints.length > 0) {
+            centroids[j] = {
+                lat: clusterPoints.reduce((a, b) => a + b.lat, 0) / clusterPoints.length,
+                lng: clusterPoints.reduce((a, b) => a + b.lng, 0) / clusterPoints.length
+            };
+        }
+    }
+  }
+
+  return assignments;
 }
 
 function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndices: number[] } {

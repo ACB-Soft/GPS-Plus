@@ -38,7 +38,8 @@ const MapSetBounds = ({ points }: { points: [number, number][] }) => {
 const METHOD_COLORS: Record<string, string> = {
   ARITHMETIC_MEAN: '#ec4899',
   WEIGHTED_LSE: '#8b5cf6',
-  MID_DBSCAN_BAARDA: '#10b981'
+  MID_DBSCAN_BAARDA: '#10b981',
+  KMEANS_HYBRID: '#3b82f6'
 };
 
 const CLUSTER_COLORS = [
@@ -119,14 +120,16 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const methods = useMemo<CalculationMethod[]>(() => [
     'ARITHMETIC_MEAN', 
     'WEIGHTED_LSE',
-    'MID_DBSCAN_BAARDA'
+    'MID_DBSCAN_BAARDA',
+    'KMEANS_HYBRID'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
     const labels: Record<string, string> = {
       'ARITHMETIC_MEAN': "Aritmetik Ortalama",
       'WEIGHTED_LSE': "Ağırlıklı Dengeleme",
-      'MID_DBSCAN_BAARDA': "Hibrit (Mid-DBSCAN+Baarda)"
+      'MID_DBSCAN_BAARDA': "Hibrit (DBSCAN)",
+      'KMEANS_HYBRID': "Hibrit (K-Means)"
     };
     return labels[m] || m;
   };
@@ -176,7 +179,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       // 1. Calculate point for this method
       const { result, clusters } = calculateResult(location.samples!, method, accuracyLimit);
       
-      if (method === 'MID_DBSCAN_BAARDA' && clusters) {
+      if ((method === 'MID_DBSCAN_BAARDA' || method === 'KMEANS_HYBRID') && clusters) {
         dbscanResults = clusters;
       }
       
@@ -412,10 +415,12 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     const accuracyLimit = location.accuracyLimit || 5.0;
     const sys = location.coordinateSystem || 'ITRF96_3';
 
+    let clusterResults: number[][] | null = null;
+
     const results = methods.map(method => {
       const { result, clusters } = calculateResult(location.samples!, method, accuracyLimit);
-      if (method === 'MID_DBSCAN_BAARDA' && clusters) {
-        setDbscanClusters(clusters);
+      if ((method === 'MID_DBSCAN_BAARDA' || method === 'KMEANS_HYBRID') && clusters) {
+        clusterResults = clusters;
       }
       const conv = convertCoordinate(result.lat, result.lng, sys);
       return {
@@ -431,6 +436,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       };
     });
     setAnalysisResults(results);
+    setDbscanClusters(clusterResults);
   };
 
   return (
@@ -544,9 +550,15 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[9px] font-black text-emerald-600 uppercase">Hibrit (Mid-DBSCAN + Baarda)</p>
+                    <p className="text-[9px] font-black text-emerald-600 uppercase">Hibrit (DBSCAN)</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      Mid-Range ile odak tespiti yapar, donanımsal hassasiyet tabanlı DBSCAN ile kümeleri özetler ve Baarda testi ile final uyuşmazlık denetimi sağlar.
+                      DBSCAN ile veriyi doğal kümelerine ayırır.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[9px] font-black text-blue-600 uppercase">Hibrit (K-Means)</p>
+                    <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
+                      Veriyi K-Means ile zorunlu 4 kümeye böler.
                     </p>
                   </div>
                </div>
@@ -889,10 +901,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     ))}
                   </div>
 
-                  {/* DBSCAN Clusters Info */}
+                  {/* Clusters Info */}
                   {dbscanClusters && dbscanClusters.length > 0 && (
-                    <div className="mt-2 p-3 bg-emerald-950/30 rounded-xl border border-emerald-500/20">
-                      <p className="text-[8px] font-black text-emerald-400 uppercase tracking-widest mb-2">DBSCAN Kümeleme Özeti</p>
+                    <div className="mt-2 p-3 bg-blue-950/30 rounded-xl border border-blue-500/20">
+                      <p className="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-2">Kümeleme Analiz Özeti</p>
                       <div className="flex flex-wrap gap-3">
                         {dbscanClusters.map((cluster, cIdx) => (
                           <div key={cIdx} className="flex items-center gap-1.5">
