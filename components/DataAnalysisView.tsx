@@ -198,12 +198,25 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     const avgSensorAcc = location.samples.reduce((a, b) => a + b.accuracy, 0) / location.samples.length;
     const ratio = maxSpread / (avgSensorAcc || 0.1);
     
+    // Dynamic Confidence Score Calculation
+    // Base: 100%
+    // Penalty for dispersion: 1 / (1 + max(0, ratio - 0.8)) - allowing 20% slack
+    const dispersionPenalty = 1 / (1 + Math.max(0, ratio - 0.8));
+    
+    // Sample Volume Factor: More samples = higher confidence in the statistical model
+    // 30 samples is considered excellent for these algorithms
+    const sampleFactor = Math.min(1.0, location.samples.length / 30);
+    const volumeBoost = 0.8 + (0.2 * sampleFactor);
+    
+    const confidenceScore = Math.min(100, Math.max(5, 100 * dispersionPenalty * volumeBoost));
+    
     return {
       maxSpread,
       avgSensorAcc,
       ratio,
-      isRisk: ratio > 1.5,
-      isCritical: ratio > 3.0
+      confidenceScore,
+      isRisk: confidenceScore < 70,
+      isCritical: confidenceScore < 40
     };
   }, [location]);
 
@@ -425,9 +438,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 </div>
                 <div className="text-right">
                    <div className={`text-sm font-black mono-font ${
-                     multipathAnalysis.isCritical ? 'text-rose-600' : multipathAnalysis.isRisk ? 'text-amber-600' : 'text-emerald-600'
+                     multipathAnalysis.confidenceScore < 40 ? 'text-rose-600' : 
+                     multipathAnalysis.confidenceScore < 75 ? 'text-amber-600' : 'text-emerald-600'
                    }`}>
-                     {multipathAnalysis.isCritical ? '%20DÜŞÜK' : multipathAnalysis.isRisk ? '%65 ORTA' : '%98 YÜKSEK'}
+                     %{multipathAnalysis.confidenceScore.toFixed(1)}
                    </div>
                    <p className="text-[7px] font-black text-slate-400 uppercase tracking-tighter">Güven Skoru</p>
                 </div>
