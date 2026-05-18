@@ -242,6 +242,13 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                   (Weighted Least Squares) Hassasiyeti yüksek (hata payı düşük) olan verilere daha fazla ağırlık vererek dengeleme yapar. En kararlı sonuçları üretir.
                 </p>
               </div>
+
+              <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm ring-1 ring-emerald-50">
+                <h4 className="text-sm font-black text-emerald-700 uppercase tracking-tight mb-2">3. Hibrit (Mid-DBSCAN + Baarda)</h4>
+                <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                  Mid-Range koordinatlarını baz alarak veri setini donanımsal hassasiyet yarıçapında (Eps) kümelere ayırır. Her küme tek bir rafine noktaya dönüştürülür ve bu özet veri seti üzerinde Baarda uyuşmazlık testi uygulanarak en güvenilir final konumu hesaplanır.
+                </p>
+              </div>
             </div>
           </div>
         </section>

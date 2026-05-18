@@ -243,6 +243,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                 >
                   <option value="ARITHMETIC_MEAN">1. Yöntem: Aritmetik Ortalama</option>
                   <option value="WEIGHTED_LSE">2. Yöntem: Ağırlıklı Dengeleme (Varsayılan)</option>
+                  <option value="MID_DBSCAN_BAARDA">3. Yöntem: Hibrit (Mid-DBSCAN + Baarda)</option>
                 </select>
               </div>
 

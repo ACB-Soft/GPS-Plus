@@ -43,6 +43,11 @@ export function calculateResult(
       resultData = lseResult.result;
       finalCalculatedUsedIndices = lseResult.usedIndices;
       break;
+    case 'MID_DBSCAN_BAARDA':
+      const hybridRes = calculateMidDbscanBaarda(sourceData);
+      resultData = hybridRes.result;
+      finalCalculatedUsedIndices = hybridRes.usedIndices;
+      break;
     default:
       const defaultLse = calculateWeightedLSE(sourceData);
       resultData = defaultLse.result;
@@ -180,6 +185,10 @@ function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; used
 /**
  * Calculates variance of coordinates in meters
  */
+
+/**
+ * Calculates variance of coordinates in meters
+ */
 export function calculateVariance(samples: Coordinate[], mean: Coordinate): number {
   if (samples.length < 2) return 0;
   
@@ -191,6 +200,168 @@ export function calculateVariance(samples: Coordinate[], mean: Coordinate): numb
   });
   
   return residuals.reduce((a, b) => a + b, 0) / (samples.length - 1);
+}
+
+/**
+ * Hybrid (Mid-DBSCAN + Baarda) Estimation
+ * 1. Step: Mid-Range center calculation.
+ * 2. Step: Reference-oriented DBSCAN (Eps = avg accuracy, MinPts = 4).
+ * 3. Step: Summarize clusters and refine with Baarda test.
+ */
+function calculateMidDbscanBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
+
+  // Step 1: Mid-Range
+  const lats = samples.map(s => s.lat);
+  const lngs = samples.map(s => s.lng);
+  const rLat = (Math.min(...lats) + Math.max(...lats)) / 2;
+  const rLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
+
+  // Step 2: DBSCAN
+  const avgAcc = samples.reduce((a, b) => a + b.accuracy, 0) / samples.length;
+  const eps = avgAcc; 
+  const minPts = 4;
+
+  const clusters: number[][] = [];
+  const visited = new Set<number>();
+  
+  for (let i = 0; i < samples.length; i++) {
+    if (visited.has(i)) continue;
+    
+    const neighbors = samples.map((s, idx) => {
+      const dLat = (s.lat - samples[i].lat) * 111320;
+      const dLng = (s.lng - samples[i].lng) * 111320 * Math.cos(samples[i].lat * Math.PI / 180);
+      const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+      return dist <= eps ? idx : -1;
+    }).filter(idx => idx !== -1);
+    
+    if (neighbors.length >= minPts) {
+      const cluster: number[] = [];
+      const q = [i];
+      visited.add(i);
+      
+      while (q.length > 0) {
+        const next = q.shift()!;
+        cluster.push(next);
+        
+        const nextNeighbors = samples.map((s, idx) => {
+          const dLat = (s.lat - samples[next].lat) * 111320;
+          const dLng = (s.lng - samples[next].lng) * 111320 * Math.cos(samples[next].lat * Math.PI / 180);
+          const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+          return dist <= eps ? idx : -1;
+        }).filter(idx => idx !== -1);
+        
+        if (nextNeighbors.length >= minPts) {
+          for (const n of nextNeighbors) {
+            if (!visited.has(n)) {
+              visited.add(n);
+              q.push(n);
+            }
+          }
+        }
+      }
+      clusters.push(cluster);
+    }
+  }
+
+  // Filter clusters that are "near" R (at least one point within EPS of R)
+  const validClusters = clusters.filter(cluster => {
+    return cluster.some(idx => {
+      const s = samples[idx];
+      const dLat = (s.lat - rLat) * 111320;
+      const dLng = (s.lng - rLng) * 111320 * Math.cos(rLat * Math.PI / 180);
+      const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+      return dist <= eps;
+    });
+  });
+
+  // Summarize clusters
+  const clusterSummaries = validClusters.map(cluster => {
+    const clusterPoints = cluster.map(idx => samples[idx]);
+    const weights = clusterPoints.map(p => 1 / Math.pow(Math.max(0.1, p.accuracy), 2));
+    const sumW = weights.reduce((a, b) => a + b, 0);
+    
+    const cLat = clusterPoints.reduce((a, p, i) => a + p.lat * weights[i], 0) / sumW;
+    const cLng = clusterPoints.reduce((a, p, i) => a + p.lng * weights[i], 0) / sumW;
+    const cAcc = clusterPoints.reduce((a, p, i) => a + p.accuracy * weights[i], 0) / sumW;
+    
+    return {
+      lat: cLat,
+      lng: cLng,
+      accuracy: cAcc,
+      altitude: null,
+      altitudeAccuracy: null,
+      timestamp: Date.now(),
+      _originalIndices: cluster
+    };
+  });
+
+  if (clusterSummaries.length === 0) {
+    const fallback = calculateAverage(samples);
+    return { result: fallback, usedIndices: samples.map((_, i) => i) };
+  }
+
+  // Step 3: Baarda on summaries
+  const baardaInput = clusterSummaries.map((s, idx) => ({ ...s, _originalIdx: idx }));
+  const baardaRes = calculateBaardaInternal(baardaInput as any);
+  
+  const finalResult = { ...baardaRes.result };
+  
+  // Z calculation: Arithmetic mean of ALL samples (per user request)
+  const validAlts = samples.filter(s => s.altitude !== null);
+  finalResult.altitude = validAlts.length > 0
+    ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length
+    : null;
+
+  const finalUsedIndices = baardaRes.usedIndices.flatMap(i => (clusterSummaries[i] as any)._originalIndices);
+  
+  return { result: finalResult, usedIndices: [...new Set(finalUsedIndices)] };
+}
+
+function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length < 4) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
+
+  let currentSamples = [...samples];
+  const criticalValue = 3.29; 
+
+  while (currentSamples.length > 4) {
+    const weights = currentSamples.map(s => 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
+    const sumW = weights.reduce((a, b) => a + b, 0);
+    const meanLat = currentSamples.reduce((a, b, i) => a + b.lat * weights[i], 0) / sumW;
+    const meanLng = currentSamples.reduce((a, b, i) => a + b.lng * weights[i], 0) / sumW;
+
+    const residuals = currentSamples.map(s => {
+      const dLat = (s.lat - meanLat) * 111320;
+      const dLng = (s.lng - meanLng) * 111320 * Math.cos(meanLat * Math.PI / 180);
+      return Math.sqrt(dLat * dLat + dLng * dLng);
+    });
+
+    const vTPv = residuals.reduce((a, v, i) => a + v * v * weights[i], 0);
+    const sigma0 = Math.sqrt(vTPv / (currentSamples.length - 1));
+
+    const standardizedResiduals = currentSamples.map((s, i) => {
+      const p_i = weights[i];
+      const q_ii = (1 - p_i / sumW); 
+      return residuals[i] / (sigma0 * Math.sqrt(q_ii) || 1e-9);
+    });
+
+    let maxW = -1;
+    let worstIdx = -1;
+    for (let i = 0; i < standardizedResiduals.length; i++) {
+        if (standardizedResiduals[i] > maxW) {
+            maxW = standardizedResiduals[i];
+            worstIdx = i;
+        }
+    }
+
+    if (maxW > criticalValue) {
+        currentSamples.splice(worstIdx, 1);
+    } else {
+        break; 
+    }
+  }
+
+  return { result: calculateAverage(currentSamples), usedIndices: currentSamples.map(s => s._originalIdx) };
 }
 
 /**

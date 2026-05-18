@@ -37,7 +37,8 @@ const MapSetBounds = ({ points }: { points: [number, number][] }) => {
 
 const METHOD_COLORS: Record<string, string> = {
   ARITHMETIC_MEAN: '#ec4899',
-  WEIGHTED_LSE: '#8b5cf6'
+  WEIGHTED_LSE: '#8b5cf6',
+  MID_DBSCAN_BAARDA: '#10b981'
 };
 
 const CustomScatterLabel = (props: any) => {
@@ -106,13 +107,15 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
   const methods = useMemo<CalculationMethod[]>(() => [
     'ARITHMETIC_MEAN', 
-    'WEIGHTED_LSE'
+    'WEIGHTED_LSE',
+    'MID_DBSCAN_BAARDA'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
     const labels: Record<string, string> = {
       'ARITHMETIC_MEAN': "Aritmetik Ortalama",
-      'WEIGHTED_LSE': "Ağırlıklı Dengeleme"
+      'WEIGHTED_LSE': "Ağırlıklı Dengeleme",
+      'MID_DBSCAN_BAARDA': "Hibrit (Mid-DBSCAN+Baarda)"
     };
     return labels[m] || m;
   };
@@ -488,6 +491,12 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     <p className="text-[9px] font-black text-violet-600 uppercase">Ağırlıklı Dengeleme</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
                       Ölçüm hassasiyetine (accuracy) göre ters ağırlıklı modelleme yaparak güvensiz verilerin etkisini azaltır.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[9px] font-black text-emerald-600 uppercase">Hibrit (Mid-DBSCAN + Baarda)</p>
+                    <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
+                      Mid-Range ile odak tespiti yapar, donanımsal hassasiyet tabanlı DBSCAN ile kümeleri özetler ve Baarda testi ile final uyuşmazlık denetimi sağlar.
                     </p>
                   </div>
                </div>
