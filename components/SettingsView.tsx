@@ -244,8 +244,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                 >
                   <option value="ARITHMETIC_MEAN">1. Yöntem: Aritmetik Ortalama</option>
                   <option value="WEIGHTED_LSE">2. Yöntem: Ağırlıklı Dengeleme (Varsayılan)</option>
-                  <option value="KMEANS_HYBRID_EPS1">3. Yöntem: Hibrit (1.0x Eps Filtre)</option>
-                  <option value="KMEANS_HYBRID_EPS15">4. Yöntem: Hibrit (1.5x Eps Filtre)</option>
+                  <option value="KMEANS_HYBRID">3. Yöntem: Hibrit (K-Means)</option>
                 </select>
               </div>
 

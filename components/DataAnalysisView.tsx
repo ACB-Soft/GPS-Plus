@@ -38,8 +38,7 @@ const MapSetBounds = ({ points }: { points: [number, number][] }) => {
 const METHOD_COLORS: Record<string, string> = {
   ARITHMETIC_MEAN: '#ec4899',
   WEIGHTED_LSE: '#8b5cf6',
-  KMEANS_HYBRID_EPS1: '#10b981',
-  KMEANS_HYBRID_EPS15: '#3b82f6'
+  KMEANS_HYBRID: '#3b82f6'
 };
 
 const CLUSTER_COLORS = [
@@ -120,16 +119,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const methods = useMemo<CalculationMethod[]>(() => [
     'ARITHMETIC_MEAN', 
     'WEIGHTED_LSE',
-    'KMEANS_HYBRID_K4',
-    'KMEANS_HYBRID_K8'
+    'KMEANS_HYBRID'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
     const labels: Record<string, string> = {
       'ARITHMETIC_MEAN': "Aritmetik Ortalama",
       'WEIGHTED_LSE': "Ağırlıklı Dengeleme",
-      'KMEANS_HYBRID_EPS1': "Hibrit (1.0x Eps Filtre)",
-      'KMEANS_HYBRID_EPS15': "Hibrit (1.5x Eps Filtre)"
+      'KMEANS_HYBRID': "Hibrit (K-Means)"
     };
     return labels[m] || m;
   };
@@ -179,7 +176,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       // 1. Calculate point for this method
       const { result, clusters } = calculateResult(location.samples!, method, accuracyLimit);
       
-      if ((method === 'KMEANS_HYBRID_EPS1' || method === 'KMEANS_HYBRID_EPS15') && clusters) {
+      if (method === 'KMEANS_HYBRID' && clusters) {
         dbscanResults = clusters;
       }
       
@@ -419,7 +416,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
     const results = methods.map(method => {
       const { result, clusters } = calculateResult(location.samples!, method, accuracyLimit);
-      if ((method === 'KMEANS_HYBRID_EPS1' || method === 'KMEANS_HYBRID_EPS15') && clusters) {
+      if (method === 'KMEANS_HYBRID' && clusters) {
         clusterResults = clusters;
       }
       const conv = convertCoordinate(result.lat, result.lng, sys);
@@ -550,15 +547,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[9px] font-black text-emerald-600 uppercase">Hibrit (1.0x Eps Filtre)</p>
+                    <p className="text-[9px] font-black text-blue-600 uppercase">Hibrit (K-Means)</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      Veriyi 1.0x Eps toleransı ile filtreler, K=4 kümeleme yapar ve Baarda denetimi sağlar. En hassas temizlik modelidir.
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[9px] font-black text-blue-600 uppercase">Hibrit (1.5x Eps Filtre)</p>
-                    <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      Daha geniş bir veriyi (1.5x Eps) analizde tutar, K=4 kümeleme ile gürültüyü gruplar.
+                      Veriyi K-Means ile zorunlu 4 kümeye böler.
                     </p>
                   </div>
                </div>

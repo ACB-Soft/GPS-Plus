@@ -44,17 +44,11 @@ export function calculateResult(
       resultData = lseResult.result;
       finalCalculatedUsedIndices = lseResult.usedIndices;
       break;
-    case 'KMEANS_HYBRID_EPS1':
-      const kmeansRes1 = calculateKMeansHybridInternal(sourceData, 4, 1.0);
-      resultData = kmeansRes1.result;
-      finalCalculatedUsedIndices = kmeansRes1.usedIndices;
-      clusters = kmeansRes1.clusters;
-      break;
-    case 'KMEANS_HYBRID_EPS15':
-      const kmeansRes15 = calculateKMeansHybridInternal(sourceData, 4, 1.5);
-      resultData = kmeansRes15.result;
-      finalCalculatedUsedIndices = kmeansRes15.usedIndices;
-      clusters = kmeansRes15.clusters;
+    case 'KMEANS_HYBRID':
+      const kmeansRes = calculateKMeansHybrid(sourceData);
+      resultData = kmeansRes.result;
+      finalCalculatedUsedIndices = kmeansRes.usedIndices;
+      clusters = kmeansRes.clusters;
       break;
     default:
       const defaultLse = calculateWeightedLSE(sourceData);
@@ -211,15 +205,15 @@ export function calculateVariance(samples: Coordinate[], mean: Coordinate): numb
 }
 
 /**
- * K-Means Hybrid Algorithm (Internal)
+ * K-Means Hybrid Algorithm
  * 1. Mid-Range Reference
- * 2. Eps Filtering (Parametric)
- * 3. K-Means (parametric k)
+ * 2. 1.5 * Eps Filtering
+ * 3. K-Means (k=4)
  * 4. Cluster Summaries (Weighted)
  * 5. Baarda Final Refinement
  */
-function calculateKMeansHybridInternal(samples: Coordinate[], k: number, epsMultiplier: number): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
-  if (samples.length < k * 2) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
+function calculateKMeansHybrid(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
+  if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
 
   // 1. Reference Point (Mid-Range)
   const lats = samples.map(s => s.lat);
@@ -227,9 +221,9 @@ function calculateKMeansHybridInternal(samples: Coordinate[], k: number, epsMult
   const rLat = (Math.min(...lats) + Math.max(...lats)) / 2;
   const rLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
 
-  // 2. Parametric Eps Filtering
+  // 2. 1.5 * Eps Filtering
   const avgAcc = samples.reduce((a, b) => a + b.accuracy, 0) / samples.length;
-  const epsLimit = avgAcc * epsMultiplier;
+  const epsLimit = avgAcc * 1.5;
 
   const filteredWithIndices = samples.map((s, idx) => ({ s, idx })).filter(item => {
     const dLat = (item.s.lat - rLat) * 111320;
@@ -238,12 +232,13 @@ function calculateKMeansHybridInternal(samples: Coordinate[], k: number, epsMult
     return dist <= epsLimit;
   });
 
-  if (filteredWithIndices.length < k) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
+  if (filteredWithIndices.length < 5) return calculateMidDbscanBaarda(samples);
 
   const filteredSamples = filteredWithIndices.map(f => f.s);
   const filteredIndices = filteredWithIndices.map(f => f.idx);
 
-  // 3. K-Means
+  // 3. K-Means (k=4)
+  const k = 4;
   const clusterAssignments = runKMeans(filteredSamples, k);
   
   const finalValidClusters: number[][] = Array.from({ length: k }, () => []);

@@ -243,17 +243,10 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 </p>
               </div>
 
-              <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm ring-1 ring-emerald-50">
-                <h4 className="text-sm font-black text-emerald-700 uppercase tracking-tight mb-2">3. Hibrit (1.0x Eps Filtre)</h4>
+              <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm ring-1 ring-blue-50">
+                <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight mb-2">3. Hibrit (K-Means)</h4>
                 <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                  Referans noktası belirlenir ve donanımsal ortalama hassasiyetin (Eps) dışındaki noktalar filtrelenir. Kalan veri K-Means algoritması ile 4 kümeye ayrılır. Her kümede ağırlıklı dengeleme ile birer nokta ve hassasiyet belirlenir. Final koordinat Baarda testi ile uyuşan sonuçlar üzerinden hesaplanır. En yüksek doğruluk için tasarlanmıştır.
-                </p>
-              </div>
-
-              <div className="bg-white p-4 rounded-xl border border-rose-100 shadow-sm ring-1 ring-rose-50">
-                <h4 className="text-sm font-black text-rose-700 uppercase tracking-tight mb-2">4. Hibrit (1.5x Eps Filtre)</h4>
-                <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                  1.0x Filtresine benzer mimariyi kullanır ancak aykırı değer toleransını 1.5 katına çıkarır. Bu sayede verinin biraz daha geniş bir spektrumunu analizde tutarak, saçılımı yüksek ortamlarda daha dengeli bir sonuç üretmeyi hedefler.
+                  Mid-range referans noktası belirlenir ve donanımsal ortalama hassasiyetin 1.5 katı dışındaki noktalar filtrelenir. Kalan veri K-Means algoritması ile 4 kümeye ayrılır. Her kümede ağırlıklı dengeleme ile birer nokta ve hassasiyet belirlenir. Final koordinat Baarda testi ile uyuşan sonuçlar üzerinden hesaplanır.
                 </p>
               </div>
             </div>
