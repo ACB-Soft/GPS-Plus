@@ -44,17 +44,11 @@ export function calculateResult(
       resultData = lseResult.result;
       finalCalculatedUsedIndices = lseResult.usedIndices;
       break;
-    case 'KMEANS_HYBRID':
-      const kmeansRes = calculateKMeansHybrid(sourceData);
+    case 'KMEANS_BAARDA':
+      const kmeansRes = calculateKMeansBaarda(sourceData);
       resultData = kmeansRes.result;
       finalCalculatedUsedIndices = kmeansRes.usedIndices;
       clusters = kmeansRes.clusters;
-      break;
-    case 'KMEANS_V2':
-      const kmeans2Res = calculateKMeansHybridV2(sourceData);
-      resultData = kmeans2Res.result;
-      finalCalculatedUsedIndices = kmeans2Res.usedIndices;
-      clusters = kmeans2Res.clusters;
       break;
     default:
       const defaultLse = calculateWeightedLSE(sourceData);
@@ -211,14 +205,14 @@ export function calculateVariance(samples: Coordinate[], mean: Coordinate): numb
 }
 
 /**
- * K-Means Hybrid Algorithm
+ * K-Means + Baarda Algorithm
  * 1. Mid-Range Reference
- * 2. 1.5 * Eps Filtering
+ * 2. 1.0 * Eps Filtering (Strict)
  * 3. K-Means (k=4)
  * 4. Cluster Summaries (Weighted)
  * 5. Baarda Final Refinement
  */
-function calculateKMeansHybrid(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
+function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
   if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
 
   // 1. Reference Point (Mid-Range)
@@ -227,9 +221,9 @@ function calculateKMeansHybrid(samples: Coordinate[]): { result: Coordinate; use
   const rLat = (Math.min(...lats) + Math.max(...lats)) / 2;
   const rLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
 
-  // 2. 1.5 * Eps Filtering
+  // 2. 1.0 * Eps Filtering (Strict)
   const avgAcc = samples.reduce((a, b) => a + b.accuracy, 0) / samples.length;
-  const epsLimit = avgAcc * 1.5;
+  const epsLimit = avgAcc * 1.0;
 
   const filteredWithIndices = samples.map((s, idx) => ({ s, idx })).filter(item => {
     const dLat = (item.s.lat - rLat) * 111320;
@@ -238,7 +232,7 @@ function calculateKMeansHybrid(samples: Coordinate[]): { result: Coordinate; use
     return dist <= epsLimit;
   });
 
-  if (filteredWithIndices.length < 5) return calculateMidDbscanBaarda(samples);
+  if (filteredWithIndices.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
 
   const filteredSamples = filteredWithIndices.map(f => f.s);
   const filteredIndices = filteredWithIndices.map(f => f.idx);
@@ -353,87 +347,7 @@ function runKMeans(samples: Coordinate[], k: number): number[] {
   return assignments;
 }
 
-/**
- * K-Means Hybrid V2 Algorithm
- * Same as K-Means Hybrid but with 1.0 * Eps filtering (stricter)
- */
-function calculateKMeansHybridV2(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
-  if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
 
-  // 1. Reference Point (Mid-Range)
-  const lats = samples.map(s => s.lat);
-  const lngs = samples.map(s => s.lng);
-  const rLat = (Math.min(...lats) + Math.max(...lats)) / 2;
-  const rLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
-
-  // 2. 1.0 * Eps Filtering (Strict)
-  const avgAcc = samples.reduce((a, b) => a + b.accuracy, 0) / samples.length;
-  const epsLimit = avgAcc * 1.0;
-
-  const filteredWithIndices = samples.map((s, idx) => ({ s, idx })).filter(item => {
-    const dLat = (item.s.lat - rLat) * 111320;
-    const dLng = (item.s.lng - rLng) * 111320 * Math.cos(rLat * Math.PI / 180);
-    const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-    return dist <= epsLimit;
-  });
-
-  if (filteredWithIndices.length < 5) return calculateKMeansHybrid(samples);
-
-  const filteredSamples = filteredWithIndices.map(f => f.s);
-  const filteredIndices = filteredWithIndices.map(f => f.idx);
-
-  // 3. K-Means (k=4)
-  const k = 4;
-  const clusterAssignments = runKMeans(filteredSamples, k);
-  
-  const finalValidClusters: number[][] = Array.from({ length: k }, () => []);
-  clusterAssignments.forEach((cIdx, i) => {
-    finalValidClusters[cIdx].push(filteredIndices[i]);
-  });
-
-  // 4. Summarize Clusters
-  const clusterSummaries = finalValidClusters
-    .filter(cluster => cluster.length > 0)
-    .map(cluster => {
-      const clusterPoints = cluster.map(idx => samples[idx]);
-      const weights = clusterPoints.map(p => 1 / Math.pow(Math.max(0.1, p.accuracy), 2));
-      const sumW = weights.reduce((a, b) => a + b, 0);
-      
-      const cLat = clusterPoints.reduce((a, p, i) => a + p.lat * weights[i], 0) / sumW;
-      const cLng = clusterPoints.reduce((a, p, i) => a + p.lng * weights[i], 0) / sumW;
-      const cAcc = clusterPoints.reduce((a, p, i) => a + p.accuracy * weights[i], 0) / sumW;
-      
-      return {
-        lat: cLat,
-        lng: cLng,
-        accuracy: cAcc,
-        altitude: null,
-        altitudeAccuracy: null,
-        timestamp: Date.now(),
-        _originalIndices: cluster
-      };
-    });
-
-  // 5. Final Refinement (Baarda)
-  const baardaInput = clusterSummaries.map((s, idx) => ({ ...s, _originalIdx: idx }));
-  const baardaRes = calculateBaardaInternal(baardaInput as any);
-  
-  const finalResult = { ...baardaRes.result };
-  
-  // Z calculation
-  const validAlts = samples.filter(s => s.altitude !== null);
-  finalResult.altitude = validAlts.length > 0
-    ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length
-    : null;
-
-  const finalUsedIndices = baardaRes.usedIndices.flatMap(i => (clusterSummaries[i] as any)._originalIndices);
-  
-  return { 
-    result: finalResult, 
-    usedIndices: [...new Set(finalUsedIndices)], 
-    clusters: finalValidClusters.filter(c => c.length > 0)
-  };
-}
 
 function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndices: number[] } {
   if (samples.length < 4) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };

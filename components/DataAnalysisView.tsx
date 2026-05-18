@@ -38,8 +38,7 @@ const MapSetBounds = ({ points }: { points: [number, number][] }) => {
 const METHOD_COLORS: Record<string, string> = {
   ARITHMETIC_MEAN: '#ec4899',
   WEIGHTED_LSE: '#8b5cf6',
-  KMEANS_HYBRID: '#3b82f6',
-  KMEANS_V2: '#f59e0b'
+  KMEANS_BAARDA: '#3b82f6'
 };
 
 const CLUSTER_COLORS = [
@@ -120,16 +119,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const methods = useMemo<CalculationMethod[]>(() => [
     'ARITHMETIC_MEAN', 
     'WEIGHTED_LSE',
-    'KMEANS_HYBRID',
-    'KMEANS_V2'
+    'KMEANS_BAARDA'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
     const labels: Record<string, string> = {
       'ARITHMETIC_MEAN': "Aritmetik Ortalama",
       'WEIGHTED_LSE': "Ağırlıklı Dengeleme",
-      'KMEANS_HYBRID': "Hibrit (K-Means)",
-      'KMEANS_V2': "Hibrit (K-Means2)"
+      'KMEANS_BAARDA': "K-Means+Baarda"
     };
     return labels[m] || m;
   };
@@ -179,7 +176,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       // 1. Calculate point for this method
       const { result, clusters } = calculateResult(location.samples!, method, accuracyLimit);
       
-      if ((method === 'KMEANS_HYBRID' || method === 'KMEANS_V2') && clusters) {
+      if (method === 'KMEANS_BAARDA' && clusters) {
         dbscanResults = clusters;
       }
       
@@ -419,7 +416,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
     const results = methods.map(method => {
       const { result, clusters } = calculateResult(location.samples!, method, accuracyLimit);
-      if ((method === 'KMEANS_HYBRID' || method === 'KMEANS_V2') && clusters) {
+      if (method === 'KMEANS_BAARDA' && clusters) {
         clusterResults = clusters;
       }
       const conv = convertCoordinate(result.lat, result.lng, sys);
@@ -550,15 +547,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[9px] font-black text-blue-600 uppercase">Hibrit (K-Means)</p>
+                    <p className="text-[9px] font-black text-blue-600 uppercase">K-Means+Baarda</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      Veriyi K-Means ile zorunlu 4 kümeye böler.
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[9px] font-black text-amber-600 uppercase">Hibrit (K-Means2)</p>
-                    <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      Mid-range filtrelemede 1.0 kat payı kullanır (Daha sıkı).
+                      Mid-range üzerinde 1.0 kat payı ile sıkı filtreleme yapar, K-Means ile 4 kümeye böler ve Baarda testi ile final uyuşmazlık denetimi sağlar.
                     </p>
                   </div>
                </div>

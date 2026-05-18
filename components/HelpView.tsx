@@ -244,16 +244,9 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
               </div>
 
               <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm ring-1 ring-blue-50">
-                <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight mb-2">3. Hibrit (K-Means)</h4>
+                <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight mb-2">3. K-Means+Baarda</h4>
                 <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                  Mid-range referans noktası belirlenir ve donanımsal ortalama hassasiyetin 1.5 katı dışındaki noktalar filtrelenir. Kalan veri K-Means algoritması ile 4 kümeye ayrılır. Her kümede ağırlıklı dengeleme ile birer nokta ve hassasiyet belirlenir. Final koordinat Baarda testi ile uyuşan sonuçlar üzerinden hesaplanır.
-                </p>
-              </div>
-
-              <div className="bg-white p-4 rounded-xl border border-amber-100 shadow-sm ring-1 ring-amber-50">
-                <h4 className="text-sm font-black text-amber-700 uppercase tracking-tight mb-2">4. Hibrit (K-Means2)</h4>
-                <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                  Hibrit (K-Means) yönteminin aynısıdır, ancak mid-range filtrelemede 1.5 kat yerine 1.0 kat (daha sıkı) donanımsal hassasiyet payı kullanır.
+                  İstatistiki olarak en gelişmiş modeldir. Mid-range referans noktası belirlenir ve donanımsal ortalama hassasiyetin 1.0 katı dışındaki noktalar filtrelenir. Kalan veri K-Means algoritması ile 4 kümeye ayrılır. Her kümede ağırlıklı dengeleme ile birer nokta ve hassasiyet belirlenir. Final koordinat Baarda testi ile uyuşan sonuçlar üzerinden hesaplanır.
                 </p>
               </div>
             </div>
