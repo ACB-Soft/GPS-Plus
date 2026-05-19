@@ -3,4 +3,4 @@
 
 ## 📄 Lisans
 
-Bu proje **ACB AppTech** tarafından geliştirilmiştir. Tüm hakları saklıdır.
+Bu proje **ACB Maps** tarafından geliştirilmiştir. Tüm hakları saklıdır.

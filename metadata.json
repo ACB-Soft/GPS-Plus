@@ -1,7 +1,7 @@
 {
   "name": "Github: GPS Plus",
   "description": "Mobil Cihazlarınız için Konum Belirleme Uygulaması",
-  "developer": "ACB AppTech",
+  "developer": "ACB Maps",
   "requestFramePermissions": [
     "geolocation"
   ]

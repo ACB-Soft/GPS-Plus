@@ -446,7 +446,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             </p>
             <div className="flex flex-col">
               <span className="text-sm font-black text-slate-400 uppercase tracking-widest">İletişim</span>
-              <span className="text-sm font-bold text-slate-900"><b>acb</b>apptech@gmail.com</span>
+              <span className="text-sm font-medium text-slate-900"><span className="font-black">acb</span>maps@gmail.com</span>
             </div>
           </div>
         </section>
