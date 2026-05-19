@@ -6,6 +6,7 @@ import { geoidService } from '../services/GeoidService';
 import { convertCoordinate, getSystemDisplayLabel } from '../utils/CoordinateUtils';
 import { calculateResult, calculateAverage, calculateMaxDistance } from '../utils/MathUtils';
 import { downloadCombinedAnalysisReport } from './ExcelUtils';
+import { generateTechnicalReport } from '../utils/ReportUtils';
 import { 
   ScatterChart, Scatter, LineChart, Line, XAxis, YAxis, ZAxis, CartesianGrid, 
   Tooltip, ResponsiveContainer, Cell, ReferenceLine, Legend
@@ -82,6 +83,15 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [selectedFolder, setSelectedFolder] = useState<string>('');
   const [selectedPointId, setSelectedPointId] = useState<string>(initialSelectedId || '');
   const [showMap, setShowMap] = useState(false);
+
+  const handleDownloadTechnicalReportAction = () => {
+    const password = prompt("Teknik raporu indirmek için şifreyi giriniz:");
+    if (password === "748123") {
+      generateTechnicalReport();
+    } else if (password !== null) {
+      alert("Hatalı şifre!");
+    }
+  };
 
   const folders = useMemo(() => {
     const f = Array.from(new Set(locations.map(l => l.folderName || 'Genel')));
@@ -980,6 +990,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   </div>
                 )}
               </div>
+
+                <button 
+                  onClick={handleDownloadTechnicalReportAction}
+                  className="w-full bg-slate-800 text-white px-6 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg mb-4"
+                >
+                  <i className="fas fa-file-word"></i>
+                  GPS_Plus_TEKNIK_RAPOR İndir
+                </button>
 
                 <div className="bg-blue-600 p-6 rounded-[2rem] text-white flex flex-col items-center gap-6 shadow-xl shadow-blue-100">
                 {analysisType === 'precise' ? (

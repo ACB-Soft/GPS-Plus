@@ -21,4 +21,4 @@ Projeyi yerel ortamınızda çalıştırmak için:
 
 ## 📄 Lisans
 
-Bu proje **ACB_Soft** tarafından geliştirilmiştir. Tüm hakları saklıdır.
+Bu proje **ACB AppTech** tarafından geliştirilmiştir. Tüm hakları saklıdır.

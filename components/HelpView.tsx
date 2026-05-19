@@ -8,15 +8,6 @@ interface Props {
 }
 
 const HelpView: React.FC<Props> = ({ onBack }) => {
-  const handleDownloadReport = () => {
-    const password = prompt("Teknik raporu indirmek için şifreyi giriniz:");
-    if (password === "748123") {
-      generateTechnicalReport();
-    } else if (password !== null) {
-      alert("Hatalı şifre!");
-    }
-  };
-
   return (
     <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-slate-200">
       <Header title="Yardım & Hakkında" onBack={onBack} sticky={true} />
@@ -153,9 +144,9 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 Uygulama, ekranda gördüğünüz nihai <b>Hassasiyet</b> değerini şu formülle belirler:
               </p>
               <div className="text-center py-1">
-                <code className="text-[11px] font-black text-blue-900 tracking-wider">= Max(Veri Saçılımı, Donanımsal Hassasiyet)</code>
+                <code className="text-sm font-black text-blue-900 tracking-wider">= Max(Veri Saçılımı, Donanımsal Hassasiyet)</code>
               </div>
-              <p className="text-xs text-slate-600 font-medium leading-tight italic">
+              <p className="text-sm text-slate-600 font-medium leading-tight italic">
                 * Örneğin; sensör 2m hata payı diyorsa ancak ham veriler 6m'ye yayılıyorsa, gerçek hata payınız 6m olarak kabul edilir.
               </p>
             </div>
@@ -170,8 +161,8 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <div className="flex items-start gap-3">
                    <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full mt-1.5 shrink-0 shadow-sm shadow-emerald-200"></div>
                    <div className="flex-1">
-                      <p className="text-xs font-black text-emerald-700 uppercase tracking-tight">Güvenilir Veri (Yeşil)</p>
-                      <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                      <p className="text-sm font-black text-emerald-700 uppercase tracking-tight">Güvenilir Veri (Yeşil)</p>
+                      <p className="text-sm text-slate-600 font-medium leading-relaxed">
                         Veriler yüksek tutarlılıktadır.<br/>
                         Donanımsal Hassasiyet &le; 10m,<br/>
                         Veri Saçılımı &le; 15m,<br/>
@@ -182,8 +173,8 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <div className="flex items-start gap-3">
                    <div className="w-2.5 h-2.5 bg-amber-500 rounded-full mt-1.5 shrink-0 shadow-sm shadow-amber-200"></div>
                    <div className="flex-1">
-                      <p className="text-xs font-black text-amber-700 uppercase tracking-tight">Orta Güvenli Veri / Veri Az (Turuncu)</p>
-                      <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                      <p className="text-sm font-black text-amber-700 uppercase tracking-tight">Orta Güvenli Veri / Veri Az (Turuncu)</p>
+                      <p className="text-sm text-slate-600 font-medium leading-relaxed">
                         Veriler orta tutarlılıktadır.<br/>
                         10m &lt; Donanımsal Hassasiyet &le; 20m,<br/>
                         15m &lt; Veri Saçılımı &le; 30m,<br/>
@@ -194,8 +185,8 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <div className="flex items-start gap-3">
                    <div className="w-2.5 h-2.5 bg-rose-500 rounded-full mt-1.5 shrink-0 shadow-sm shadow-rose-200"></div>
                    <div className="flex-1">
-                      <p className="text-xs font-black text-rose-700 uppercase tracking-tight">Güvensiz Veri (Kırmızı)</p>
-                      <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                      <p className="text-sm font-black text-rose-700 uppercase tracking-tight">Güvensiz Veri (Kırmızı)</p>
+                      <p className="text-sm text-slate-600 font-medium leading-relaxed">
                         Veriler yüksek oranda sapmalı ve güvensizdir.<br/>
                         Donanımsal Hassasiyet &gt; 20m,<br/>
                         Veri Saçılımı &gt; 30m,<br/>
@@ -226,9 +217,9 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
               <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">1. Aritmetik Ortalama</h4>
-                  <span className="text-[9px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">TEMEL</span>
+                  <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">TEMEL</span>
                 </div>
-                <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                <p className="text-sm text-slate-600 font-medium leading-relaxed">
                   Veri setindeki tüm koordinatların basit aritmetik ortalamasını hesaplar. Tüm veriler eşit ağırlığa sahiptir.
                 </p>
               </div>
@@ -236,9 +227,9 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
               <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm ring-1 ring-blue-50">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight">2. Ağırlıklı Dengeleme</h4>
-                  <span className="text-[9px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold">VARSAYILAN</span>
+                  <span className="text-[11px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold">VARSAYILAN</span>
                 </div>
-                <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                <p className="text-sm text-slate-600 font-medium leading-relaxed">
                   Veri setindeki donanımsal hassasiyeti yüksek olan verilere daha fazla ağırlık vererek dengeleme yapar. En kararlı sonuçları üretir.
                 </p>
               </div>
@@ -246,27 +237,27 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
               <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm ring-1 ring-blue-50">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight">3. K-Means+Baarda</h4>
-                  <span className="text-[9px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">HİBRİT</span>
+                  <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">HİBRİT</span>
                 </div>
-                <p className="text-[11px] text-slate-600 font-medium leading-relaxed mb-3">
+                <p className="text-sm text-slate-600 font-medium leading-relaxed mb-3">
                   İstatistik yöntemler kullanılarak uygulamaya özel olarak iyileştirilmiş hibrit bir yöntemdir.
                 </p>
                 <div className="bg-blue-50/50 rounded-lg p-3 space-y-2 border border-blue-100/50">
-                  <p className="text-[10px] font-black text-blue-800 uppercase tracking-widest">İşlem Adımları:</p>
+                  <p className="text-sm font-black text-blue-800 uppercase tracking-widest">İşlem Adımları:</p>
                   <ul className="space-y-1.5">
-                    <li className="text-[10px] text-slate-700 leading-tight">
+                    <li className="text-sm text-slate-700 leading-tight">
                        1-<b>Mid-Range:</b> Veri sınırları üzerinden tarafsız referans merkez noktası belirlenir.
                     </li>
-                    <li className="text-[10px] text-slate-700 leading-tight">
+                    <li className="text-sm text-slate-700 leading-tight">
                        2-<b>Filtre:</b> Referans noktasına ortalama donanımsal hassasiyetten daha uzak noktalar elenir.
                     </li>
-                    <li className="text-[10px] text-slate-700 leading-tight">
+                    <li className="text-sm text-slate-700 leading-tight">
                        3-<b>K-Means:</b> Temizlenmiş veri 4 bağımsız yoğunluk kümesine bölünür.
                     </li>
-                    <li className="text-[10px] text-slate-700 leading-tight">
+                    <li className="text-sm text-slate-700 leading-tight">
                        4-<b>Ağırlıklı Özet:</b> Her küme kendi içinde ağırlıklı dengeleme ile tek bir noktaya dönüştürülür.
                     </li>
-                    <li className="text-[10px] text-slate-700 leading-tight">
+                    <li className="text-sm text-slate-700 leading-tight">
                        5-<b>Baarda Testi:</b> 4 özet nokta arasında uyuşmazlık denetimi yapılarak sonuç konum hesaplanır.
                     </li>
                   </ul>
@@ -413,39 +404,31 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             </p>
             <div className="space-y-3">
               <div className="flex flex-col">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Konum Verisi</span>
-                <span className="text-xs font-bold text-slate-900">Mobil Cihazın GPS Verisi (WGS84 Format)</span>
+                <span className="text-sm font-black text-slate-400 uppercase tracking-widest">Konum Verisi</span>
+                <span className="text-sm font-bold text-slate-900">Mobil Cihazın GPS Verisi (WGS84 Format)</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Koordinat Dönüşümleri</span>
-                <span className="text-xs font-bold text-slate-900">Custom Helmert & TM Projection Formulas (HGM/EPSG Standards)</span>
+                <span className="text-sm font-black text-slate-400 uppercase tracking-widest">Koordinat Dönüşümleri</span>
+                <span className="text-sm font-bold text-slate-900">Custom Helmert & TM Projection Formulas (HGM/EPSG Standards)</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Jeoid Modeli</span>
-                <span className="text-xs font-bold text-slate-900">TG-20 (Çözünürlük: 5'x5')</span>
-                <span className="text-xs font-bold text-slate-900">EGM96 (Çözünürlük: 5'x5')</span>
+                <span className="text-sm font-black text-slate-400 uppercase tracking-widest">Jeoid Modeli</span>
+                <span className="text-sm font-bold text-slate-900">TG-20 (Çözünürlük: 5'x5')</span>
+                <span className="text-sm font-bold text-slate-900">EGM96 (Çözünürlük: 5'x5')</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Harita Servisleri</span>
-                <span className="text-xs font-bold text-slate-900">Leaflet JS Open-Source Library</span>
-                <span className="text-xs font-bold text-slate-900">Google Maps API (Satellite/Hybrid)</span>
-                <span className="text-xs font-bold text-slate-900">OpenStreetMap Contributors</span>
+                <span className="text-sm font-black text-slate-400 uppercase tracking-widest">Harita Servisleri</span>
+                <span className="text-sm font-bold text-slate-900">Leaflet JS Open-Source Library</span>
+                <span className="text-sm font-bold text-slate-900">Google Maps API (Satellite/Hybrid)</span>
+                <span className="text-sm font-bold text-slate-900">OpenStreetMap Contributors</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Yazılım Kütüphaneleri</span>
-                <span className="text-xs font-bold text-slate-900">Proj4js (Coordinate Transformations)</span>
-                <span className="text-xs font-bold text-slate-900">SheetJS & JSZip (Data Export Services)</span>
-                <span className="text-xs font-bold text-slate-900">Lucide React & Font Awesome (Icons)</span>
+                <span className="text-sm font-black text-slate-400 uppercase tracking-widest">Yazılım Kütüphaneleri</span>
+                <span className="text-sm font-bold text-slate-900">Proj4js (Coordinate Transformations)</span>
+                <span className="text-sm font-bold text-slate-900">SheetJS & JSZip (Data Export Services)</span>
+                <span className="text-sm font-bold text-slate-900">Lucide React & Font Awesome (Icons)</span>
               </div>
             </div>
-
-            <button 
-              onClick={handleDownloadReport}
-              className="w-full mt-6 py-3 px-4 bg-slate-800 text-white rounded-xl font-black text-xs uppercase flex items-center justify-center gap-3 active:scale-95 transition-all shadow-lg shadow-slate-300"
-            >
-              <i className="fas fa-file-word"></i>
-              GPS_Plus_TEKNIK_RAPOR İndir
-            </button>
           </div>
         </section>
 
@@ -462,8 +445,8 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
               Bu uygulama, saha çalışmalarında hızlı ve pratik koordinat ölçümü, aplikasyon ve veri yönetimi sağlamak ve basit CBS verisi toplamak amacıyla geliştirilmiştir. Uygulama ile ilgili herhangi bir sorun yaşıyorsanız veya bir özellik isteğiniz varsa e-posta yoluyla iletişime geçebilirsiniz.
             </p>
             <div className="flex flex-col">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">İletişim</span>
-              <span className="text-xs font-bold text-slate-900">e-posta@e-posta</span>
+              <span className="text-sm font-black text-slate-400 uppercase tracking-widest">İletişim</span>
+              <span className="text-sm font-bold text-slate-900"><b>acb</b>apptech@gmail.com</span>
             </div>
           </div>
         </section>
