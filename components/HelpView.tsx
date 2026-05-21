@@ -2,455 +2,491 @@ import React from 'react';
 import GlobalFooter from './GlobalFooter';
 import Header from './Header';
 import { generateTechnicalReport } from '../utils/ReportUtils';
+import { useLanguage } from '../utils/LanguageContext';
 
 interface Props {
   onBack: () => void;
 }
 
 const HelpView: React.FC<Props> = ({ onBack }) => {
+  const { t } = useLanguage();
+
   return (
     <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-slate-200">
-      <Header title="Yardım & Hakkında" onBack={onBack} sticky={true} />
+      <Header title={t("Yardım & Hakkında")} onBack={onBack} sticky={true} />
 
       <div className="flex-1 px-8 overflow-y-auto no-scrollbar py-4">
         <div className="max-w-sm mx-auto w-full space-y-10">
           {/* Nasıl Kullanılır? */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-              <i className="fas fa-book"></i>
-            </div>
-            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Nasıl Kullanılır?</h3>
-          </div>
-          
-          <div className="space-y-4">
-            {/* Ölçüm Yap */}
-            <div className="soft-card p-4 space-y-3">
-              <h4 className="font-black text-slate-900 text-base uppercase flex items-center gap-2">
-                <span className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs">1</span>
-                Ölçüm Yap
-              </h4>
-              <p className="text-slate-700 text-sm leading-relaxed font-medium text-justify">
-                Saha çalışmasına başlamak için ana ekrandaki <b>"Ölçüm Yap"</b> butonuna tıklayın.
-                <br/><br/>
-                • <b>Proje Bilgisi:</b> "Yeni Proje Oluştur" ile yeni bir isim verebilir veya "Mevcut Proje Seç" ile önceki çalışmalarınıza devam edebilirsiniz.
-                <br/>
-                • <b>Koordinat Sistemi:</b> WGS84 (Enlem-Boylam), ITRF96 (3° - TM / 6° - UTM) veya ED50 (3° - TM / 6° - UTM) sistemlerinden birini seçin. Proje bir kez oluşturulduğunda sistem değiştirilemez.
-                <br/>
-                • <b>Ölçüm Süreci:</b> "Ölçümü Başlat" dediğinizde belirlediğiniz hassasiyette (2-100 m) ve belirlediğiniz sürede (5-60 sn) veri toplama süreci başlatılır. Uygulama bu aşamada konum örneği alarak verilerin ortalamasını hesaplar. En doğru sonuç için cihazı sabit bir zeminde ve açık bir alanda tutun.
-              </p>
-            </div>
-
-            {/* Aplikasyon Yap */}
-            <div className="soft-card p-4 space-y-3">
-              <h4 className="font-black text-slate-900 text-base uppercase flex items-center gap-2">
-                <span className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs">2</span>
-                Aplikasyon Yap
-              </h4>
-              <p className="text-slate-700 text-sm leading-relaxed font-medium text-justify">
-                Kayıtlı noktaları arazide fiziksel olarak bulmak için <b>"Aplikasyon Yap"</b> modülünü kullanın.
-                <br/><br/>
-                • <b>Nokta Seçimi:</b> Proje listenizden hedeflediğiniz noktayı seçin.
-                <br/>
-                • <b>Canlı Rehberlik:</b> Ekranın ortasındaki pusula benzeri gösterge size gitmeniz gereken yönü gösterir.
-                <br/>
-                • <b>Mesafe Takibi:</b> Hedefe olan kuş uçuşu mesafeniz (metre cinsinden) anlık olarak güncellenir. Uygulamanın metre hassasiyetinde çalıştığını unutmayın.
-                <br/>
-                • <b>Yaklaşma Modu:</b> Hedefe 5 metreden fazla yaklaştığınızda gösterge daha hassas bir "yakın çekim" moduna geçer. Mobil cihazların GPS kısıtları nedeniyle 2 metre ve altına ulaştığınızda "Hedefe Ulaşıldı" sinyali ve görsel bildirim alırsınız.
-              </p>
-            </div>
-
-            {/* Kayıtlı Ölçümler */}
-            <div className="soft-card p-4 space-y-3">
-              <h4 className="font-black text-slate-900 text-base uppercase flex items-center gap-2">
-                <span className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs">3</span>
-                Kayıtlı Ölçümler
-              </h4>
-              <p className="text-slate-700 text-sm leading-relaxed font-medium text-justify">
-                Tüm saha verilerinizi <b>"Kayıtlı Ölçümler"</b> menüsünden yönetebilirsiniz.
-                <br/><br/>
-                • <b>Görüntüleme:</b> Noktalarınızı proje klasörleri altında gruplanmış şekilde görün.
-                <br/>
-                • <b>Detaylar:</b> Bir noktaya tıkladığınızda koordinatlarını, yüksekliğini, hassasiyetini ve harita üzerindeki konumunu görebilirsiniz.
-                <br/>
-                • <b>Düzenleme:</b> Gereksiz noktaları veya tüm proje klasörlerini silebilirsiniz.Projelere yeniden isim verebilirsiniz.
-              </p>
-            </div>
-
-            {/* Veri Aktar */}
-            <div className="soft-card p-4 space-y-3">
-              <h4 className="font-black text-slate-900 text-base uppercase flex items-center gap-2">
-                <span className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs">4</span>
-                Veri Aktar
-              </h4>
-              <p className="text-slate-700 text-sm leading-relaxed font-medium text-justify">
-                Saha verilerinizi ofis yazılımlarına aktarmak için <b>"Veri Aktar"</b> menüsünü kullanın.
-                <br/><br/>
-                • <b>Google Earth (.kml):</b> Noktalarınızı uydu görüntüsü üzerinde görmek için ideal format.
-                <br/>
-                • <b>Excel (.xlsx):</b> Nokta adı, koordinatlar (Y, X, Z), hassasiyet ve tarih bilgilerini içeren detaylı tablo.
-                <br/>
-                • <b>Metin (.txt):</b> Ham veri formatında (Ad, Y, X, Z) hızlı paylaşım.
-                <br/>
-                • <b>Paylaşım:</b> Oluşturulan dosyaları mobil cihazlarınız ile WhatsApp, E-posta veya Bulut sürücülere doğrudan gönderebilirsiniz.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Hassasiyet İpuçları */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-amber-200">
-              <i className="fas fa-lightbulb"></i>
-            </div>
-            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Hassasiyet İpuçları</h3>
-          </div>
-          
-          <div className="soft-card p-6 space-y-4">
-            <div className="flex gap-4">
-              <i className="fas fa-cloud-sun text-amber-600 mt-1 text-lg"></i>
-              <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
-                <b>Açık Gökyüzü:</b> En iyi sonuçlar için binalardan, ağaçlardan ve metal yapılardan uzak, gökyüzünü doğrudan gören alanlarda ölçüm yapın.
-              </p>
-            </div>
-            <div className="flex gap-4">
-              <i className="fas fa-mobile-alt text-amber-600 mt-1 text-lg"></i>
-              <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
-                <b>Bekleme Süresi:</b> Uygulamayı açtıktan sonra GPS sinyalinin "oturması" için yaklaşık 30 saniye beklemek hassasiyeti 2-5 metreye kadar düşürebilir.
-              </p>
-            </div>
-            <div className="flex gap-4">
-              <i className="fas fa-battery-three-quarters text-amber-600 mt-1 text-lg"></i>
-              <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
-                <b>Güç Modu:</b> Cihazınızın "Düşük Güç Modu"nda olmaması gerekir, çünkü bu mod GPS güncelleme sıklığını azaltabilir.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Hassasiyet Hesabı */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-200">
-              <i className="fas fa-chart-line"></i>
-            </div>
-            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Hassasiyet Hesabı</h3>
-          </div>
-          
-          <div className="soft-card p-6 space-y-6">
-            <div className="space-y-3">
-              <p className="text-sm text-slate-700 font-medium leading-relaxed">
-                Uygulama, ekranda gördüğünüz nihai <b>Hassasiyet</b> değerini şu formülle belirler:
-              </p>
-              <div className="text-center py-1">
-                <code className="text-sm font-black text-blue-900 tracking-wider">= Max(Veri Saçılımı, Donanımsal Hassasiyet)</code>
+          <section className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                <i className="fas fa-book"></i>
               </div>
-              <p className="text-sm text-slate-600 font-medium leading-tight italic">
-                * Örneğin; sensör 2m hata payı diyorsa ancak ham veriler 6m'ye yayılıyorsa, gerçek hata payınız 6m olarak kabul edilir.
-              </p>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Nasıl Kullanılır?")}</h3>
             </div>
-              
-            <div className="space-y-3 border-t border-slate-100 pt-4">
-              <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">Sinyal Güvenilirlik Analizi</h4>
-              <p className="text-sm text-slate-700 font-medium leading-relaxed">
-                Uygulama, ölçüm sırasında sadece sensörden gelen hata payına bakmaz; aynı zamanda toplanan koordinatların birbirine olan mesafesini (Veri Saçılımı) analiz ederek <b>Multipath (Sinyal Yansıması)</b> riskini değerlendirir:
-              </p>
+            
+            <div className="space-y-4">
+              {/* Ölçüm Yap */}
+              <div className="soft-card p-4 space-y-3">
+                <h4 className="font-black text-slate-900 text-base uppercase flex items-center gap-2">
+                  <span className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs">1</span>
+                  {t("Ölçüm Yap")}
+                </h4>
+                <p 
+                  className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("Saha çalışmasına başlamak için ana ekrandaki <b>\"Ölçüm Yap\"</b> butonuna tıklayın.") }}
+                />
+                <p 
+                  className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("• <b>Proje Bilgisi:</b> \"Yeni Proje Oluştur\" ile yeni bir isim verebilir veya \"Mevcut Proje Seç\" ile önceki çalışmalarınıza devam edebilirsiniz.") }}
+                />
+                <p 
+                  className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("• <b>Koordinat Sistemi:</b> WGS84 (Enlem-Boylam), ITRF96 (3° - TM / 6° - UTM) veya ED50 (3° - TM / 6° - UTM) sistemlerinden birini seçin. Proje bir kez oluşturulduğunda sistem değiştirilemez.") }}
+                />
+                <p 
+                  className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("• <b>Ölçüm Süreci:</b> \"Ölçümü Başlat\" dediğinizde belirlediğiniz hassasiyette (2-100 m) ve belirlediğiniz sürede (5-60 sn) veri toplama süreci başlatılır. Uygulama bu aşamada konum örneği alarak verilerin ortalamasını hesaplar. En doğru sonuç için cihazı sabit bir zeminde ve açık bir alanda tutun.") }}
+                />
+              </div>
+
+              {/* Aplikasyon Yap */}
+              <div className="soft-card p-4 space-y-3">
+                <h4 className="font-black text-slate-900 text-base uppercase flex items-center gap-2">
+                  <span className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs">2</span>
+                  {t("Aplikasyon Yap")}
+                </h4>
+                <p 
+                  className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("Kayıtlı noktaları arazide fiziksel olarak bulmak için <b>\"Aplikasyon Yap\"</b> modülünü kullanın.") }}
+                />
+                <p 
+                  className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("• <b>Nokta Seçimi:</b> Proje listenizden hedeflediğiniz noktayı seçin.") }}
+                />
+                <p 
+                  className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("• <b>Canlı Rehberlik:</b> Ekranın ortasındaki pusula benzeri gösterge size gitmeniz gereken yönü gösterir.") }}
+                />
+                <p 
+                  className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("• <b>Mesafe Takibi:</b> Hedefe olan kuş uçuşu mesafeniz (metre cinsinden) anlık olarak güncellenir. Uygulamanın metre hassasiyetinde çalıştığını unutmayın.") }}
+                />
+                <p 
+                  className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("• <b>Yaklaşma Modu:</b> Hedefe 5 metreden fazla yaklaştığınızda gösterge daha hassas bir \"yakın çekim\" moduna geçer. Mobil cihazların GPS kısıtları nedeniyle 2 metre ve altına ulaştığınızda \"Hedefe Ulaşıldı\" sinyali ve görsel bildirim alırsınız.") }}
+                />
+              </div>
+
+              {/* Kayıtlı Ölçümler */}
+              <div className="soft-card p-4 space-y-3">
+                <h4 className="font-black text-slate-900 text-base uppercase flex items-center gap-2">
+                  <span className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs">3</span>
+                  {t("Kayıtlı Ölçümler")}
+                </h4>
+                <p 
+                  className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("Tüm saha verilerinizi <b>\"Kayıtlı Ölçümler\"</b> menüsünden yönetebilirsiniz.") }}
+                />
+                <p 
+                  className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("• <b>Görüntüleme:</b> Noktalarınızı proje klasörleri altında gruplanmış şekilde görün.") }}
+                />
+                <p 
+                  className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("• <b>Detaylar:</b> Bir noktaya tıkladığınızda koordinatlarını, yüksekliğini, hassasiyetini ve harita üzerindeki konumunu görebilirsiniz.") }}
+                />
+                <p 
+                  className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("• <b>Düzenleme:</b> Gereksiz noktaları veya tüm proje klasörlerini silebilirsiniz.Projelere yeniden isim verebilirsiniz.") }}
+                />
+              </div>
+
+              {/* Veri Aktar */}
+              <div className="soft-card p-4 space-y-3">
+                <h4 className="font-black text-slate-900 text-base uppercase flex items-center gap-2">
+                  <span className="w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs">4</span>
+                  {t("Veri Aktar")}
+                </h4>
+                <p 
+                  className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("Saha verilerinizi ofis yazılımlarına aktarmak için <b>\"Veri Aktar\"</b> menüsünü kullanın.") }}
+                />
+                <p 
+                  className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("• <b>Google Earth (.kml):</b> Noktalarınızı uydu görüntüsü üzerinde görmek için ideal format.") }}
+                />
+                <p 
+                  className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("• <b>Excel (.xlsx):</b> Nokta adı, koordinatlar (Y, X, Z), hassasiyet ve tarih bilgilerini içeren detaylı tablo.") }}
+                />
+                <p 
+                  className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("• <b>Metin (.txt):</b> Ham veri formatında (Ad, Y, X, Z) hızlı paylaşım.") }}
+                />
+                <p 
+                  className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("• <b>Paylaşım:</b> Oluşturulan dosyaları mobil cihazlarınız ile WhatsApp, E-posta veya Bulut sürücülere doğrudan gönderebilirsiniz.") }}
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* Hassasiyet İpuçları */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-amber-200">
+                <i className="fas fa-lightbulb"></i>
+              </div>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Hassasiyet İpuçları")}</h3>
+            </div>
+            
+            <div className="soft-card p-6 space-y-4">
+              <div className="flex gap-4">
+                <i className="fas fa-cloud-sun text-amber-600 mt-1 text-lg"></i>
+                <p 
+                  className="text-sm text-slate-700 font-medium leading-relaxed text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("<b>Açık Gökyüzü:</b> En iyi sonuçlar için binalardan, ağaçlardan ve metal yapılardan uzak, gökyüzünü doğrudan gören alanlarda ölçüm yapın.") }}
+                />
+              </div>
+              <div className="flex gap-4">
+                <i className="fas fa-mobile-alt text-amber-600 mt-1 text-lg"></i>
+                <p 
+                  className="text-sm text-slate-700 font-medium leading-relaxed text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("<b>Bekleme Süresi:</b> Uygulamayı açtıktan sonra GPS sinyalinin \"oturması\" için yaklaşık 30 saniye beklemek hassasiyeti 2-5 metreye kadar düşürebilir.") }}
+                />
+              </div>
+              <div className="flex gap-4">
+                <i className="fas fa-battery-three-quarters text-amber-600 mt-1 text-lg"></i>
+                <p 
+                  className="text-sm text-slate-700 font-medium leading-relaxed text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("<b>Güç Modu:</b> Cihazınızın \"Düşük Güç Modu\"nda olmaması gerekir, çünkü bu mod GPS güncelleme sıklığını azaltabilir.") }}
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* Hassasiyet Hesabı */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-orange-200">
+                <i className="fas fa-chart-line"></i>
+              </div>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Hassasiyet Hesabı")}</h3>
+            </div>
+            
+            <div className="soft-card p-6 space-y-6">
+              <div className="space-y-3">
+                <p className="text-sm text-slate-700 font-medium leading-relaxed">
+                  {t("Uygulama, ekranda gördüğünüz nihai <b>Hassasiyet</b> değerini şu formülle belirler:")}
+                </p>
+                <div className="text-center py-1">
+                  <code className="text-sm font-black text-blue-900 tracking-wider">
+                    {t("= Max(Veri Saçılımı, Donanımsal Hassasiyet)")}
+                  </code>
+                </div>
+                <p className="text-sm text-slate-600 font-medium leading-tight italic">
+                  {t("* Örneğin; sensör 2m hata payı diyorsa ancak ham veriler 6m'ye yayılıyorsa, gerçek hata payınız 6m olarak kabul edilir.")}
+                </p>
+              </div>
+                
+              <div className="space-y-3 border-t border-slate-100 pt-4">
+                <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">{t("Sinyal Güvenilirlik Analizi")}</h4>
+                <p className="text-sm text-slate-700 font-medium leading-relaxed">
+                  {t("Uygulama, ölçüm sırasında sadece sensörden gelen hata payına bakmaz; aynı zamanda toplanan koordinatların birbirine olan mesafesini (Veri Saçılımı) analiz ederek <b>Multipath (Sinyal Yansıması)</b> riskini değerlendirir:")}
+                </p>
+                
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full mt-1.5 shrink-0 shadow-sm shadow-emerald-200"></div>
+                    <div className="flex-1">
+                      <p className="text-sm font-black text-emerald-700 uppercase tracking-tight">{t("Güvenilir Veri (Yeşil)")}</p>
+                      <p 
+                        className="text-sm text-slate-600 font-medium leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: t("Veriler yüksek tutarlılıktadır.<br/>Donanımsal Hassasiyet &le; 10m,<br/>Veri Saçılımı &le; 15m,<br/>Veri Sayısı &ge; 5") }}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-2.5 h-2.5 bg-amber-500 rounded-full mt-1.5 shrink-0 shadow-sm shadow-amber-200"></div>
+                    <div className="flex-1">
+                      <p className="text-sm font-black text-amber-700 uppercase tracking-tight">{t("Orta Güvenli Veri / Veri Az (Turuncu)")}</p>
+                      <p 
+                        className="text-sm text-slate-600 font-medium leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: t("Veriler orta tutarlılıktadır.<br/>10m &lt; Donanımsal Hassasiyet &le; 20m,<br/>15m &lt; Veri Saçılımı &le; 30m,<br/>Veri Sayısı &lt; 5") }}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-2.5 h-2.5 bg-rose-500 rounded-full mt-1.5 shrink-0 shadow-sm shadow-rose-200"></div>
+                    <div className="flex-1">
+                      <p className="text-sm font-black text-rose-700 uppercase tracking-tight">{t("Güvensiz Veri (Kırmızı)")}</p>
+                      <p 
+                        className="text-sm text-slate-600 font-medium leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: t("Veriler yüksek oranda sapmalı ve güvensizdir.<br/>Donanımsal Hassasiyet &gt; 20m,<br/>Veri Saçılımı &gt; 30m,<br/>Veri Saçılımı &gt; Donanımsal Hassasiyet x 3") }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Konum Hesabı */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                <i className="fas fa-calculator"></i>
+              </div>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Konum Hesabı")}</h3>
+            </div>
+            
+            <div className="soft-card p-6 space-y-4">
+              <p 
+                className="text-sm text-slate-700 font-medium leading-relaxed text-justify"
+                dangerouslySetInnerHTML={{ __html: t("Uygulama, toplanan ham GPS verilerini nihai bir koordinata dönüştürmek için 3 farklı matematiksel model sunar. Bu yöntemleri <b>Ayarlar</b> menüsünden değiştirebilirsiniz:") }}
+              />
               
               <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                   <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full mt-1.5 shrink-0 shadow-sm shadow-emerald-200"></div>
-                   <div className="flex-1">
-                      <p className="text-sm font-black text-emerald-700 uppercase tracking-tight">Güvenilir Veri (Yeşil)</p>
-                      <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                        Veriler yüksek tutarlılıktadır.<br/>
-                        Donanımsal Hassasiyet &le; 10m,<br/>
-                        Veri Saçılımı &le; 15m,<br/>
-                        Veri Sayısı &ge; 5
-                      </p>
-                   </div>
+                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("1. Yöntem: Aritmetik Ortalama")}</h4>
+                    <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">{t("TEMEL")}</span>
+                  </div>
+                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                    {t("Veri setindeki tüm koordinatların basit aritmetik ortalamasını hesaplar. Tüm veriler eşit ağırlığa sahiptir.")}
+                  </p>
                 </div>
-                <div className="flex items-start gap-3">
-                   <div className="w-2.5 h-2.5 bg-amber-500 rounded-full mt-1.5 shrink-0 shadow-sm shadow-amber-200"></div>
-                   <div className="flex-1">
-                      <p className="text-sm font-black text-amber-700 uppercase tracking-tight">Orta Güvenli Veri / Veri Az (Turuncu)</p>
-                      <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                        Veriler orta tutarlılıktadır.<br/>
-                        10m &lt; Donanımsal Hassasiyet &le; 20m,<br/>
-                        15m &lt; Veri Saçılımı &le; 30m,<br/>
-                        Veri Sayısı &lt; 5
-                      </p>
-                   </div>
+
+                <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm ring-1 ring-blue-50">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight">{t("2. Yöntem: Ağırlıklı Dengeleme (Varsayılan)")}</h4>
+                    <span className="text-[11px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold">{t("VARSAYILAN")}</span>
+                  </div>
+                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                    {t("Veri setindeki donanımsal hassasiyeti yüksek olan verilere daha fazla ağırlık vererek dengeleme yapar. En kararlı sonuçları üretir.")}
+                  </p>
                 </div>
-                <div className="flex items-start gap-3">
-                   <div className="w-2.5 h-2.5 bg-rose-500 rounded-full mt-1.5 shrink-0 shadow-sm shadow-rose-200"></div>
-                   <div className="flex-1">
-                      <p className="text-sm font-black text-rose-700 uppercase tracking-tight">Güvensiz Veri (Kırmızı)</p>
-                      <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                        Veriler yüksek oranda sapmalı ve güvensizdir.<br/>
-                        Donanımsal Hassasiyet &gt; 20m,<br/>
-                        Veri Saçılımı &gt; 30m,<br/>
-                        Veri Saçılımı &gt; Donanımsal Hassasiyet x 3
-                      </p>
-                   </div>
+
+                <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm ring-1 ring-blue-50">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight">{t("3. Yöntem: K-Means+Baarda")}</h4>
+                    <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">{t("HİBRİT")}</span>
+                  </div>
+                  <p className="text-sm text-slate-600 font-medium leading-relaxed mb-3">
+                    {t("İstatistik yöntemler kullanılarak uygulamaya özel olarak iyileştirilmiş hibrit bir yöntemdir.")}
+                  </p>
+                  <div className="bg-blue-50/50 rounded-lg p-3 space-y-2 border border-blue-100/50">
+                    <p className="text-sm font-black text-blue-800 uppercase tracking-widest">{t("İşlem Adımları:")}</p>
+                    <ul className="space-y-1.5">
+                      <li className="text-sm text-slate-700 leading-tight">
+                        1-<b>Mid-Range:</b> {t("Veri sınırları üzerinden tarafsız referans merkez noktası belirlenir.")}
+                      </li>
+                      <li className="text-sm text-slate-700 leading-tight">
+                        2-<b>Filtre:</b> {t("Referans noktasına ortalama donanımsal hassasiyetten daha uzak noktalar elenir.")}
+                      </li>
+                      <li className="text-sm text-slate-700 leading-tight">
+                        3-<b>K-Means:</b> {t("Temizlenmiş veri 4 bağımsız yoğunluk kümesine bölünür.")}
+                      </li>
+                      <li className="text-sm text-slate-700 leading-tight">
+                        4-<b>Ağırlıklı Özet:</b> {t("Her küme kendi içinde ağırlıklı dengeleme ile tek bir noktaya dönüştürürlür.")}
+                      </li>
+                      <li className="text-sm text-slate-700 leading-tight">
+                        5-<b>Baarda Testi:</b> {t("4 özet nokta arasında uyuşmazlık denetimi yapılarak sonuç konum hesaplanır.")}
+                      </li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* Konum Hesabı */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
-              <i className="fas fa-calculator"></i>
+          {/* Konum Teknolojisi */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-slate-700 rounded-xl flex items-center justify-center text-white shadow-lg shadow-slate-300">
+                <i className="fas fa-satellite-dish"></i>
+              </div>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Konum Teknolojisi")}</h3>
             </div>
-            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Konum Hesabı</h3>
-          </div>
-          
-          <div className="soft-card p-6 space-y-4">
-            <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
-              Uygulama, toplanan ham GPS verilerini nihai bir koordinata dönüştürmek için 3 farklı matematiksel model sunar. Bu yöntemleri <b>Ayarlar</b> menüsünden değiştirebilirsiniz:
-            </p>
             
-            <div className="space-y-4">
-              <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">1. Aritmetik Ortalama</h4>
-                  <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">TEMEL</span>
+            <div className="soft-card p-6 space-y-4">
+              <p 
+                className="text-sm text-slate-700 font-medium leading-relaxed text-justify mb-4"
+                dangerouslySetInnerHTML={{ __html: t("Uygulama, en yüksek hassasiyeti sağlamak için <b>Hibrit (Karma) Konumlama</b> teknolojisini kullanır. Bu teknoloji, aşağıdaki 4 kaynağı birleştirerek çalışır:") }}
+              />
+              
+              <div className="space-y-4">
+                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <i className="fas fa-satellite text-indigo-600"></i>
+                    <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">{t("1. GNSS (Uydu)")}</h4>
+                  </div>
+                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                    {t("GPS, GLONASS, Galileo ve BeiDou uydularından gelen sinyalleri kullanır. Açık alanda hassas (±2m) konum verisi sağlar.")}
+                  </p>
                 </div>
-                <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                  Veri setindeki tüm koordinatların basit aritmetik ortalamasını hesaplar. Tüm veriler eşit ağırlığa sahiptir.
-                </p>
-              </div>
 
-              <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm ring-1 ring-blue-50">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight">2. Ağırlıklı Dengeleme</h4>
-                  <span className="text-[11px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold">VARSAYILAN</span>
+                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <i className="fas fa-broadcast-tower text-indigo-600"></i>
+                    <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">{t("2. Baz İstasyonları")}</h4>
+                  </div>
+                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                    {t("Uyduların görülemediği kapalı alanlarda veya tünellerde, telefonunuzun bağlı olduğu baz istasyonlarına göre yaklaşık konum belirler. Hassiyeti düşüktür.")}
+                  </p>
                 </div>
-                <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                  Veri setindeki donanımsal hassasiyeti yüksek olan verilere daha fazla ağırlık vererek dengeleme yapar. En kararlı sonuçları üretir.
-                </p>
-              </div>
 
-              <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm ring-1 ring-blue-50">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight">3. K-Means+Baarda</h4>
-                  <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">HİBRİT</span>
+                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <i className="fas fa-wifi text-indigo-600"></i>
+                    <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">{t("3. Wi-Fi Ağları")}</h4>
+                  </div>
+                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                    {t("Şehir içinde bina aralarında, çevredeki kablosuz ağların sinyal gücünü kullanarak konumu keskinleştirir (IPS). Hassiyeti oldukça düşüktür.")}
+                  </p>
                 </div>
-                <p className="text-sm text-slate-600 font-medium leading-relaxed mb-3">
-                  İstatistik yöntemler kullanılarak uygulamaya özel olarak iyileştirilmiş hibrit bir yöntemdir.
-                </p>
-                <div className="bg-blue-50/50 rounded-lg p-3 space-y-2 border border-blue-100/50">
-                  <p className="text-sm font-black text-blue-800 uppercase tracking-widest">İşlem Adımları:</p>
-                  <ul className="space-y-1.5">
-                    <li className="text-sm text-slate-700 leading-tight">
-                       1-<b>Mid-Range:</b> Veri sınırları üzerinden tarafsız referans merkez noktası belirlenir.
-                    </li>
-                    <li className="text-sm text-slate-700 leading-tight">
-                       2-<b>Filtre:</b> Referans noktasına ortalama donanımsal hassasiyetten daha uzak noktalar elenir.
-                    </li>
-                    <li className="text-sm text-slate-700 leading-tight">
-                       3-<b>K-Means:</b> Temizlenmiş veri 4 bağımsız yoğunluk kümesine bölünür.
-                    </li>
-                    <li className="text-sm text-slate-700 leading-tight">
-                       4-<b>Ağırlıklı Özet:</b> Her küme kendi içinde ağırlıklı dengeleme ile tek bir noktaya dönüştürülür.
-                    </li>
-                    <li className="text-sm text-slate-700 leading-tight">
-                       5-<b>Baarda Testi:</b> 4 özet nokta arasında uyuşmazlık denetimi yapılarak sonuç konum hesaplanır.
-                    </li>
-                  </ul>
+
+                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <i className="fas fa-bolt text-indigo-600"></i>
+                    <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">{t("4. A-GPS (İnternet)")}</h4>
+                  </div>
+                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                    {t("İnternet üzerinden güncel uydu yörünge verilerini (almanak) indirerek, GPS'in saniyeler içinde kilitlenmesini (Fix) sağlar. Hassiyeti oldukça düşüktür.")}
+                  </p>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* Konum Teknolojisi */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-slate-700 rounded-xl flex items-center justify-center text-white shadow-lg shadow-slate-300">
-              <i className="fas fa-satellite-dish"></i>
+          {/* Koordinat Dönüşüm Altyapısı */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center text-white shadow-lg shadow-slate-400">
+                <i className="fas fa-microchip"></i>
+              </div>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Koordinat Dönüşüm Altyapısı")}</h3>
             </div>
-            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Konum Teknolojisi</h3>
-          </div>
-          
-          <div className="soft-card p-6 space-y-4">
-            <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify mb-4">
-              Uygulama, en yüksek hassasiyeti sağlamak için <b>Hibrit (Karma) Konumlama</b> teknolojisini kullanır. Bu teknoloji, aşağıdaki 4 kaynağı birleştirerek çalışır:
-            </p>
             
-            <div className="space-y-4">
-              <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                <div className="flex items-center gap-2 mb-2">
-                  <i className="fas fa-satellite text-indigo-600"></i>
-                  <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">1. GNSS (Uydu)</h4>
+            <div className="bg-slate-100 border border-slate-200 rounded-2xl p-6 space-y-6 shadow-inner">
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-base font-black text-indigo-700 uppercase tracking-tight mb-1">{t("ED50 Dönüşümü")}</h4>
+                  <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
+                    {t("WGS84 ile ED50 (European Datum 1950) arasındaki dönüşümler, Türkiye geneli için optimize edilmiş 7 Parametreli (dX, dY, dZ, Rx, Ry, Rz, dS \"HGM/EPSG Standartları\") Helmert Dönüşümü kullanılarak yapılmaktadır.")}
+                  </p>
                 </div>
-                <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                  GPS, GLONASS, Galileo ve BeiDou uydularından gelen sinyalleri kullanır. Açık alanda hassas (±2m) konum verisi sağlar.
-                </p>
-              </div>
 
-              <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                <div className="flex items-center gap-2 mb-2">
-                  <i className="fas fa-broadcast-tower text-indigo-600"></i>
-                  <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">2. Baz İstasyonları</h4>
+                <div>
+                  <h4 className="text-base font-black text-indigo-700 uppercase tracking-tight mb-1">{t("ITRF96 Dönüşümü")}</h4>
+                  <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
+                    {t("ITRF96 (GRS80 Elipsoidi) koordinatları, Transversal Mercator (TM) projeksiyonu ile hesaplanmaktadır. 3° dilim genişliği ve dilim orta meridyenleri (DOM) otomatik belirlenir.")}
+                  </p>
                 </div>
-                <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                  Uyduların görülemediği kapalı alanlarda veya tünellerde, telefonunuzun bağlı olduğu baz istasyonlarına göre yaklaşık konum belirler. Hassiyeti düşüktür.
-                </p>
-              </div>
 
-              <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                <div className="flex items-center gap-2 mb-2">
-                  <i className="fas fa-wifi text-indigo-600"></i>
-                  <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">3. Wi-Fi Ağları</h4>
+                <div>
+                  <h4 className="text-base font-black text-indigo-700 uppercase tracking-tight mb-1">{t("Düşey Datum (Yükseklik)")}</h4>
+                  <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
+                    {t("Ortometrik yükseklik (H), GPS'ten alınan Elipsoid yüksekliğinden (h), TG-20 Jeoid Modeli ondülasyon değeri (N) çıkarılarak hesaplanır.")}
+                  </p>
                 </div>
-                <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                  Şehir içinde bina aralarında, çevredeki kablosuz ağların sinyal gücünü kullanarak konumu keskinleştirir (IPS). Hassiyeti oldukça düşüktür.
-                </p>
               </div>
+            </div>
+          </section>
 
-              <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                <div className="flex items-center gap-2 mb-2">
-                  <i className="fas fa-bolt text-indigo-600"></i>
-                  <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">4. A-GPS (İnternet)</h4>
+          {/* Veri Güvenliği */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-200">
+                <i className="fas fa-shield-alt"></i>
+              </div>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Veri Güvenliği")}</h3>
+            </div>
+            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-6">
+              <p className="text-emerald-900 text-sm leading-relaxed font-medium text-justify">
+                {t("Verileriniz tamamen cihazınızda saklanır. Uygulama, konum verilerinizi hiçbir uzak sunucuya göndermez. Mobil cihazınızdan uygulamayı sildiğinizde veya tarayıcı önbelliğini temizlediğinizde cihazınızdaki veriler de silinecektir. Ölçüm sonrası verilerinizi yedeklemeyi unutmayın.")}
+              </p>
+            </div>
+          </section>
+
+          {/* Sorumluluk Reddi */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-rose-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-rose-200">
+                <i className="fas fa-exclamation-triangle"></i>
+              </div>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Sorumluluk Reddi")}</h3>
+            </div>
+            <div className="bg-rose-50 border border-rose-100 rounded-2xl p-6">
+              <p className="text-sm text-rose-900 font-medium leading-relaxed text-justify">
+                {t("Uygulama tarafından sağlanan verilerin doğruluğu ve hassasiyeti, mobil cihazınızın donanımsal (GPS/GNSS) alıcı kapasitesine, uydu görünürlüğüne ve çevresel faktörlere bağlıdır. Uygulama, profesyonel jeodezik ekipmanların yerini tutmaz. Elde edilen verilerin kritik mühendislik projelerinde kullanılmadan önce profesyonel ekipmanlarla doğrulanması önerilir. Oluşabilecek hatalardan veya veri kayıplarından yazılım geliştiricisi sorumlu tutulamaz.")}
+              </p>
+            </div>
+          </section>
+
+          {/* Veri Kaynakları */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                <i className="fas fa-copyright"></i>
+              </div>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Veri Kaynakları")}</h3>
+            </div>
+            <div className="soft-card p-6 space-y-4">
+              <p className="text-sm text-slate-600 font-medium leading-relaxed text-justify">
+                {t("Uygulamada kullanılan tüm veriler açık kaynaklı veya lisanslı servislerden sağlanmaktadır. Telif ihlali barındıran herhangi bir içerik bulunmamaktadır.")}
+              </p>
+              <div className="space-y-3">
+                <div className="flex flex-col">
+                  <span className="text-sm font-black text-slate-400 uppercase tracking-widest">{t("Konum Verisi")}</span>
+                  <span className="text-sm font-bold text-slate-900">{t("Mobil Cihazın GPS Verisi (WGS84 Format)")}</span>
                 </div>
-                <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                  İnternet üzerinden güncel uydu yörünge verilerini (almanak) indirerek, GPS'in saniyeler içinde kilitlenmesini (Fix) sağlar. Hassiyeti oldukça düşüktür.
-                </p>
+                <div className="flex flex-col">
+                  <span className="text-sm font-black text-slate-400 uppercase tracking-widest">{t("Koordinat Dönüşümleri")}</span>
+                  <span className="text-sm font-bold text-slate-900">{t("Custom Helmert & TM Projection Formulas (HGM/EPSG Standards)")}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-black text-slate-400 uppercase tracking-widest">{t("Jeoid Modeli")}</span>
+                  <span className="text-sm font-bold text-slate-900">{t("TG-20 (Çözünürlük: 5'x5')")}</span>
+                  <span className="text-sm font-bold text-slate-900">{t("EGM96 (Çözünürlük: 5'x5')")}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-black text-slate-400 uppercase tracking-widest">{t("Harita Servisleri")}</span>
+                  <span className="text-sm font-bold text-slate-900">{t("Leaflet JS Open-Source Library")}</span>
+                  <span className="text-sm font-bold text-slate-900">{t("Google Maps API (Satellite/Hybrid)")}</span>
+                  <span className="text-sm font-bold text-slate-900">{t("OpenStreetMap Contributors")}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-black text-slate-400 uppercase tracking-widest">{t("Yazılım Kütüphaneleri")}</span>
+                  <span className="text-sm font-bold text-slate-900">{t("Proj4js (Coordinate Transformations)")}</span>
+                  <span className="text-sm font-bold text-slate-900">{t("SheetJS & JSZip (Data Export Services)")}</span>
+                  <span className="text-sm font-bold text-slate-900">{t("Lucide React & Font Awesome (Icons)")}</span>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* Koordinat Dönüşüm Altyapısı */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center text-white shadow-lg shadow-slate-400">
-              <i className="fas fa-microchip"></i>
-            </div>
-            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Koordinat Dönüşüm Altyapısı</h3>
-          </div>
-          
-          <div className="bg-slate-100 border border-slate-200 rounded-2xl p-6 space-y-6 shadow-inner">
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-base font-black text-indigo-700 uppercase tracking-tight mb-1">ED50 Dönüşümü</h4>
-                <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
-                  WGS84 ile ED50 (European Datum 1950) arasındaki dönüşümler, Türkiye geneli için optimize edilmiş 7 Parametreli (dX, dY, dZ, Rx, Ry, Rz, dS "HGM/EPSG Standartları") Helmert Dönüşümü kullanılarak yapılmaktadır.
-                </p>
+          {/* Hakkında */}
+          <section className="space-y-4 pb-10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center text-white shadow-lg shadow-slate-400">
+                <i className="fas fa-info-circle"></i>
               </div>
-
-              <div>
-                <h4 className="text-base font-black text-indigo-700 uppercase tracking-tight mb-1">ITRF96 Dönüşümü</h4>
-                <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
-                  ITRF96 (GRS80 Elipsoidi) koordinatları, Transversal Mercator (TM) projeksiyonu ile hesaplanmaktadır. 3° dilim genişliği ve dilim orta meridyenleri (DOM) otomatik belirlenir.
-                </p>
-              </div>
-
-              <div>
-                <h4 className="text-base font-black text-indigo-700 uppercase tracking-tight mb-1">Düşey Datum (Yükseklik)</h4>
-                <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
-                  Ortometrik yükseklik (H), GPS'ten alınan Elipsoid yüksekliğinden (h), TG-20 Jeoid Modeli ondülasyon değeri (N) çıkarılarak hesaplanır.
-                </p>
-              </div>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Hakkında")}</h3>
             </div>
-          </div>
-        </section>
-
-        {/* Veri Güvenliği */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-200">
-              <i className="fas fa-shield-alt"></i>
-            </div>
-            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Veri Güvenliği</h3>
-          </div>
-          <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-6">
-            <p className="text-emerald-900 text-sm leading-relaxed font-medium text-justify">
-              Verileriniz tamamen cihazınızda saklanır. Uygulama, konum verilerinizi hiçbir uzak sunucuya göndermez. Mobil cihazınızdan uygulamayı sildiğinizde veya tarayıcı önbelliğini temizlediğinizde cihazınızdaki veriler de silinecektir. Ölçüm sonrası verilerinizi yedeklemeyi unutmayın.
-            </p>
-          </div>
-        </section>
-
-        {/* Sorumluluk Reddi */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-rose-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-rose-200">
-              <i className="fas fa-exclamation-triangle"></i>
-            </div>
-            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Sorumluluk Reddi</h3>
-          </div>
-          <div className="bg-rose-50 border border-rose-100 rounded-2xl p-6">
-            <p className="text-sm text-rose-900 font-medium leading-relaxed text-justify">
-              Uygulama tarafından sağlanan verilerin doğruluğu ve hassasiyeti, mobil cihazınızın donanımsal (GPS/GNSS) alıcı kapasitesine, uydu görünürlüğüne ve çevresel faktörlere bağlıdır. Uygulama, profesyonel jeodezik ekipmanların yerini tutmaz. Elde edilen verilerin kritik mühendislik projelerinde kullanılmadan önce profesyonel ekipmanlarla doğrulanması önerilir. Oluşabilecek hatalardan veya veri kayıplarından yazılım geliştiricisi sorumlu tutulamaz.
-            </p>
-          </div>
-        </section>
-
-        {/* Veri Kaynakları */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-              <i className="fas fa-copyright"></i>
-            </div>
-            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Veri Kaynakları</h3>
-          </div>
-          <div className="soft-card p-6 space-y-4">
-            <p className="text-sm text-slate-600 font-medium leading-relaxed text-justify">
-              Uygulamada kullanılan tüm veriler açık kaynaklı veya lisanslı servislerden sağlanmaktadır. Telif ihlali barındıran herhangi bir içerik bulunmamaktadır.
-            </p>
-            <div className="space-y-3">
+            <div className="soft-card p-6 space-y-4">
+              <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
+                {t("Bu uygulama, saha çalışmalarında hızlı ve pratik koordinat ölçümü, aplikasyon ve veri yönetimi sağlamak ve basit CBS verisi toplamak amacıyla geliştirilmiştir. Uygulama ile ilgili herhangi bir sorun yaşıyorsanız veya bir özellik isteğiniz varsa e-posta yoluyla iletişime geçebilirsiniz.")}
+              </p>
               <div className="flex flex-col">
-                <span className="text-sm font-black text-slate-400 uppercase tracking-widest">Konum Verisi</span>
-                <span className="text-sm font-bold text-slate-900">Mobil Cihazın GPS Verisi (WGS84 Format)</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-black text-slate-400 uppercase tracking-widest">Koordinat Dönüşümleri</span>
-                <span className="text-sm font-bold text-slate-900">Custom Helmert & TM Projection Formulas (HGM/EPSG Standards)</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-black text-slate-400 uppercase tracking-widest">Jeoid Modeli</span>
-                <span className="text-sm font-bold text-slate-900">TG-20 (Çözünürlük: 5'x5')</span>
-                <span className="text-sm font-bold text-slate-900">EGM96 (Çözünürlük: 5'x5')</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-black text-slate-400 uppercase tracking-widest">Harita Servisleri</span>
-                <span className="text-sm font-bold text-slate-900">Leaflet JS Open-Source Library</span>
-                <span className="text-sm font-bold text-slate-900">Google Maps API (Satellite/Hybrid)</span>
-                <span className="text-sm font-bold text-slate-900">OpenStreetMap Contributors</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-black text-slate-400 uppercase tracking-widest">Yazılım Kütüphaneleri</span>
-                <span className="text-sm font-bold text-slate-900">Proj4js (Coordinate Transformations)</span>
-                <span className="text-sm font-bold text-slate-900">SheetJS & JSZip (Data Export Services)</span>
-                <span className="text-sm font-bold text-slate-900">Lucide React & Font Awesome (Icons)</span>
+                <span className="text-sm font-black text-slate-400 uppercase tracking-widest">{t("İletişim")}</span>
+                <span className="text-sm font-medium text-slate-900"><span className="font-black">acb</span>maps@gmail.com</span>
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* Hakkında */}
-        <section className="space-y-4 pb-10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center text-white shadow-lg shadow-slate-400">
-              <i className="fas fa-info-circle"></i>
-            </div>
-            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Hakkında</h3>
-          </div>
-          <div className="soft-card p-6 space-y-4">
-            <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
-              Bu uygulama, saha çalışmalarında hızlı ve pratik koordinat ölçümü, aplikasyon ve veri yönetimi sağlamak ve basit CBS verisi toplamak amacıyla geliştirilmiştir. Uygulama ile ilgili herhangi bir sorun yaşıyorsanız veya bir özellik isteğiniz varsa e-posta yoluyla iletişime geçebilirsiniz.
-            </p>
-            <div className="flex flex-col">
-              <span className="text-sm font-black text-slate-400 uppercase tracking-widest">İletişim</span>
-              <span className="text-sm font-medium text-slate-900"><span className="font-black">acb</span>maps@gmail.com</span>
-            </div>
-          </div>
-        </section>
-      </div>
+          </section>
+        </div>
       </div>
       
       <GlobalFooter />

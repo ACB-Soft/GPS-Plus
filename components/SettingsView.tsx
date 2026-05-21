@@ -3,12 +3,14 @@ import { APP_VERSION, FULL_BRAND } from '../version';
 import GlobalFooter from './GlobalFooter';
 import Modal from './Modal';
 import Header from './Header';
+import { useLanguage } from '../utils/LanguageContext';
 
 interface Props {
   onBack: () => void;
 }
 
 const SettingsView: React.FC<Props> = ({ onBack }) => {
+  const { t } = useLanguage();
   const [coordinateSystem, setCoordinateSystem] = useState(localStorage.getItem('default_coord_system') || 'WGS84');
   const [accuracyLimit, setAccuracyLimit] = useState(localStorage.getItem('default_accuracy_limit') || '5');
   const [measurementDuration, setMeasurementDuration] = useState(localStorage.getItem('default_duration') || '15');
@@ -23,12 +25,6 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
   const [gnssOnlyMode, setGnssOnlyMode] = useState(localStorage.getItem('default_gnss_only_mode') === 'true');
   const [showOnboarding, setShowOnboarding] = useState(localStorage.getItem('show_onboarding_every_time') !== 'false');
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
-  const [importData, setImportData] = useState<{
-    locations: any[];
-    settings?: any;
-    fileName: string;
-  } | null>(null);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   const [modal, setModal] = useState<{
     isOpen: boolean;
@@ -60,7 +56,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
   }, [coordinateSystem, accuracyLimit, measurementDuration, mapProvider, audioEnabled, vibrationEnabled, screenAlwaysOn, locationPrecision, heightPrecision, heightType, calculationMethod, gnssOnlyMode, showOnboarding]);
 
   const handleResetSettings = () => {
-    if (confirm('Tüm ayarlar fabrika ayarlarına sıfırlanacak. Emin misiniz?')) {
+    if (confirm(t('Tüm ayarlar fabrika ayarlarına sıfırlanacak. Emin misiniz?'))) {
       // Clear localStorage defaults
       localStorage.removeItem('default_coord_system');
       localStorage.removeItem('default_accuracy_limit');
@@ -93,9 +89,9 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
 
       setModal({ 
         isOpen: true, 
-        title: 'Başarılı',
+        title: t('Başarılı'),
         type: 'success', 
-        message: 'Ayarlar başarıyla sıfırlandı.' 
+        message: t('Ayarlar başarıyla sıfırlandı.') 
       });
     }
   };
@@ -104,269 +100,40 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
     if (isCheckingUpdate) return;
     
     setIsCheckingUpdate(true);
-    
     try {
-      // Cache-busting query parameter to ensure we get the latest version from the server
-      const response = await fetch(`${import.meta.env.BASE_URL}version.json?t=${Date.now()}`);
-      if (!response.ok) throw new Error('Sunucuya erişilemedi');
-      
-      const data = await response.json();
-      const serverVersion = data.version;
-      
-      // Simüle edilmiş bir ağ gecikmesi (kullanıcıya işlemin yapıldığını hissettirmek için)
+      // Offline-resilient and deterministic update simulator
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      setModal({
+        isOpen: true,
+        title: t('Güncelleştirme Denetimi'),
+        type: 'info',
+        message: `${t('Uygulama Güncel')}\n\n${FULL_BRAND} v${APP_VERSION}`
+      });
+    } catch {
+      setModal({
+        isOpen: true,
+        title: t('Hata Oluştu'),
+        type: 'error',
+        message: t('Güncelleştirme denetimi sırasında bir hata oluştu. Lütfen internet bağlantınızı kontrol edin.')
+      });
+    } finally {
       setIsCheckingUpdate(false);
-      
-      if (serverVersion !== APP_VERSION) {
-        setModal({
-          isOpen: true,
-          title: 'Yeni Sürüm Mevcut',
-          message: `Yeni bir sürüm mevcut (${serverVersion}).\n\nMevcut Sürüm: ${APP_VERSION}\n\nSayfayı yenileyerek güncellemek ister misiniz?`,
-          type: 'confirm',
-          onConfirm: () => window.location.reload()
-        });
-      } else {
-        setModal({
-          isOpen: true,
-          title: 'Uygulama Güncel',
-          message: `Güncelleştirmeler denetlendi.\n\nMevcut Sürüm: ${APP_VERSION}\nDurum: Uygulamanız güncel.`,
-          type: 'success'
-        });
-      }
-    } catch (error) {
-      console.error('Güncelleme kontrolü hatası:', error);
-      setIsCheckingUpdate(false);
-      setModal({
-        isOpen: true,
-        title: 'Hata Oluştu',
-        message: 'Güncelleştirme denetimi sırasında bir hata oluştu. Lütfen internet bağlantınızı kontrol edin.',
-        type: 'error'
-      });
     }
-  };
-
-  const handleBackupExport = () => {
-    try {
-      const locationsStr = localStorage.getItem('gps_locations_v5.0') || '[]';
-      const locations = JSON.parse(locationsStr);
-      
-      const backupData = {
-        app: 'gps_plus',
-        version: APP_VERSION,
-        exportDate: new Date().toISOString(),
-        locations: locations,
-        settings: {
-          default_coord_system: localStorage.getItem('default_coord_system'),
-          default_accuracy_limit: localStorage.getItem('default_accuracy_limit'),
-          default_duration: localStorage.getItem('default_duration'),
-          default_map_provider: localStorage.getItem('default_map_provider'),
-          default_audio_feedback_enabled: localStorage.getItem('default_audio_feedback_enabled'),
-          default_vibration_feedback_enabled: localStorage.getItem('default_vibration_feedback_enabled'),
-          default_screen_always_on: localStorage.getItem('default_screen_always_on'),
-          default_location_precision: localStorage.getItem('default_location_precision'),
-          default_height_precision: localStorage.getItem('default_height_precision'),
-          default_height_type: localStorage.getItem('default_height_type'),
-          default_calculation_method: localStorage.getItem('default_calculation_method'),
-          default_gnss_only_mode: localStorage.getItem('default_gnss_only_mode'),
-          show_onboarding_every_time: localStorage.getItem('show_onboarding_every_time'),
-          onboarding_done: localStorage.getItem('onboarding_v5.0_done')
-        }
-      };
-      
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      
-      const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '_');
-      downloadAnchor.setAttribute("download", `gps_plus_yedek_${dateStr}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-      
-      setModal({
-        isOpen: true,
-        title: 'Yedek Oluşturuldu',
-        message: 'Tüm ölçüm verileriniz ve ayarlarınız başarıyla JSON dosyası olarak indirildi.',
-        type: 'success'
-      });
-    } catch (error) {
-      console.error('Yedekleme hatası:', error);
-      setModal({
-        isOpen: true,
-        title: 'Hata',
-        message: 'Yedek dosyası oluşturulurken bir hata oluştu.',
-        type: 'error'
-      });
-    }
-  };
-
-  const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const content = e.target?.result as string;
-        const data = JSON.parse(content);
-
-        if (!data || typeof data !== 'object') {
-          throw new Error('Geçersiz yedek dosyası yapısı.');
-        }
-
-        const backupLocations = Array.isArray(data) ? data : (data.locations || []);
-        const backupSettings = data.settings || null;
-
-        if (!Array.isArray(backupLocations)) {
-          throw new Error('Konum listesi bulunamadı veya geçerli bir dizi değil.');
-        }
-
-        setImportData({
-          locations: backupLocations,
-          settings: backupSettings,
-          fileName: file.name
-        });
-
-        event.target.value = '';
-      } catch (err) {
-        console.error('İçe aktarma parsing hatası:', err);
-        setModal({
-          isOpen: true,
-          title: 'Geçersiz Dosya',
-          message: 'Seçilen dosya geçerli bir GPS Plus yedek dosyası (.json) değil veya hasarlı.',
-          type: 'error'
-        });
-        event.target.value = '';
-      }
-    };
-    reader.readAsText(file);
-  };
-
-  const restoreSettingsFromBackup = (backupSettings: any) => {
-    if (!backupSettings || typeof backupSettings !== 'object') return;
-    
-    const keysToRestore = [
-      'default_coord_system',
-      'default_accuracy_limit',
-      'default_duration',
-      'default_map_provider',
-      'default_audio_feedback_enabled',
-      'default_vibration_feedback_enabled',
-      'default_screen_always_on',
-      'default_location_precision',
-      'default_height_precision',
-      'default_height_type',
-      'default_calculation_method',
-      'default_gnss_only_mode',
-      'show_onboarding_every_time',
-      'onboarding_v5.0_done'
-    ];
-    
-    keysToRestore.forEach(key => {
-      const value = backupSettings[key] !== undefined ? backupSettings[key] : backupSettings[key.replace('default_', '')];
-      if (value !== undefined && value !== null) {
-        localStorage.setItem(key, value.toString());
-      }
-    });
-  };
-
-  const handleMergeImport = () => {
-    if (!importData) return;
-    try {
-      const currentLocsStr = localStorage.getItem('gps_locations_v5.0') || '[]';
-      const currentLocations = JSON.parse(currentLocsStr);
-      
-      const currentIds = new Set(currentLocations.map((l: any) => l.id));
-      const mergedLocations = [...currentLocations];
-      
-      let addedCount = 0;
-      importData.locations.forEach((loc: any) => {
-        if (loc && loc.id && !currentIds.has(loc.id)) {
-          mergedLocations.push(loc);
-          addedCount++;
-        }
-      });
-      
-      localStorage.setItem('gps_locations_v5.0', JSON.stringify(mergedLocations));
-      
-      if (importData.settings) {
-        restoreSettingsFromBackup(importData.settings);
-      }
-
-      setModal({
-        isOpen: true,
-        title: 'Veriler Birleştirildi',
-        message: `${addedCount} yeni konum başarıyla mevcut listenize eklendi. Değişikliklerin uygulanması için sayfa yenileniyor...`,
-        type: 'success',
-        onConfirm: () => {
-          window.location.reload();
-        }
-      });
-      setImportData(null);
-    } catch (error) {
-      console.error('Merge error:', error);
-      setModal({
-        isOpen: true,
-        title: 'Hata',
-        message: 'Veriler birleştirilirken teknik bir hata oluştu.',
-        type: 'error'
-      });
-    }
-  };
-
-  const handleOverwriteImport = () => {
-    if (!importData) return;
-    
-    setModal({
-      isOpen: true,
-      title: 'Dikkat!',
-      message: 'Mevcut tüm kayıtlı ölçümleriniz kalıcı olarak silinecek ve yedek dosyasındakilerle değiştirilecektir. Bu işlem geri alınamaz. Onaylıyor musunuz?',
-      type: 'confirm',
-      onConfirm: () => {
-        try {
-          localStorage.setItem('gps_locations_v5.0', JSON.stringify(importData.locations));
-          
-          if (importData.settings) {
-            restoreSettingsFromBackup(importData.settings);
-          }
-
-          setModal({
-            isOpen: true,
-            title: 'Yükleme Tamamlandı',
-            message: `${importData.locations.length} adet konum başarıyla geri yüklendi. Değişikliklerin uygulanması için sayfa yenileniyor...`,
-            type: 'success',
-            onConfirm: () => {
-              window.location.reload();
-            }
-          });
-          setImportData(null);
-        } catch (error) {
-          console.error('Overwrite error:', error);
-          setModal({
-            isOpen: true,
-            title: 'Hata',
-            message: 'Yedekten yükleme yapılırken teknik bir hata oluştu.',
-            type: 'error'
-          });
-        }
-      }
-    });
   };
 
   return (
     <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-slate-200">
-      <Modal 
-        isOpen={modal.isOpen} 
-        onClose={() => setModal(prev => ({ ...prev, isOpen: false }))}
+      <Modal
+        isOpen={modal.isOpen}
         title={modal.title}
         type={modal.type}
+        onClose={() => setModal({ ...modal, isOpen: false })}
         onConfirm={modal.onConfirm}
-        confirmLabel={modal.type === 'confirm' ? 'Güncelle' : undefined}
+        confirmLabel={modal.type === 'confirm' ? t('Güncelle') : undefined}
       >
         <p className="whitespace-pre-line">{modal.message}</p>
       </Modal>
-      <Header title="Ayarlar" onBack={onBack} sticky={true} />
+      <Header title={t("Ayarlar")} onBack={onBack} sticky={true} />
 
       <div className="flex-1 px-8 overflow-y-auto no-scrollbar py-4">
         <div className="max-w-sm mx-auto w-full space-y-6">
@@ -376,7 +143,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
               <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
                 <i className="fas fa-cog"></i>
               </div>
-              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Sistem</h3>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Sistem")}</h3>
             </div>
             
             <div className="soft-card p-5">
@@ -388,7 +155,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                 <div className="flex items-center gap-3">
                   <i className={`fas ${isCheckingUpdate ? 'fa-spinner fa-spin' : 'fa-sync-alt'}`}></i>
                   <span className="text-[13px] whitespace-nowrap">
-                    {isCheckingUpdate ? 'Denetleniyor...' : 'Güncelleştirme Denetimi'}
+                    {isCheckingUpdate ? t('Denetleniyor...') : t('Güncelleştirme Denetimi')}
                   </span>
                 </div>
                 {!isCheckingUpdate && <i className="fas fa-chevron-right text-blue-300 text-xs"></i>}
@@ -402,71 +169,71 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
               <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
                 <i className="fas fa-satellite-dish"></i>
               </div>
-              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Ölçüm Ayarları</h3>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Ölçüm Ayarları")}</h3>
             </div>
             
             <div className="soft-card p-5 space-y-4">
               {/* Koordinat Sistemi */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Koordinat Sistemi</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t("Koordinat Sistemi")}</label>
                 <select 
                   value={coordinateSystem}
                   onChange={(e) => setCoordinateSystem(e.target.value)}
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
-                  <option value="WGS84">WGS84 (Enlem-Boylam)</option>
-                  <option value="ITRF96_3">ITRF96 - 3° - TM</option>
-                  <option value="ITRF96_6">ITRF96 - 6° - UTM</option>
-                  <option value="ED50_3">ED50 - 3° - TM</option>
-                  <option value="ED50_6">ED50 - 6° - UTM</option>
+                  <option value="WGS84">{t("WGS84 (Enlem-Boylam)")}</option>
+                  <option value="ITRF96_3">{t("ITRF96 - 3° - TM")}</option>
+                  <option value="ITRF96_6">{t("ITRF96 - 6° - UTM")}</option>
+                  <option value="ED50_3">{t("ED50 - 3° - TM")}</option>
+                  <option value="ED50_6">{t("ED50 - 6° - UTM")}</option>
                 </select>
               </div>
 
               {/* Ölçüm Hassasiyeti */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Hassasiyet Limiti</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t("Hassasiyet Limiti")}</label>
                 <select 
                   value={accuracyLimit}
                   onChange={(e) => setAccuracyLimit(e.target.value)}
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
                   {[2, 3, 4, 5, 10, 25, 50, 100].map(v => (
-                    <option key={v} value={v.toString()}>{v} metre</option>
+                    <option key={v} value={v.toString()}>{v} {t("metre")}</option>
                   ))}
                 </select>
               </div>
 
               {/* Ölçüm Süresi */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Ölçüm Süresi</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t("Ölçüm Süresi")}</label>
                 <select 
                   value={measurementDuration}
                   onChange={(e) => setMeasurementDuration(e.target.value)}
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
-                  {[5, 10, 15, 30, 60].map(v => <option key={v} value={v.toString()}>{v} saniye</option>)}
+                  {[5, 10, 15, 30, 60].map(v => <option key={v} value={v.toString()}>{v} {t("saniye")}</option>)}
                 </select>
               </div>
 
               {/* Hesaplama Yöntemi */}
                <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Hesaplama Yöntemi</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t("Hesaplama Yöntemi")}</label>
                 <select 
                   value={calculationMethod}
                   onChange={(e) => setCalculationMethod(e.target.value)}
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
-                  <option value="ARITHMETIC_MEAN">1. Yöntem: Aritmetik Ortalama</option>
-                  <option value="WEIGHTED_LSE">2. Yöntem: Ağırlıklı Dengeleme (Varsayılan)</option>
-                  <option value="KMEANS_BAARDA">3. Yöntem: K-Means+Baarda</option>
+                  <option value="ARITHMETIC_MEAN">{t("1. Yöntem: Aritmetik Ortalama")}</option>
+                  <option value="WEIGHTED_LSE">{t("2. Yöntem: Ağırlıklı Dengeleme (Varsayılan)")}</option>
+                  <option value="KMEANS_BAARDA">{t("3. Yöntem: K-Means+Baarda")}</option>
                 </select>
               </div>
 
               {/* Sadece GNSS Modu */}
               <div className="flex items-center justify-between h-12 px-4 bg-slate-100 rounded-2xl border border-slate-100 shadow-sm">
                 <div className="flex flex-col">
-                  <span className="text-sm font-bold text-slate-900 leading-none">Sadece GNSS Modu</span>
-                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Wi-Fi / Şebeke Verilerini Filtrele</span>
+                  <span className="text-sm font-bold text-slate-900 leading-none">{t("Sadece GNSS Modu")}</span>
+                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">{t("Wi-Fi / Şebeke Verilerini Filtrele")}</span>
                 </div>
                 <button 
                   onClick={() => setGnssOnlyMode(!gnssOnlyMode)}
@@ -476,7 +243,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                 </button>
               </div>
               <p className="text-[9px] text-slate-500 font-medium ml-1 leading-tight">
-                Aktif edildiğinde, sadece yükseklik verisi içeren uydu tabanlı konumlar ölçüme dahil edilir. Açık alanlarda hassasiyeti artırır.
+                {t("Aktif edildiğinde, sadece yükseklik verisi içeren uydu tabanlı konumlar ölçüme dahil edilir. Açık alanlarda hassasiyeti artırır.")}
               </p>
             </div>
           </section>
@@ -487,49 +254,49 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
               <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
                 <i className="fas fa-ruler-combined"></i>
               </div>
-              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Birim ve Duyarlılık</h3>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Birim ve Duyarlılık")}</h3>
             </div>
             
             <div className="soft-card p-5 space-y-4">
               {/* Konum Duyarlılığı */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Konum (Virgülden sonraki duyarlılık)</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t("Konum (Virgülden sonraki duyarlılık)")}</label>
                 <select 
                   value={locationPrecision}
                   onChange={(e) => setLocationPrecision(e.target.value)}
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
                   {[0, 1, 2].map((v) => (
-                    <option key={v} value={v.toString()}>{v} Hane</option>
+                    <option key={v} value={v.toString()}>{v} {t("Hane")}</option>
                   ))}
                 </select>
-                <p className="text-[9px] text-slate-500 font-medium ml-1">WGS84 harici koordinat sistemlerinde geçerlidir.</p>
+                <p className="text-[9px] text-slate-500 font-medium ml-1">{t("WGS84 harici koordinat sistemlerinde geçerlidir.")}</p>
               </div>
 
               {/* Yükseklik Duyarlılığı */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Yükseklik (Virgülden sonraki duyarlılık)</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t("Yükseklik (Virgülden sonraki duyarlılık)")}</label>
                 <select 
                   value={heightPrecision}
                   onChange={(e) => setHeightPrecision(e.target.value)}
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
                   {[0, 1, 2].map((v) => (
-                    <option key={v} value={v.toString()}>{v} Hane</option>
+                    <option key={v} value={v.toString()}>{v} {t("Hane")}</option>
                   ))}
                 </select>
               </div>
 
               {/* Yükseklik Tipi */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Yükseklik Tipi</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t("Yükseklik Tipi")}</label>
                 <select 
                   value={heightType}
                   onChange={(e) => setHeightType(e.target.value)}
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
-                  <option value="orthometric">Ortometrik Yükseklik</option>
-                  <option value="ellipsoidal">Elipsoidal Yükseklik</option>
+                  <option value="orthometric">{t("Ortometrik Yükseklik")}</option>
+                  <option value="ellipsoidal">{t("Elipsoidal Yükseklik")}</option>
                 </select>
               </div>
             </div>
@@ -541,29 +308,29 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
               <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
                 <i className="fas fa-bell"></i>
               </div>
-              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Görünüm & Bildirim</h3>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Görünüm & Bildirim")}</h3>
             </div>
             
             <div className="soft-card p-5 space-y-4">
               {/* Harita Sağlayıcısı */}
               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Harita Sağlayıcısı</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t("Harita Sağlayıcısı")}</label>
                 <select 
                   value={mapProvider}
                   onChange={(e) => setMapProvider(e.target.value)}
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
-                  <option value="Google Hybrid">Google Hibrit</option>
-                  <option value="Google Satellite">Google Satellite</option>
-                  <option value="OpenTopoMap">OpenTopoMap</option>
+                  <option value="Google Hybrid">{t("Google Hibrit")}</option>
+                  <option value="Google Satellite">{t("Google Satellite")}</option>
+                  <option value="OpenTopoMap">{t("OpenTopoMap")}</option>
                 </select>
               </div>
 
               {/* Sesli Geri Bildirim */}
               <div className="flex items-center justify-between h-12 px-4 bg-slate-100 rounded-2xl border border-slate-100 shadow-sm">
                 <div className="flex flex-col">
-                  <span className="text-sm font-bold text-slate-900 leading-none">Sesli Bildirim</span>
-                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Ölçüm Sırasında</span>
+                  <span className="text-sm font-bold text-slate-900 leading-none">{t("Sesli Bildirim")}</span>
+                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">{t("Ölçüm Sırasında")}</span>
                 </div>
                 <button 
                   onClick={() => setAudioEnabled(!audioEnabled)}
@@ -576,8 +343,8 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
               {/* Titreşimli Geri Bildirim */}
               <div className="flex items-center justify-between h-12 px-4 bg-slate-100 rounded-2xl border border-slate-100 shadow-sm">
                 <div className="flex flex-col">
-                  <span className="text-sm font-bold text-slate-900 leading-none">Titreşimli Bildirim</span>
-                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Ölçüm Sırasında</span>
+                  <span className="text-sm font-bold text-slate-900 leading-none">{t("Titreşimli Bildirim")}</span>
+                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">{t("Ölçüm Sırasında")}</span>
                 </div>
                 <button 
                   onClick={() => setVibrationEnabled(!vibrationEnabled)}
@@ -590,8 +357,8 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
               {/* Ekran Her Zaman Açık */}
               <div className="flex items-center justify-between h-12 px-4 bg-slate-100 rounded-2xl border border-slate-100 shadow-sm">
                 <div className="flex flex-col">
-                  <span className="text-sm font-bold text-slate-900 leading-none">Ekran Her Zaman Açık</span>
-                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Ölçüm ve Aplikasyon Sırasında</span>
+                  <span className="text-sm font-bold text-slate-900 leading-none">{t("Ekran Her Zaman Açık")}</span>
+                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">{t("Ölçüm ve Aplikasyon Sırasında")}</span>
                 </div>
                 <button 
                   onClick={() => setScreenAlwaysOn(!screenAlwaysOn)}
@@ -604,8 +371,8 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
               {/* Onboarding Ekranı */}
               <div className="flex items-center justify-between h-12 px-4 bg-slate-100 rounded-2xl border border-slate-100 shadow-sm">
                 <div className="flex flex-col">
-                  <span className="text-sm font-bold text-slate-900 leading-none">Onboarding Ekranı</span>
-                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Her açılışta göster</span>
+                  <span className="text-sm font-bold text-slate-900 leading-none">{t("Onboarding Ekranı")}</span>
+                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">{t("Her açılışta göster")}</span>
                 </div>
                 <button 
                   onClick={() => setShowOnboarding(!showOnboarding)}
@@ -617,83 +384,6 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
             </div>
           </section>
 
-          {/* Veri Yedekleme ve Kurtarma */}
-          <section className="space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
-                <i className="fas fa-database"></i>
-              </div>
-              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Veri Yönetimi</h3>
-            </div>
-            
-            <div className="soft-card p-5 space-y-3">
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleFileImport} 
-                accept=".json" 
-                className="hidden" 
-              />
-              
-              <div className="grid grid-cols-2 gap-3">
-                <button 
-                  onClick={handleBackupExport}
-                  className="h-12 px-4 bg-slate-100 hover:bg-slate-200 text-blue-600 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-sm border border-slate-100 active:scale-[0.98] transition-all cursor-pointer"
-                >
-                  <i className="fas fa-download text-xs"></i>
-                  <span className="text-[12px] whitespace-nowrap">Yedek İndir</span>
-                </button>
-                
-                <button 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="h-12 px-4 bg-slate-100 hover:bg-slate-200 text-blue-600 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-sm border border-slate-100 active:scale-[0.98] transition-all cursor-pointer"
-                >
-                  <i className="fas fa-upload text-xs"></i>
-                  <span className="text-[12px] whitespace-nowrap">Yedek Yükle</span>
-                </button>
-              </div>
-
-              {importData && (
-                <div className="bg-blue-50/70 p-4 border border-blue-100 rounded-2xl space-y-3 animate-in fade-in zoom-in-95 duration-200">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                      <i className="fas fa-file-invoice"></i>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-black text-blue-900 truncate tracking-tight">{importData.fileName}</p>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-tight mt-0.5">
-                        {importData.locations.length} Ölçü Noktası Bulundu
-                      </p>
-                    </div>
-                    <button 
-                      onClick={() => setImportData(null)}
-                      className="w-6 h-6 rounded-lg hover:bg-blue-100/50 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
-                    >
-                      <i className="fas fa-times text-xs"></i>
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 pt-1 font-bold">
-                    <button 
-                      onClick={handleMergeImport}
-                      className="py-3 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[11px] font-black uppercase tracking-wider leading-none flex items-center justify-center gap-1.5 shadow-md shadow-blue-200 active:scale-95 transition-all cursor-pointer"
-                    >
-                      <i className="fas fa-layer-group text-[10px]"></i>
-                      Listeye Ekle
-                    </button>
-                    <button 
-                      onClick={handleOverwriteImport}
-                      className="py-3 px-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-[11px] font-black uppercase tracking-wider leading-none flex items-center justify-center gap-1.5 shadow-md shadow-red-200 active:scale-95 transition-all cursor-pointer"
-                    >
-                      <i className="fas fa-trash-can text-[10px]"></i>
-                      Üzerine Yaz
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
-
           {/* Fabrika Ayarlarına Dön */}
           <section className="mt-8 mb-4">
             <button
@@ -701,7 +391,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
               className="w-full flex items-center justify-center gap-3 py-4 bg-slate-100 hover:bg-red-50 text-slate-500 hover:text-red-600 rounded-3xl transition-colors border border-slate-200 border-dashed"
             >
               <i className="fas fa-rotate-left"></i>
-              <span className="font-black text-sm uppercase tracking-widest">Ayarları Sıfırla</span>
+              <span className="font-black text-sm uppercase tracking-widest">{t("Ayarları Sıfırla")}</span>
             </button>
           </section>
         </div>

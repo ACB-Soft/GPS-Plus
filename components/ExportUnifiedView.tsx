@@ -4,6 +4,7 @@ import { downloadKML } from './KMLUtils';
 import { downloadExcel, downloadTechnicalReport } from './ExcelUtils';
 import { downloadTXT } from './TxtUtils';
 import DataAnalysisView from './DataAnalysisView';
+import { useLanguage } from '../utils/LanguageContext';
 
 interface Props {
   locations: SavedLocation[];
@@ -11,6 +12,7 @@ interface Props {
 }
 
 const ExportUnifiedView: React.FC<Props> = ({ locations, settings }) => {
+  const { t } = useLanguage();
   const uniqueFolders: string[] = Array.from(new Set(locations.map(l => l.folderName)));
   const [selectedFolder, setSelectedFolder] = useState<string>(uniqueFolders.length > 0 ? uniqueFolders[0] : '');
   
@@ -32,11 +34,11 @@ const ExportUnifiedView: React.FC<Props> = ({ locations, settings }) => {
   const getSelectedPoint = () => locations.find(l => l.id === selectedPointId);
 
   const handleOpenAnalysis = () => {
-    const password = prompt("Analiz sayfasına giriş için şifreyi giriniz:");
+    const password = prompt(t("Analiz sayfasına giriş için şifreyi giriniz:"));
     if (password === "748123") {
       setShowAnalysis(true);
     } else if (password !== null) {
-      alert("Hatalı şifre!");
+      alert(t("Hatalı şifre!"));
     }
   };
 
@@ -63,7 +65,7 @@ const ExportUnifiedView: React.FC<Props> = ({ locations, settings }) => {
                className="w-full p-4 rounded-3xl border border-slate-200 bg-slate-100 font-bold text-slate-800 appearance-none outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50 transition-all shadow-sm text-sm"
              >
                {uniqueFolders.map(name => (
-                 <option key={name} value={name}>{name} ({locations.filter(l => l.folderName === name).length} Nokta)</option>
+                 <option key={name} value={name}>{name} ({locations.filter(l => l.folderName === name).length} {t("Nokta")})</option>
                ))}
              </select>
              <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
@@ -72,7 +74,7 @@ const ExportUnifiedView: React.FC<Props> = ({ locations, settings }) => {
           </div>
         ) : (
           <div className="p-8 text-center bg-slate-100 rounded-3xl border border-dashed border-slate-200">
-            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Kayıtlı Proje Bulunamadı</p>
+            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t("Kayıtlı Proje Bulunamadı")}</p>
           </div>
         )}
       </div>
@@ -101,7 +103,7 @@ const ExportUnifiedView: React.FC<Props> = ({ locations, settings }) => {
           <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/30 shrink-0">
             <i className="fas fa-file-excel text-xl"></i>
           </div>
-          <span className="tracking-tight">Excel Dökümanı (.XLSX)</span>
+          <span className="tracking-tight">{t("Excel Dökümanı (.XLSX)")}</span>
         </button>
 
         <button 
@@ -114,7 +116,7 @@ const ExportUnifiedView: React.FC<Props> = ({ locations, settings }) => {
           <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/30 shrink-0">
             <i className="fas fa-file-lines text-xl"></i>
           </div>
-          <span className="tracking-tight">Metin Belgesi (.TXT)</span>
+          <span className="tracking-tight">{t("Metin Belgesi (.TXT)")}</span>
         </button>
 
         <div className="pt-6 mt-4 border-t border-slate-100 flex flex-col gap-4">
@@ -124,7 +126,7 @@ const ExportUnifiedView: React.FC<Props> = ({ locations, settings }) => {
               className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] hover:text-blue-400 transition-colors py-2 px-4 border border-slate-100 rounded-full"
             >
               <i className="fas fa-flask mr-2 opacity-50"></i>
-              AR-GE MODÜLÜ
+              {t("AR-GE MODÜLÜ")}
             </button>
           </div>
         </div>

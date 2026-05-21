@@ -9,6 +9,7 @@ import { isIOS } from '../utils/browser';
 import JSZip from 'jszip';
 import GlobalFooter from './GlobalFooter';
 import Header from './Header';
+import { useLanguage } from '../utils/LanguageContext';
 
 
 interface Props {
@@ -20,28 +21,32 @@ interface Props {
 }
 
 // Optimized helper components
-const MapPopupContent = React.memo(({ name, subtitle, onGo, color }: { name: string, subtitle?: string, onGo: () => void, color?: string }) => (
-  <div className="p-3 min-w-[140px] bg-slate-200 rounded-2xl shadow-xl border border-slate-100 flex flex-col gap-2">
-    <div className="flex flex-col px-1">
-      <div className="flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color || '#3b82f6' }}></div>
-        <h4 className="font-black text-slate-800 text-[11px] truncate leading-tight">{name}</h4>
+const MapPopupContent = React.memo(({ name, subtitle, onGo, color }: { name: string, subtitle?: string, onGo: () => void, color?: string }) => {
+  const { t } = useLanguage();
+  return (
+    <div className="p-3 min-w-[140px] bg-slate-200 rounded-2xl shadow-xl border border-slate-100 flex flex-col gap-2">
+      <div className="flex flex-col px-1">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color || '#3b82f6' }}></div>
+          <h4 className="font-black text-slate-800 text-[11px] truncate leading-tight">{name}</h4>
+        </div>
+        {subtitle && (
+          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5 ml-4">{subtitle}</p>
+        )}
       </div>
-      {subtitle && (
-        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5 ml-4">{subtitle}</p>
-      )}
+      <button 
+        onClick={onGo}
+        className="w-full py-2 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-[0.15em] active:scale-95 transition-all"
+      >
+        {t("GİT")}
+      </button>
     </div>
-    <button 
-      onClick={onGo}
-      className="w-full py-2 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-[0.15em] active:scale-95 transition-all"
-    >
-      GİT
-    </button>
-  </div>
-));
+  );
+});
 
 // Optimized Vertex Layer with Spatial Filtering
 const LazyVertexLayer = React.memo(({ geometries, zoom, onVertexSelect }: { geometries: StakeoutGeometry[], zoom: number, onVertexSelect: (g: StakeoutGeometry, c: {lat: number, lng: number}, idx: number) => void }) => {
+  const { t } = useLanguage();
   const map = useMap();
   const [bounds, setBounds] = useState(map.getBounds());
 
@@ -72,7 +77,7 @@ const LazyVertexLayer = React.memo(({ geometries, zoom, onVertexSelect }: { geom
               <Popup closeButton={false} className="custom-leaflet-popup">
                 <MapPopupContent 
                   name={g.name}
-                  subtitle={`Köşe ${idx + 1}`}
+                  subtitle={`${t("Köşe")} ${idx + 1}`}
                   color={g.color}
                   onGo={() => onVertexSelect(g, c, idx)}
                 />
@@ -198,6 +203,7 @@ const BoundsUpdater = ({ points, geometries }: { points: StakeoutPoint[], geomet
 };
 
 const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, currentStep, onNavigate }) => {
+  const { t } = useLanguage();
   const [view, setView] = useState<'MENU' | 'LIST' | 'MANUAL' | 'MAP' | 'ALL_MAP'>((currentStep as any) || (initialPoint ? 'MAP' : 'MENU'));
   const [allMapZoom, setAllMapZoom] = useState(0);
   const [allMapCenterTrigger, setAllMapCenterTrigger] = useState<{ pos: [number, number], time: number } | null>(null);
@@ -399,16 +405,16 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
           if (totalPoints.length > 0 || totalGeometries.length > 0) {
             setPoints(prev => [...prev, ...totalPoints]);
             setGeometries(prev => [...prev, ...totalGeometries]);
-            showToast(`${totalPoints.length} nokta ve ${totalGeometries.length} geometri yüklendi`, "success");
+            showToast(`${totalPoints.length} ${t("nokta ve")} ${totalGeometries.length} ${t("geometri yüklendi")}`, "success");
           } else {
-            showToast("KML dosyaları içerisinde veri bulunamadı.", "info");
+            showToast(t("KML dosyaları içerisinde veri bulunamadı."), "info");
           }
         } else {
-          showToast("KMZ dosyası içerisinde KML bulunamadı.", "error");
+          showToast(t("KMZ dosyası içerisinde KML bulunamadı."), "error");
         }
       } catch (err) {
         console.error("KMZ okuma hatası:", err);
-        showToast("KMZ dosyası okunamadı.", "error");
+        showToast(t("KMZ dosyası okunamadı."), "error");
       }
     } else {
       const reader = new FileReader();
@@ -417,7 +423,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
         const result = parseKML(text);
         setPoints(prev => [...prev, ...result.points]);
         setGeometries(prev => [...prev, ...result.geometries]);
-        showToast("KML/KMZ dosya yüklendi", "success");
+        showToast(t("KML/KMZ dosya yüklendi"), "success");
       };
       reader.readAsText(file);
     }
@@ -438,7 +444,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
     }
 
     if (isNaN(lat) || isNaN(lng)) {
-      showToast("Geçersiz koordinat girişi.", "error");
+      showToast(t("Geçersiz koordinat girişi."), "error");
       return;
     }
 
@@ -528,10 +534,10 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
         }
       `}</style>
       <Header 
-        title={view === 'MENU' ? 'Aplikasyon Yap' : 
-               view === 'LIST' ? 'Nokta Listesi' : 
-               view === 'MANUAL' ? 'Manuel Ekle' : 
-               view === 'ALL_MAP' ? 'Tüm Noktalar' : 'Aplikasyon Ekranı'} 
+        title={view === 'MENU' ? t('Aplikasyon Yap') : 
+               view === 'LIST' ? t('Nokta Listesi') : 
+               view === 'MANUAL' ? t('Manuel Ekle') : 
+               view === 'ALL_MAP' ? t('Tüm Noktalar') : t('Aplikasyon Ekranı')} 
       />
 
       {/* Toast Notification */}
@@ -543,7 +549,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
             </div>
             <div className="flex-1">
               <h4 className="text-sm font-black text-slate-900 leading-tight">
-                {toast.type === 'error' ? 'Hata' : toast.type === 'info' ? 'Bilgi' : 'Başarılı'}
+                {toast.type === 'error' ? t('Hata') : toast.type === 'info' ? t('Bilgi') : t('Başarılı')}
               </h4>
               <p className="text-[11px] text-slate-500 font-bold leading-tight mt-0.5">{toast.message}</p>
             </div>
@@ -563,8 +569,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                       <i className="fas fa-keyboard text-xl"></i>
                     </div>
                     <div className="text-left">
-                      <span className="font-black text-slate-900 block">Manuel Koordinat Ekle</span>
-                      <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">El ile Giriş</span>
+                      <span className="font-black text-slate-900 block">{t("Manuel Koordinat Ekle")}</span>
+                      <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">{t("El ile Giriş")}</span>
                     </div>
                   </button>
   
@@ -573,8 +579,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                       <i className="fas fa-file-import text-xl"></i>
                     </div>
                     <div className="text-left">
-                      <span className="font-black text-slate-900 block">KML / KMZ Yükle</span>
-                      <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Dosyadan Aktar</span>
+                      <span className="font-black text-slate-900 block">{t("KML / KMZ Yükle")}</span>
+                      <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">{t("Dosyadan Aktar")}</span>
                     </div>
                       <input 
                         type="file" 
@@ -589,14 +595,14 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                       <i className="fas fa-list-ul text-xl"></i>
                     </div>
                     <div className="text-left">
-                      <span className="font-black text-slate-900 block">Nokta Listesini Gör</span>
-                      <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">{points.length} Nokta Hazır</span>
+                      <span className="font-black text-slate-900 block">{t("Nokta Listesini Gör")}</span>
+                      <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">{points.length} {t("Nokta Hazır")}</span>
                     </div>
                   </button>
   
                   <button 
                     onClick={() => {
-                      if (points.length === 0 && geometries.length === 0) showToast("Haritada gösterilecek veri bulunamadı.", "info");
+                      if (points.length === 0 && geometries.length === 0) showToast(t("Haritada gösterilecek veri bulunamadı."), "info");
                       else onNavigate('ALL_MAP');
                     }} 
                     className="w-full py-2.5 md:py-3.5 px-5 bg-slate-100 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 active:scale-[0.98] transition-all"
@@ -605,8 +611,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                       <i className="fas fa-map-marked-alt text-xl"></i>
                     </div>
                     <div className="text-left">
-                      <span className="font-black text-slate-900 block">Harita Üzerinde Gör</span>
-                      <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">{points.length} Nokta, {geometries.length} Geometri</span>
+                      <span className="font-black text-slate-900 block">{t("Harita Üzerinde Gör")}</span>
+                      <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">{points.length} {t("Nokta")}, {geometries.length} {t("Geometri")}</span>
                     </div>
                   </button>
                 </div>
@@ -623,7 +629,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                 {points.length === 0 ? (
                   <div className="p-12 text-center bg-slate-100 rounded-[2.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center gap-4">
                     <i className="fas fa-ghost text-3xl text-slate-200"></i>
-                    <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Liste Boş</p>
+                    <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">{t("Liste Boş")}</p>
                   </div>
                 ) : (
                   points.map(p => (
@@ -639,10 +645,10 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                               return (
                                 <>
                                   <p className="text-[10px] font-bold text-slate-400 mono-font">
-                                    {labelX}: {x.toFixed(precision)}
+                                    {t(labelX)}: {x.toFixed(precision)}
                                   </p>
                                   <p className="text-[10px] font-bold text-slate-400 mono-font">
-                                    {labelY}: {y.toFixed(precision)}
+                                    {t(labelY)}: {y.toFixed(precision)}
                                   </p>
                                 </>
                               );
@@ -662,7 +668,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                           }}
                           className="px-4 py-2 bg-blue-600 text-white text-[10px] font-black rounded-xl uppercase tracking-widest active:scale-95 transition-all"
                         >
-                          GİT
+                          {t("GİT")}
                         </button>
                         <button 
                           onClick={() => setPoints(prev => prev.filter(pt => pt.id !== p.id))}
@@ -688,7 +694,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   }}
                   className={`w-full py-3 text-[10px] font-black uppercase tracking-[0.3em] transition-all ${confirmClear === 'LIST' ? 'text-red-600 bg-red-100 rounded-2xl' : 'text-slate-400 hover:text-red-500'}`}
                 >
-                  {confirmClear === 'LIST' ? 'EMİN MİSİNİZ? (TEKRAR TIKLAYIN)' : 'LİSTEYİ TEMİZLE'}
+                  {confirmClear === 'LIST' ? t('EMİN MİSİNİZ? (TEKRAR TIKLAYIN)') : t('LİSTEYİ TEMİZLE')}
                 </button>
               </div>
             </div>
@@ -702,24 +708,24 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
               <div className="py-8 pt-4 mx-auto max-w-sm w-full">
                 <div className="soft-card p-8 space-y-6">
                   <div className="space-y-2">
-                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Nokta Adı</label>
-                    <input type="text" value={manualName} onChange={e => setManualName(e.target.value)} placeholder="Örn: P1" className="w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all" />
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">{t("Nokta Adı")}</label>
+                    <input type="text" value={manualName} onChange={e => setManualName(e.target.value)} placeholder={t("Örn: P1")} className="w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Koordinat Sistemi</label>
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">{t("Koordinat Sistemi")}</label>
                     <select value={manualSystem} onChange={e => setManualSystem(e.target.value)} className="w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none">
-                      <option value="WGS84">WGS84 (Enlem-Boylam)</option>
-                      <option value="ITRF96_3">ITRF96 - 3° - TM</option>
-                      <option value="ITRF96_6">ITRF96 - 6° - UTM</option>
-                      <option value="ED50_3">ED50 - 3° - TM</option>
-                      <option value="ED50_6">ED50 - 6° - UTM</option>
+                      <option value="WGS84">{t("WGS84 (Enlem-Boylam)")}</option>
+                      <option value="ITRF96_3">{t("ITRF96 - 3° - TM")}</option>
+                      <option value="ITRF96_6">{t("ITRF96 - 6° - UTM")}</option>
+                      <option value="ED50_3">{t("ED50 - 3° - TM")}</option>
+                      <option value="ED50_6">{t("ED50 - 6° - UTM")}</option>
                     </select>
                   </div>
 
                   {manualSystem !== 'WGS84' && (
                     <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
                       <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">
-                        {manualSystem.endsWith('_3') ? 'Dilim Orta Meridyeni (DOM)' : 'UTM Zon (6°)'}
+                        {manualSystem.endsWith('_3') ? t('Dilim Orta Meridyeni (DOM)') : t('UTM Zon (6°)')}
                       </label>
                       <select 
                         value={manualZone} 
@@ -727,22 +733,22 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                         className="w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none"
                       >
                         {manualSystem.endsWith('_3') ? (
-                          <>
-                            <option value="27">27° (DOM)</option>
-                            <option value="30">30° (DOM)</option>
-                            <option value="33">33° (DOM)</option>
-                            <option value="36">36° (DOM)</option>
-                            <option value="39">39° (DOM)</option>
-                            <option value="42">42° (DOM)</option>
-                            <option value="45">45° (DOM)</option>
-                          </>
+                           <>
+                             <option value="27">27° (DOM)</option>
+                             <option value="30">30° (DOM)</option>
+                             <option value="33">33° (DOM)</option>
+                             <option value="36">36° (DOM)</option>
+                             <option value="39">39° (DOM)</option>
+                             <option value="42">42° (DOM)</option>
+                             <option value="45">45° (DOM)</option>
+                           </>
                         ) : (
-                          <>
-                            <option value="35">35 (Zon)</option>
-                            <option value="36">36 (Zon)</option>
-                            <option value="37">37 (Zon)</option>
-                            <option value="38">38 (Zon)</option>
-                          </>
+                           <>
+                             <option value="35">35 (Zon)</option>
+                             <option value="36">36 (Zon)</option>
+                             <option value="37">37 (Zon)</option>
+                             <option value="38">38 (Zon)</option>
+                           </>
                         )}
                       </select>
                     </div>
@@ -751,19 +757,19 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">
-                        {manualSystem === 'WGS84' ? 'Enlem (N/X)' : 'Sağa (E/Y)'}
+                        {manualSystem === 'WGS84' ? t('Enlem (N/X)') : t('Sağa (E/Y)')}
                       </label>
                       <input type="number" value={manualX} onChange={e => setManualX(e.target.value)} placeholder="0.000" className="w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">
-                        {manualSystem === 'WGS84' ? 'Boylam (E/Y)' : 'Yukarı (N/X)'}
+                        {manualSystem === 'WGS84' ? t('Boylam (E/Y)') : t('Yukarı (N/X)')}
                       </label>
                       <input type="number" value={manualY} onChange={e => setManualY(e.target.value)} placeholder="0.000" className="w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all" />
                     </div>
                   </div>
                   <button onClick={handleAddManual} className="w-full py-2.5 md:py-3.5 px-5 bg-blue-600 text-white rounded-2xl font-black text-[13px] uppercase tracking-widest shadow-xl shadow-blue-100 active:scale-95 transition-all">
-                    LİSTEYE EKLE
+                    {t("LİSTEYE EKLE")}
                   </button>
                 </div>
               </div>
@@ -813,7 +819,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   onVertexSelect={(g, c, idx) => {
                     const newPt: StakeoutPoint = {
                       id: `snap-${Date.now()}`,
-                      name: `${g.name} - K${idx + 1}`,
+                      name: `${g.name} - ${t("Köşe")} ${idx + 1}`,
                       lat: c.lat,
                       lng: c.lng,
                       coordinateSystem: 'WGS84',
@@ -866,7 +872,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
             </div>
             <div className="absolute bottom-0 left-0 right-0 z-20 px-8 py-4 bg-slate-200/95 backdrop-blur-md shadow-[0_-10px_30px_rgba(0,0,0,0.1)] border-t border-slate-100 flex items-center justify-between">
                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                 {points.length} Nokta, {geometries.length} Geometri
+                 {points.length} {t("Nokta")}, {geometries.length} {t("Geometri")}
                </p>
                <div className="flex items-center gap-2">
                  <button 
@@ -884,7 +890,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                    }}
                    className={`px-3 py-1.5 text-[9px] font-black rounded-lg uppercase tracking-wider border transition-all active:scale-95 ${confirmClear === 'MAP' ? 'bg-red-600 text-white border-red-600' : 'bg-red-50 text-red-600 border-red-100'}`}
                  >
-                   {confirmClear === 'MAP' ? 'EMİN MİSİNİZ?' : 'EKRANI TEMİZLE'}
+                   {confirmClear === 'MAP' ? t('EMİN MİSİNİZ?') : t('EKRANI TEMİZLE')}
                  </button>
                </div>
             </div>
@@ -1010,11 +1016,11 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     {guidance.totalDist < 5 && (
                       <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1">
                         <div className="bg-emerald-500 text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest animate-pulse">
-                          YAKIN ÇEKİM MODU
+                          {t("YAKIN ÇEKİM MODU")}
                         </div>
                         {guidance.totalDist < 2.0 && (
                           <div className="bg-emerald-600 text-white px-4 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-widest shadow-lg shadow-emerald-200 animate-bounce">
-                            HEDEFE ULAŞILDI
+                            {t("HEDEFE ULAŞILDI")}
                           </div>
                         )}
                       </div>
@@ -1028,7 +1034,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
               <div className="mb-2 flex items-center justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <h3 className="text-xl font-black text-slate-900 truncate leading-tight">{activePoint.name}</h3>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Seçili Nokta</p>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{t("Seçili Nokta")}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button 
@@ -1039,7 +1045,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     className="flex items-center gap-2 px-3 py-2 bg-slate-900 text-white rounded-xl active:scale-95 transition-all shadow-lg shadow-slate-200"
                   >
                     <i className="fas fa-route text-[10px]"></i>
-                    <span className="text-[9px] font-black uppercase tracking-wider">Navigasyon</span>
+                    <span className="text-[9px] font-black uppercase tracking-wider">{t("Navigasyon")}</span>
                   </button>
                 </div>
               </div>
@@ -1050,39 +1056,39 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     {userPos ? `±${userPos.accuracy.toFixed(1)}` : '---'}
                     <span className="text-[10px] ml-1">m</span>
                   </div>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Hassasiyet</p>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{t("Hassasiyet")}</p>
                 </div>
                 <div className="bg-blue-100/50 p-2 rounded-2xl border border-blue-200/50">
                   <div className="text-xl font-black text-blue-600 mono-font leading-none">
                     {guidance ? guidance.totalDist.toFixed(1) : '---'}
                     <span className="text-[10px] ml-1">m</span>
                   </div>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Mesafe</p>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{t("Mesafe")}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-slate-100 p-2 rounded-2xl border border-slate-200">
                   <div className="text-[8px] font-black text-slate-400 uppercase mb-0.5">
-                    {heading !== null ? 'İLERİ / GERİ' : 'KUZEY / GÜNEY'}
+                    {heading !== null ? t('İLERİ / GERİ') : t('KUZEY / GÜNEY')}
                   </div>
                   <div className={`text-base font-black mono-font ${guidance && (heading !== null ? guidance.forward : guidance.north) > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                     {guidance ? Math.abs(heading !== null ? guidance.forward : guidance.north).toFixed(1) : '0.0'}
                     <span className="text-[10px] ml-1">m</span>
                     <span className="text-[9px] ml-2 opacity-60">
-                      {guidance ? ((heading !== null ? guidance.forward : guidance.north) > 0 ? (heading !== null ? 'İLERİ' : 'KUZEY') : (heading !== null ? 'GERİ' : 'GÜNEY')) : ''}
+                      {guidance ? ((heading !== null ? guidance.forward : guidance.north) > 0 ? (heading !== null ? t('İLERİ') : t('KUZEY')) : (heading !== null ? t('GERİ') : t('GÜNEY'))) : ''}
                     </span>
                   </div>
                 </div>
                 <div className="bg-slate-100 p-2 rounded-2xl border border-slate-200">
                   <div className="text-[8px] font-black text-slate-400 uppercase mb-0.5">
-                    {heading !== null ? 'SAĞ / SOL' : 'DOĞU / BATI'}
+                    {heading !== null ? t('SAĞ / SOL') : t('DOĞU / BATI')}
                   </div>
                   <div className={`text-base font-black mono-font ${guidance && (heading !== null ? guidance.right : guidance.east) > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                     {guidance ? Math.abs(heading !== null ? guidance.right : guidance.east).toFixed(1) : '0.0'}
                     <span className="text-[10px] ml-1">m</span>
                     <span className="text-[9px] ml-2 opacity-60">
-                      {guidance ? ((heading !== null ? guidance.right : guidance.east) > 0 ? (heading !== null ? 'SAĞ' : 'DOĞU') : (heading !== null ? 'SOL' : 'BATI')) : ''}
+                      {guidance ? ((heading !== null ? guidance.right : guidance.east) > 0 ? (heading !== null ? t('SAĞ') : t('DOĞU')) : (heading !== null ? t('SOL') : t('BATI'))) : ''}
                     </span>
                   </div>
                 </div>
@@ -1090,7 +1096,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
               
               {!heading && (
                 <p className="mt-1.5 text-[8px] text-center text-slate-400 font-bold uppercase tracking-widest animate-pulse">
-                  Pusula verisi bekleniyor... (K/G/D/B modu)
+                  {t("Pusula verisi bekleniyor... (K/G/D/B modu)")}
                 </p>
               )}
             </div>

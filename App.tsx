@@ -13,8 +13,10 @@ import Header from './components/Header';
 import { SavedLocation, Coordinate, StakeoutPoint, AppSettings, CalculationMethod } from './types';
 import { geoidService } from './services/GeoidService';
 import { calculateResult } from './utils/MathUtils';
+import { useLanguage } from './utils/LanguageContext';
 
 const App = () => {
+  const { t } = useLanguage();
   type ViewType = 'onboarding' | 'dashboard' | 'capture' | 'list' | 'export' | 'result' | 'stakeout' | 'help' | 'settings';
   const [view, setView] = useState<ViewType>('onboarding');
   const [subView, setSubView] = useState<string | null>(null);
@@ -392,13 +394,13 @@ const App = () => {
                    onClick={() => handleNewMeasurement(true)} 
                    className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black shadow-2xl shadow-blue-200 active:scale-95 transition-all text-[13px] uppercase tracking-[0.2em] leading-none"
                  >
-                   YENİ NOKTA EKLE
+                   {t("YENİ NOKTA EKLE")}
                  </button>
                  <button 
                    onClick={resetToDashboard} 
                    className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[12px] uppercase tracking-[0.2em] transition-all leading-none shadow-xl shadow-slate-300"
                  >
-                   ÖLÇÜMÜ BİTİR
+                   {t("ÖLÇÜMÜ BİTİR")}
                  </button>
               </div>
             </div>

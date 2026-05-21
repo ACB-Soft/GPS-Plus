@@ -4,6 +4,7 @@ import { convertCoordinate, getSystemDisplayLabel } from '../utils/CoordinateUti
 import { getAccuracyColor } from '../utils/StyleUtils';
 import { useOrthometricHeight } from '../hooks/useGeoid';
 import { calculateMaxDistance } from '../utils/MathUtils';
+import { useLanguage } from '../utils/LanguageContext';
 
 interface Props {
   locations: SavedLocation[];
@@ -27,6 +28,7 @@ const SavedLocationItem: React.FC<{
   onRenamePoint: (id: string, newName: string) => void;
   onViewOnMap: (l: SavedLocation) => void;
 }> = ({ l, settings, expanded, togglePoint, deletingPoint, setDeletingPoint, onDelete, onRenamePoint, onViewOnMap }) => {
+  const { t } = useLanguage();
   const geoidInfo = useOrthometricHeight(l.altitude, l.lat, l.lng);
   const isOrthometric = settings.heightType === 'orthometric';
   const displayHeight = isOrthometric ? geoidInfo.orthometricHeight : geoidInfo.ellipsoidalHeight;
@@ -96,11 +98,11 @@ const SavedLocationItem: React.FC<{
     return (
       <>
         <div className="flex flex-col">
-          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{labelX}</span>
+          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t(labelX)}</span>
           <p className="text-[13px] mono-font text-slate-800 font-bold leading-tight">{formattedX}</p>
         </div>
         <div className="flex flex-col">
-          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{labelY}</span>
+          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t(labelY)}</span>
           <p className="text-[13px] mono-font text-slate-800 font-bold leading-tight">{formattedY}</p>
         </div>
       </>
@@ -145,7 +147,7 @@ const SavedLocationItem: React.FC<{
           <div onClick={() => togglePoint(l.id)} className="min-w-0 flex-1 cursor-pointer select-none">
             <h5 className="text-[15px] font-black text-slate-900 truncate">{l.name}</h5>
             <p className="text-[11px] text-slate-400 font-bold uppercase tracking-tight mt-0.5">
-              {expanded ? 'Detayları Gizle' : 'Koordinatları Gör'}
+              {expanded ? t('Detayları Gizle') : t('Koordinatları Gör')}
             </p>
           </div>
         )}
@@ -154,7 +156,7 @@ const SavedLocationItem: React.FC<{
             <button 
               onClick={() => setIsEditing(true)} 
               className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-blue-500 hover:bg-blue-100 rounded-xl transition-colors active:scale-90"
-              title="Noktayı Düzenle"
+              title={t("Noktayı Düzenle")}
               type="button"
             >
               <i className="fas fa-pen text-xs"></i>
@@ -166,20 +168,20 @@ const SavedLocationItem: React.FC<{
                 onClick={() => { onDelete(l.id); setDeletingPoint(null); }}
                 className="px-3 py-2 bg-red-600 text-white text-[10px] font-black rounded-xl uppercase tracking-widest shadow-lg shadow-red-600/20"
               >
-                SİL
+                {t("SİL")}
               </button>
               <button 
                 onClick={() => setDeletingPoint(null)}
                 className="px-3 py-2 bg-slate-100 text-slate-500 text-[10px] font-black rounded-xl uppercase tracking-widest"
               >
-                İPTAL
+                {t("İPTAL")}
               </button>
             </div>
           ) : (
             <button 
               onClick={() => setDeletingPoint(l.id)} 
               className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-100 rounded-xl transition-colors active:scale-90"
-              title="Noktayı Sil"
+              title={t("Noktayı Sil")}
               type="button"
             >
               <i className="fas fa-trash-can text-sm"></i>
@@ -194,23 +196,23 @@ const SavedLocationItem: React.FC<{
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div className="flex flex-col">
-              <span className="text-[9px] font-black text-slate-400 tracking-widest leading-none mb-0.5">{isOrthometric ? 'YÜKSEKLİK' : 'h-ELİPSOİD'}</span>
+              <span className="text-[9px] font-black text-slate-400 tracking-widest leading-none mb-0.5">{isOrthometric ? t('YÜKSEKLİK') : t('h-ELİPSOİD')}</span>
               <p className="text-[13px] md:text-[14px] mono-font text-blue-600 font-black leading-tight">{displayHeight !== null ? `${displayHeight.toFixed(heightPrecision)}m` : '---'}</p>
             </div>
             <div className="flex flex-col">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">Hassasiyet</span>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t("Hassasiyet")}</span>
               <p className={`text-[13px] md:text-[14px] mono-font font-black leading-tight ${getAccuracyColor(dynamicAccuracy)}`}>±{dynamicAccuracy.toFixed(1)}m</p>
             </div>
             <div className="flex flex-col">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">GPS Sinyali</span>
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t("GPS Sinyali")}</span>
                 <p className={`text-[9px] font-black uppercase tracking-widest leading-tight mt-0.5 ${
                   reliability === 'HIGH' ? 'text-emerald-600' :
                   reliability === 'MEDIUM' || reliability === 'UNKNOWN' ? 'text-amber-600' : 
                   'text-rose-600'
                 }`}>
-                  {reliability === 'HIGH' ? 'GÜVENLİ' : 
-                   reliability === 'MEDIUM' ? 'ORTA GÜVEN' : 
-                   reliability === 'LOW' ? 'GÜVENSİZ' : 'VERİ AZ'}
+                  {reliability === 'HIGH' ? t('GÜVENLİ') : 
+                   reliability === 'MEDIUM' ? t('ORTA GÜVEN') : 
+                   reliability === 'LOW' ? t('GÜVENSİZ') : t('VERİ AZ')}
                 </p>
               </div>
           </div>
@@ -220,14 +222,14 @@ const SavedLocationItem: React.FC<{
               className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-blue-600/20"
             >
               <i className="fas fa-map-location-dot"></i>
-              Harita Üzerinde Gör
+              {t("Harita Üzerinde Gör")}
             </button>
             <button 
               onClick={() => handleNavigate(l.lat, l.lng)}
               className="w-full py-2.5 bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-emerald-600/20"
             >
               <i className="fas fa-route"></i>
-              Navigasyona Gönder
+              {t("Navigasyona Gönder")}
             </button>
           </div>
         </div>
@@ -237,6 +239,7 @@ const SavedLocationItem: React.FC<{
 };
 
 const SavedLocationsList: React.FC<Props> = ({ locations, settings, onDelete, onDeleteFolder, onRenameFolder, onRenamePoint, onBulkDelete, onViewOnMap }) => {
+  const { t } = useLanguage();
   const [expanded, setExpanded] = useState<string[]>([]);
   const [expandedPoints, setExpandedPoints] = useState<string[]>([]);
   const [deletingFolder, setDeletingFolder] = useState<string | null>(null);
@@ -274,7 +277,7 @@ const SavedLocationsList: React.FC<Props> = ({ locations, settings, onDelete, on
     if (locs.length === 0) return '';
     const sys = locs[0].coordinateSystem;
     const allSame = locs.every(l => l.coordinateSystem === sys);
-    return allSame ? getSystemDisplayLabel(sys) : 'Karışık';
+    return allSame ? t(getSystemDisplayLabel(sys)) : t('Karışık');
   };
 
   const getFolderZone = (locs: SavedLocation[]) => {
@@ -322,7 +325,7 @@ const SavedLocationsList: React.FC<Props> = ({ locations, settings, onDelete, on
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate mb-0.5">
                       {getFolderCoordinateSystem(locs)} {getFolderZone(locs)}
                     </p>
-                    <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest">{locs.length} Nokta</p>
+                    <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest">{locs.length} {t("Nokta")}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 pl-2 border-l border-slate-100 ml-2 shrink-0">
@@ -332,13 +335,13 @@ const SavedLocationsList: React.FC<Props> = ({ locations, settings, onDelete, on
                           onClick={() => { onDeleteFolder(name); setDeletingFolder(null); }}
                           className="px-3 py-2 bg-red-600 text-white text-[10px] font-black rounded-xl uppercase tracking-widest shadow-lg shadow-red-600/20"
                         >
-                          SİL
+                          {t("SİL")}
                         </button>
                         <button 
                           onClick={() => setDeletingFolder(null)}
                           className="px-3 py-2 bg-slate-100 text-slate-500 text-[10px] font-black rounded-xl uppercase tracking-widest"
                         >
-                          İPTAL
+                          {t("İPTAL")}
                         </button>
                       </div>
                     ) : (
@@ -346,7 +349,7 @@ const SavedLocationsList: React.FC<Props> = ({ locations, settings, onDelete, on
                         <button 
                           onClick={() => handleStartEdit(name)}
                           className="w-10 h-10 flex items-center justify-center bg-blue-100 text-blue-600 rounded-2xl transition-all active:scale-90 shadow-sm"
-                          title="Projeyi Düzenle"
+                          title={t("Projeyi Düzenle")}
                           type="button"
                         >
                           <i className="fas fa-pen text-sm"></i>
@@ -354,7 +357,7 @@ const SavedLocationsList: React.FC<Props> = ({ locations, settings, onDelete, on
                         <button 
                           onClick={() => setDeletingFolder(name)}
                           className="w-10 h-10 flex items-center justify-center bg-red-100 text-red-600 rounded-2xl transition-all active:scale-90 shadow-sm"
-                          title="Projeyi Sil"
+                          title={t("Projeyi Sil")}
                           type="button"
                         >
                           <i className="fas fa-trash text-sm"></i>
@@ -391,8 +394,8 @@ const SavedLocationsList: React.FC<Props> = ({ locations, settings, onDelete, on
             <i className="fas fa-folder-open text-2xl"></i>
           </div>
           <div className="space-y-1">
-            <h4 className="font-black text-slate-400 uppercase tracking-widest text-xs">Henüz Proje Yok</h4>
-            <p className="text-[11px] text-slate-400 font-bold">Yeni bir ölçüm yaparak başlayabilirsiniz.</p>
+            <h4 className="font-black text-slate-400 uppercase tracking-widest text-xs">{t("Henüz Proje Yok")}</h4>
+            <p className="text-[11px] text-slate-400 font-bold">{t("Yeni bir ölçüm yaparak başlayabilirsiniz.")}</p>
           </div>
         </div>
       )}

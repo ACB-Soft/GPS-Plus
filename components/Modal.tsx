@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../utils/LanguageContext';
 
 interface Props {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface Props {
 }
 
 const Modal: React.FC<Props> = ({ isOpen, onClose, title, children, confirmLabel, onConfirm, type = 'info' }) => {
+  const { t } = useLanguage();
   if (!isOpen) return null;
 
   return (
@@ -52,7 +54,7 @@ const Modal: React.FC<Props> = ({ isOpen, onClose, title, children, confirmLabel
                   }}
                   className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black text-[13px] uppercase tracking-[0.2em] active:scale-95 transition-all shadow-xl shadow-blue-200"
                 >
-                  {confirmLabel || 'Tamam'}
+                  {confirmLabel || t('Tamam')}
                 </button>
               )}
               <button 
@@ -61,7 +63,7 @@ const Modal: React.FC<Props> = ({ isOpen, onClose, title, children, confirmLabel
                   onConfirm ? 'bg-slate-100 text-slate-400' : 'bg-blue-600 text-white shadow-xl shadow-blue-200'
                 }`}
               >
-                {onConfirm ? 'İptal' : 'Kapat'}
+                {onConfirm ? t('İptal') : t('Kapat')}
               </button>
             </div>
           </div>

@@ -5,6 +5,7 @@ import { SavedLocation, AppSettings } from '../types';
 import { convertCoordinate, getSystemDisplayLabel } from '../utils/CoordinateUtils';
 import { useOrthometricHeight } from '../hooks/useGeoid';
 import { calculateMaxDistance } from '../utils/MathUtils';
+import { useLanguage } from '../utils/LanguageContext';
 
 
 // Map rendering fix for modals
@@ -26,6 +27,7 @@ interface Props {
 }
 
 const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = false, onCloseMap }) => {
+  const { t } = useLanguage();
   const [showMap, setShowMap] = useState(initialShowMap);
   const [showWarning, setShowWarning] = useState(false);
   const { x, y, labelX, labelY, zone } = convertCoordinate(location.lat, location.lng, location.coordinateSystem || 'WGS84');
@@ -103,10 +105,10 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
     <>
       <div className="soft-card p-5 md:p-6 border-slate-200/60 space-y-5 md:space-y-6 text-center animate-in relative overflow-hidden bg-white max-w-sm mx-auto shadow-2xl shadow-slate-300/50">
         <div className="space-y-2 md:space-y-3">
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex items-center justify-center gap-2 font-sans">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 rounded-full border border-emerald-100 shadow-sm">
                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-               <span className="text-[10px] md:text-[11px] font-black text-emerald-600 uppercase tracking-[0.2em] leading-none">Kayıt Edildi</span>
+               <span className="text-[10px] md:text-[11px] font-black text-emerald-600 uppercase tracking-[0.2em] leading-none">{t("Kayıt Edildi")}</span>
             </div>
             <div className={`inline-flex items-center justify-center px-4 py-1.5 rounded-full border shadow-sm min-w-[100px] ${
                 reliability === 'HIGH' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
@@ -114,9 +116,9 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
                 'bg-rose-50 border-rose-100 text-rose-600'
               }`}>
                 <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] leading-none">
-                  {reliability === 'HIGH' ? 'GÜVENLİ' : 
-                   reliability === 'MEDIUM' ? 'ORTA GÜVEN' : 
-                   reliability === 'LOW' ? 'GÜVENSİZ' : 'VERİ AZ'}
+                  {reliability === 'HIGH' ? t('GÜVENLİ') : 
+                   reliability === 'MEDIUM' ? t('ORTA GÜVEN') : 
+                   reliability === 'LOW' ? t('GÜVENSİZ') : t('VERİ AZ')}
                 </span>
               </div>
           </div>
@@ -129,20 +131,20 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
         <div className="space-y-4">
           {location.coordinateSystem && (
             <div className="text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] leading-none">
-              {getSystemDisplayLabel(location.coordinateSystem)} {zone && `(${zone})`}
+              {t(getSystemDisplayLabel(location.coordinateSystem))} {zone && `(${zone})`}
             </div>
           )}
           <div className="grid grid-cols-2 gap-3 md:gap-4">
             <div className="bg-slate-50 p-4 md:p-5 rounded-2xl md:rounded-3xl border border-slate-100 text-left shadow-sm">
-              <div className="text-[9px] md:text-[10px] text-slate-400 font-black uppercase mb-1 leading-none">{labelX}</div>
+              <div className="text-[9px] md:text-[10px] text-slate-400 font-black uppercase mb-1 leading-none">{t(labelX)}</div>
               <div className="text-[14px] md:text-[16px] font-bold text-slate-900 mono-font leading-none">{formattedX}</div>
             </div>
             <div className="bg-slate-50 p-4 md:p-5 rounded-2xl md:rounded-3xl border border-slate-100 text-left shadow-sm">
-              <div className="text-[9px] md:text-[10px] text-slate-400 font-black uppercase mb-1 leading-none">{labelY}</div>
+              <div className="text-[9px] md:text-[10px] text-slate-400 font-black uppercase mb-1 leading-none">{t(labelY)}</div>
               <div className="text-[14px] md:text-[16px] font-bold text-slate-900 mono-font leading-none">{formattedY}</div>
             </div>
             <div className="bg-blue-50/50 p-4 md:p-5 rounded-2xl md:rounded-3xl border border-blue-100 text-left shadow-sm">
-              <div className="text-[9px] md:text-[10px] text-blue-500 font-black mb-1 leading-none tracking-widest">{isOrthometric ? 'YÜKSEKLİK' : 'h-ELİPSOİD'}</div>
+              <div className="text-[9px] md:text-[10px] text-blue-500 font-black mb-1 leading-none tracking-widest">{isOrthometric ? t('YÜKSEKLİK') : t('h-ELİPSOİD')}</div>
               <div className="text-xl md:text-2xl font-black text-blue-600 mono-font leading-none">{displayHeight !== null ? displayHeight.toFixed(heightPrecision) : '---'}<span className="text-[10px] ml-1">m</span></div>
             </div>
             <div className={`p-4 md:p-5 rounded-2xl md:rounded-3xl border text-left transition-colors shadow-sm ${
@@ -152,7 +154,7 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
               <div className={`text-[9px] md:text-[10px] font-black uppercase mb-1 leading-none ${
                 dynamicAccuracy <= 10 ? 'text-emerald-500' : 
                 dynamicAccuracy <= 20 ? 'text-amber-500' : 'text-rose-500'
-              }`}>Hassasiyet</div>
+              }`}>{t("Hassasiyet")}</div>
               <div className={`text-xl md:text-2xl font-black mono-font leading-none ${
                 dynamicAccuracy <= 10 ? 'text-emerald-600' : 
                 dynamicAccuracy <= 20 ? 'text-amber-600' : 'text-rose-600'
@@ -163,10 +165,10 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
         
         <button 
           onClick={() => setShowMap(true)}
-          className="w-full pt-4 md:pt-5 border-t border-slate-100 flex items-center justify-center gap-3 text-[11px] font-black text-blue-600 uppercase tracking-[0.3em] active:scale-95 transition-all hover:text-blue-700"
+          className="w-full pt-4 md:pt-5 border-t border-slate-100 flex items-center justify-center gap-3 text-[11px] font-black text-blue-600 uppercase tracking-[0.3em] active:scale-95 transition-all hover:text-blue-700 cursor-pointer"
         >
           <i className="fas fa-map-marked-alt text-sm"></i>
-          HARİTADA GÖR
+          {t("HARİTADA GÖR")}
         </button>
 
         <button 
@@ -174,10 +176,10 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
             const url = `https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lng}`;
             window.open(url, '_blank');
           }}
-          className="w-full pt-4 md:pt-5 border-t border-slate-100 flex items-center justify-center gap-3 text-[11px] font-black text-emerald-600 uppercase tracking-[0.3em] active:scale-95 transition-all hover:text-emerald-700"
+          className="w-full pt-4 md:pt-5 border-t border-slate-100 flex items-center justify-center gap-3 text-[11px] font-black text-emerald-600 uppercase tracking-[0.3em] active:scale-95 transition-all hover:text-emerald-700 cursor-pointer"
         >
           <i className="fas fa-route text-sm"></i>
-          NAVİGASYONA GÖNDER
+          {t("NAVİGASYONA GÖNDER")}
         </button>
       </div>
 
@@ -189,7 +191,7 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
                 setShowMap(false);
                 if (onCloseMap) onCloseMap();
               }}
-              className="w-12 h-12 bg-slate-200/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all"
+              className="w-12 h-12 bg-slate-200/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all cursor-pointer"
             >
               <i className="fas fa-times"></i>
             </button>
@@ -229,7 +231,7 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
           <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[10000] w-full max-w-xs px-6">
             <div className="bg-white/90 backdrop-blur-md p-5 rounded-2xl shadow-2xl border border-slate-200 flex items-center justify-between gap-4">
               <div className="flex flex-col">
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Hassasiyet</p>
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t("Hassasiyet")}</p>
                 <p className={`text-base font-black mono-font leading-none ${
                   dynamicAccuracy <= 10 ? 'text-emerald-600' : 
                   dynamicAccuracy <= 20 ? 'text-amber-600' : 'text-rose-600'
@@ -238,7 +240,7 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
                 </p>
               </div>
               <div className="text-right flex-1 min-w-0">
-                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Nokta Adı</p>
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t("Nokta Adı")}</p>
                 <p className="text-sm font-black text-slate-900 truncate leading-none">{location.name}</p>
               </div>
             </div>
@@ -257,46 +259,46 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
                   <i className="fas fa-satellite-dish text-rose-500 text-2xl animate-pulse"></i>
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Düşük Sinyal Kalitesi!</h3>
-                  <p className="text-sm font-medium text-slate-600 leading-relaxed">
-                    Ölçüm sırasında çevresel ve donanımsal faktörler nedeniyle hatalar tespit edildi.
+                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">{t("Düşük Sinyal Kalitesi!")}</h3>
+                  <p className="text-sm font-medium text-slate-600 leading-relaxed font-sans">
+                    {t("Ölçüm sırasında çevresel ve donanımsal faktörler nedeniyle hatalar tespit edildi.")}
                   </p>
                   <div className="bg-rose-50 p-3 rounded-2xl border border-rose-100 mt-2">
                     <p className="text-[11px] font-bold text-rose-700 leading-tight">
-                      Gerçek konumunuz gösterilenden farklı olabilir. Ölçümü gökyüzü açık bir alanda tekrarlamanız önerilir.
+                      {t("Gerçek konumunuz gösterilenden farklı olabilir. Ölçümü gökyüzü açık bir alanda tekrarlamanız önerilir.")}
                     </p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setShowWarning(false)}
-                  className="w-full h-14 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-slate-200"
+                  className="w-full h-14 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-slate-200 cursor-pointer text-xs"
                 >
-                  ANLADIM
+                  {t("ANLADIM")}
                 </button>
               </div>
             </div>
           ) : (
             <div className="relative bg-white rounded-[32px] p-6 w-full max-w-sm shadow-2xl border border-amber-100 animate-in zoom-in duration-300">
-              <div className="flex flex-col items-center text-center space-y-4">
+              <div className="flex flex-col items-center text-center space-y-4 font-sans">
                 <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center border border-amber-100 mb-2">
                   <i className="fas fa-satellite-dish text-amber-500 text-2xl animate-pulse"></i>
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Orta Sinyal Kalitesi!</h3>
+                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">{t("Orta Sinyal Kalitesi!")}</h3>
                   <p className="text-sm font-medium text-slate-600 leading-relaxed">
-                    Ölçüm sırasında çevresel ve donanımsal faktörler nedeniyle hatalar tespit edildi.
+                    {t("Ölçüm sırasında çevresel ve donanımsal faktörler nedeniyle hatalar tespit edildi.")}
                   </p>
                   <div className="bg-amber-50 p-3 rounded-2xl border border-amber-100 mt-2">
                     <p className="text-[11px] font-bold text-amber-700 leading-tight">
-                      Gerçek konumunuz gösterilenden farklı olabilir. Ölçümü gökyüzü açık bir alanda tekrarlamanız önerilir.
+                      {t("Gerçek konumunuz gösterilenden farklı olabilir. Ölçümü gökyüzü açık bir alanda tekrarlamanız önerilir.")}
                     </p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setShowWarning(false)}
-                  className="w-full h-14 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-slate-200"
+                  className="w-full h-14 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-slate-200 cursor-pointer text-xs"
                 >
-                  ANLADIM
+                  {t("ANLADIM")}
                 </button>
               </div>
             </div>

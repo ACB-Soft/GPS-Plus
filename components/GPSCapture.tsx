@@ -5,6 +5,7 @@ import { convertToMSL } from './GeoidUtils';
 import { getAccuracyColor, getAccuracyBg } from '../utils/StyleUtils';
 import GlobalFooter from './GlobalFooter';
 import Header from './Header';
+import { useLanguage } from '../utils/LanguageContext';
 
 interface Props {
   onComplete: (coord: Coordinate, folderName: string, pointName: string, description: string, coordinateSystem: string, duration: number, samples: Coordinate[], usedIndices: number[], accuracyLimit: number, method: CalculationMethod) => void;
@@ -17,6 +18,7 @@ interface Props {
 }
 
 const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = false, existingLocations, currentStep, onNavigate, settings }) => {
+  const { t } = useLanguage();
   const [step, setStep] = useState<'SELECT_MODE' | 'FORM' | 'READY' | 'COUNTDOWN'>(currentStep || (isContinuing ? 'READY' : 'SELECT_MODE'));
   const [isNewProject, setIsNewProject] = useState(!isContinuing);
 
@@ -119,10 +121,10 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
             (err2) => {
               let msg = `Kod: ${err2.code} - ${err2.message}`;
               if (err2.code === 1) {
-                msg = "Konum izni reddedildi. Lütfen ayarlardan izin verin.";
+                msg = t("Konum izni reddedildi. Lütfen ayarlardan izin verin.");
               }
-              else if (err2.code === 2) msg = "Konum alınamıyor. GPS sinyali zayıf olabilir.";
-              else if (err2.code === 3) msg = "Zaman aşımı. GPS yanıt vermedi.";
+              else if (err2.code === 2) msg = t("Konum alınamıyor. GPS sinyali zayıf olabilir.");
+              else if (err2.code === 3) msg = t("Zaman aşımı. GPS yanıt vermedi.");
               setCaptureError(msg);
             },
             { enableHighAccuracy: false, timeout: 30000, maximumAge: 10000 }
@@ -131,14 +133,15 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
         options
       );
     } else {
-      setCaptureError("Tarayıcınız konum servisini desteklemiyor.");
+      setCaptureError(t("Tarayıcınız konum servisini desteklemiyor."));
     }
   };
 
   const getNextPointName = useCallback((projName: string) => {
     const projPoints = existingLocations.filter(l => l.folderName === projName);
-    return `Nokta${projPoints.length + 1}`;
-  }, [existingLocations]);
+    const label = t("Nokta");
+    return `${label}${projPoints.length + 1}`;
+  }, [existingLocations, t]);
 
   useEffect(() => {
     if (folderName) setPointName(getNextPointName(folderName));
@@ -258,7 +261,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       }
     }
     if (samples.length === 0) {
-      alert("Konum verisi alınamadı.");
+      alert(t("Konum verisi alınamadı."));
       window.history.back();
       return;
     }
@@ -405,17 +408,17 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
 
   if (step === 'SELECT_MODE') return (
     <div className="w-full flex flex-col bg-slate-200 animate-in h-full relative overflow-y-auto no-scrollbar">
-      <Header title="Ölçüm Yap" />
+      <Header title={t("Ölçüm Yap")} />
       
       <div className="w-full px-6 pt-4 mx-auto">
         <div className="max-w-sm mx-auto w-full space-y-4">
           <button onClick={() => { setIsNewProject(true); setFolderName(''); onNavigate('FORM'); }} className="w-full py-3 md:py-4 px-5 bg-slate-100 rounded-3xl shadow-md border border-slate-100 text-left active:scale-[0.97] transition-all flex items-center gap-5">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center shrink-0"><i className="fas fa-folder-plus text-xl"></i></div>
-            <span className="font-black text-lg text-slate-900">Yeni Proje Oluştur</span>
+            <span className="font-black text-lg text-slate-900">{t("Yeni Proje Oluştur")}</span>
           </button>
           <button onClick={() => { setIsNewProject(false); onNavigate('FORM'); }} className="w-full py-3 md:py-4 px-5 bg-slate-100 rounded-3xl shadow-md border border-slate-100 text-left active:scale-[0.97] transition-all flex items-center gap-5">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0"><i className="fas fa-folder-open text-xl"></i></div>
-            <span className="font-black text-lg text-slate-900">Mevcut Proje Seç</span>
+            <span className="font-black text-lg text-slate-900">{t("Mevcut Proje Seç")}</span>
           </button>
         </div>
       </div>
@@ -425,36 +428,36 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
 
   if (step === 'FORM') return (
     <div className="w-full flex flex-col bg-slate-200 animate-in h-full relative overflow-y-auto no-scrollbar">
-      <Header title="Proje Bilgisi" />
+      <Header title={t("Proje Bilgisi")} />
 
       <div className="w-full px-6 pt-4 mx-auto">
         <div className="max-w-sm mx-auto w-full">
           <div className="soft-card p-6 w-full space-y-5 bg-slate-100">
           <div className="space-y-2">
-            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Proje Adı</label>
+            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">{t("Proje Adı")}</label>
             {isNewProject ? (
-              <input type="text" placeholder="Örn: Saha Çalışması A" value={folderName} onChange={e => setFolderName(e.target.value)} className="w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all text-base" />
+              <input type="text" placeholder={t("Örn: Saha Çalışması A")} value={folderName} onChange={e => setFolderName(e.target.value)} className="w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-all text-base" />
             ) : (
               <select value={folderName} onChange={e => setFolderName(e.target.value)} className="w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none text-base">
-                <option value="">Seçiniz...</option>
+                <option value="">{t("Seçiniz...")}</option>
                 {Array.from(new Set(existingLocations.map(l => l.folderName))).map(n => <option key={n} value={n}>{n}</option>)}
               </select>
             )}
           </div>
           
           <div className="space-y-2">
-            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Koordinat Sistemi</label>
+            <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">{t("Koordinat Sistemi")}</label>
             <select 
               value={coordinateSystem} 
               onChange={e => setCoordinateSystem(e.target.value)} 
               disabled={!isNewProject}
               className={`w-full p-4 bg-slate-100 border border-slate-200 rounded-2xl font-bold text-slate-900 outline-none appearance-none text-base ${!isNewProject ? 'opacity-60 cursor-not-allowed' : ''}`}
             >
-              <option value="WGS84">WGS84 (Enlem-Boylam)</option>
-              <option value="ITRF96_3">ITRF96 - 3° - TM</option>
-              <option value="ITRF96_6">ITRF96 - 6° - UTM</option>
-              <option value="ED50_3">ED50 - 3° - TM</option>
-              <option value="ED50_6">ED50 - 6° - UTM</option>
+              <option value="WGS84">{t("WGS84 (Enlem-Boylam)")}</option>
+              <option value="ITRF96_3">{t("ITRF96 - 3° - TM")}</option>
+              <option value="ITRF96_6">{t("ITRF96 - 6° - UTM")}</option>
+              <option value="ED50_3">{t("ED50 - 3° - TM")}</option>
+              <option value="ED50_6">{t("ED50 - 6° - UTM")}</option>
             </select>
           </div>
 
@@ -463,7 +466,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
             onClick={() => { localStorage.setItem('last_folder_name', folderName); onNavigate('READY'); }} 
             className="w-full py-3 md:py-4 px-5 bg-blue-600 text-white rounded-2xl font-black text-[13px] uppercase tracking-[0.2em] active:scale-95 disabled:opacity-30 transition-all shadow-xl shadow-blue-100"
           >
-            ÖLÇÜME HAZIRLAN
+            {t("ÖLÇÜME HAZIRLAN")}
           </button>
         </div>
       </div>
@@ -529,11 +532,11 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                     className="px-4 py-2 bg-slate-200 border border-slate-200 shadow-sm rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-600 active:scale-95 transition-all"
                   >
                     <i className="fas fa-rotate-right mr-2"></i>
-                    Tekrar Dene
+                    {t("Tekrar Dene")}
                   </button>
                   {captureError.includes("izni reddedildi") && (
                     <p className="text-[9px] text-rose-500 font-black uppercase tracking-widest mt-1 text-center px-4 leading-tight opacity-80">
-                      Safari Ayarlarından "Konum" İznini Kontrol Edin
+                      {t("Safari Ayarlarından \"Konum\" İznini Kontrol Edin")}
                     </p>
                   )}
                 </div>
@@ -546,7 +549,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
               <div className="bg-slate-100 p-5 md:p-8 rounded-[2.5rem] border border-slate-100 space-y-3">
                 <div className="space-y-1">
                   <label className="text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] leading-tight block h-5 flex flex-col justify-center">
-                    <span>Nokta İsmi</span>
+                    <span>{t("Nokta İsmi")}</span>
                   </label>
                   <input type="text" value={pointName} onChange={e => setPointName(e.target.value)} className="w-full p-2.5 bg-slate-200 rounded-xl font-black text-center text-lg text-slate-900 outline-none border border-slate-200 leading-none" />
                 </div>
@@ -554,8 +557,8 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] leading-tight block h-5 flex flex-col justify-center">
-                      <span>Hassasiyet</span>
-                      <span>Limiti (m)</span>
+                      <span>{t("Hassasiyet")}</span>
+                      <span>{t("Limiti (m)")}</span>
                     </label>
                     <select 
                       value={accuracyLimit} 
@@ -567,15 +570,15 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] leading-tight block h-5 flex flex-col justify-center">
-                      <span>Ölçüm</span>
-                      <span>Süresi (sn)</span>
+                      <span>{t("Ölçüm")}</span>
+                      <span>{t("Süresi (sn)")}</span>
                     </label>
                     <select 
                       value={measurementDuration} 
                       onChange={e => setMeasurementDuration(parseInt(e.target.value))}
                       className="w-full p-2.5 bg-slate-200 rounded-xl font-black text-center text-lg text-slate-900 outline-none border border-slate-200 leading-none appearance-none"
                     >
-                      {[5, 10, 15, 30, 60].map(v => <option key={v} value={v}>{v}sn</option>)}
+                      {[5, 10, 15, 30, 60].map(v => <option key={v} value={v}>{t(`${v}sn`)}</option>)}
                     </select>
                   </div>
                 </div>
@@ -585,7 +588,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                   disabled={instantAccuracy === null}
                   className="w-full py-4 md:py-6 px-5 bg-emerald-600 text-white rounded-2xl font-black text-[13px] md:text-[14px] active:scale-[0.96] disabled:bg-slate-200 transition-all uppercase tracking-[0.25em] leading-none shadow-2xl shadow-emerald-100"
                 >
-                  ÖLÇÜMÜ BAŞLAT
+                  {t("ÖLÇÜMÜ BAŞLAT")}
                 </button>
               </div>
             ) : (
@@ -599,16 +602,16 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                         <i className={`fas ${reliabilityStatus === 'CRITICAL' ? 'fa-triangle-exclamation' : reliabilityStatus === 'WARNING' ? 'fa-circle-info' : 'fa-circle-check'} text-lg shrink-0`}></i>
                         <div className="flex flex-col items-start text-left">
                           <span className="text-[10px] font-black uppercase tracking-widest leading-none mb-1">
-                            {reliabilityStatus === 'CRITICAL' ? 'DÜŞÜK SİNYAL KALİTESİ' : reliabilityStatus === 'WARNING' ? (sampleCount < 5 ? 'YETERSİZ KONUM VERİSİ' : 'ORTA SİNYAL KALİTESİ') : 'GÜÇLÜ SİNYAL KALİTESİ'}
+                            {reliabilityStatus === 'CRITICAL' ? t('DÜŞÜK SİNYAL KALİTESİ') : reliabilityStatus === 'WARNING' ? (sampleCount < 5 ? t('YETERSİZ KONUM VERİSİ') : t('ORTA SİNYAL KALİTESİ')) : t('GÜÇLÜ SİNYAL KALİTESİ')}
                           </span>
                           <span className="text-[8px] font-bold leading-tight opacity-90">
                             {reliabilityStatus === 'CRITICAL' 
-                              ? 'Ölçüm sırasında çevresel ve donanımsal faktörler nedeniyle hatalar tespit edildi, ölçümün açık bir alanda tekrarlanması önerilir!' 
+                              ? t('Ölçüm sırasında çevresel ve donanımsal faktörler nedeniyle hatalar tespit edildi, ölçümün açık bir alanda tekrarlanması önerilir!') 
                               : reliabilityStatus === 'WARNING' 
                                 ? (sampleCount < 5 
-                                    ? 'Ölçüm sırasında çevresel veya donanımsal faktörler nedeniyle yeterli sayıda konum verisi toplanamadı, ölçüm süresinin uzatılması önerilir!' 
-                                    : 'Ölçüm sırasında çevresel ve donanımsal faktörler nedeniyle hatalar tespit edildi, ölçümün açık bir alanda tekrarlanması önerilir!')
-                                : 'Toplanan veriler hassasiyet limitlerine uygun görünüyor.'}
+                                    ? t('Ölçüm sırasında çevresel veya donanımsal faktörler nedeniyle yeterli sayıda konum verisi toplanamadı, ölçüm süresinin uzatılması önerilir!') 
+                                    : t('Ölçüm sırasında çevresel ve donanımsal faktörler nedeniyle hatalar tespit edildi, ölçümün açık bir alanda tekrarlanması önerilir!'))
+                                : t('Toplanan veriler hassasiyet limitlerine uygun görünüyor.')}
                           </span>
                         </div>
                      </div>
@@ -617,22 +620,22 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
 
                 {instantAccuracy !== null && instantAccuracy > accuracyLimit ? (
                   <div className="animate-pulse space-y-1">
-                    <p className="font-black text-amber-600 text-[12px] md:text-[13px] uppercase tracking-[0.2em] leading-none">Hassasiyet Bekleniyor...</p>
+                    <p className="font-black text-amber-600 text-[12px] md:text-[13px] uppercase tracking-[0.2em] leading-none">{t("Hassasiyet Bekleniyor...")}</p>
                     <p className="text-slate-400 text-[10px] font-bold leading-tight uppercase tracking-widest px-4">
-                      Mevcut hassasiyet (±{instantAccuracy.toFixed(1)}m),<br/>belirlenen {accuracyLimit}m limitinden yüksek.
+                      {t("Mevcut hassasiyet")} (±{instantAccuracy.toFixed(1)}m),<br/>{t("belirlenen")} {accuracyLimit}m {t("limitinden yüksek.")}
                     </p>
                   </div>
                 ) : settings.gnssOnlyMode && (!lastPositionRef.current || lastPositionRef.current.coords.altitude === null || lastPositionRef.current.coords.altitude === 0) ? (
                   <div className="animate-pulse space-y-1">
-                    <p className="font-black text-blue-600 text-[12px] md:text-[13px] uppercase tracking-[0.2em] leading-none">Uydu Kilidi Bekleniyor...</p>
+                    <p className="font-black text-blue-600 text-[12px] md:text-[13px] uppercase tracking-[0.2em] leading-none">{t("Uydu Kilidi Bekleniyor...")}</p>
                     <p className="text-slate-400 text-[10px] font-bold leading-tight uppercase tracking-widest px-4">
-                      Sadece GNSS modu aktif.<br/>Yükseklik verisi içeren uydu sinyali bekleniyor.
+                      {t("Sadece GNSS modu aktif.")}<br/>{t("Yükseklik verisi içeren uydu sinyali bekleniyor.")}
                     </p>
                   </div>
                 ) : (
                   <div className="animate-pulse space-y-1">
-                    <p className="font-black text-emerald-600 text-[12px] md:text-[13px] uppercase tracking-[0.3em] leading-none">{sampleCount} KONUM ÖRNEĞİ</p>
-                    <p className="text-slate-400 text-[11px] md:text-[12px] font-bold leading-none uppercase tracking-widest">SABİT TUTUN</p>
+                    <p className="font-black text-emerald-600 text-[12px] md:text-[13px] uppercase tracking-[0.3em] leading-none">{sampleCount} {t("KONUM ÖRNEĞİ")}</p>
+                    <p className="text-slate-400 text-[11px] md:text-[12px] font-bold leading-none uppercase tracking-widest">{t("SABİT TUTUN")}</p>
                   </div>
                 )}
 
@@ -642,7 +645,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                   className="mx-auto mt-2 py-3 px-8 bg-blue-600 text-white rounded-2xl font-black text-[11px] md:text-[12px] active:scale-[0.96] disabled:opacity-50 transition-all uppercase tracking-[0.2em] leading-none shadow-xl shadow-blue-100 flex items-center justify-center gap-2 whitespace-nowrap w-full max-w-[280px]"
                 >
                   <i className="fas fa-check-circle"></i>
-                  Hemen Bitir ve Kaydet
+                  {t("Hemen Bitir ve Kaydet")}
                 </button>
               </div>
             )}

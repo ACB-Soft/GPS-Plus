@@ -118,7 +118,7 @@ export const generateTechnicalReport = () => {
     <div class="page-break"></div>
 
     <h2>6. İSTATİSTİKSEL ANALİZ VE VERİ AYIKLAMA METODOLOJİLERİ</h2>
-    <p>Hatalı sinyalleri (Outliers) temizlemek ve en doğru sonucu üretmek için ${FULL_BRAND}, kullanıcıya 3 farklı ileri düzey istatistiksel yöntem sunar. Bu yöntemler, farklı arazi ve sinyal koşullarına göre optimize edilmiştir:</p>
+    <p>Hatalı sinyalleri (Outliers) temizlemek ve en doğru sonucu üretmek için ${FULL_BRAND}, kullanıcıya 3 ana yöntemin yanı sıra AR-GE modülünde toplam 9 farklı ileri düzey istatistiksel ve süzgeçleme yöntemi sunar. Bu yöntemler, farklı arazi, yansıma (multipath) ve sinyal koşullarına göre optimize edilmiştir:</p>
     <ul>
       <li><span class="bold">1. Aritmetik Ortalama:</span> Veri setindeki tüm değerlerin basit aritmetik ortalamasını hesaplar. Düşük hassasiyetli veriler ön filtreleme ile elendikten sonra kalan tüm veriler eşit ağırlığa sahiptir.
         <div class="formula">μ = (1/n) * Σ xᵢ</div>
@@ -126,7 +126,7 @@ export const generateTechnicalReport = () => {
       <li><span class="bold">2. Ağırlıklı En Küçük Kareler (Weighted Least Squares):</span> Yatay hassasiyet (acc) değerlerini kullanarak ağırlıklı dengeleme yapar. Ağırlıklar P = 1/acc² olarak alınır. Daha düşük hata payına sahip "kaliteli" sinyaller, hesaplama sonucuna matematiksel olarak daha fazla etki eder.
         <div class="formula">x̂ = (Σ Pᵢ xᵢ) / (Σ Pᵢ) , burada Pᵢ = 1/σᵢ²</div>
       </li>
-      <li><span class="bold">3. K-Means + Baarda Hibrit Modeli:</span> Uygulamanın en gelişmiş matematiksel modelidir. 5 aşamalı bir analiz süreci yürütür:
+      <li><span class="bold">3. K-Means + Baarda Hibrit Modeli:</span> Uygulamanın en gelişmiş standart üretici modelidir. 5 aşamalı bir analiz süreci yürütür:
         <ul>
           <li><span class="bold">A. Referans Tespiti (Mid-Range):</span> Verilerin uzaydaki geometrik sınırları üzerinden bir merkez noktası belirler.</li>
           <li><span class="bold">B. Sıkı Eleme (1.0 * Eps):</span> Referans noktasından, donanımsal ortalama hassasiyetin 1.0 katından daha uzak olan verileri "gürültü" olarak kabul eder ve eler.</li>
@@ -135,6 +135,17 @@ export const generateTechnicalReport = () => {
           <li><span class="bold">E. Baarda Güvenilirlik Testi:</span> Elde edilen 4 özet nokta arasında istatistiksel uyuşmazlık testi (Baarda) yapılır. Matematiksel olarak uyumsuz olan kümeler nihai sonuçtan dışlanır.</li>
         </ul>
       </li>
+    </ul>
+
+    <h3>6.1 AR-GE VE İLERİ DÜZEY AKADEMİK MODELLEME YÖNTEMLERİ</h3>
+    <p>Aşağıdaki yöntemler, sistemin sınırlarını zorlamak ve yeni nesil donanım entegrasyonlarını test etmek amacıyla yalnızca Ar-Ge platformunda aktif edilmiş araştırma kütüphaneleridir:</p>
+    <ul>
+      <li><span class="bold">A. K-Means (4 Küme - Saf Segmentasyon):</span> Baarda testi işletilmeden, ham gözlem uzayını k=4 parametresiyle doğrudan kümelere ayırır. En yoğun (en çok ölçü içeren) alt grubu bularak, onun ağırlıklı ortalamasını çıktı verir. Yerel yığılmaları gözlemlemek için idealdir.</li>
+      <li><span class="bold">B. DBSCAN (Yoğunluk Tabanlı Kümeleme):</span> Yoğun gürültü içeren ortamlarda (ağaçlık alanlar, dar sokaklar) mekansal yoğunluk analizi yapar. Hücre yoğunluğu düşük olan uzak noktaları otomatik olarak ham veri kümesinden eler ve ana çekirdek gözlem grubunu pürüzsüzleştirir.</li>
+      <li><span class="bold">C. Baarda (Doğrudan Veri Snooping):</span> K-Means kümeleme ön şartı aranmaksızın, uyuşmazlık testini ham gözlemler üzerinde doğrudan ve ardışık olarak işletir. Her adımda en büyük standartlaştırılmış hataya sahip gözlemi eler. Konumsal dağılımda tekil sıçramaların (spikes) tespiti için kusursuzdur.</li>
+      <li><span class="bold">D. Robust Huber (M-Estimation):</span> Gözlemlerin ağırlıklarını doğrusal olmayan bir iterasyonla günceller. Huber sınır değerinden (c=1.345) büyük hata barındıran yansıyan sinyallerin (multipath) ağırlığını doğrusal olarak azaltırken, normal hataları quadratik süzgeçten geçirir. İterasyonlar, koordinat değişimi milimetre sınırına gerileyene dek sürdürülür.</li>
+      <li><span class="bold">E. Statik Kalman Filtresi:</span> Duran bir alıcı için tasarlanan 3 boyutlu dinamik durum modelidir. Süreç gürültüsü (Q=1e-9) çok küçük tutularak, her yeni gelen gözlemin hata kovaryansı (R) doğrultusunda durum matrisi ardışık olarak güncellenir. Zamanla azalan gözlem belirsizliğini ve zaman serisi kararlılığını simüle eder.</li>
+      <li><span class="bold">F. Statik Parçacık Filtresi (Particle Filter):</span> Rastgele dağılımlı 200 adet Monte Carlo parçacığı (olasılık bulutu) ile çalışır. Her bir gözlem adımında parçacıkların ağırlıkları olasılık fonksiyonuna (Gaussian PDF) göre güncellenir, sistematik yeniden örnekleme (Resampling) yapılarak olasılık dağılımının en daraldığı tepe noktası nihai koordinat olarak seçilir.</li>
     </ul>
 
     <h2>7. ÖLÇÜM MANTIĞI VE VERİ İŞLEME DİSİPLİNLERİ</h2>

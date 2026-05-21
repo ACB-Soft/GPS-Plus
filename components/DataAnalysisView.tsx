@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { toPng } from 'html-to-image';
 import { saveAs } from 'file-saver';
+import { useLanguage } from '../utils/LanguageContext';
 import { SavedLocation, AppSettings, CalculationMethod } from '../types';
 import { geoidService } from '../services/GeoidService';
 import { convertCoordinate, getSystemDisplayLabel } from '../utils/CoordinateUtils';
@@ -39,7 +40,13 @@ const MapSetBounds = ({ points }: { points: [number, number][] }) => {
 const METHOD_COLORS: Record<string, string> = {
   ARITHMETIC_MEAN: '#ec4899',
   WEIGHTED_LSE: '#8b5cf6',
-  KMEANS_BAARDA: '#3b82f6'
+  KMEANS_BAARDA: '#3b82f6',
+  KMEANS_4: '#06b6d4',
+  DBSCAN: '#10b981',
+  BAARDA: '#f59e0b',
+  ROBUST_HUBER: '#ef4444',
+  STATIC_KALMAN: '#14b8a6',
+  STATIC_PARTICLE: '#eab308'
 };
 
 const CLUSTER_COLORS = [
@@ -79,17 +86,18 @@ interface Props {
 }
 
 const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, settings, onClose }) => {
+  const { t } = useLanguage();
   const [analysisType, setAnalysisType] = useState<'precise' | 'normal'>('precise');
   const [selectedFolder, setSelectedFolder] = useState<string>('');
   const [selectedPointId, setSelectedPointId] = useState<string>(initialSelectedId || '');
   const [showMap, setShowMap] = useState(false);
 
   const handleDownloadTechnicalReportAction = () => {
-    const password = prompt("Teknik raporu indirmek için şifreyi giriniz:");
+    const password = prompt(t("Teknik raporu indirmek için şifreyi giriniz:"));
     if (password === "748123") {
       generateTechnicalReport();
     } else if (password !== null) {
-      alert("Hatalı şifre!");
+      alert(t("Hatalı şifre!"));
     }
   };
 
@@ -129,14 +137,26 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const methods = useMemo<CalculationMethod[]>(() => [
     'ARITHMETIC_MEAN', 
     'WEIGHTED_LSE',
-    'KMEANS_BAARDA'
+    'KMEANS_BAARDA',
+    'KMEANS_4',
+    'DBSCAN',
+    'BAARDA',
+    'ROBUST_HUBER',
+    'STATIC_KALMAN',
+    'STATIC_PARTICLE'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
     const labels: Record<string, string> = {
-      'ARITHMETIC_MEAN': "Aritmetik Ortalama",
-      'WEIGHTED_LSE': "Ağırlıklı Dengeleme",
-      'KMEANS_BAARDA': "K-Means+Baarda"
+      'ARITHMETIC_MEAN': t("Aritmetik Ortalama"),
+      'WEIGHTED_LSE': t("Ağırlıklı Dengeleme"),
+      'KMEANS_BAARDA': t("K-Means+Baarda"),
+      'KMEANS_4': t("K-Means (4 Küme)"),
+      'DBSCAN': t("DBSCAN"),
+      'BAARDA': t("Baarda Eleme"),
+      'ROBUST_HUBER': t("Robust (Huber)"),
+      'STATIC_KALMAN': t("Statik Kalman Filtresi"),
+      'STATIC_PARTICLE': t("Statik Parçacık Filtresi")
     };
     return labels[m] || m;
   };
@@ -186,7 +206,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       // 1. Calculate point for this method
       const { result, clusters } = calculateResult(location.samples!, method, accuracyLimit);
       
-      if (method === 'KMEANS_BAARDA' && clusters) {
+      if ((method === 'KMEANS_BAARDA' || method === 'KMEANS_4' || method === 'DBSCAN') && clusters) {
         dbscanResults = clusters;
       }
       
@@ -374,7 +394,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     return { 
       rawPoints, 
       methodPoints, 
-      centerLabel: isPrecise ? 'KESİN NOKTA' : 'ORTALAMA',
+      centerLabel: isPrecise ? t('KESİN NOKTA') : t('ORTALAMA'),
       range 
     };
   }, [chartData, analysisResults, analysisType, preciseN, preciseE, useLocal, location]);
@@ -455,8 +475,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
         <div className="bg-slate-900 px-8 py-5 text-white shrink-0">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-sm font-black uppercase tracking-[0.2em] leading-none">Hassas Analiz & AR-GE</h2>
-              <p className="text-blue-400 text-[8px] font-bold mt-1 uppercase tracking-widest opacity-80">Gelişmiş Raporlama Sistemi</p>
+              <h2 className="text-sm font-black uppercase tracking-[0.2em] leading-none">{t("Hassas Analiz & AR-GE")}</h2>
+              <p className="text-blue-400 text-[8px] font-bold mt-1 uppercase tracking-widest opacity-80">{t("Gelişmiş Raporlama Sistemi")}</p>
             </div>
             <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center active:scale-90 transition-all text-xs">
               <i className="fas fa-times"></i>
@@ -484,8 +504,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   <div>
                     <h3 className={`text-sm font-black uppercase tracking-[0.2em] leading-none mb-1.5 ${
                       multipathAnalysis.isCritical ? 'text-rose-700' : multipathAnalysis.isRisk ? 'text-amber-700' : 'text-emerald-700'
-                    }`}>Güvenilirlik Analizi</h3>
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-80 leading-none">Multipath & Statistik Denetim</p>
+                    }`}>{t("Güvenilirlik Analizi")}</h3>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-80 leading-none">{t("Multipath & Statistik Denetim")}</p>
                   </div>
                 </div>
                 <div className="text-right bg-white/40 p-3 rounded-2xl border border-white/60">
@@ -495,21 +515,21 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                    }`}>
                      %{Math.round(multipathAnalysis.confidenceScore)}
                    </div>
-                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">GÜVEN SKORU</p>
+                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">{t("GÜVEN SKORU")}</p>
                 </div>
               </div>
               
               <div className="grid grid-cols-3 gap-3 mb-4">
                 <div className="bg-white/60 p-4 rounded-2xl border border-white/80 shadow-sm flex flex-col items-center">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Max Saçılım</p>
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{t("Max Saçılım")}</p>
                   <p className="text-sm font-black text-slate-900 mono-font">±{multipathAnalysis.maxSpread.toFixed(2)}m</p>
                 </div>
                 <div className="bg-white/60 p-4 rounded-2xl border border-white/80 shadow-sm flex flex-col items-center">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Sensör Hass.</p>
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{t("Sensör Hass.")}</p>
                   <p className="text-sm font-black text-slate-900 mono-font">±{multipathAnalysis.avgSensorAcc.toFixed(2)}m</p>
                 </div>
                 <div className="bg-white/60 p-4 rounded-2xl border border-white/80 shadow-sm flex flex-col items-center">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Örnek Sayısı</p>
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{t("Örnek Sayısı")}</p>
                   <p className="text-sm font-black text-slate-900 mono-font">{location?.samples?.length || 0}</p>
                 </div>
               </div>
@@ -520,8 +540,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     <i className={`fas fa-info-circle text-lg ${multipathAnalysis.isCritical ? 'text-rose-500' : 'text-amber-500'}`}></i>
                     <span>
                       {multipathAnalysis.isCritical 
-                        ? 'Kritik uyarı: Veri saçılımı ekstrem düzeyde. Ölçüm kalitesi güvenli sınırların altında kalmaktadır.' 
-                        : 'Ölçülen veriler sensörün bildirdiği hassasiyete göre daha geniş bir alana yayılmış durumda (Muhtemel Multipath).'}
+                        ? t('Kritik uyarı: Veri saçılımı ekstrem düzeyde. Ölçüm kalitesi güvenli sınırların altında kalmaktadır.') 
+                        : t('Ölçülen veriler sensörün bildirdiği hassasiyete göre daha geniş bir alana yayılmış durumda (Muhtemel Multipath).')}
                     </span>
                    </p>
                 </div>
@@ -531,44 +551,44 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
           {/* STEP 1: Method Selection */}
           <div className="space-y-4">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">1. Analiz Yöntemini Seçin</label>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">{t("1. Analiz Yöntemini Seçin")}</label>
             <div className="grid grid-cols-2 gap-3">
               <button 
                 onClick={() => { setAnalysisType('precise'); setAnalysisResults(null); }}
                 className={`flex-1 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all border-2 ${analysisType === 'precise' ? 'bg-blue-600 text-white border-blue-600 shadow-xl shadow-blue-100' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
               >
                 <i className="fas fa-bullseye mr-2"></i>
-                Kesin Koordinatlı (Hata Analizi)
+                {t("Kesin Koordinatlı (Hata Analizi)")}
               </button>
               <button 
                 onClick={() => { setAnalysisType('normal'); setAnalysisResults(null); }}
                 className={`flex-1 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all border-2 ${analysisType === 'normal' ? 'bg-blue-600 text-white border-blue-600 shadow-xl shadow-blue-100' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
               >
                 <i className="fas fa-chart-line mr-2"></i>
-                Normal Karşılaştırmalı Analiz
+                {t("Normal Karşılaştırmalı Analiz")}
               </button>
             </div>
             
             {/* Info Box about Specialized Models */}
             <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-3">
-               <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Model Açıklamaları</h4>
+               <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t("Model Açıklamaları")}</h4>
                <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-1">
-                    <p className="text-[9px] font-black text-pink-600 uppercase">Aritmetik Ortalama</p>
+                    <p className="text-[9px] font-black text-pink-600 uppercase">{t("Aritmetik Ortalama")}</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      Tüm ham ölçümlerin ağırlıksız ortalamasını hesaplar. Veriler homojen olduğunda kararlıdır.
+                      {t("Tüm ham ölçümlerin ağırlıksız ortalamasını hesaplar. Veriler homojen olduğunda kararlıdır.")}
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[9px] font-black text-violet-600 uppercase">Ağırlıklı Dengeleme</p>
+                    <p className="text-[9px] font-black text-violet-600 uppercase">{t("Ağırlıklı Dengeleme")}</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      Ölçüm hassasiyetine (accuracy) göre ters ağırlıklı modelleme yaparak güvensiz verilerin etkisini azaltır.
+                      {t("Ölçüm hassasiyetine (accuracy) göre ters ağırlıklı modelleme yaparak güvensiz verilerin etkisini azaltır.")}
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[9px] font-black text-blue-600 uppercase">K-Means+Baarda</p>
+                    <p className="text-[9px] font-black text-blue-600 uppercase">{t("K-Means+Baarda")}</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      Mid-range üzerinde 1.0 kat payı ile sıkı filtreleme yapar, K-Means ile 4 kümeye böler ve Baarda testi ile final uyuşmazlık denetimi sağlar.
+                      {t("Mid-range üzerinde 1.0 kat payı ile sıkı filtreleme yapar, K-Means ile 4 kümeye böler ve Baarda testi ile final uyuşmazlık denetimi sağlar.")}
                     </p>
                   </div>
                </div>
@@ -578,7 +598,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* STEP 2: Project Selection */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">2. Proje Seçin</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">{t("2. Proje Seçin")}</label>
               <div className="relative">
                 <select 
                   value={selectedFolder}
@@ -590,7 +610,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   }}
                   className="w-full p-4 bg-slate-100 rounded-2xl font-bold text-slate-900 appearance-none border-2 border-transparent focus:border-blue-500 outline-none transition-all text-sm"
                 >
-                  <option value="">Proje Seçiniz...</option>
+                  <option value="">{t("Proje Seçiniz...")}</option>
                   {folders.map(f => <option key={f} value={f}>{f}</option>)}
                 </select>
                 <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
@@ -601,7 +621,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
             {/* STEP 3: Point Selection */}
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">3. Nokta Seçin</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">{t("3. Nokta Seçin")}</label>
               <div className="relative text-sm">
                 <select 
                   value={selectedPointId}
@@ -613,7 +633,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   disabled={!selectedFolder}
                   className="w-full p-4 bg-slate-100 rounded-2xl font-bold text-slate-900 appearance-none border-2 border-transparent focus:border-blue-500 outline-none transition-all text-sm disabled:opacity-50"
                 >
-                  <option value="">Nokta Seçiniz...</option>
+                  <option value="">{t("Nokta Seçiniz...")}</option>
                   {filteredPoints.map(p => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
@@ -852,7 +872,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         {/* Layer 0: Ground Truth Point */}
                         {analysisType === 'precise' && (
                           <Scatter 
-                            name="KESİN NOKTA (REF)" 
+                            name={t("KESİN NOKTA (REF)")} 
                             data={[{ dE: 0, dN: 0 }]} 
                             fill="#10b981" 
                             shape="diamond" 
@@ -865,7 +885,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
                         {/* Layer 1: Raw Points Cloud (with cluster coloring) */}
                         <Scatter 
-                          name="Ham Ölçümler" 
+                          name={t("Ham Ölçümler")} 
                           data={distributionData.rawPoints} 
                           shape="circle" 
                         >
@@ -914,12 +934,12 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   {/* Clusters Info */}
                   {dbscanClusters && dbscanClusters.length > 0 && (
                     <div className="mt-2 p-3 bg-blue-950/30 rounded-xl border border-blue-500/20">
-                      <p className="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-2">Kümeleme Analiz Özeti</p>
+                      <p className="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-2">{t("Kümeleme Analiz Özeti")}</p>
                       <div className="flex flex-wrap gap-3">
                         {dbscanClusters.map((cluster, cIdx) => (
                           <div key={cIdx} className="flex items-center gap-1.5">
                             <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CLUSTER_COLORS[cIdx % CLUSTER_COLORS.length] }}></div>
-                            <span className="text-[8px] font-bold text-slate-300 uppercase">Küme {cIdx + 1}: {cluster.length} nokta</span>
+                            <span className="text-[8px] font-bold text-slate-300 uppercase">{t("Küme")} {cIdx + 1}: {cluster.length} {t("nokta")}</span>
                           </div>
                         ))}
                       </div>
@@ -968,7 +988,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200">
                     <h3 className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] mb-4">
                       <i className="fas fa-chart-line mr-2"></i>
-                      Zamana Bağlı Sİstematik Yatay Hata (ΔHz)
+                      {t("Zamana Bağlı Sistematik Yatay Hata (ΔHz)")}
                     </h3>
                     <div className="h-48 w-full">
                       <ResponsiveContainer width="100%" height="100%">
@@ -978,14 +998,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           <YAxis domain={[0, 'auto']} tick={{fontSize: 8}} axisLine={false} width={45} unit="m" />
                           <Tooltip 
                             contentStyle={{ borderRadius: '1rem', border: 'none', fontWeight: 'black', background: '#0f172a', color: '#fff' }} 
-                            formatter={(value: number) => [`${value.toFixed(3)} m`, 'Yatay Hata']}
+                            formatter={(value: number) => [`${value.toFixed(3)} m`, t('Yatay Hata')]}
                           />
                           <Line type="monotone" dataKey="errorHz" stroke="#f43f5e" strokeWidth={3} dot={false} />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
                     <p className="text-[9px] text-slate-500 font-bold mt-2 text-center uppercase tracking-tight">
-                      * Her bir ölçüm noktasının kesin koordinata olan mesafesinin zamanla değişimi
+                      {t("* Her bir ölçüm noktasının kesin koordinata olan mesafesinin zamanla değişimi")}
                     </p>
                   </div>
                 )}
@@ -996,14 +1016,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   className="w-full bg-slate-800 text-white px-6 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg mb-4"
                 >
                   <i className="fas fa-file-word"></i>
-                  GPS_Plus_TEKNIK_RAPOR İndir
+                  {t("GPS_Plus_TEKNIK_RAPOR İndir")}
                 </button>
 
                 <div className="bg-blue-600 p-6 rounded-[2rem] text-white flex flex-col items-center gap-6 shadow-xl shadow-blue-100">
                 {analysisType === 'precise' ? (
                   <>
                     <div className="text-center w-full">
-                      <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Yatayda En Başarılı Algoritma</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest opacity-80">{t("Yatayda En Başarılı Algoritma")}</p>
                       <p className="text-xl font-black uppercase">
                         {getMethodLabel(bestMethod as any)}
                       </p>
@@ -1124,8 +1144,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 >
                   <Popup>
                     <div className="p-2 text-center">
-                      <p className="text-xs font-black text-emerald-600 mb-1">KESİN KOORDİNAT (REFERANS)</p>
-                      <p className="text-[10px] font-bold text-slate-500">Nirengi Noktası (Referans)</p>
+                      <p className="text-xs font-black text-emerald-600 mb-1">{t("KESİN KOORDİNAT (REFERANS)")}</p>
+                      <p className="text-[10px] font-bold text-slate-500">{t("Nirengi Noktası (Referans)")}</p>
                       <p className="text-[9px] font-mono mt-1">
                         {useLocal ? `N: ${preciseN} \nE: ${preciseE}` : `Lat: ${preciseN} \nLng: ${preciseE}`}
                       </p>
@@ -1158,7 +1178,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         </p>
                         {res.errors && (
                            <p className="mt-1 text-[9px] font-black text-emerald-600 uppercase border-t border-slate-100 pt-1">
-                             Sapma: {res.errors.dhz.toFixed(3)}m
+                             {t("Sapma")}: {res.errors.dhz.toFixed(3)}m
                            </p>
                         )}
                       </div>
@@ -1178,7 +1198,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
             {/* Legend Overlay */}
             <div className="absolute bottom-6 right-6 z-[10000] w-[120px]">
               <div className="bg-white/95 backdrop-blur-md p-2.5 rounded-2xl shadow-xl border border-slate-100">
-                <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1.5 border-b pb-1">Lejant</p>
+                <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1.5 border-b pb-1">{t("Lejant")}</p>
                 <div className="space-y-1.5">
                   {analysisType === 'precise' && (
                     <div className="flex items-center gap-2">
@@ -1196,7 +1216,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   ))}
                   <div className="flex items-center gap-2 pt-1 border-t">
                     <div className="w-1 h-1 rounded-full bg-slate-300"></div>
-                    <span className="text-[7px] font-bold text-slate-400 uppercase">HAM VERİ</span>
+                    <span className="text-[7px] font-bold text-slate-400 uppercase">{t("HAM VERİ")}</span>
                   </div>
                 </div>
               </div>
