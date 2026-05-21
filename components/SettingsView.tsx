@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { APP_VERSION, FULL_BRAND } from '../version';
 import GlobalFooter from './GlobalFooter';
 import Modal from './Modal';
@@ -26,11 +26,14 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
   const [showOnboarding, setShowOnboarding] = useState(localStorage.getItem('show_onboarding_every_time') !== 'false');
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [modal, setModal] = useState<{
     isOpen: boolean;
     title: string;
     message: string;
     type: 'info' | 'error' | 'success' | 'confirm';
+    confirmLabel?: string;
     onConfirm?: () => void;
   }>({
     isOpen: false,
@@ -121,6 +124,138 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
     }
   };
 
+  const handleCreateBackup = () => {
+    try {
+      const backupKeys = [
+        'gps_locations_v5.0',
+        'stakeout_points_v1',
+        'stakeout_geometries_v1',
+        'last_folder_name',
+        'onboarding_v5.0_done',
+        'language_preference',
+        'show_onboarding_every_time',
+        'default_coord_system',
+        'default_accuracy_limit',
+        'default_duration',
+        'default_map_provider',
+        'default_audio_feedback_enabled',
+        'default_vibration_feedback_enabled',
+        'default_screen_always_on',
+        'default_location_precision',
+        'default_height_precision',
+        'default_height_type',
+        'default_calculation_method',
+        'default_gnss_only_mode'
+      ];
+
+      const backupData: Record<string, string | null> = {};
+      backupKeys.forEach(key => {
+        backupData[key] = localStorage.getItem(key);
+      });
+
+      const payload = {
+        appName: 'ACB Maps',
+        backupVersion: '1.0',
+        timestamp: Date.now(),
+        data: backupData
+      };
+
+      const jsonString = JSON.stringify(payload, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const dateStr = new Date().toISOString().slice(0, 10);
+      link.href = url;
+      link.download = `acb_maps_backup_${dateStr}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      setModal({
+        isOpen: true,
+        title: t('Başarılı'),
+        type: 'success',
+        message: t('Yedek başarıyla oluşturuldu ve indirildi.')
+      });
+    } catch (err: any) {
+      setModal({
+        isOpen: true,
+        title: t('Hata Oluştu'),
+        type: 'error',
+        message: t('Yedek oluşturulurken bir hata oluştu: ') + err.message
+      });
+    }
+  };
+
+  const handleRestoreBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const resultStr = event.target?.result as string;
+        const payload = JSON.parse(resultStr);
+
+        if (!payload || typeof payload !== 'object' || !payload.data || typeof payload.data !== 'object') {
+          throw new Error(t('Geçersiz yedek dosyası formatı.'));
+        }
+
+        const dataToRestore = payload.data;
+        
+        setModal({
+          isOpen: true,
+          title: t('EMİN MİSİNİZ?'),
+          type: 'confirm',
+          confirmLabel: t('Yedek Yükle'),
+          message: t('Bu yedek dosyası yüklendiğinde mevcut tüm verileriniz ve ayarlarınız silinip yedekteki veriler ile değiştirilecektir. Devam etmek istiyor musunuz?'),
+          onConfirm: () => {
+            try {
+              Object.keys(dataToRestore).forEach(key => {
+                const val = dataToRestore[key];
+                if (val !== null && val !== undefined) {
+                  localStorage.setItem(key, val);
+                } else {
+                  localStorage.removeItem(key);
+                }
+              });
+
+              setModal({
+                isOpen: true,
+                title: t('Başarılı'),
+                type: 'success',
+                message: t('Yedek başarıyla yüklendi. Değişikliklerin uygulanması için uygulama yenilenecektir.'),
+                onConfirm: () => {
+                  window.location.reload();
+                }
+              });
+            } catch (restoreErr: any) {
+              setModal({
+                isOpen: true,
+                title: t('Hata Oluştu'),
+                type: 'error',
+                message: t('Yedek yüklenirken bir hata oluştu: ') + restoreErr.message
+              });
+            }
+          }
+        });
+      } catch (err: any) {
+        setModal({
+          isOpen: true,
+          title: t('Hata Oluştu'),
+          type: 'error',
+          message: t('Geçersiz yedek dosyası: ') + err.message
+        });
+      }
+      
+      if (e.target) {
+        e.target.value = '';
+      }
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-slate-200">
       <Modal
@@ -129,7 +264,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
         type={modal.type}
         onClose={() => setModal({ ...modal, isOpen: false })}
         onConfirm={modal.onConfirm}
-        confirmLabel={modal.type === 'confirm' ? t('Güncelle') : undefined}
+        confirmLabel={modal.confirmLabel || (modal.type === 'confirm' ? t('Güncelle') : undefined)}
       >
         <p className="whitespace-pre-line">{modal.message}</p>
       </Modal>
@@ -381,6 +516,50 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                   <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${showOnboarding ? 'right-1' : 'left-1'}`}></div>
                 </button>
               </div>
+            </div>
+          </section>
+
+          {/* Veri Tabanı Yedekleme */}
+          <section className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                <i className="fas fa-database"></i>
+              </div>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Veri Tabanı Yedekleme")}</h3>
+            </div>
+            
+            <div className="soft-card p-5 space-y-4">
+              <p className="text-[11px] font-bold text-slate-500 leading-snug">
+                {t("Verilerinizi yedekleyebilir veya yedekten geri yükleyebilirsiniz.")}
+              </p>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={handleCreateBackup}
+                  className="h-12 px-4 bg-sky-50 hover:bg-sky-100 text-sky-600 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-sm border border-sky-100 active:scale-[0.98] transition-all"
+                >
+                  <i className="fas fa-download"></i>
+                  <span className="text-[13px]">{t("Yedek Al")}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="h-12 px-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-sm border border-emerald-100 active:scale-[0.98] transition-all"
+                >
+                  <i className="fas fa-upload"></i>
+                  <span className="text-[13px]">{t("Yedek Yükle")}</span>
+                </button>
+              </div>
+              
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleRestoreBackup} 
+                accept=".json" 
+                className="hidden" 
+              />
             </div>
           </section>
 
