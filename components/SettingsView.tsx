@@ -23,6 +23,12 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
   const [gnssOnlyMode, setGnssOnlyMode] = useState(localStorage.getItem('default_gnss_only_mode') === 'true');
   const [showOnboarding, setShowOnboarding] = useState(localStorage.getItem('show_onboarding_every_time') !== 'false');
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [importData, setImportData] = useState<{
+    locations: any[];
+    settings?: any;
+    fileName: string;
+  } | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   const [modal, setModal] = useState<{
     isOpen: boolean;
@@ -138,6 +144,214 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
         type: 'error'
       });
     }
+  };
+
+  const handleBackupExport = () => {
+    try {
+      const locationsStr = localStorage.getItem('gps_locations_v5.0') || '[]';
+      const locations = JSON.parse(locationsStr);
+      
+      const backupData = {
+        app: 'gps_plus',
+        version: APP_VERSION,
+        exportDate: new Date().toISOString(),
+        locations: locations,
+        settings: {
+          default_coord_system: localStorage.getItem('default_coord_system'),
+          default_accuracy_limit: localStorage.getItem('default_accuracy_limit'),
+          default_duration: localStorage.getItem('default_duration'),
+          default_map_provider: localStorage.getItem('default_map_provider'),
+          default_audio_feedback_enabled: localStorage.getItem('default_audio_feedback_enabled'),
+          default_vibration_feedback_enabled: localStorage.getItem('default_vibration_feedback_enabled'),
+          default_screen_always_on: localStorage.getItem('default_screen_always_on'),
+          default_location_precision: localStorage.getItem('default_location_precision'),
+          default_height_precision: localStorage.getItem('default_height_precision'),
+          default_height_type: localStorage.getItem('default_height_type'),
+          default_calculation_method: localStorage.getItem('default_calculation_method'),
+          default_gnss_only_mode: localStorage.getItem('default_gnss_only_mode'),
+          show_onboarding_every_time: localStorage.getItem('show_onboarding_every_time'),
+          onboarding_done: localStorage.getItem('onboarding_v5.0_done')
+        }
+      };
+      
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      
+      const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '_');
+      downloadAnchor.setAttribute("download", `gps_plus_yedek_${dateStr}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      
+      setModal({
+        isOpen: true,
+        title: 'Yedek Oluşturuldu',
+        message: 'Tüm ölçüm verileriniz ve ayarlarınız başarıyla JSON dosyası olarak indirildi.',
+        type: 'success'
+      });
+    } catch (error) {
+      console.error('Yedekleme hatası:', error);
+      setModal({
+        isOpen: true,
+        title: 'Hata',
+        message: 'Yedek dosyası oluşturulurken bir hata oluştu.',
+        type: 'error'
+      });
+    }
+  };
+
+  const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const data = JSON.parse(content);
+
+        if (!data || typeof data !== 'object') {
+          throw new Error('Geçersiz yedek dosyası yapısı.');
+        }
+
+        const backupLocations = Array.isArray(data) ? data : (data.locations || []);
+        const backupSettings = data.settings || null;
+
+        if (!Array.isArray(backupLocations)) {
+          throw new Error('Konum listesi bulunamadı veya geçerli bir dizi değil.');
+        }
+
+        setImportData({
+          locations: backupLocations,
+          settings: backupSettings,
+          fileName: file.name
+        });
+
+        event.target.value = '';
+      } catch (err) {
+        console.error('İçe aktarma parsing hatası:', err);
+        setModal({
+          isOpen: true,
+          title: 'Geçersiz Dosya',
+          message: 'Seçilen dosya geçerli bir GPS Plus yedek dosyası (.json) değil veya hasarlı.',
+          type: 'error'
+        });
+        event.target.value = '';
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const restoreSettingsFromBackup = (backupSettings: any) => {
+    if (!backupSettings || typeof backupSettings !== 'object') return;
+    
+    const keysToRestore = [
+      'default_coord_system',
+      'default_accuracy_limit',
+      'default_duration',
+      'default_map_provider',
+      'default_audio_feedback_enabled',
+      'default_vibration_feedback_enabled',
+      'default_screen_always_on',
+      'default_location_precision',
+      'default_height_precision',
+      'default_height_type',
+      'default_calculation_method',
+      'default_gnss_only_mode',
+      'show_onboarding_every_time',
+      'onboarding_v5.0_done'
+    ];
+    
+    keysToRestore.forEach(key => {
+      const value = backupSettings[key] !== undefined ? backupSettings[key] : backupSettings[key.replace('default_', '')];
+      if (value !== undefined && value !== null) {
+        localStorage.setItem(key, value.toString());
+      }
+    });
+  };
+
+  const handleMergeImport = () => {
+    if (!importData) return;
+    try {
+      const currentLocsStr = localStorage.getItem('gps_locations_v5.0') || '[]';
+      const currentLocations = JSON.parse(currentLocsStr);
+      
+      const currentIds = new Set(currentLocations.map((l: any) => l.id));
+      const mergedLocations = [...currentLocations];
+      
+      let addedCount = 0;
+      importData.locations.forEach((loc: any) => {
+        if (loc && loc.id && !currentIds.has(loc.id)) {
+          mergedLocations.push(loc);
+          addedCount++;
+        }
+      });
+      
+      localStorage.setItem('gps_locations_v5.0', JSON.stringify(mergedLocations));
+      
+      if (importData.settings) {
+        restoreSettingsFromBackup(importData.settings);
+      }
+
+      setModal({
+        isOpen: true,
+        title: 'Veriler Birleştirildi',
+        message: `${addedCount} yeni konum başarıyla mevcut listenize eklendi. Değişikliklerin uygulanması için sayfa yenileniyor...`,
+        type: 'success',
+        onConfirm: () => {
+          window.location.reload();
+        }
+      });
+      setImportData(null);
+    } catch (error) {
+      console.error('Merge error:', error);
+      setModal({
+        isOpen: true,
+        title: 'Hata',
+        message: 'Veriler birleştirilirken teknik bir hata oluştu.',
+        type: 'error'
+      });
+    }
+  };
+
+  const handleOverwriteImport = () => {
+    if (!importData) return;
+    
+    setModal({
+      isOpen: true,
+      title: 'Dikkat!',
+      message: 'Mevcut tüm kayıtlı ölçümleriniz kalıcı olarak silinecek ve yedek dosyasındakilerle değiştirilecektir. Bu işlem geri alınamaz. Onaylıyor musunuz?',
+      type: 'confirm',
+      onConfirm: () => {
+        try {
+          localStorage.setItem('gps_locations_v5.0', JSON.stringify(importData.locations));
+          
+          if (importData.settings) {
+            restoreSettingsFromBackup(importData.settings);
+          }
+
+          setModal({
+            isOpen: true,
+            title: 'Yükleme Tamamlandı',
+            message: `${importData.locations.length} adet konum başarıyla geri yüklendi. Değişikliklerin uygulanması için sayfa yenileniyor...`,
+            type: 'success',
+            onConfirm: () => {
+              window.location.reload();
+            }
+          });
+          setImportData(null);
+        } catch (error) {
+          console.error('Overwrite error:', error);
+          setModal({
+            isOpen: true,
+            title: 'Hata',
+            message: 'Yedekten yükleme yapılırken teknik bir hata oluştu.',
+            type: 'error'
+          });
+        }
+      }
+    });
   };
 
   return (
@@ -400,6 +614,83 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                   <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${showOnboarding ? 'right-1' : 'left-1'}`}></div>
                 </button>
               </div>
+            </div>
+          </section>
+
+          {/* Veri Yedekleme ve Kurtarma */}
+          <section className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                <i className="fas fa-database"></i>
+              </div>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Veri Yönetimi</h3>
+            </div>
+            
+            <div className="soft-card p-5 space-y-3">
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileImport} 
+                accept=".json" 
+                className="hidden" 
+              />
+              
+              <div className="grid grid-cols-2 gap-3">
+                <button 
+                  onClick={handleBackupExport}
+                  className="h-12 px-4 bg-slate-100 hover:bg-slate-200 text-blue-600 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-sm border border-slate-100 active:scale-[0.98] transition-all cursor-pointer"
+                >
+                  <i className="fas fa-download text-xs"></i>
+                  <span className="text-[12px] whitespace-nowrap">Yedek İndir</span>
+                </button>
+                
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="h-12 px-4 bg-slate-100 hover:bg-slate-200 text-blue-600 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-sm border border-slate-100 active:scale-[0.98] transition-all cursor-pointer"
+                >
+                  <i className="fas fa-upload text-xs"></i>
+                  <span className="text-[12px] whitespace-nowrap">Yedek Yükle</span>
+                </button>
+              </div>
+
+              {importData && (
+                <div className="bg-blue-50/70 p-4 border border-blue-100 rounded-2xl space-y-3 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                      <i className="fas fa-file-invoice"></i>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-black text-blue-900 truncate tracking-tight">{importData.fileName}</p>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-tight mt-0.5">
+                        {importData.locations.length} Ölçü Noktası Bulundu
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => setImportData(null)}
+                      className="w-6 h-6 rounded-lg hover:bg-blue-100/50 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
+                    >
+                      <i className="fas fa-times text-xs"></i>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-1 font-bold">
+                    <button 
+                      onClick={handleMergeImport}
+                      className="py-3 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[11px] font-black uppercase tracking-wider leading-none flex items-center justify-center gap-1.5 shadow-md shadow-blue-200 active:scale-95 transition-all cursor-pointer"
+                    >
+                      <i className="fas fa-layer-group text-[10px]"></i>
+                      Listeye Ekle
+                    </button>
+                    <button 
+                      onClick={handleOverwriteImport}
+                      className="py-3 px-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-[11px] font-black uppercase tracking-wider leading-none flex items-center justify-center gap-1.5 shadow-md shadow-red-200 active:scale-95 transition-all cursor-pointer"
+                    >
+                      <i className="fas fa-trash-can text-[10px]"></i>
+                      Üzerine Yaz
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 
