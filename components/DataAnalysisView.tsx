@@ -267,8 +267,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     // 1. GÜVENSİZ VERİ (KIRMIZI): Donanımsal Hassasiyet > 20m VEYA Veri Saçılımı > 20m VEYA Veri Saçılımı > Donanımsal Hassasiyet * 3
     const isRed = avgSensorAcc > 20 || maxSpread > 20 || maxSpread > avgSensorAcc * 3;
 
-    // 2. GÜVENİLİR VERİ (YEŞİL): Donanımsal Hassasiyet <= 10m VE Veri Saçılımı <= 10m VE Veri Sayısı >= 5
-    const isGreen = !isRed && avgSensorAcc <= 10 && maxSpread <= 10 && samplesCount >= 5;
+    // 2. GÜVENİLİR VERİ (YEŞİL): Donanımsal Hassasiyet <= 10m VE Veri Saçılımı <= 10m VE Veri Sayısı >= 5 VE Veri Saçılımı <= Donanımsal Hassasiyet
+    const isGreen = !isRed && avgSensorAcc <= 10 && maxSpread <= 10 && samplesCount >= 5 && maxSpread <= avgSensorAcc;
 
     // 3. ORTA GÜVENLİ VERİ / VERİ AZ (TURUNCU)
     const signalQuality: 'safe' | 'medium' | 'low' = isRed ? 'low' : isGreen ? 'safe' : 'medium';
@@ -614,7 +614,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         </p>
                         <p className="font-medium">{t("Veriler orta tutarlılıktadır.")}</p>
                         <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">
-                          {t("Kriterler: 10m < Donanımsal Hassasiyet ≤ 20m veya 10m < Veri Saçılımı ≤ 20m veya Donanımsal Hassasiyet x 2 < Veri Saçılımı ≤ Donanımsal Hassasiyet x 3 veya Veri Sayısı < 5")}
+                          {t("Kriterler: 10m < Donanımsal Hassasiyet ≤ 20m veya 10m < Veri Saçılımı ≤ 20m veya Veri Saçılımı > Donanımsal Hassasiyet veya Veri Sayısı < 5")}
                         </p>
                       </div>
                     )}

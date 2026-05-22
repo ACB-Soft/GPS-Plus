@@ -66,7 +66,7 @@ export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings
       const avgAcc = loc.samples.reduce((a, b) => a + b.accuracy, 0) / loc.samples.length;
       const ratio = maxSpread / (avgAcc || 0.1);
       if (ratio > 3) reliabilityLabel = "GÜVENSİZ";
-      else if (ratio > 1.5) reliabilityLabel = "ORTA GÜVEN";
+      else if (ratio > 1.0) reliabilityLabel = "ORTA GÜVEN";
       else reliabilityLabel = "GÜVENLİ";
     } else {
       // Fallback to single point accuracy if no samples or too few
@@ -387,22 +387,18 @@ export const downloadCombinedAnalysisReport = (
     // 1. GÜVENSİZ VERİ (KIRMIZI): Donanımsal Hassasiyet > 20m VEYA Veri Saçılımı > 20m VEYA Veri Saçılımı > Donanımsal Hassasiyet * 3
     const isRed = avgAccAll > 20 || maxSpreadAll > 20 || maxSpreadAll > avgAccAll * 3;
 
-    // 2. GÜVENİLİR VERİ (YEŞİL): Donanımsal Hassasiyet <= 10m VE Veri Saçılımı <= 10m VE Veri Sayısı >= 5
-    const isGreen = !isRed && avgAccAll <= 10 && maxSpreadAll <= 10 && samplesCount >= 5;
+    // 2. GÜVENİLİR VERİ (YEŞİL): Donanımsal Hassasiyet <= 10m VE Veri Saçılımı <= 10m VE Veri Sayısı >= 5 VE Veri Saçılımı <= Donanımsal Hassasiyet
+    const isGreen = !isRed && avgAccAll <= 10 && maxSpreadAll <= 10 && samplesCount >= 5 && maxSpreadAll <= avgAccAll;
 
     if (isRed) {
       signalQualityLabel = "GÜVENSİZ VERİ (KIRMIZI SİNYAL)";
       interpretation = "Veriler yüksek oranda sapmalı ve güvensizdir. Kriterler: Donanımsal Hassasiyet > 20m, Veri Saçılımı > 20m veya Veri Saçılımı > Donanımsal Hassasiyet * 3";
     } else if (isGreen) {
       signalQualityLabel = "GÜVENİLİR VERİ (YEŞİL SİNYAL)";
-      if (maxSpreadAll > avgAccAll) {
-        interpretation = "Veriler yüksek tutarlılıktadır. Ancak maksimum saçılım alıcı sensörün donanımsal hassasiyetinden fazla olduğu için hafif çoklu yansıma (multipath) etkisi mevcuttur.";
-      } else {
-        interpretation = "Veriler yüksek tutarlılıktadır. Çoklu yansıma (multipath) veya sapma (drift) etkisi gözlenmemiştir. Sinyal kalitesi son derece güvenli seviyededir.";
-      }
+      interpretation = "Veriler yüksek tutarlılıktadır. Çoklu yansıma (multipath) veya sapma (drift) etkisi gözlenmemiştir. Sinyal kalitesi son derece güvenli seviyededir.";
     } else {
       signalQualityLabel = samplesCount < 5 ? "VERİ AZ / ORTA GÜVENLİ VERİ (TURUNCU SİNYAL)" : "ORTA GÜVENLİ VERİ (TURUNCU SİNYAL)";
-      interpretation = "Veriler orta tutarlılıktadır. Kriterler: 10m < Donanımsal Hassasiyet <= 20m veya 10m < Veri Saçılımı <= 20m veya Donanımsal Hassasiyet * 2 < Veri Saçılımı <= Donanımsal Hassasiyet * 3 veya Veri Sayısı < 5";
+      interpretation = "Veriler orta tutarlılıktadır. Kriterler: 10m < Donanımsal Hassasiyet <= 20m veya 10m < Veri Saçılımı <= 20m veya Veri Saçılımı > Donanımsal Hassasiyet veya Veri Sayısı < 5";
     }
   }
 
