@@ -330,7 +330,7 @@ export const downloadCombinedAnalysisReport = (
     ["Yükseklik Tipi:", isOrthometric ? "Ortometrik (Jeoid)" : "Elipsoidal"],
     [],
     ["GÖZLEM LİSTESİ (Tüm Örnekler)"],
-    ["No", headerX, headerY, isOrthometric ? "Kot (H)" : "Alt (h)", "Hassasiyet (m)", "Düşey Hass (m)", "Zaman"]
+    ["No", headerX, headerY, isOrthometric ? "Kot (H)" : "Alt (h)", "Hassasiyet (m)", "Zaman"]
   ];
 
   if (location.samples && location.samples.length > 0) {
@@ -346,7 +346,6 @@ export const downloadCombinedAnalysisReport = (
         isWgsPoint ? s.lng.toFixed(8) : conv.y.toFixed(locPrecision), 
         hVal !== null ? hVal.toFixed(heightPrecision) : (s.altitude || 0).toFixed(heightPrecision), 
         s.accuracy.toFixed(3), 
-        s.altitudeAccuracy?.toFixed(3) || '---',
         new Date(s.timestamp).toLocaleTimeString('tr-TR')
       ]);
     });
@@ -372,7 +371,6 @@ export const downloadCombinedAnalysisReport = (
     ["Hesaplanan Y/Lng:", location.lng.toFixed(sys === "WGS84" ? 8 : locPrecision)],
     ["Hesaplanan Z/Alt:", (location.altitude || 0).toFixed(heightPrecision)],
     ["Yatay Hassasiyet (RMS):", `${location.accuracy.toFixed(3)} m`],
-    ["Düşey Hassasiyet (V):", `${location.altitudeAccuracy?.toFixed(3) || '-'} m`],
     ["Ölçüm Süresi:", `${location.measurementDuration || 0} sn`],
     ["Toplam Örnek Sayısı:", `${location.samples?.length || 0}`],
     [],
@@ -383,7 +381,7 @@ export const downloadCombinedAnalysisReport = (
     ["3. ALGORİTMA BAZLI HATA ANALİZİ (KIYASLAMA)"],
     ["Hassasiyet Hesaplama Metodu:", "Max(İstatistiksel Hassasiyet, Maksimum Örnek Yayılımı)"],
     ["Veri Filtreleme:", `Analizde sadece hassasiyeti ${accuracyLimit}m altındaki veriler kullanılmıştır.`],
-    ["Yöntem", preciseCoords.isWgs84 ? "Enlem (Lat)" : "Sağa (Y)", preciseCoords.isWgs84 ? "Boylam (Lng)" : "Yukarı (X)", preciseCoords.isWgs84 ? "Alt (Elip.H)" : "Kot (Z)", "ΔX (m)", "ΔY (m)", "ΔDüşey (m)", "Yatay Hata (m)", "DURUM"],
+    ["Yöntem", preciseCoords.isWgs84 ? "Enlem (Lat)" : "Sağa (Y)", preciseCoords.isWgs84 ? "Boylam (Lng)" : "Yukarı (X)", preciseCoords.isWgs84 ? "Alt (Elip.H)" : "Kot (Z)", "ΔX (m)", "ΔY (m)", "Yatay Hata (m)", "DURUM"],
     ...results.map(res => [
       getMethodName(res.method),
       (preciseCoords.isWgs84 ? res.calculated.x : res.calculated.x).toFixed(preciseCoords.isWgs84 ? 8 : locPrecision),
@@ -391,7 +389,6 @@ export const downloadCombinedAnalysisReport = (
       res.calculated.z.toFixed(heightPrecision),
       res.errors.dx.toFixed(3),
       res.errors.dy.toFixed(3),
-      Math.abs(res.errors.dz).toFixed(3),
       res.errors.dhz.toFixed(3),
       res.method === bestMethod.method ? "EN BAŞARILI (YATAY)" : ""
     ]),
@@ -399,7 +396,6 @@ export const downloadCombinedAnalysisReport = (
     ["HATA TERMİNOLOJİSİ VE NOTLAR:"],
     ["- Delta (Δ): Kesin Değer - Hesaplanan Değer farkıdır."],
     ["- Yatay Hata: Konumsal (2D) vektörel sapmadır."],
-    ["- Düşey Hata: Kot/Yükseklik eksenindeki mutlak sapmadır."],
     ["- En Başarılı Seçimi: Yatay hatası (ΔHz) en düşük olan algoritmaya göre yapılmıştır."],
     [`- Bu rapor ${FULL_BRAND} Ar-Ge platformu üzerinden otomatik üretilmiştir.`]
   ];
@@ -413,7 +409,7 @@ export const downloadCombinedAnalysisReport = (
     ["ZAMAN BAZLI KONUMLANMA PERFORMANS ANALİZİ"],
     ["(En başarılı algoritma üzerinden zamana bağlı iyileşme)"],
     [],
-    ["Gözlem Süresi (sn)", "Hesaplanan X/Lat", "Hesaplanan Y/Lng", "Hesaplanan Z/H", "Yatay Hata (m)", "Düşey Hata (m)", "Örnek Sayısı"],
+    ["Gözlem Süresi (sn)", "Hesaplanan X/Lat", "Hesaplanan Y/Lng", "Hesaplanan Z/H", "Yatay Hata (m)", "Örnek Sayısı"],
   ];
 
   const targetMethod = bestMethod.method;
@@ -444,7 +440,6 @@ export const downloadCombinedAnalysisReport = (
     // convResult.y is Northing, convResult.x is Easting
     const dn = refNorth - convResult.y;
     const de = refEast - convResult.x;
-    const dz = refZ - (result.altitude || 0);
     const dhz = Math.sqrt(dn*dn + de*de);
 
     const dispConv = convertCoordinate(result.lat, result.lng, sys);
@@ -455,7 +450,6 @@ export const downloadCombinedAnalysisReport = (
       (sys === "WGS84" ? result.lng : dispConv.y).toFixed(sys === "WGS84" ? 8 : locPrecision),
       (result.altitude || 0).toFixed(heightPrecision),
       dhz.toFixed(3),
-      Math.abs(dz).toFixed(3),
       slice.length
     ]);
   });

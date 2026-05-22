@@ -252,6 +252,17 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     const avgSensorAcc = location.samples.reduce((a, b) => a + b.accuracy, 0) / location.samples.length;
     const ratio = maxSpread / (avgSensorAcc || 0.1);
     
+    // Standart sapma (StdDev) hesabı
+    const meanLat = location.samples.reduce((a, b) => a + b.lat, 0) / location.samples.length;
+    const meanLng = location.samples.reduce((a, b) => a + b.lng, 0) / location.samples.length;
+    const residuals = location.samples.map(s => {
+      const dLat = (s.lat - meanLat) * 111132;
+      const dLng = (s.lng - meanLng) * 111132 * Math.cos(meanLat * Math.PI / 180);
+      return dLat * dLat + dLng * dLng;
+    });
+    const variance = residuals.reduce((a, b) => a + b, 0) / Math.max(1, location.samples.length - 1);
+    const stdDev = Math.sqrt(variance);
+
     // İyileştirilmiş Güven Skoru Formülü
     // Tolerans: 3.0 (Hassasiyetin 3 katına kadar saçılımı normal kabul et)
     const slack = 3.0;
@@ -266,13 +277,23 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     
     const confidenceScore = Math.min(100, Math.max(5, 100 * dispersionPenalty * volumeBoost * accFactor));
     
+    // Sinyal Kalite Seviyesi
+    let signalQuality: 'safe' | 'medium' | 'low' = 'safe';
+    if (confidenceScore < 40) {
+      signalQuality = 'low';
+    } else if (confidenceScore < 75) {
+      signalQuality = 'medium';
+    }
+    
     return {
       maxSpread,
       avgSensorAcc,
+      stdDev,
       ratio,
       confidenceScore,
-      isRisk: confidenceScore < 60,
-      isCritical: confidenceScore < 30
+      signalQuality,
+      isRisk: confidenceScore < 75,
+      isCritical: confidenceScore < 40
     };
   }, [location]);
 
@@ -497,32 +518,42 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
           {/* Multipath / Reliability Analysis */}
           {multipathAnalysis && (
             <div className={`p-6 rounded-[2.5rem] border-2 animate-in slide-in-from-top-4 ${
-              multipathAnalysis.isCritical ? 'bg-rose-50 border-rose-100' : 
-              multipathAnalysis.isRisk ? 'bg-amber-50 border-amber-100' : 'bg-emerald-50 border-emerald-100'
+              multipathAnalysis.signalQuality === 'low' ? 'bg-rose-50 border-rose-100' : 
+              multipathAnalysis.signalQuality === 'medium' ? 'bg-amber-50 border-amber-100' : 'bg-emerald-50 border-emerald-100'
             }`}>
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
                   <div className={`w-14 h-14 rounded-3xl flex items-center justify-center shadow-2xl ${
-                    multipathAnalysis.isCritical ? 'bg-rose-100 text-rose-600' : 
-                    multipathAnalysis.isRisk ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
+                    multipathAnalysis.signalQuality === 'low' ? 'bg-rose-100 text-rose-600' : 
+                    multipathAnalysis.signalQuality === 'medium' ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
                   }`}>
-                    <i className={`fas ${multipathAnalysis.isCritical ? 'fa-triangle-exclamation' : multipathAnalysis.isRisk ? 'fa-circle-exclamation' : 'fa-circle-check'} text-2xl`}></i>
+                    <i className={`fas ${
+                      multipathAnalysis.signalQuality === 'low' ? 'fa-signal text-rose-600 opacity-60' : 
+                      multipathAnalysis.signalQuality === 'medium' ? 'fa-signal text-amber-600' : 'fa-signal text-emerald-600'
+                    } text-2xl`}></i>
                   </div>
                   <div>
                     <h3 className={`text-sm font-black uppercase tracking-[0.2em] leading-none mb-1.5 ${
-                      multipathAnalysis.isCritical ? 'text-rose-700' : multipathAnalysis.isRisk ? 'text-amber-700' : 'text-emerald-700'
+                      multipathAnalysis.signalQuality === 'low' ? 'text-rose-700' : 
+                      multipathAnalysis.signalQuality === 'medium' ? 'text-amber-700' : 'text-emerald-700'
                     }`}>{t("Güvenilirlik Analizi")}</h3>
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-80 leading-none">{t("Multipath & Statistik Denetim")}</p>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-80 leading-none">
+                      {multipathAnalysis.signalQuality === 'safe' && t("GÜVENLİ SİNYAL (YEŞİL)")}
+                      {multipathAnalysis.signalQuality === 'medium' && t("ORTA GÜVENLİ SİNYAL (TURUNCU)")}
+                      {multipathAnalysis.signalQuality === 'low' && t("DÜŞÜK GÜVENLİ SİNYAL (KIRMIZI)")}
+                    </p>
                   </div>
                 </div>
                 <div className="text-right bg-white/40 p-3 rounded-2xl border border-white/60">
-                   <div className={`text-2xl font-black mono-font leading-none ${
-                     multipathAnalysis.confidenceScore < 40 ? 'text-rose-600' : 
-                     multipathAnalysis.confidenceScore < 75 ? 'text-amber-600' : 'text-emerald-600'
+                   <div className={`text-md font-black uppercase tracking-wider leading-none ${
+                     multipathAnalysis.signalQuality === 'low' ? 'text-rose-600 animate-pulse' : 
+                     multipathAnalysis.signalQuality === 'medium' ? 'text-amber-600' : 'text-emerald-600'
                    }`}>
-                     %{Math.round(multipathAnalysis.confidenceScore)}
+                     {multipathAnalysis.signalQuality === 'safe' && t("GÜVENLİ")}
+                     {multipathAnalysis.signalQuality === 'medium' && t("ORTA GÜVEN")}
+                     {multipathAnalysis.signalQuality === 'low' && t("DÜŞÜK GÜVEN")}
                    </div>
-                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">{t("GÜVEN SKORU")}</p>
+                   <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mt-1.5">{t("SINYAL DURUMU")}</p>
                 </div>
               </div>
               
@@ -532,8 +563,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   <p className="text-sm font-black text-slate-900 mono-font">±{multipathAnalysis.maxSpread.toFixed(2)}m</p>
                 </div>
                 <div className="bg-white/60 p-4 rounded-2xl border border-white/80 shadow-sm flex flex-col items-center">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{t("Sensör Hass.")}</p>
-                  <p className="text-sm font-black text-slate-900 mono-font">±{multipathAnalysis.avgSensorAcc.toFixed(2)}m</p>
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{t("Standart Sapma")}</p>
+                  <p className="text-sm font-black text-slate-900 mono-font">±{multipathAnalysis.stdDev.toFixed(2)}m</p>
                 </div>
                 <div className="bg-white/60 p-4 rounded-2xl border border-white/80 shadow-sm flex flex-col items-center">
                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{t("Örnek Sayısı")}</p>
@@ -541,18 +572,35 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 </div>
               </div>
 
-              {multipathAnalysis.isRisk && (
-                <div className="bg-white/80 p-4 rounded-2xl border-white border shadow-sm">
-                   <p className="text-[10px] font-bold text-slate-700 leading-relaxed italic flex gap-3">
-                    <i className={`fas fa-info-circle text-lg ${multipathAnalysis.isCritical ? 'text-rose-500' : 'text-amber-500'}`}></i>
-                    <span>
-                      {multipathAnalysis.isCritical 
-                        ? t('Kritik uyarı: Veri saçılımı ekstrem düzeyde. Ölçüm kalitesi güvenli sınırların altında kalmaktadır.') 
-                        : t('Ölçülen veriler sensörün bildirdiği hassasiyete göre daha geniş bir alana yayılmış durumda (Muhtemel Multipath).')}
-                    </span>
-                   </p>
+              {/* Veri Saçılım Analiz Özet Raporu */}
+              <div className="bg-white/80 p-4 rounded-2xl border border-white/90 shadow-sm space-y-2">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <i className="fas fa-file-invoice text-blue-500 text-xs"></i>
+                  <span className="text-[9px] font-black text-slate-700 uppercase tracking-wider">{t("Veri Saçılım Özeti")}</span>
                 </div>
-              )}
+                <div className="text-[10px] space-y-1.5 leading-relaxed text-slate-600 font-medium">
+                  <p className="flex justify-between border-b border-dashed border-slate-100 pb-1">
+                    <span className="text-slate-500">{t("Maksimum Saçılım Genişliği:")}</span>
+                    <span className="font-bold text-slate-900 mono-font">±{multipathAnalysis.maxSpread.toFixed(3)} m</span>
+                  </p>
+                  <p className="flex justify-between border-b border-dashed border-slate-100 pb-1">
+                    <span className="text-slate-500">{t("Konumsal Standart Sapma (1σ):")}</span>
+                    <span className="font-bold text-slate-900 mono-font">±{multipathAnalysis.stdDev.toFixed(3)} m</span>
+                  </p>
+                  <p className="flex justify-between border-b border-dashed border-slate-100 pb-1">
+                    <span className="text-slate-500">{t("Alıcı Sensör Hassasiyeti:")}</span>
+                    <span className="font-bold text-slate-900 mono-font">±{multipathAnalysis.avgSensorAcc.toFixed(3)} m</span>
+                  </p>
+                  <p className="text-[10px] italic text-slate-700 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100 mt-2">
+                    <span className="font-bold text-slate-900 block not-italic uppercase text-[8px] tracking-wider mb-1">
+                      {t("Geodezik Sinyal Raporu / Yorumu:")}
+                    </span>
+                    {multipathAnalysis.signalQuality === 'safe' && t("Konumsal dağılım yüksek yoğunlukta kümelenmiştir. Çoklu yansıma (multipath) veya sapma (drift) etkisi gözlenmemiştir. Sinyal kalitesi son derece güvenli seviyededir.")}
+                    {multipathAnalysis.signalQuality === 'medium' && t("Veri saçılımı kabul edilebilir sınırlar içerisindedir. Hafif derecede uydu sinyal gürültüsü veya engellemesi olabilir. Ölçüm orta derecede güvenlidir.")}
+                    {multipathAnalysis.signalQuality === 'low' && t("Ölçüm konumlarında ekstrem saçılım ve istikrarsız dağılım gözlenmiştir. Çoklu yansıma (multipath) etkisi yüksek düzeydedir. Bu verinin hassas işlerde kullanılması önerilmez.")}
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -737,7 +785,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       <tr className="bg-slate-900 text-white text-[9px] uppercase tracking-widest">
                         <th className="p-4 rounded-tl-3xl">Yöntem</th>
                         <th className="p-4">ΔYatay (m)</th>
-                        <th className="p-4">ΔDüşey (m)</th>
                         <th className="p-4 rounded-tr-3xl">DURUM</th>
                       </tr>
                     </thead>
@@ -748,7 +795,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           <tr key={res.method} className={`border-b border-slate-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
                             <td className="p-4 font-black text-[11px] text-slate-800">{getMethodLabel(res.method)}</td>
                             <td className="p-4 font-bold text-xs text-blue-600">{res.errors.dhz.toFixed(3)}</td>
-                            <td className="p-4 font-bold text-xs text-amber-600">{Math.abs(res.errors.dz).toFixed(3)}</td>
                             <td className="p-4">
                               {isBest && (
                                 <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter">EN İYİ</span>
