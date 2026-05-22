@@ -371,6 +371,33 @@ export const generateTechnicalReport = () => {
       <li><span class="bold">Zaman ve Geliştirme Maliyeti Verimliliği:</span> Geleneksel yazılım mühendisliği ekiplerinin geliştirme, test, doğrulamaları için harcadığı kaynaklar kıyaslandığında; bir adet jeodezi alan uzmanı ile Google AI Studio'nun ortak ortaklığı, projeyi %85 oranında hızlandırmış ve yazılım üretim maliyetini minimuma indirmiştir. Bu durum, yapay zekanın endüstriyel mühendislik uygulamalarında güvenilir bir "Co-Pilot" olduğunu literatürde teyit etmiştir.</li>
     </ul>
 
+    <h3>15.4 Eksik/Sığ İstemlerde Üretilen Yapay Zeka Hataları ve Alan Uzmanı Müdahaleleri (Otokritik & Vaka Analizi)</h3>
+    <p>Yapay zeka modellerinin haritacılık gibi yüksek matematiksel hassasiyet, fiziksel kısıtlar ve jeodezik standartlar içeren disiplinlerdeki en büyük zayıflığı, istemlerin eksik veya sığ dille aktarıldığı anlarda ortaya çıkmaktadır. Model, bu durumlarda genel yazılımsal varsayımlar yapmakta ve teknik olarak hatalı kabuller üretebilmektedir. <span class="bold">${FULL_BRAND}</span> geliştirilme sürecinde yaşanan otokritik hata ve alan uzmanı (Cihat Başara) müdahale vakaları şunlardır:</p>
+    
+    <div style="margin-top: 15px; border-left: 4px solid #dc2626; padding-left: 15px; margin-bottom: 20px;">
+      <p class="bold" style="color: #dc2626; margin-bottom: 4px;">Vaka 1: Hassasiyet Limiti İhlallerinin Geriye Dönük Hesaplamalara Sızması</p>
+      <p><span class="bold">AI Hatası:</span> Ölçüm arayüzünde saniyelik gelen ham GPS verileri doğruluk filtresine tabi tutuluyordu. Örneğin, 5m doğruluk limiti aşıldığında ekranda uyarı veriliyordu. Ancak AI, veri toplama fazı tamamlandıktan sonra arka planda çalışan En Küçük Kareler (LSE), Huber M-Tahminleme ve RANSAC algoritmalarına, o esnada kaydedilmiş gürültülü (örneğin 12-15 metre doğruluk sapması olan) tüm ham verileri de dahil ediyordu. Bu durum, nihai ağırlıklı ortalama koordinatı saptırarak kararsızlaştırıyordu.</p>
+      <p><span class="bold">Alan Uzmanı Revizyonu:</span> Alan uzmanı, jeodezik veri üretiminde kalitenin başlangıçta korunması gerektiğini belirterek, belirlenen doğruluk sınırı dışındaki konum verilerinin daha kayıt esnasında veri havuzuna kesinlikle alınmaması, listeye eklenmeden çöpe atılması ve sadece süzülmüş hassas veriler üstünde istatistiksel çıkarım yapılması kuralını getirmiştir. Bu sayede saha ölçümlerinin konum doğruluğu ve tekrarlanabilirliği milimetrik olarak güvence altına alınmıştır.</p>
+    </div>
+
+    <div style="border-left: 4px solid #d97706; padding-left: 15px; margin-bottom: 20px;">
+      <p class="bold" style="color: #d97706; margin-bottom: 4px;">Vaka 2: Elipsoid ve Ortometrik Yükseklik Ayrımının İhmal Edilmesi</p>
+      <p><span class="bold">AI Hatası:</span> İlk prototiplerde AI, mobil cihazın ham GPS alıcısından okuduğu elipsoidal yüksekliği ($h$) doğrudan Netcad ve AutoCAD uyumlu ham TXT ve Excel çıktılarına "Nokta Kotu (Ortometrik Yükseklik - $H$)" başlığı altında tekil yükseklik verisi olarak yazdırmıştır.</p>
+      <p><span class="bold">Alan Uzmanı Revizyonu:</span> Mühendislikte elipsoidal yükseklik ile fiziki ortometrik yüksekliğin farkının hayati olduğu, aradaki jeoid ondülasyonu ($N$) düşülmeden ($H = h - N$) üretilen ve projelerde kullanılan kotların imalat ve aplikasyon facialarına yol açacağı belirtilmiştir. Bu uyarıyla, TG-20 ve EGM96 filtreleri sisteme adapte edilmiş ve raporlama motorunda elipsoidal ve ortometrik kot kavramları iki ayrı kolon olarak birbirinden kesinlikle ayrılmıştır.</p>
+    </div>
+
+    <div style="border-left: 4px solid #2563eb; padding-left: 15px; margin-bottom: 20px;">
+      <p class="bold" style="color: #2563eb; margin-bottom: 4px;">Vaka 3: Bursa-Wolf 7-Parametreli Matris Dönüşümündeki Rotasyon İşaret Hatası</p>
+      <p><span class="bold">AI Hatası:</span> WGS84 ile ED50/ITRF96 sistemleri arasında koordinat transferi sağlayan 7-Parametreli Bursa-Wolf matris dönüşümü yazılırken AI, rotasyon parametrelerinin ($Rx, Ry, Rz$) işaretlerini "Coordinate Frame Rotation" (Koordinat Ekseni Rotasyonu) ile "Position Vector Rotation" (Konum Vektörü Rotasyonu) kavramlarının farkını ayırt edemeyerek ters işaretli atamıştır. Bu durum haritada yüzlerce metrelik konumsal kaymalara sebep olmuştur.</p>
+      <p><span class="bold">Alan Uzmanı Revizyonu:</span> Dönüşüm çıktısı kontrol noktalarıyla kıyaslanmış, rotasyon matrisindeki işaretlerin fiziksel yönleri ve işaret konvansiyonu alan uzmanının sağladığı formül şablonlarıyla revize edilerek formüllerin doğruluğu güvenceye alınmıştır.</p>
+    </div>
+
+    <div style="border-left: 4px solid #059669; padding-left: 15px; margin-bottom: 20px;">
+      <p class="bold" style="color: #059669; margin-bottom: 4px;">Vaka 4: TG-20 Jeoid Grid Sınırlarında "İnterpolasyon Sırasızlığı" (Out of Bounds)</p>
+      <p><span class="bold">AI Hatası:</span> AI, Türkiye Ulusal Jeoid Modeli (TG-20) dosyalarını okurken sınır koordinatlarına yaklaşan ölçümlerde, en yakın grid hücresini direkt kopyalamış ya da indeks sınır taşmalarında sistemi hata vermeye veya sıfır "0" yüksekliği üretmeye zorlamıştır. Bu durum kıyı veya sınır bölgelerinde ani dikey yüksekleme atlamalarına yol açmıştı.</p>
+      <p><span class="bold">Alan Uzmanı Revizyonu:</span> Grid dışına veya hücre kenarlarına yaklaşan koordinatlarda 4 düğüm noktasının ağırlıklandırıldığı "Bilineer İnterpolasyon" modelinin kesintisiz çalışması, sınır dışı taşmalarda ise küresel EGM96 modeline pürüzsüz (seamless/fallback) bir şekilde geçiş sağlayan dinamik bir koruma köprüsü kurulması sağlanmıştır.</p>
+    </div>
+
     <h2>16. SONUÇ</h2>
     <p>
       ${FULL_BRAND}, Harita Mühendisliği’nin karmaşık matematiksel dünyasını, son kullanıcının mobil cihazındaki kullanıcı dostu bir arayüze sığdırmıştır. TG-20 jeoid desteği, 7 parametreli Bursa-Wolf dönüşümü, AI Studio destekli modüler altyapısı ve gelişmiş istatistiksel filtreleme sistemleri ile sahadaki veri üretim süreçlerini hızlandırır ve güvenilir kılar. Bu teknik döküman, uygulamanın bilimsel temellere dayalı operasyonel gücünün ve modern insan-yapay zeka ortaklığının bir beyanıdır.
