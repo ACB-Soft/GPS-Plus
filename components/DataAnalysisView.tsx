@@ -111,7 +111,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     return locations.filter(l => (l.folderName || 'Genel') === selectedFolder);
   }, [locations, selectedFolder]);
 
-  const location = locations.find(l => l.id === selectedPointId);
+  const location = useMemo(() => {
+    const orig = locations.find(l => l.id === selectedPointId);
+    if (!orig) return undefined;
+    return {
+      ...orig,
+      samples: orig.samples ? orig.samples.slice(0, 60) : []
+    };
+  }, [locations, selectedPointId]);
   const rawChartRef = React.useRef<HTMLDivElement>(null);
   const comparisonChartRef = React.useRef<HTMLDivElement>(null);
 
