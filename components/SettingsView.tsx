@@ -206,18 +206,154 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
         
         setModal({
           isOpen: true,
-          title: t('EMİN MİSİNİZ?'),
+          title: t('Yedek Yükle'),
           type: 'confirm',
           confirmLabel: t('Yedek Yükle'),
-          message: t('Bu yedek dosyası yüklendiğinde mevcut tüm verileriniz ve ayarlarınız silinip yedekteki veriler ile değiştirilecektir. Devam etmek istiyor musunuz?'),
+          message: t('Yedek dosyasındaki ölçümler, mevcut verilerinizin üzerine eklenecek ve aynı isimdeki projeler otomatik olarak yeni isimle kaydedilecektir. Devam etmek istiyor musunuz?'),
           onConfirm: () => {
             try {
+              // 1. Ölçümler (gps_locations_v5.0) kurgusu
+              const currentLocsJson = localStorage.getItem('gps_locations_v5.0');
+              let currentLocations: any[] = currentLocsJson ? JSON.parse(currentLocsJson) : [];
+              if (!Array.isArray(currentLocations)) currentLocations = [];
+
+              const backupLocsJson = dataToRestore['gps_locations_v5.0'];
+              let backupLocations: any[] = backupLocsJson ? JSON.parse(backupLocsJson) : [];
+              if (!Array.isArray(backupLocations)) backupLocations = [];
+
+              if (backupLocations.length > 0) {
+                // Mevcut klasörleri (projeleri) tespit et
+                const currentFolders = new Set(currentLocations.map((l: any) => l.folderName || t('Klasör Yok')));
+                
+                // Yedek dosyadan gelen benzersiz klasörler
+                const backupFolders = Array.from(new Set(backupLocations.map((l: any) => l.folderName || t('Klasör Yok')))) as string[];
+
+                // Klasör adı eşleştirme tablosu (eskiKlasor -> yeniKlasor)
+                const folderNameMap = new Map<string, string>();
+
+                backupFolders.forEach(folder => {
+                  if (currentFolders.has(folder)) {
+                    // Çakışma var! Yeni klasör adı bulalım
+                    let idx = 1;
+                    let newFoldName = `${folder} (Yedek ${idx})`;
+                    while (currentFolders.has(newFoldName) || Array.from(folderNameMap.values()).includes(newFoldName)) {
+                      idx++;
+                      newFoldName = `${folder} (Yedek ${idx})`;
+                    }
+                    folderNameMap.set(folder, newFoldName);
+                  } else {
+                    folderNameMap.set(folder, folder);
+                  }
+                });
+
+                // Nokta adlarının çakışmaması için helper
+                const isPointExistsInCurrent = (folder: string, name: string) => {
+                  return currentLocations.some((l: any) => (l.folderName || t('Klasör Yok')) === folder && l.name === name);
+                };
+
+                // Önce her bir yedek lokasyonu yeni isimleriyle currentLocations'a ekleyelim
+                backupLocations.forEach((loc: any) => {
+                  const originalFolder = loc.folderName || t('Klasör Yok');
+                  const mappedFolder = folderNameMap.get(originalFolder) || originalFolder;
+                  
+                  // Nokta adı çakışma analizi
+                  let ptIdx = 1;
+                  let finalPointName = loc.name;
+                  while (isPointExistsInCurrent(mappedFolder, finalPointName)) {
+                    ptIdx++;
+                    finalPointName = `${loc.name} (${ptIdx})`;
+                  }
+
+                  // Benzersiz bir id ata (mevcut idlerle çakışmasın)
+                  let finalId = loc.id;
+                  if (currentLocations.some((l: any) => l.id === loc.id)) {
+                    finalId = loc.id + "_" + Math.random().toString(36).substr(2, 5);
+                  }
+
+                  currentLocations.push({
+                    ...loc,
+                    id: finalId,
+                    name: finalPointName,
+                    folderName: mappedFolder
+                  });
+                });
+
+                // localStorage'a geri eşitleyelim
+                localStorage.setItem('gps_locations_v5.0', JSON.stringify(currentLocations));
+              }
+
+              // 2. Aplikasyon Noktaları (stakeout_points_v1) kurgusu
+              const currentStPtsJson = localStorage.getItem('stakeout_points_v1');
+              let currentStakeoutPoints: any[] = currentStPtsJson ? JSON.parse(currentStPtsJson) : [];
+              if (!Array.isArray(currentStakeoutPoints)) currentStakeoutPoints = [];
+
+              const backupStPtsJson = dataToRestore['stakeout_points_v1'];
+              let backupStakeoutPoints: any[] = backupStPtsJson ? JSON.parse(backupStPtsJson) : [];
+              if (!Array.isArray(backupStakeoutPoints)) backupStakeoutPoints = [];
+
+              if (backupStakeoutPoints.length > 0) {
+                backupStakeoutPoints.forEach((bp: any) => {
+                  let finalId = bp.id;
+                  if (currentStakeoutPoints.some((p: any) => p.id === bp.id)) {
+                    finalId = bp.id + "_" + Math.random().toString(36).substr(2, 5);
+                  }
+
+                  let finalName = bp.name;
+                  let stPtIdx = 1;
+                  while (currentStakeoutPoints.some((p: any) => p.name === finalName)) {
+                    stPtIdx++;
+                    finalName = `${bp.name} (${stPtIdx})`;
+                  }
+
+                  currentStakeoutPoints.push({
+                    ...bp,
+                    id: finalId,
+                    name: finalName
+                  });
+                });
+                localStorage.setItem('stakeout_points_v1', JSON.stringify(currentStakeoutPoints));
+              }
+
+              // 3. Aplikasyon Geometrileri (stakeout_geometries_v1) kurgusu
+              const currentGeomsJson = localStorage.getItem('stakeout_geometries_v1');
+              let currentGeometries: any[] = currentGeomsJson ? JSON.parse(currentGeomsJson) : [];
+              if (!Array.isArray(currentGeometries)) currentGeometries = [];
+
+              const backupGeomsJson = dataToRestore['stakeout_geometries_v1'];
+              let backupGeometries: any[] = backupGeomsJson ? JSON.parse(backupGeomsJson) : [];
+              if (!Array.isArray(backupGeometries)) backupGeometries = [];
+
+              if (backupGeometries.length > 0) {
+                backupGeometries.forEach((bg: any) => {
+                  let finalId = bg.id;
+                  if (currentGeometries.some((g: any) => g.id === bg.id)) {
+                    finalId = bg.id + "_" + Math.random().toString(36).substr(2, 5);
+                  }
+
+                  let finalName = bg.name;
+                  let geomIdx = 1;
+                  while (currentGeometries.some((g: any) => g.name === finalName)) {
+                    geomIdx++;
+                    finalName = `${bg.name} (${geomIdx})`;
+                  }
+
+                  currentGeometries.push({
+                    ...bg,
+                    id: finalId,
+                    name: finalName
+                  });
+                });
+                localStorage.setItem('stakeout_geometries_v1', JSON.stringify(currentGeometries));
+              }
+
+              // 4. Diğer konfigürasyon ayarlarını olduğu gibi üstüne yazabiliriz
+              const skippedKeys = ['gps_locations_v5.0', 'stakeout_points_v1', 'stakeout_geometries_v1'];
               Object.keys(dataToRestore).forEach(key => {
-                const val = dataToRestore[key];
-                if (val !== null && val !== undefined) {
-                  localStorage.setItem(key, val);
-                } else {
-                  localStorage.removeItem(key);
+                if (!skippedKeys.includes(key)) {
+                  const val = dataToRestore[key];
+                  if (val !== null && val !== undefined) {
+                    localStorage.setItem(key, val);
+                  }
                 }
               });
 

@@ -246,11 +246,12 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   };
 
   const multipathAnalysis = useMemo(() => {
-    if (!location || !location.samples || location.samples.length < 5) return null;
+    if (!location || !location.samples || location.samples.length < 1) return null;
     
     const maxSpread = calculateMaxDistance(location.samples);
     const avgSensorAcc = location.samples.reduce((a, b) => a + b.accuracy, 0) / location.samples.length;
     const ratio = maxSpread / (avgSensorAcc || 0.1);
+    const samplesCount = location.samples.length;
     
     // Standart sapma (StdDev) hesabı
     const meanLat = location.samples.reduce((a, b) => a + b.lat, 0) / location.samples.length;
@@ -263,27 +264,17 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     const variance = residuals.reduce((a, b) => a + b, 0) / Math.max(1, location.samples.length - 1);
     const stdDev = Math.sqrt(variance);
 
-    // İyileştirilmiş Güven Skoru Formülü
-    // Tolerans: 3.0 (Hassasiyetin 3 katına kadar saçılımı normal kabul et)
-    const slack = 3.0;
-    const dispersionPenalty = 1 / (1 + Math.max(0, (ratio - slack) / 2));
+    // 1. GÜVENSİZ VERİ (KIRMIZI): Donanımsal Hassasiyet > 20m VEYA Veri Saçılımı > 20m VEYA Veri Saçılımı > Donanımsal Hassasiyet * 3
+    const isRed = avgSensorAcc > 20 || maxSpread > 20 || maxSpread > avgSensorAcc * 3;
+
+    // 2. GÜVENİLİR VERİ (YEŞİL): Donanımsal Hassasiyet <= 10m VE Veri Saçılımı <= 10m VE Veri Sayısı >= 5
+    const isGreen = !isRed && avgSensorAcc <= 10 && maxSpread <= 10 && samplesCount >= 5;
+
+    // 3. ORTA GÜVENLİ VERİ / VERİ AZ (TURUNCU)
+    const signalQuality: 'safe' | 'medium' | 'low' = isRed ? 'low' : isGreen ? 'safe' : 'medium';
     
-    // Veri Hacmi Katsayısı (30 örnekte tam verimlilik)
-    const sampleFactor = Math.min(1.0, location.samples.length / 30);
-    const volumeBoost = 0.85 + (0.15 * sampleFactor);
-    
-    // Hassasiyet Kalitesi (0.5m - 5.0m arası lineer etki)
-    const accFactor = Math.max(0.7, Math.min(1.0, 5.0 / (avgSensorAcc || 5.0)));
-    
-    const confidenceScore = Math.min(100, Math.max(5, 100 * dispersionPenalty * volumeBoost * accFactor));
-    
-    // Sinyal Kalite Seviyesi
-    let signalQuality: 'safe' | 'medium' | 'low' = 'safe';
-    if (confidenceScore < 40) {
-      signalQuality = 'low';
-    } else if (confidenceScore < 75) {
-      signalQuality = 'medium';
-    }
+    // Smooth confidenceScore for display
+    const confidenceScore = isRed ? 30 : isGreen ? 90 : 60;
     
     return {
       maxSpread,
@@ -292,8 +283,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       ratio,
       confidenceScore,
       signalQuality,
-      isRisk: confidenceScore < 75,
-      isCritical: confidenceScore < 40
+      isRisk: signalQuality !== 'safe',
+      isCritical: signalQuality === 'low',
+      samplesCount
     };
   }, [location]);
 
@@ -549,9 +541,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                      multipathAnalysis.signalQuality === 'low' ? 'text-rose-600 animate-pulse' : 
                      multipathAnalysis.signalQuality === 'medium' ? 'text-amber-600' : 'text-emerald-600'
                    }`}>
-                     {multipathAnalysis.signalQuality === 'safe' && t("GÜVENLİ")}
-                     {multipathAnalysis.signalQuality === 'medium' && t("ORTA GÜVEN")}
-                     {multipathAnalysis.signalQuality === 'low' && t("DÜŞÜK GÜVEN")}
+                     {multipathAnalysis.signalQuality === 'safe' && t("GÜVENLİ (YEŞİL)")}
+                     {multipathAnalysis.signalQuality === 'medium' && t("ORTA GÜVEN (TURUNCU)")}
+                     {multipathAnalysis.signalQuality === 'low' && t("GÜVENSİZ (KIRMIZI)")}
                    </div>
                    <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mt-1.5">{t("SINYAL DURUMU")}</p>
                 </div>
@@ -578,27 +570,66 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   <i className="fas fa-file-invoice text-blue-500 text-xs"></i>
                   <span className="text-[9px] font-black text-slate-700 uppercase tracking-wider">{t("Veri Saçılım Özeti")}</span>
                 </div>
-                <div className="text-[10px] space-y-1.5 leading-relaxed text-slate-600 font-medium">
+                <div className="text-[10px] space-y-1.5 leading-relaxed text-slate-600 font-medium font-sans">
                   <p className="flex justify-between border-b border-dashed border-slate-100 pb-1">
                     <span className="text-slate-500">{t("Maksimum Saçılım Genişliği:")}</span>
-                    <span className="font-bold text-slate-900 mono-font">±{multipathAnalysis.maxSpread.toFixed(3)} m</span>
+                    <span className="font-bold text-slate-900 mono-font font-medium">±{multipathAnalysis.maxSpread.toFixed(3)} m</span>
                   </p>
                   <p className="flex justify-between border-b border-dashed border-slate-100 pb-1">
                     <span className="text-slate-500">{t("Konumsal Standart Sapma (1σ):")}</span>
-                    <span className="font-bold text-slate-900 mono-font">±{multipathAnalysis.stdDev.toFixed(3)} m</span>
+                    <span className="font-bold text-slate-900 mono-font font-medium">±{multipathAnalysis.stdDev.toFixed(3)} m</span>
                   </p>
                   <p className="flex justify-between border-b border-dashed border-slate-100 pb-1">
                     <span className="text-slate-500">{t("Alıcı Sensör Hassasiyeti:")}</span>
-                    <span className="font-bold text-slate-900 mono-font">±{multipathAnalysis.avgSensorAcc.toFixed(3)} m</span>
+                    <span className="font-bold text-slate-900 mono-font font-medium">±{multipathAnalysis.avgSensorAcc.toFixed(3)} m</span>
                   </p>
-                  <p className="text-[10px] italic text-slate-700 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100 mt-2">
-                    <span className="font-bold text-slate-900 block not-italic uppercase text-[8px] tracking-wider mb-1">
+                  <div className="text-[11px] text-slate-700 bg-slate-50/50 p-3 rounded-xl border border-slate-100 mt-2 space-y-2">
+                    <span className="font-black text-slate-900 block uppercase text-[8px] tracking-wider border-b border-slate-100 pb-1 mb-1 shadow-none">
                       {t("Geodezik Sinyal Raporu / Yorumu:")}
                     </span>
-                    {multipathAnalysis.signalQuality === 'safe' && t("Konumsal dağılım yüksek yoğunlukta kümelenmiştir. Çoklu yansıma (multipath) veya sapma (drift) etkisi gözlenmemiştir. Sinyal kalitesi son derece güvenli seviyededir.")}
-                    {multipathAnalysis.signalQuality === 'medium' && t("Veri saçılımı kabul edilebilir sınırlar içerisindedir. Hafif derecede uydu sinyal gürültüsü veya engellemesi olabilir. Ölçüm orta derecede güvenlidir.")}
-                    {multipathAnalysis.signalQuality === 'low' && t("Ölçüm konumlarında ekstrem saçılım ve istikrarsız dağılım gözlenmiştir. Çoklu yansıma (multipath) etkisi yüksek düzeydedir. Bu verinin hassas işlerde kullanılması önerilmez.")}
-                  </p>
+                    {multipathAnalysis.signalQuality === 'safe' && (
+                      <div className="space-y-1 text-slate-600">
+                        <p className="font-black text-emerald-600 uppercase text-[9px] tracking-wide mb-1">
+                          ● {t("Güvenilir Veri (Yeşil Sinyal)")}
+                        </p>
+                        <p className="font-medium">{t("Veriler yüksek tutarlılıktadır.")}</p>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+                          {t("Kriter: Donanımsal Hassasiyet ≤ 10m, Veri Saçılımı ≤ 10m, Veri Sayısı ≥ 5")}
+                        </p>
+                        {multipathAnalysis.maxSpread > multipathAnalysis.avgSensorAcc ? (
+                          <p className="text-amber-600 font-extrabold text-[10px] bg-amber-50 rounded-lg p-2 border border-amber-100/50 mt-1.5 normal-case">
+                            {t("UYARI: Sinyal yeşildir fakat maksimum saçılım alıcı sensörün donanımsal hassasiyetinden fazla olduğu için hafif çoklu yansıma (multipath) etkisi mevcuttur.")}
+                          </p>
+                        ) : (
+                          <p className="text-emerald-600 font-extrabold text-[10px] bg-emerald-50 rounded-lg p-1 px-2 border border-emerald-100/30 mt-1.5 normal-case">
+                            {t("Konumsal dağılım son derece stabil ve kümelenmiştir, multipath / sapma etkisi saptanmamıştır.")}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {multipathAnalysis.signalQuality === 'medium' && (
+                      <div className="space-y-1 text-slate-600">
+                        <p className="font-black text-amber-600 uppercase text-[9px] tracking-wide mb-1">
+                          ● {multipathAnalysis.samplesCount < 5 ? t("VERİ AZ (TURUNCU SİNYAL)") : t("ORTA GÜVENLİ VERİ (TURUNCU SİNYAL)")}
+                        </p>
+                        <p className="font-medium">{t("Veriler orta tutarlılıktadır.")}</p>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+                          {t("Kriterler: 10m < Donanımsal Hassasiyet ≤ 20m veya 10m < Veri Saçılımı ≤ 20m veya Donanımsal Hassasiyet x 2 < Veri Saçılımı ≤ Donanımsal Hassasiyet x 3 veya Veri Sayısı < 5")}
+                        </p>
+                      </div>
+                    )}
+                    {multipathAnalysis.signalQuality === 'low' && (
+                      <div className="space-y-1 text-slate-600">
+                        <p className="font-black text-rose-600 uppercase text-[9px] tracking-wide mb-1">
+                          ● {t("GÜVENSİZ VERİ (KIRMIZI SİNYAL)")}
+                        </p>
+                        <p className="font-medium text-rose-700/95 font-semibold bg-rose-50/70 p-1.5 rounded-lg border border-rose-100/30 leading-snug">{t("Veriler yüksek oranda sapmalı ve güvensizdir.")}</p>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+                          {t("Kriterler: Donanımsal Hassasiyet > 20m veya Veri Saçılımı > 20m veya Veri Saçılımı > Donanımsal Hassasiyet x 3")}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

@@ -77,20 +77,21 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
       ? samples.reduce((a, b) => a + b.accuracy, 0) / samples.length 
       : location.accuracy;
 
-    const maxSpread = samples.length >= 3 ? calculateMaxDistance(samples) : 0;
+    const maxSpread = samples.length >= 2 ? calculateMaxDistance(samples) : 0;
+    const samplesCount = samples.length;
 
-    // RULE 1: UNSAFE (GÜVENSİZ)
-    if (avgSensorAcc > 20 || maxSpread > 30 || (samples.length >= 3 && maxSpread > avgSensorAcc * 3)) {
+    // 1. GÜVENSİZ VERİ (KIRMIZI): Donanımsal Hassasiyet > 20m VEYA Veri Saçılımı > 20m VEYA Veri Saçılımı > Donanımsal Hassasiyet * 3
+    if (avgSensorAcc > 20 || maxSpread > 20 || maxSpread > avgSensorAcc * 3) {
       return 'LOW';
     }
 
-    // RULE 2: ORTA GÜVEN / VERİ AZ
-    if (avgSensorAcc > 10 || maxSpread > 15 || samples.length < 5) {
-      return 'MEDIUM';
+    // 2. GÜVENİLİR VERİ (YEŞİL): Donanımsal Hassasiyet <= 10m VE Veri Saçılımı <= 10m VE Veri Sayısı >= 5
+    if (avgSensorAcc <= 10 && maxSpread <= 10 && samplesCount >= 5) {
+      return 'HIGH';
     }
     
-    // RULE 3: GÜVENLİ
-    return 'HIGH';
+    // 3. ORTA GÜVENLİ VERİ / VERİ AZ (TURUNCU)
+    return 'MEDIUM';
   }, [location.samples, location.accuracy]);
 
   useEffect(() => {

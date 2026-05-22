@@ -359,6 +359,53 @@ export const downloadCombinedAnalysisReport = (
   const bestMethod = results.sort((a,b) => a.errors.dhz - b.errors.dhz)[0];
   const accuracyLimit = location.accuracyLimit || 5.0;
 
+  // --- Veri Saçılımı ve Güvenilirlik Hesapları ---
+  const samplesList = location.samples || [];
+  let maxSpreadAll = 0;
+  let avgAccAll = 0;
+  let stdDevValue = 0;
+  let signalQualityLabel = "BİLİNMİYOR";
+  let interpretation = "Yetersiz örneklem.";
+
+  if (samplesList.length >= 1) {
+    maxSpreadAll = samplesList.length >= 2 ? calculateMaxDistance(samplesList) : 0;
+    avgAccAll = samplesList.reduce((a, b) => a + b.accuracy, 0) / samplesList.length;
+    
+    // Standart sapma (StdDev) hesabı
+    const meanLat = samplesList.reduce((a, b) => a + b.lat, 0) / samplesList.length;
+    const meanLng = samplesList.reduce((a, b) => a + b.lng, 0) / samplesList.length;
+    const residuals = samplesList.map(s => {
+      const dLat = (s.lat - meanLat) * 111132;
+      const dLng = (s.lng - meanLng) * 111132 * Math.cos(meanLat * Math.PI / 180);
+      return dLat * dLat + dLng * dLng;
+    });
+    const varianceValue = residuals.reduce((a, b) => a + b, 0) / Math.max(1, samplesList.length - 1);
+    stdDevValue = Math.sqrt(varianceValue);
+
+    const samplesCount = samplesList.length;
+
+    // 1. GÜVENSİZ VERİ (KIRMIZI): Donanımsal Hassasiyet > 20m VEYA Veri Saçılımı > 20m VEYA Veri Saçılımı > Donanımsal Hassasiyet * 3
+    const isRed = avgAccAll > 20 || maxSpreadAll > 20 || maxSpreadAll > avgAccAll * 3;
+
+    // 2. GÜVENİLİR VERİ (YEŞİL): Donanımsal Hassasiyet <= 10m VE Veri Saçılımı <= 10m VE Veri Sayısı >= 5
+    const isGreen = !isRed && avgAccAll <= 10 && maxSpreadAll <= 10 && samplesCount >= 5;
+
+    if (isRed) {
+      signalQualityLabel = "GÜVENSİZ VERİ (KIRMIZI SİNYAL)";
+      interpretation = "Veriler yüksek oranda sapmalı ve güvensizdir. Kriterler: Donanımsal Hassasiyet > 20m, Veri Saçılımı > 20m veya Veri Saçılımı > Donanımsal Hassasiyet * 3";
+    } else if (isGreen) {
+      signalQualityLabel = "GÜVENİLİR VERİ (YEŞİL SİNYAL)";
+      if (maxSpreadAll > avgAccAll) {
+        interpretation = "Veriler yüksek tutarlılıktadır. Ancak maksimum saçılım alıcı sensörün donanımsal hassasiyetinden fazla olduğu için hafif çoklu yansıma (multipath) etkisi mevcuttur.";
+      } else {
+        interpretation = "Veriler yüksek tutarlılıktadır. Çoklu yansıma (multipath) veya sapma (drift) etkisi gözlenmemiştir. Sinyal kalitesi son derece güvenli seviyededir.";
+      }
+    } else {
+      signalQualityLabel = samplesCount < 5 ? "VERİ AZ / ORTA GÜVENLİ VERİ (TURUNCU SİNYAL)" : "ORTA GÜVENLİ VERİ (TURUNCU SİNYAL)";
+      interpretation = "Veriler orta tutarlılıktadır. Kriterler: 10m < Donanımsal Hassasiyet <= 20m veya 10m < Veri Saçılımı <= 20m veya Donanımsal Hassasiyet * 2 < Veri Saçılımı <= Donanımsal Hassasiyet * 3 veya Veri Sayısı < 5";
+    }
+  }
+
   const analysisData: any[][] = [
     ["DETAYLI İSTATİSTİKSEL ANALİZ VE ALGORİTMA PERFORMANS RAPORU"],
     ["Nokta Adı:", location.name],
@@ -392,6 +439,13 @@ export const downloadCombinedAnalysisReport = (
       res.errors.dhz.toFixed(3),
       res.method === bestMethod.method ? "EN BAŞARILI (YATAY)" : ""
     ]),
+    [],
+    ["4. VERI SACILIMI VE SINYAL GUVENILIRLIK OZETI"],
+    ["Maksimum Saçılım Genişliği (Spread):", `${maxSpreadAll.toFixed(3)} m`],
+    ["Konumsal Standart Sapma (1σ):", `${stdDevValue.toFixed(3)} m`],
+    ["Ortalama Alıcı Sensör Hassasiyeti:", `${avgAccAll.toFixed(3)} m`],
+    ["Sinyal Güvenilirlik Durumu:", signalQualityLabel],
+    ["Geodezik Analiz Genel Yorumu:", interpretation],
     [],
     ["HATA TERMİNOLOJİSİ VE NOTLAR:"],
     ["- Delta (Δ): Kesin Değer - Hesaplanan Değer farkıdır."],
