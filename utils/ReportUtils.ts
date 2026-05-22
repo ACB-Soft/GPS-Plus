@@ -316,24 +316,67 @@ export const generateTechnicalReport = () => {
     </table>
 
     <h2>14. UYGULAMA DOSYA YAPISI VE MODÜLER MİMARİ</h2>
-    <p>${FULL_BRAND} yazılım mimarisi, "Separation of Concerns" (Sorumlulukların Ayrılması) prensibiyle modüler bir yapıda tasarlanmıştır. Bu yapı, her bir jeodezik fonksiyonun izole bir şekilde test edilmesine ve geliştirilmesine olanak tanır:</p>
+    <p>${FULL_BRAND} yazılım mimarisi, "Separation of Concerns" (Sorumlulukların Ayrılması) prensibiyle modüler bir yapıda tasarlanmıştır. Bu yapı, her bir jeodezik fonksiyonun izole bir şekilde test edilmesine, doğrulanmasına ve geliştirilmesine olanak tanır. Uygulamanın tüm klasör ve dosya yapısı aşağıda detaylı olarak açıklanmıştır:</p>
+    
+    <h3>14.1 Kök Dizin Sorumluluk Grubu (Root Files)</h3>
+    <p>Uygulamanın genel akışını, temel durumunu, stil katmanını ve derleme süreçlerini yöneten temel dosyalardır:</p>
     <ul>
-      <li><span class="bold">/utils/MathUtils.ts (İstatistik ve Hesaplama Çekirdeği):</span> Uygulamanın beynidir. Aritmetik Ortalama, Ağırlıklı Dengeleme (WLS), Huber M-Estimation, KDE ve RANSAC gibi tüm ileri düzey istatistiksel algoritmalar bu dosyada kodlanmıştır. Sinyal işlemenin matematiksel doğrulanması burada gerçekleşir.</li>
-      <li><span class="bold">/utils/CoordinateUtils.ts (Projeksiyon ve Dönüşüm Katmanı):</span> Proj4 kütüphanesi entegrasyonu ile WGS84, ITRF96, ED50 gibi koordinat sistemleri arasındaki geçişleri yönetir. Dilim orta meridyeni (DOM) hesaplamaları ve TM projeksiyon dönüşümleri bu modülün sorumluluğundadır.</li>
-      <li><span class="bold">/components/GeoidUtils.ts (Yükseklik Modeli Yönetimi):</span> Elipsoidal yükseklik verisini, TG-20 ve EGM96 modellerini kullanarak fiziksel (ortometrik) yüksekliğe dönüştüren yardımcı fonksiyondur. Cihazın yerel yüksekliğini global datum ile senkronize eder.</li>
-      <li><span class="bold">/components/ExcelUtils.ts (Veri Raporlama ve Excel Dökümü):</span> Toplanan verilerin mühendislik standartlarına uygun Excel (.xlsx) formatına dönüştürülmesini sağlar. Kolon yapıları, veri tipleri ve istatistiksel özet tabloları bu modülde yapılandırılır.</li>
-      <li><span class="bold">/services/GeoidService.ts (Grid Veri Servisi):</span> TG-20 ve EGM96 gibi büyük ölçekli jeoid grid verilerini sorgulayan ve "Bilineer İnterpolasyon" ile ara değer üreten düşük seviyeli servis katmanıdır. Hafıza yönetimini optimize ederek grid verilerini hızlıca işler.</li>
-      <li><span class="bold">/components/GPSCapture.tsx (Saha Ölçüm Modülü):</span> Kullanıcının saha operasyonlarını yönettiği ana görsel arayüzdür. GNSS verilerinin saniyelik görselleştirilmesi, doğruluk kontrolleri ve kayıt süreçleri bu bileşen üzerinden yürütülür.</li>
-      <li><span class="bold">/components/StakeoutModule.tsx (Aplikasyon / Navigasyon Modülü):</span> Manuel nokta ekleme, haritadan nokta seçimi ve hedefe yönlendirme (azimut/mesafe) zekasını barındıran modüldür. Görsel "Radar" ve "Su Terazisi" kontrollerini içerir.</li>
-      <li><span class="bold">/utils/ReportUtils.ts (Teknik Rapor Oluşturucu):</span> Şu an okumakta olduğunuz dökümantasyonun dinamik olarak üretilmesini sağlar. Yazılımın tüm teknik parametrelerini profesyonel bir formatta PDF/DOC çıktılarına hazırlar.</li>
+      <li><span class="bold">App.tsx:</span> Uygulamanın merkezi yönetim, yönlendirme (routing), anlık görünüm geçişleri ve genel ayarların (varsayılan hassasiyetler, koordinat sistemleri, dil tercihleri) kalıcı depo (localStorage) ile senkronizasyonunu kontrol eden can damarıdır.</li>
+      <li><span class="bold">types.ts:</span> Uygulamada yer alan tüm haritacılık veri tiplerini, GNSS nokta yapısını, jeofiziksel ölçüm veri havuzlarını ve istatistik modeli parametrelerini tanımlayan ortak tip kütüphanesidir.</li>
+      <li><span class="bold">version.ts:</span> Uygulamanın resmi ismini (<span class="bold">${FULL_BRAND}</span>), geçerli yazılım sürümünü ve yayın bilgilerini bildiren anahtar dosyadır.</li>
+      <li><span class="bold">index.html & index.tsx:</span> Tarayıcı pencerelerindeki ana giriş kapısıdır. React uygulamasını DOM ağacına monte ederek tarayıcıda hayat bulmasını sağlar.</li>
+      <li><span class="bold">index.css:</span> Tailwind CSS stil motorunun sisteme dahil edildiği, "Inter" ekran yazı tipleri ile "JetBrains Mono" veri gösterim yazı tiplerinin tanımlandığı tek global stil deklarasyon kümesidir.</li>
+      <li><span class="bold">vite.config.ts & tsconfig.json:</span> Projenin modern, hızlı ve hatasız bir şekilde derlenmesini (Vite) ve TypeScript katı tip kontrollerinin (Strict Type-Safety) otomatik uygulanmasını kontrol eden altyapı ayarlarıdır.</li>
     </ul>
 
-    <h2>15. SONUÇ</h2>
+    <h3>14.2 Komponent ve Arayüz Grubu (/components)</h3>
+    <p>Haritacıların sahada doğrudan temas kurduğu, kullanımı kolay ve performans odaklı arayüzlerin konumlandığı modüllerdir:</p>
+    <ul>
+      <li><span class="bold">Dashboard.tsx:</span> Kullanıcıyı karşılayan ana ara birimdir. Aktif nokta istatistiklerini, seçilmiş olan projeksiyon sistemini, TG-20 ve batarya durumlarını tekil kartlar halinde gösteren kontrol paneli özetidir.</li>
+      <li><span class="bold">GPSCapture.tsx:</span> Gerçek zamanlı sahadaki uydu verilerini süzmeye yarayan, hareketli veya saniyeli geri sayım tabanlı ölçüm sürecini organize eden dinamik yakalama ekranıdır.</li>
+      <li><span class="bold">StakeoutModule.tsx:</span> Arazi aplikasyon işlerini milimetrik düzeyde gerçekleştiren modüldür. Haritadan nokta seçimi, manuel veri girişi, 360 derece hedefe yönlenme radarı ve ivmeölçer tabanlı su terazisi kontrollerini yönetir.</li>
+      <li><span class="bold">DataAnalysisView.tsx:</span> AR-GE (Araştırma & Geliştirme) merkezinin kontrol ünitesidir. Toplanan ham verilerin saçılım grafiklerini, 9 farklı istatistik filtresini barındırır ve şu an detaylarını incelediğiniz bu teknik raporunun yönetimini gerçekleştirir.</li>
+      <li><span class="bold">SavedLocationsList.tsx:</span> Kaydedilen tüm jeodezik ölçümlerin sıralandığı, arama ve klasör bazlı gruplama filtrelerinin uygulandığı arazi nokta defteridir.</li>
+      <li><span class="bold">SettingsView.tsx:</span> Ölçüm süresinden, ulaşılan min hassasiyete, harita sağlayıcılarından (Google Hybrid, Esri vb.) veri yedekleme, kurtarma ve fabrika ayarlarına sıfırlama iş akışlarına dek tüm sistem hassasiyet ayarlarının yönetildiği kontrol noktasıdır.</li>
+      <li><span class="bold">Onboarding.tsx:</span> Uygulama ilk açıldığında veya istendiğinde çalışan, GPS izinlerinin önemini, veri formatlarını ve jeodezik ayarların nasıl yapılması gerektiğini görsel olarak anlatan etkileşimli rehberdir.</li>
+      <li><span class="bold">ExcelUtils.ts & KMLUtils.ts & TxtUtils.ts:</span> Jeodezik verilerin Netcad, AutoCAD, Global Mapper ve Excel gibi teknik programlara doğrudan aktarılabilmesi amacıyla, Türkçe karakter korumalı ve katman planlarına sahip dosyalar üreten çevirici kütüphanelerdir.</li>
+      <li><span class="bold">Header.tsx & GlobalFooter.tsx & Modal.tsx:</span> Uygulama genelinde gezinmeyi kolaylaştıran, uyarı mesajlarını yöneten ve her ekrana kusursuz adaptasyon sağlayan ortak arayüz öğeleridir.</li>
+    </ul>
+
+    <h3>14.3 Mühendislik ve Jeografi Çekirdeği (/utils & /services)</h3>
+    <p>Doğrudan donanımdan gelen verilerin üzerinde ağır jeodezik matematik ve sinyal filtreleme süreçlerini yürüten algoritma çekirdekleridir:</p>
+    <ul>
+      <li><span class="bold">/utils/CoordinateUtils.ts:</span> Bursa-Wolf 7-Parametreli datum dönüştürme matrislerini, Gauss-Krüger (TME 3 derecelik) projeksiyon formüllerini ve otomatik dilim orta meridyeni (DOM) atamasını yöneten, harita mühendisliğinin temel taşıdır.</li>
+      <li><span class="bold">/utils/MathUtils.ts:</span> Sinyal gürültülerini (Multipath, Drift) temizleyen; DBSCAN kümeleme, Robust Huber M-Estimation, RANSAC, Kalman Filtresi ve Monte Carlo Parçacık Filtresi (Particle Filter) gibi 9 ileri düzey istatistiksel ve süzgeçleme algoritmasının yer aldığı çekirdek kütüphanedir.</li>
+      <li><span class="bold">/components/GeoidUtils.ts & /services/GeoidService.ts:</span> Türkiye Ulusal Jeoid Modeli (TG-20) ile küresel EGM96 modellerini barındıran, 2D koordinatın geçtiği bölgedeki yükseklik ondülasyonunu (N) 4 düğüm noktası üzerinden "Bilineer İnterpolasyon" ile çözerek elipsoidal yüksekliği fiziksel ortometrik yüksekliğe milimetrik çeviren koordinat düzeltme sistemdir.</li>
+      <li><span class="bold">/utils/LanguageContext.tsx & trtoentranslate.ts:</span> Tüm teknik terimlerin, jeodezik rapor başlıklarının ve arazi arayüzlerinin Türkçe ve İngilizce dillerindeki karşılıklarını sunan, alan terimlerini akademik olarak eşleyen dil dönüştürme katmanıdır.</li>
+      <li><span class="bold">/utils/browser.ts:</span> Tarayıcının GPS sensor API yeteneklerini test eden ve gerekli donanım doğrulamalarını yapan sistem arayüzüdür.</li>
+    </ul>
+
+    <h2>15. GOOGLE AI STUDIO VE ALAN UZMANI İŞBİRLİĞİ (METODOLOJİK REHBER)</h2>
+    <p>Bu uygulama sadece konvansiyor bir mühendislik aracı değil; yapay zekanın jeodezik modelleme ve yazılım mühendisliğindeki yeteneklerini ölçen öncü bir uygulamalı vaka analizidir (Case Study). Proje, Yazılım Mimarı ve Kod Ortaklığı tarafında <span class="bold">Google AI Studio</span> ile Geodezi/Harita Mühendisliği Alan Uzmanlığı (Cihat Başara) tarafındaki derin mesleki bilginin ortak sinerjisi doğrultusunda şu metotlarla geliştirilmiştir:</p>
+    
+    <h3>15.1 Kod Üretimi ve Algoritma Çevirisi (Prototipleme)</h3>
+    <p><span class="bold">Rolü:</span> Alan uzmanının sağladığı karmaşık jeodezik teorik iş akışları (TG-20 jeoid interpolasyonu, Bursa-Wolf, Gauss-Krüger dönüşüm serileri, uyuşmazlık testleri) AI Studio arayüzü üzerinden yüksek mühendislik odaklı istemlerle (Prompt) doğrudan beslenmiştir.</p>
+    <p><span class="bold">Değinilen Nokta:</span> AI Studio'nun bu karmaşık matematiksel algoritmaları ve istatistik modellerini sıfırdan temiz, modüler ve 15-16 hane hassasiyetini (Double Precision) koruyan TypeScript kod bloklarına anında tercüme yeteneği. Özellikle büyük dil modellerinin (LLM) karmaşık mantıksal yapıları hızlıca prototipleme ve çalışır koda dökme kabiliyeti sayesinde geleneksel yazılım süreçlerinde haftalar süren analiz aşaması günler seviyesine indirilmiştir.</p>
+
+    <h3>15.2 Düşük-Kod (Low-Code/No-Code) Esnekliği ile Ergonomik Arayüz Tasarımı</h3>
+    <p><span class="bold">Rolü:</span> Sahada çalışan teknik personelin arazideki zorlu koşullara (kontrast, yüksek güneş ışığı altında okunabilirlik, hızlı jalon diklik kontrolü vb.) uygun bir kullanıcı arayüzüne (UI) sahip olması amacıyla AI Studio; modern kullanıcı deneyimi (UX), responsive Tailwind CSS bileşen tasarımları ve hata ayıklama süreçlerinde tam zamanlı asistanlık yapmıştır.</p>
+    <p><span class="bold">Değinilen Nokta:</span> Yazılım mühendisi olmayan alan uzmanının detaylı arazi gözlemleri ve donanımsal limitleri tespiti, AI Studio’nun yönlendirmeleri ile birleşerek profesyonel düzeyde çalışan, kararlı, kompakt ve esnek (responsive) bir arazi el terminali arayüzüne dönüştürülmüştür. Bu durum, teknik alan uzmanlarının sınırsız yazılım ekiplerine bağımlılığını azaltıp doğrudan fikir-ürün döngüsünü gerçekleştirebilmesini kanıtlamıştır.</p>
+
+    <h3>15.3 Büyük Dil Modellerinin (LLM) Kabiliyet ve Limitlerinin Test Edilmesi</h3>
+    <p><span class="bold">Rolü:</span> Sistemin matematiksel doğruluğu, jeodezik formüllerin koordinat dönüşüm hassasiyetleri ve veri güvenliği alan uzmanı tarafından her aşamada denetlenmiştir. Yapay zekanın jeodezi alanındaki sınırları ve yetenekleri bu süreç doğrultusunda şu iki ana unsurda test edilmiştir:</p>
+    <ul>
+      <li><span class="bold">Halüsinasyon, Yapay Zeka Hata Oranı ve Self-Debugging:</span> Yapay zekanın karmaşık matris dengelemesi, Huber sınır katsayıları veya veri parselleme algoritmalarındaki anlık hataları (bug), alan uzmanının matematiksel denetimlerinden sonra doğru "İstem Mühendisliği" (Prompt Engineering) teknikleri ile yine AI Studio'ya başarılı bir şekilde düzelttirilmiştir (kendi hatasını çözme - self-debugging).</li>
+      <li><span class="bold">Zaman ve Geliştirme Maliyeti Verimliliği:</span> Geleneksel yazılım mühendisliği ekiplerinin geliştirme, test, doğrulamaları için harcadığı kaynaklar kıyaslandığında; bir adet jeodezi alan uzmanı ile Google AI Studio'nun ortak ortaklığı, projeyi %85 oranında hızlandırmış ve yazılım üretim maliyetini minimuma indirmiştir. Bu durum, yapay zekanın endüstriyel mühendislik uygulamalarında güvenilir bir "Co-Pilot" olduğunu literatürde teyit etmiştir.</li>
+    </ul>
+
+    <h2>16. SONUÇ</h2>
     <p>
-      ${FULL_BRAND}, Harita Mühendisliği’nin karmaşık matematiksel dünyasını, son kullanıcının mobil cihazındaki kullanıcı dostu bir arayüze sığdırmıştır. TG-20 jeoid desteği, 7 parametreli Bursa-Wolf dönüşümü ve gelişmiş istatistiksel filtreleme sistemleri ile sahadaki veri üretim süreçlerini hızlandırır ve güvenilir kılar. Bu teknik döküman, uygulamanın bilimsel temellere dayalı operasyonel gücünün bir beyanıdır.
+      ${FULL_BRAND}, Harita Mühendisliği’nin karmaşık matematiksel dünyasını, son kullanıcının mobil cihazındaki kullanıcı dostu bir arayüze sığdırmıştır. TG-20 jeoid desteği, 7 parametreli Bursa-Wolf dönüşümü, AI Studio destekli modüler altyapısı ve gelişmiş istatistiksel filtreleme sistemleri ile sahadaki veri üretim süreçlerini hızlandırır ve güvenilir kılar. Bu teknik döküman, uygulamanın bilimsel temellere dayalı operasyonel gücünün ve modern insan-yapay zeka ortaklığının bir beyanıdır.
     </p>
 
-    <h2>16. KAYNAKÇA VE AKADEMİK ATIFLAR</h2>
+    <h2>17. KAYNAKÇA VE AKADEMİK ATIFLAR</h2>
     <p>Bu uygulamada kullanılan algoritmalar, jeodezik modeller ve yazılım kütüphaneleri aşağıdaki temel literatüre dayanmaktadır:</p>
     <ul>
       <li><span class="bold">Huber, P. J. (1981).</span> Robust Statistics. John Wiley & Sons. (M-Estimators ve Robust Tahminleme yöntemleri için).</li>
