@@ -217,9 +217,24 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
               let currentLocations: any[] = currentLocsJson ? JSON.parse(currentLocsJson) : [];
               if (!Array.isArray(currentLocations)) currentLocations = [];
 
-              const backupLocsJson = dataToRestore['gps_locations_v5.0'];
-              let backupLocations: any[] = backupLocsJson ? JSON.parse(backupLocsJson) : [];
-              if (!Array.isArray(backupLocations)) backupLocations = [];
+              // Desteklenen tüm eski ve yeni lokasyon yedek anahtarları
+              const backupLocsValue = dataToRestore['gps_locations_v5.0'] || 
+                                      dataToRestore['gps_locations_v7.8.8'] || 
+                                      dataToRestore['gps_locations_v7.8.0'] || 
+                                      dataToRestore['locations'];
+              
+              let backupLocations: any[] = [];
+              if (backupLocsValue) {
+                if (typeof backupLocsValue === 'string') {
+                  try {
+                    backupLocations = JSON.parse(backupLocsValue);
+                  } catch (e) {
+                    console.error("Yedek lokasyonlar ayrıştırılamadı:", e);
+                  }
+                } else if (Array.isArray(backupLocsValue)) {
+                  backupLocations = backupLocsValue;
+                }
+              }
 
               if (backupLocations.length > 0) {
                 // Mevcut klasörleri (projeleri) tespit et
@@ -233,12 +248,12 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
 
                 backupFolders.forEach(folder => {
                   if (currentFolders.has(folder)) {
-                    // Çakışma var! Yeni klasör adı bulalım
-                    let idx = 1;
-                    let newFoldName = `${folder} (Yedek ${idx})`;
+                    // Çakışma var! Yeni klasör adı bulalım (örn. Klasör (2), Klasör (3) ...)
+                    let idx = 2; // Doğrudan (2) ile başla
+                    let newFoldName = `${folder} (${idx})`;
                     while (currentFolders.has(newFoldName) || Array.from(folderNameMap.values()).includes(newFoldName)) {
                       idx++;
-                      newFoldName = `${folder} (Yedek ${idx})`;
+                      newFoldName = `${folder} (${idx})`;
                     }
                     folderNameMap.set(folder, newFoldName);
                   } else {
@@ -246,23 +261,13 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                   }
                 });
 
-                // Nokta adlarının çakışmaması için helper
-                const isPointExistsInCurrent = (folder: string, name: string) => {
-                  return currentLocations.some((l: any) => (l.folderName || t('Klasör Yok')) === folder && l.name === name);
-                };
-
                 // Önce her bir yedek lokasyonu yeni isimleriyle currentLocations'a ekleyelim
                 backupLocations.forEach((loc: any) => {
                   const originalFolder = loc.folderName || t('Klasör Yok');
                   const mappedFolder = folderNameMap.get(originalFolder) || originalFolder;
                   
-                  // Nokta adı çakışma analizi
-                  let ptIdx = 1;
-                  let finalPointName = loc.name;
-                  while (isPointExistsInCurrent(mappedFolder, finalPointName)) {
-                    ptIdx++;
-                    finalPointName = `${loc.name} (${ptIdx})`;
-                  }
+                  // Nokta adı çakışma analizi ve yeniden adlandırma iptal edildi! Noktalar orijinal isimleriyle ekleniyor.
+                  const finalPointName = loc.name;
 
                   // Benzersiz bir id ata (mevcut idlerle çakışmasın)
                   let finalId = loc.id;
@@ -274,7 +279,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                     ...loc,
                     id: finalId,
                     name: finalPointName,
-                    folderName: mappedFolder
+                    folderName: mappedFolder === t('Klasör Yok') ? undefined : mappedFolder
                   });
                 });
 
@@ -287,9 +292,17 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
               let currentStakeoutPoints: any[] = currentStPtsJson ? JSON.parse(currentStPtsJson) : [];
               if (!Array.isArray(currentStakeoutPoints)) currentStakeoutPoints = [];
 
-              const backupStPtsJson = dataToRestore['stakeout_points_v1'];
-              let backupStakeoutPoints: any[] = backupStPtsJson ? JSON.parse(backupStPtsJson) : [];
-              if (!Array.isArray(backupStakeoutPoints)) backupStakeoutPoints = [];
+              const backupStPtsValue = dataToRestore['stakeout_points_v1'] || dataToRestore['stakeout_points'];
+              let backupStakeoutPoints: any[] = [];
+              if (backupStPtsValue) {
+                if (typeof backupStPtsValue === 'string') {
+                  try {
+                    backupStakeoutPoints = JSON.parse(backupStPtsValue);
+                  } catch (e) {}
+                } else if (Array.isArray(backupStPtsValue)) {
+                  backupStakeoutPoints = backupStPtsValue;
+                }
+              }
 
               if (backupStakeoutPoints.length > 0) {
                 backupStakeoutPoints.forEach((bp: any) => {
@@ -319,9 +332,17 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
               let currentGeometries: any[] = currentGeomsJson ? JSON.parse(currentGeomsJson) : [];
               if (!Array.isArray(currentGeometries)) currentGeometries = [];
 
-              const backupGeomsJson = dataToRestore['stakeout_geometries_v1'];
-              let backupGeometries: any[] = backupGeomsJson ? JSON.parse(backupGeomsJson) : [];
-              if (!Array.isArray(backupGeometries)) backupGeometries = [];
+              const backupGeomsValue = dataToRestore['stakeout_geometries_v1'] || dataToRestore['stakeout_geometries'];
+              let backupGeometries: any[] = [];
+              if (backupGeomsValue) {
+                if (typeof backupGeomsValue === 'string') {
+                  try {
+                    backupGeometries = JSON.parse(backupGeomsValue);
+                  } catch (e) {}
+                } else if (Array.isArray(backupGeomsValue)) {
+                  backupGeometries = backupGeomsValue;
+                }
+              }
 
               if (backupGeometries.length > 0) {
                 backupGeometries.forEach((bg: any) => {
@@ -347,7 +368,16 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
               }
 
               // 4. Diğer konfigürasyon ayarlarını olduğu gibi üstüne yazabiliriz
-              const skippedKeys = ['gps_locations_v5.0', 'stakeout_points_v1', 'stakeout_geometries_v1'];
+              const skippedKeys = [
+                'gps_locations_v5.0', 
+                'gps_locations_v7.8.8', 
+                'gps_locations_v7.8.0', 
+                'locations', 
+                'stakeout_points_v1', 
+                'stakeout_points', 
+                'stakeout_geometries_v1', 
+                'stakeout_geometries'
+              ];
               Object.keys(dataToRestore).forEach(key => {
                 if (!skippedKeys.includes(key)) {
                   const val = dataToRestore[key];
