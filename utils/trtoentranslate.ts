@@ -32,7 +32,7 @@ export const trToEnMap: Record<string, string> = {
   "Kapat": "Close",
 
   "== ONBOARDING ==": "",
-  "Bir daha gösterme": "Don't show again",
+  "Açılışta bu ekranı atla": "Skip this screen on startup",
   "Konum Erişimi": "Location Access",
   "GPS verilerini kullanarak konum bilgi üretmek için gereklidir.": "Required to generate location info using GPS data.",
   "GPS verilerini kullanarak konum bilgisi üretmek için gereklidir.": "Required to generate location information using GPS data.",

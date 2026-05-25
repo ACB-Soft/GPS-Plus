@@ -126,7 +126,7 @@ const Onboarding: React.FC<Props> = ({ onFinish }) => {
               )}
             </div>
             <span className="text-[11px] md:text-[12px] text-slate-500 font-bold tracking-wider uppercase group-hover:text-slate-700 transition-colors">
-              {t("Bir daha gösterme")}
+              {t("Açılışta bu ekranı atla")}
             </span>
           </label>
         </div>
