@@ -13,7 +13,12 @@ const LanguageContext = createContext<LanguageContextProps | undefined>(undefine
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguage] = useState<Language>(() => {
-    return (localStorage.getItem('language_preference') as Language) || 'TR';
+    const saved = localStorage.getItem('language_preference') as Language | null;
+    if (saved === 'TR' || saved === 'EN') return saved;
+
+    // Tarayıcı veya sistem dilini kontrol et
+    const browserLang = typeof navigator !== 'undefined' ? (navigator.language || '').toLowerCase() : '';
+    return browserLang.startsWith('tr') ? 'TR' : 'EN';
   });
   const [showProgress, setShowProgress] = useState(false);
   const [pendingLanguage, setPendingLanguage] = useState<Language | null>(null);
