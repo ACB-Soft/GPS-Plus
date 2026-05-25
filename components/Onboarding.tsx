@@ -8,8 +8,15 @@ interface Props {
 
 const Onboarding: React.FC<Props> = ({ onFinish }) => {
   const { t } = useLanguage();
+  const [dontShowAgain, setDontShowAgain] = React.useState(false);
 
   const handlePermissionAndStart = () => {
+    if (dontShowAgain) {
+      localStorage.setItem('show_onboarding_every_time', 'false');
+    } else {
+      localStorage.removeItem('show_onboarding_every_time');
+    }
+
     // iOS Safari için "User Gesture" (Kullanıcı Dokunuşu) ile doğrudan izin isteği
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -98,6 +105,31 @@ const Onboarding: React.FC<Props> = ({ onFinish }) => {
           {t("Uygulamaya Başla")}
           <i className="fas fa-arrow-right text-white/50 text-[11px]"></i>
         </button>
+
+        <div className="flex items-center justify-center mt-4">
+          <label className="flex items-center gap-2 cursor-pointer select-none group">
+            <input 
+              type="checkbox" 
+              checked={dontShowAgain}
+              onChange={(e) => setDontShowAgain(e.target.checked)}
+              className="sr-only"
+            />
+            <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${
+              dontShowAgain 
+                ? 'bg-blue-600 border-blue-600 shadow-sm shadow-blue-200' 
+                : 'border-slate-300 bg-white group-hover:border-slate-400'
+            }`}>
+              {dontShowAgain && (
+                <svg className="w-2.5 h-2.5 text-white stroke-[3px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" strokeWidth="3" />
+                </svg>
+              )}
+            </div>
+            <span className="text-[11px] md:text-[12px] text-slate-500 font-bold tracking-wider uppercase group-hover:text-slate-700 transition-colors">
+              {t("Bir daha gösterme")}
+            </span>
+          </label>
+        </div>
       </div>
     </div>
   );
