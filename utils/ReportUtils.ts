@@ -138,62 +138,35 @@ export const generateTechnicalReport = () => {
     <h2>2.4. Gerçek Zamanlı İstatistiksel Süzme Çerçevesi (9 Farklı Süzme Modülü)</h2>
     <p>Sahada toplanan her bir saniyelik GNSS verisi, çevresel yansımalar ve uydu konfigürasyonlarındaki anlık değişimler nedeniyle rastgele ve sistemsel hatalar barındırır. ${FULL_BRAND}, bu hataları ayıklamak ve kararlı sonuçlar elde etmek amacıyla arazide 3 temel yöntem, AR-GE modülünde ise toplamda 9 farklı ileri düzey istatistiksel filtreleme kütüphanesi sunar:</p>
 
-    <table style="width:100%;">
-      <thead>
-        <tr>
-          <th>Modül / Yöntem</th>
-          <th>Matematiksel Alt Yapısı ve Formülasyonu</th>
-          <th>Arazi Kararlılığı ve Kullanım Alanı</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td class="bold">1. Aritmetik Ortalama (Mean)</td>
-          <td>μ = (1/n) * Σ xᵢ</td>
-          <td>Dengeli ve açık havadaki ölçümlerde, aşırı sapan değer yoksa standart çözüm sağlar.</td>
-        </tr>
-        <tr>
-          <td class="bold">2. Ağırlıklı En Küçük Kareler (WLS)</td>
-          <td>x̂ = (Σ Pᵢ xᵢ) / (Σ Pᵢ) , burada Pᵢ = 1/σᵢ²</td>
-          <td>Cihazın bildirdiği donanımsal hassasiyet karesi ile ters orantılı ağırlık vererek hassas verinin etkisini artırır.</td>
-        </tr>
-        <tr>
-          <td class="bold">3. K-Means + Baarda Hibrit</td>
-          <td>K-Means kümeleme (K=4) + her küme temsilcisi için ağırlıklı LSE + kümeler arası Baarda Snooping Testi</td>
-          <td>Uygulamanın amiral gemisi süzgecidir. Ağır yansımalı kentsel veya ağaç altı alanlarda uyuşmazlıkları ayıklar.</td>
-        </tr>
-        <tr>
-          <td class="bold">4. K-Means (4-Way Segment)</td>
-          <td>Küme içi varyans minimizasyonuna dayalı k=4 segmentasyonu. En kararlı kümenin ağırlıklı LSE sonucu.</td>
-          <td>Baarda uyuşmazlığı yapmadan verileri direkt kümeleyerek en yoğun alt kümenin ağırlıklı merkezini seçer.</td>
-        </tr>
-        <tr>
-          <td class="bold">5. DBSCAN Yoğunluk Modeli</td>
-          <td>Yoğunluk tabanlı gürültü eleme (Epsilon komşuluk ve Minimum Nokta sayısı)</td>
-          <td>Geriye kalan aşırı seyrek saçılımları (outliers) mekansal yoğunluk üzerinden tespit edip eler.</td>
-        </tr>
-        <tr>
-          <td class="bold">6. Baarda Snooping</td>
-          <td>Standardize edilmiş hata tespiti ve ardışık uyuşmazlık eliminasyonu</td>
-          <td>Ham veriler üzerinde ardışık çalışarak istatistiksel olarak en uyumsuz gözlemleri (drift) adım adım eler.</td>
-        </tr>
-        <tr>
-          <td class="bold">7. Robust Huber M-Tahmin</td>
-          <td>Doğrusal olmayan ardışık ağırlık azatlama fonksiyonu (L1/L2 hibrit norm minimizasyonu)</td>
-          <td>Büyük gürültülü (parazitli) verilerin ağırlık katsayısını iteratif sönümleyerek koruyucu süzme yapar (c=1.345).</td>
-        </tr>
-        <tr>
-          <td class="bold">8. Statik Kalman Filtresi</td>
-          <td>Süreç belirsizliği (Q) ve Ölçüm hatası kovaryans matrisi (R) tabanlı ardışık durum güncellemesi</td>
-          <td>Kovaryans minimizasyonuyla, zaman serilerinde birikimli hata yayılımını sönümler; dinamik izleme sağlar.</td>
-        </tr>
-        <tr>
-          <td class="bold">9. Parçacık Filtresi (Particle)</td>
-          <td>Monte Carlo olasılık bulutu (200 parçacık) + Gaussian PDF ağırlık güncellemesi + SIR Örnekleme</td>
-          <td>Doğrusal olmayan ve Gauss dışı dağılımlarda 200 adet olasılık parçacığıyla en makul tepe değerini hesaplar.</td>
-        </tr>
-      </tbody>
-    </table>
+    <h3>2.4.1. Aritmetik Ortalama (Mean)</h3>
+    <p>Aritmetik ortalama yöntemi, zaman serisi gözlem havuzundaki tüm koordinat değerlerinin eşit ağırlıklı toplamının veri adedine bölünmesi esasına dayanır. Dengeli ve açık havadaki ölçümlerde, aşırı sapan (outlier) değerlerin bulunmadığı kararlı durumlarda standart bazlı hızlı bir süzme ve ortalama konumsal çözüm üretimi sağlar.</p>
+    <div class="formula">μ = (1/n) * Σ xᵢ</div>
+
+    <h3>2.4.2. Ağırlıklı En Küçük Kareler (Weighted Least Squares - WLS)</h3>
+    <p>Ağırlıklı en küçük kareler süzgeci, her bir GNSS ölçüm epokunda cihazın uydu sinyal kalitesi ve uyduların göksel yapısına göre bildirdiği dinamik kalitesel standart sapma değeri ($\sigma$) üzerinden ağırlık üretir. En yüksek hassasiyete sahip olan ve düşük gürültülü saniyelerdeki verilere daha yüksek ağırlık vererek hassas verinin genel konum sonucundaki payını artırır.</p>
+    <div class="formula">x̂ = (Σ Pᵢ xᵢ) / (Σ Pᵢ) , Pᵢ = 1/σᵢ²</div>
+
+    <h3>2.4.3. K-Means ve Baarda Uyuşmazlık Testi Hibrit Yaklaşımı (K-Means + Baarda Hybrid)</h3>
+    <p>Uygulamanın amiral gemisi olarak nitelendirilen bu hibrit yaklaşım, saniyede bir okunan konum gözlemlerini öncelikle mekansal öbekleşme karakterine göre K-Means kümeleme algoritmasıyla (K=4) segmentlere ayırır. Her bir segment kendi içinde ağırlıklı en küçük kareler modeliyle çözümlendikten sonra, kümeler arası uyuşmazlık dereceleri Baarda Kalın Hata Testi ile sınanarak sistemsel yansıma (multipath) kaynaklı gürültüler ve sürüklenmeler elenir. Özellikle yoğun kentsel kanyonlarda ve ağaç altı zorlu arazi koşullarında üstün operasyonel kararlılık başarısı gösterir.</p>
+
+    <h3>2.4.4. K-Means (4-Way Segmentasyon) Süzgeci</h3>
+    <p>Bu filtreleme modeli, küme içi varyans ve kareler toplamının minimum edilmesi kriterine göre 2 boyutlu konumsal koordinat verilerini 4 ayrı gruba segmentler. İstatistiksel olarak en kararlı, saçılım genişliği en dar ve yoğunluğu en yüksek olan küme seçilerek, sadece bu küme içerisindeki gözlemlerin ağırlıklı en küçük kareler ortalaması genel sonuç kabul edilir.</p>
+
+    <h3>2.4.5. DBSCAN Yoğunluk Tabanlı Mekansal Filtreleme (DBSCAN Spatial Clustering)</h3>
+    <p>Yoğunluk tabanlı gürültü eleme mantığına dayanan DBSCAN süzgeci, belirlenen konumsal epsilon komşuluğu ($\epsilon$) içindeki minimum nokta yoğunluğunu gözetir. Bu kriterlere uymayan ve diğer koordinat kümelenmelerinden yapısal olarak uzak kalan, çoklu yansıma kaynaklı aşırı seyrek saçılımları (outliers) mekansal yoğunluk analizi üzerinden otomatik olarak belirleyip veri havuzundan temizler.</p>
+
+    <h3>2.4.6. Baarda Kalın Hata Elemesi (Baarda's Reliability Test / Snooping)</h3>
+    <p>Jeodezik ölçü standartlarının temeli olan Baarda'nın veri gözetleme yöntemi (data snooping), normalize edilmiş ve standardize edilmiş ölçü uyuşmazlığı hatalarının istatistiksel test büyüklüğünü denetler. Kritik sınır değerleri aşan uyuşmazlık hataları ardışık olarak tespit edilerek en büyük kalın hatadan başlanarak döngüsel düzende sistemden temizlenir.</p>
+
+    <h3>2.4.7. Robust Huber M-Tahmin Süzgeci (Robust Huber Estimation)</h3>
+    <p>Huber M-Tahminlemesi yöntemi, L1 normunun (medyanın robuste yapısı) ve L2 normunun (ortalamanın hassas yapısı) avantajlarını birleştiren hibrit bir objektif optimizasyon felsefesidir. Büyük gürültülü veya sinyal yansımalı sapan verilerin ağırlık katsayısını ardışık olarak sönümleyen koruyucu süzme yapar.</p>
+    <div class="formula">Ağırlık Azatlama Katsayısı (c) = 1.345</div>
+
+    <h3>2.4.8. Statik Kalman Filtresi (Static Kalman Filter)</h3>
+    <p>Zaman serisi düzleminde çalışan Kalman filtresi, sistem süreç belirsizliği (Q) ve anlık ölçüm hatası kovaryans matrisi (R) kriterlerini baz alarak her yeni gözlemde tahmin durumunu (prediction) ve ölçüm düzeltmesini (update) ardışık olarak günceller. Matrisyel kovaryans minimizasyonuyla zaman serilerinde birikimli hata yayılımını sönümler.</p>
+
+    <h3>2.4.9. Parçacık Filtresi (Particle Filter)</h3>
+    <p>Doğrusal olmayan ve Gauss dışı gürültü dağılımları barındıran ortamlarda, olasılık yoğunluk fonksiyonlarını (PDF) temsil etmek üzere sahaya yayılmış 200 adet sanal olasılık parçacığı (Monte Carlo olasılık bulutu) yerleştirilir. Gaussian olasılıklı ağırlık güncellemeleri ve ardışık örnekleme (SIR) aşamalarından sonra en makul fiziksel tepe odaklı koordinat değerini hesaplar.</p>
 
     <p>Filtrelemelerin yanı sıra, yatay konumsal belirsizliği (Yatay Hassasiyet) güvene almak için aşağıdaki özgün "Maksimum Saçılım ve Ortalama Donanım Hatası" karşılaştırma formülasyonu ($Max(d_{max}, \sigma_{avg})$) geliştirilmiştir:</p>
     <div class="formula">Hassasiyet = Max( d_max, σ_avg )</div>
