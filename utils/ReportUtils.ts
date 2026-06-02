@@ -43,11 +43,14 @@ export const generateTechnicalReport = () => {
     .header-info { margin-bottom: 30pt; font-family: 'Arial', sans-serif; font-size: 11pt; }
     .case-container { margin-top: 12pt; margin-bottom: 15pt; }
     .code-block {
-      margin: 10pt 0;
+      margin: 12pt 0;
+      padding: 10pt 12pt;
+      background-color: #f6f8fa;
+      border: 1pt solid #777777;
       font-family: 'Consolas', monospace;
       font-size: 9pt;
       white-space: pre-wrap;
-      color: #000;
+      color: #000000;
       line-height: 1.4;
       text-align: left !important;
       text-indent: 0 !important;
@@ -121,7 +124,7 @@ export const generateTechnicalReport = () => {
     <h3>2.3.1. 7-Parametreli Bursa-Wolf Dönüşümü</h3>
     <p>Küresel WGS 84 coğrafi koordinatları ile yerel datumlar (ED 50 veya ITRF 96) arasındaki dönüşümler, 3 boyutlu Helmert benzeri Bursa-Wolf matrisi ile koşturulur. Bu model; 3 adet öteleme parametresi, 3 adet eksenel dönme parametresi ve 1 adet ölçek değişim faktörü kullanarak koordinat dönüşümünü milimetrik bazda gerçekleştirir. Bu dönüşüm, yerel ve küresel elipsoidlerin uyumlaştırılmasında, özellikle eski harita paftalarıyla (ED50) modern CBS verilerinin entegrasyonunda arazide anlık çözümler üretir. Uygulamada Proj4js kütüphanesi ile entegre edilen 7-Parametreli Helmert dönüşüm mantığı ve ED50 tanımı aşağıdaki kod satırlarında açıkça görülmektedir:</p>
     <pre class="code-block">
-// ED50 grid-datum katsayıları içeren Proj parametresi tanımı:
+// Define Destination Projection (ED50 UTM) with 7-parameter Helmert shift values:
 destProj = "+proj=tmerc +lat_0=0 +lon_0=" + dom + " +k=1 +x_0=500000 +y_0=0 +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs";
     </pre>
 
@@ -133,18 +136,18 @@ destProj = "+proj=tmerc +lat_0=0 +lon_0=" + dom + " +k=1 +x_0=500000 +y_0=0 +ell
     </ul>
     <p class="no-indent">Bu hesaplamaları icra eden ve Proj4js katmanına dinamik DOM parametreli konfigürasyon sağlayan TS kod bloğu şu şekildedir:</p>
     <pre class="code-block">
-const getDom3 = (lon: number) => {
+const getDom3 = (lon: number): number => {
   return Math.round(lon / 3) * 3;
 };
 
-const getDom6 = (lon: number) => {
+const getDom6 = (lon: number): number => {
   const zone = Math.floor((lon + 180) / 6) + 1;
   return zone * 6 - 183;
 };
 
 export const convertCoordinate = (lat: number, lng: number, system: string) => {
   if (!system || system === 'WGS84') {
-    return { x: lat, y: lng, labelX: 'Enlem', labelY: 'Boylam', zone: '' };
+    return { x: lat, y: lng, labelX: 'Latitude', labelY: 'Longitude', zone: '' };
   }
 
   let destProj = '';
@@ -164,26 +167,26 @@ export const convertCoordinate = (lat: number, lng: number, system: string) => {
     const ellps = system.startsWith('ITRF96') ? 'GRS80' : 'intl';
     const towgs84 = system.startsWith('ED50') ? '+towgs84=-87,-98,-121,0,0,0,0 ' : '';
     destProj = "+proj=utm +zone=" + zone + " +ellps=" + ellps + " " + towgs84 + "+units=m +no_defs";
-    zoneLabel = "Zon " + zone;
+    zoneLabel = "Zone " + zone;
   }
 
   if (destProj) {
     try {
       const [easting, northing] = proj4(WGS84, destProj, [lng, lat]);
-      return { x: easting, y: northing, labelX: 'Sağa (Y)', labelY: 'Yukarı (X)', zone: zoneLabel };
+      return { x: easting, y: northing, labelX: 'Easting (Y)', labelY: 'Northing (X)', zone: zoneLabel };
     } catch (e) {
       console.error("Proj4 conversion error:", e);
-      return { x: lat, y: lng, labelX: 'Enlem', labelY: 'Boylam', zone: 'Hata' };
+      return { x: lat, y: lng, labelX: 'Latitude', labelY: 'Longitude', zone: 'Error' };
     }
   }
-  return { x: lat, y: lng, labelX: 'Enlem', labelY: 'Boylam', zone: '' };
+  return { x: lat, y: lng, labelX: 'Latitude', labelY: 'Longitude', zone: '' };
 };
     </pre>
 
     <h3>2.3.3. Düşey Datum Modellemesi ve Türkiye Geoidi (TG-20)</h3>
     <p>GNSS uydularından doğrudan alınan yükseklik verisi, referans elipsoidine göre tanımlanan elipsoidal yüksekliktir. Ancak mühendislik projelerinde yerçekimi tabanlı fiziksel yükseklik olan ortometrik yükseklik kullanılmalıdır. Bu iki yükseklik arasındaki fark ondülasyon olarak adlandırılır. Uygulama, Türkiye Ulusal Geoidi (TG-20) grid verilerini ve küresel EGM96 modellerini kendi hafızasında barındırır. Ölçüm yapılan koordinatın etrafındaki en yakın 4 grid düğüm noktası tespit edilerek "Bilineer İnterpolasyon" yöntemiyle o noktadaki net ondülasyon değeri saniyede bir kez dinamik olarak türetilir. Bu sayede, arazide ek bir ölçü aletine ihtiyaç duymadan gerçek zamanlı ortometrik kot üretilmiş olunur. Bilineer geoid interpolasyon servisinin hesap çekirdeği, koordinatın ilgili grid hücresi içindeki normalleştirilmiş göreceli pozisyonlarını da hesaplayacak biçimde, kod satırlarında aşağıdaki şekilde sergilenmektedir:</p>
     <pre class="code-block">
-// Dört sınır grid noktasından ondülasyon katsayısı türetilmesi
+// Retrieve geoid undulation coefficients from the four bounding grid nodes
 const n00 = grid[latIdx][lngIdx];
 const n10 = grid[latIdx + 1][lngIdx];
 const n01 = grid[latIdx][lngIdx + 1];
@@ -385,7 +388,7 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
   if (samples.length < 4) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
 
   let currentSamples = [...samples];
-  const criticalValue = 3.29; // 99.9% Güven Aralığı Limit Katsayısı
+  const criticalValue = 3.29; // Critical limit for 99.9% confidence interval
 
   while (currentSamples.length > 4) {
     const weights = currentSamples.map(s => 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
@@ -418,9 +421,9 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
     }
 
     if (maxW > criticalValue) {
-        currentSamples.splice(worstIdx, 1); // Kalın hata içeren koordinatı eliyoruz.
+        currentSamples.splice(worstIdx, 1); // Reject coordinate containing outlier error
     } else {
-        break; // Kritik limit aşılmıyorsa denge tamamlanmıştır.
+        break; // Exit loop if the critical limit is satisfied (system resolved)
     }
   }
 
