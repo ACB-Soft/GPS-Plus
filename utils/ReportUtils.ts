@@ -51,7 +51,7 @@ export const generateTechnicalReport = () => {
       font-size: 9pt;
       white-space: pre-wrap;
       color: #000000;
-      line-height: 1.4;
+      line-height: 1.15;
       text-align: left !important;
       text-indent: 0 !important;
     }
@@ -139,20 +139,16 @@ destProj = "+proj=tmerc +lat_0=0 +lon_0=" + dom + " +k=1 +x_0=500000 +y_0=0 +ell
 const getDom3 = (lon: number): number => {
   return Math.round(lon / 3) * 3;
 };
-
 const getDom6 = (lon: number): number => {
   const zone = Math.floor((lon + 180) / 6) + 1;
   return zone * 6 - 183;
 };
-
 export const convertCoordinate = (lat: number, lng: number, system: string) => {
   if (!system || system === 'WGS84') {
     return { x: lat, y: lng, labelX: 'Latitude', labelY: 'Longitude', zone: '' };
   }
-
   let destProj = '';
   let zoneLabel = '';
-
   if (system === 'ITRF96_3') {
     const dom = getDom3(lng);
     destProj = "+proj=tmerc +lat_0=0 +lon_0=" + dom + " +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs";
@@ -169,7 +165,6 @@ export const convertCoordinate = (lat: number, lng: number, system: string) => {
     destProj = "+proj=utm +zone=" + zone + " +ellps=" + ellps + " " + towgs84 + "+units=m +no_defs";
     zoneLabel = "Zone " + zone;
   }
-
   if (destProj) {
     try {
       const [easting, northing] = proj4(WGS84, destProj, [lng, lat]);
@@ -191,11 +186,9 @@ const n00 = grid[latIdx][lngIdx];
 const n10 = grid[latIdx + 1][lngIdx];
 const n01 = grid[latIdx][lngIdx + 1];
 const n11 = grid[latIdx + 1][lngIdx + 1];
-
 // normalized positions inside grid square:
 const u = (lat - minLat) / latStep;
 const v = (lng - minLng) / lngStep;
-
 const N = (1 - u) * (1 - v) * n00 
         + u * (1 - v) * n10 
         + (1 - u) * v * n01 
@@ -211,26 +204,21 @@ const N = (1 - u) * (1 - v) * n00
 export function calculateAverage(samples: Coordinate[]): Coordinate {
   const validAltitudes = samples.filter(s => s.altitude !== null);
   const validAltAccuracies = samples.filter(s => s.altitudeAccuracy !== null);
-
   const meanLat = samples.reduce((a, b) => a + b.lat, 0) / samples.length;
   const meanLng = samples.reduce((a, b) => a + b.lng, 0) / samples.length;
-
   const residualsInMeters = samples.map(s => {
     const dLat = (s.lat - meanLat) * 111320;
     const dLng = (s.lng - meanLng) * 111320 * Math.cos(meanLat * Math.PI / 180);
     return dLat * dLat + dLng * dLng;
   });
-  
   const hVariance = residualsInMeters.reduce((a, b) => a + b, 0) / Math.max(1, samples.length - 1);
   const hStdDev = Math.sqrt(hVariance);
   const avgSensorAccuracy = samples.reduce((a, b) => a + b.accuracy, 0) / samples.length;
-  
   let finalAccuracy = avgSensorAccuracy;
   if (samples.length > 1) {
     const standardError = hStdDev / Math.sqrt(samples.length);
     finalAccuracy = Math.sqrt(Math.pow(standardError, 2) + Math.pow(avgSensorAccuracy / Math.sqrt(samples.length), 2));
   }
-
   return {
     lat: meanLat,
     lng: meanLng,
@@ -247,18 +235,12 @@ export function calculateAverage(samples: Coordinate[]): Coordinate {
     <pre class="code-block">
 function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
   if (samples.length === 0) return { result: samples[0], usedIndices: [0] };
-  
   const weights = samples.map(s => 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
   const sumW = weights.reduce((a, b) => a + b, 0);
-  
   const meanLat = samples.reduce((a, s, i) => a + s.lat * weights[i], 0) / sumW;
   const meanLng = samples.reduce((a, s, i) => a + s.lng * weights[i], 0) / sumW;
-  
   const validAltitudes = samples.filter(s => s.altitude !== null);
-  const meanAlt = validAltitudes.length > 0
-    ? validAltitudes.reduce((a, s) => a + (s.altitude || 0), 0) / validAltitudes.length
-    : null;
-    
+  const meanAlt = validAltitudes.length > 0 ? validAltitudes.reduce((a, s) => a + (s.altitude || 0), 0) / validAltitudes.length : null;
   const result: Coordinate = {
     ...samples[0],
     lat: meanLat,
@@ -266,7 +248,6 @@ function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; used
     altitude: meanAlt,
     timestamp: Date.now()
   };
-  
   return { result, usedIndices: samples.map((_, i) => i) };
 }
     </pre>
@@ -276,38 +257,30 @@ function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; used
     <pre class="code-block">
 function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
   if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
-
   // 1. Reference Point (Mid-Range)
   const lats = samples.map(s => s.lat);
   const lngs = samples.map(s => s.lng);
   const rLat = (Math.min(...lats) + Math.max(...lats)) / 2;
   const rLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
-
   // 2. 1.0 * Eps Filtering (Strict)
   const avgAcc = samples.reduce((a, b) => a + b.accuracy, 0) / samples.length;
   const epsLimit = avgAcc * 1.0;
-
   const filteredWithIndices = samples.map((s, idx) => ({ s, idx })).filter(item => {
     const dLat = (item.s.lat - rLat) * 111320;
     const dLng = (item.s.lng - rLng) * 111320 * Math.cos(rLat * Math.PI / 180);
     const dist = Math.sqrt(dLat * dLat + dLng * dLng);
     return dist <= epsLimit;
   });
-
   if (filteredWithIndices.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
-
   const filteredSamples = filteredWithIndices.map(f => f.s);
   const filteredIndices = filteredWithIndices.map(f => f.idx);
-
   // 3. K-Means (k=4)
   const k = 4;
   const clusterAssignments = runKMeans(filteredSamples, k);
-  
   const finalValidClusters: number[][] = Array.from({ length: k }, () => []);
   clusterAssignments.forEach((cIdx, i) => {
     finalValidClusters[cIdx].push(filteredIndices[i]);
   });
-
   // 4. Summarize Clusters & 5. Final Refinement (Baarda)
   const clusterSummaries = finalValidClusters
     .filter(cluster => cluster.length > 0)
@@ -322,13 +295,10 @@ function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; use
         altitude: null, altitudeAccuracy: null, timestamp: Date.now(), _originalIndices: cluster
       };
     });
-
   const baardaInput = clusterSummaries.map((s, idx) => ({ ...s, _originalIdx: idx }));
   const baardaRes = calculateBaardaInternal(baardaInput as any);
-  
   const finalResult = { ...baardaRes.result };
   const finalUsedIndices = baardaRes.usedIndices.flatMap(i => (clusterSummaries[i] as any)._originalIndices);
-  
   return { 
     result: finalResult, 
     usedIndices: [...new Set(finalUsedIndices)], 
@@ -346,15 +316,12 @@ function runKMeans(samples: Coordinate[], k: number): number[] {
     const step = Math.floor(samples.length / k);
     centroids = Array.from({ length: k }, (_, i) => ({ lat: samples[i * step].lat, lng: samples[i * step].lng }));
   }
-
   let assignments = new Array(samples.length).fill(-1);
   let changed = true;
   let iterations = 0;
-
   while (changed && iterations < 20) {
     changed = false;
     iterations++;
-
     for (let i = 0; i < samples.length; i++) {
         let minDist = Infinity;
         let bestK = 0;
@@ -366,7 +333,6 @@ function runKMeans(samples: Coordinate[], k: number): number[] {
         }
         if (assignments[i] !== bestK) { assignments[i] = bestK; changed = true; }
     }
-
     for (let j = 0; j < k; j++) {
         const clusterPoints = samples.filter((_, i) => assignments[i] === j);
         if (clusterPoints.length > 0) {
@@ -386,31 +352,25 @@ function runKMeans(samples: Coordinate[], k: number): number[] {
     <pre class="code-block">
 function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndices: number[] } {
   if (samples.length < 4) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
-
   let currentSamples = [...samples];
   const criticalValue = 3.29; // Critical limit for 99.9% confidence interval
-
   while (currentSamples.length > 4) {
     const weights = currentSamples.map(s => 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
     const sumW = weights.reduce((a, b) => a + b, 0);
     const meanLat = currentSamples.reduce((a, b, i) => a + b.lat * weights[i], 0) / sumW;
     const meanLng = currentSamples.reduce((a, b, i) => a + b.lng * weights[i], 0) / sumW;
-
     const residuals = currentSamples.map(s => {
       const dLat = (s.lat - meanLat) * 111320;
       const dLng = (s.lng - meanLng) * 111320 * Math.cos(meanLat * Math.PI / 180);
       return Math.sqrt(dLat * dLat + dLng * dLng);
     });
-
     const vTPv = residuals.reduce((a, v, i) => a + v * v * weights[i], 0);
     const sigma0 = Math.sqrt(vTPv / (currentSamples.length - 1));
-
     const standardizedResiduals = currentSamples.map((s, i) => {
       const p_i = weights[i];
       const q_ii = (1 - p_i / sumW); 
       return residuals[i] / (sigma0 * Math.sqrt(q_ii) || 1e-9);
     });
-
     let maxW = -1;
     let worstIdx = -1;
     for (let i = 0; i < standardizedResiduals.length; i++) {
@@ -419,14 +379,12 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
             worstIdx = i;
         }
     }
-
     if (maxW > criticalValue) {
         currentSamples.splice(worstIdx, 1); // Reject coordinate containing outlier error
     } else {
         break; // Exit loop if the critical limit is satisfied (system resolved)
     }
   }
-
   return { result: calculateAverage(currentSamples), usedIndices: currentSamples.map(s => s._originalIdx) };
 }
     </pre>
@@ -438,16 +396,13 @@ export function calculateMidRange(samples: Coordinate[]): { result: Coordinate; 
   if (samples.length === 0) { return { result: samples[0], usedIndices: [0] }; }
   const lats = samples.map(s => s.lat);
   const lngs = samples.map(s => s.lng);
-  
   const minLat = Math.min(...lats);
   const maxLat = Math.max(...lats);
   const minLng = Math.min(...lngs);
   const maxLng = Math.max(...lngs);
-  
   const midLat = (minLat + maxLat) / 2;
   const midLng = (minLng + maxLng) / 2;
   const avgAcc = samples.reduce((a, b) => a + b.accuracy, 0) / samples.length;
-
   return {
     result: { lat: midLat, lng: midLng, accuracy: avgAcc, altitude: null, altitudeAccuracy: null, timestamp: Date.now() },
     usedIndices: samples.map((_, i) => i)
