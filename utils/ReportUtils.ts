@@ -33,7 +33,6 @@ export const generateTechnicalReport = () => {
     li { margin-bottom: 6pt; text-align: justify; }
     
     .bold { font-weight: bold; }
-    .formula { background: #fcfcfc; border: 0.5pt solid #aaa; padding: 10pt; margin: 12pt 0; text-align: center; font-style: italic; font-weight: bold; font-family: 'Courier New', Courier, monospace; }
     
     table { width: 100%; border-collapse: collapse; margin: 15pt 0; }
     th { border: 1pt solid #000; padding: 8pt; background: #f2f2f2; font-weight: bold; text-align: center; font-size: 10pt; }
@@ -44,16 +43,15 @@ export const generateTechnicalReport = () => {
     .header-info { margin-bottom: 30pt; border: 1pt solid #ddd; padding: 12pt; background: #fafafa; font-size: 10pt; }
     .case-container { margin-top: 12pt; border-left: 3px solid #555; padding-left: 12pt; margin-bottom: 15pt; }
     .code-block {
-      background: #fdfdfd;
-      border: 0.5pt dashed #aaa;
-      padding: 6pt;
-      margin: 8pt 0;
+      background: #fafafa;
+      border: 0.5pt solid #cccccc;
+      padding: 8pt;
+      margin: 10pt 0;
       font-family: 'Consolas', 'Courier New', monospace;
       font-size: 9pt;
-      white-space: pre-wrap;
-      word-break: break-all;
-      color: #000;
-      line-height: 1.35;
+      white-space: pre;
+      color: #111111;
+      line-height: 1.4;
       text-align: left !important;
       text-indent: 0 !important;
     }
@@ -124,17 +122,11 @@ export const generateTechnicalReport = () => {
     <p>Hassas jeodezi motoru, elipsoidal ve düzlemsel koordinat dönüşüm denklemlerini tamamen istemci tarafında saniyeler içinde çözer.</p>
 
     <h3>2.3.1. 7-Parametreli Bursa-Wolf Dönüşümü</h3>
-    <p>Küresel WGS 84 coğrafi koordinatları ($X, Y, Z$) ile yerel datumlar (ED 50 veya ITRF 96) arasındaki dönüşümler, 3 boyutlu Helmert benzeri Bursa-Wolf matrisi ile koşturulur. Bu model; 3 adet öteleme parametresi ($dX, dY, dZ$), 3 adet eksenel dönme parametresi ($Rx, Ry, Rz$) ve 1 adet ölçek değişim faktörü ($dm$) kullanarak koordinat dönüşümünü milimetrik bazda şu doğrusal matrisle gerçekleştirir:</p>
-    
-    <div class="formula">
-      [X,Y,Z]_Target = [dX,dY,dZ] + (1 + dm * 10^-6) * R * [X,Y,Z]_Source
-    </div>
-
-    <p class="no-indent">Bu dönüşüm, yerel ve küresel elipsoidlerin uyumlaştırılmasında, özellikle eski harita paftalarıyla (ED50) modern CBS verilerinin uyumlandırılmasında arazide anlık çözümler üretir. Uygulamada Proj4js kütüphanesi ile entegre edilen 7-Parametreli Helmert dönüşüm mantığı ve ED50 tanımı aşağıdaki kod satırlarında açıkça görülmektedir:</p>
-    <div class="code-block">
+    <p>Küresel WGS 84 coğrafi koordinatları ile yerel datumlar (ED 50 veya ITRF 96) arasındaki dönüşümler, 3 boyutlu Helmert benzeri Bursa-Wolf matrisi ile koşturulur. Bu model; 3 adet öteleme parametresi, 3 adet eksenel dönme parametresi ve 1 adet ölçek değişim faktörü kullanarak koordinat dönüşümünü milimetrik bazda gerçekleştirir. Bu dönüşüm, yerel ve küresel elipsoidlerin uyumlaştırılmasında, özellikle eski harita paftalarıyla (ED50) modern CBS verilerinin entegrasyonunda arazide anlık çözümler üretir. Uygulamada Proj4js kütüphanesi ile entegre edilen 7-Parametreli Helmert dönüşüm mantığı ve ED50 tanımı aşağıdaki kod satırlarında açıkça görülmektedir:</p>
+    <pre class="code-block">
 // ED50 grid-datum katsayıları içeren Proj parametresi tanımı:
 destProj = "+proj=tmerc +lat_0=0 +lon_0=" + dom + " +k=1 +x_0=500000 +y_0=0 +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs";
-    </div>
+    </pre>
 
     <h3>2.3.2. İleri Mertebe Krüger-N Serileri ile Projeksiyon Dönüşümü</h3>
     <p>Coğrafi koordinatların (Enlem, Boylam) düzlemsel Gauss-Krüger (Transverse Mercator - TM 3° ve 6°) koordinatlarına dönüştürülmesinde, meridyen yay uzunluklarını milimetrik düzeyde hesaplayan ve klasik formüllerdeki basitleştirme hatalarını ortadan kaldıran 7. mertebeden ileri düzey Krüger-N serileri kullanılır. Sistem boylamsal konuma göre Dilim Orta Meridyenini (DOM) dinamik hesaplar:</p>
@@ -143,7 +135,7 @@ destProj = "+proj=tmerc +lat_0=0 +lon_0=" + dom + " +k=1 +x_0=500000 +y_0=0 +ell
       <li>6 Derecelik (UTM) sistemde: <span class="bold">Dilim No = Floor((Boylam + 180) / 6) + 1</span> ve buradan Dilim Orta Meridyeni çıkartılır.</li>
     </ul>
     <p class="no-indent">Bu hesaplamaları icra eden ve Proj4js katmanına dinamik DOM parametreli konfigürasyon sağlayan TS kod bloğu şu şekildedir:</p>
-    <div class="code-block">
+    <pre class="code-block">
 const getDom3 = (lon: number) => {
   return Math.round(lon / 3) * 3;
 };
@@ -189,18 +181,11 @@ export const convertCoordinate = (lat: number, lng: number, system: string) => {
   }
   return { x: lat, y: lng, labelX: 'Enlem', labelY: 'Boylam', zone: '' };
 };
-    </div>
+    </pre>
 
     <h3>2.3.3. Düşey Datum Modellemesi ve Türkiye Geoidi (TG-20)</h3>
-    <p>GNSS uydularından doğrudan alınan yükseklik verisi, referans elipsoidine göre tanımlanan elipsoidal yüksekliktir ($h$). Ancak mühendislik projlerinde yerçekimi tabanlı fiziksel yükseklik olan ortometrik yükseklik ($H$) kullanılmalıdır. Bu iki yükseklik arasındaki fark, ondülasyon ($N$) olarak adlandırılır ($H = h - N$).</p>
-    <p>Uygulama, Türkiye Ulusal Geoidi (TG-20) grid verilerini ve küresel EGM96 modellerini kendi hafızasında barındırır. Ölçüm yapılan koordinatın etrafındaki en yakın 4 grid düğüm noktası ($N_{00}, N_{10}, N_{01}, N_{11}$) tespit edilerek "Bilineer İnterpolasyon" yöntemiyle o noktadaki net ondülasyon değeri ($N$) saniyede şu matematiksel formülle türetilir:</p>
-    
-    <div class="formula">
-      N = (1-u)(1-v)N_00 + u(1-v)N_10 + (1-u)vN_01 + uvN_11
-    </div>
-    
-    <p class="no-indent">Burada u ve v, koordinatın ilgili grid hücresi içindeki normalleştirilmiş göreceli pozisyonlarını temsil etmektedir. Bu sayede, arazide ek bir ölçü aletine ihtiyaç duymadan gerçek zamanlı ortometrik kot üretilmiş olunur. Bilineer geoid interpolasyon servisinin hesap çekirdeği kod satırlarında aşağıdaki biçimde sergilenmektedir:</p>
-    <div class="code-block">
+    <p>GNSS uydularından doğrudan alınan yükseklik verisi, referans elipsoidine göre tanımlanan elipsoidal yüksekliktir. Ancak mühendislik projelerinde yerçekimi tabanlı fiziksel yükseklik olan ortometrik yükseklik kullanılmalıdır. Bu iki yükseklik arasındaki fark ondülasyon olarak adlandırılır. Uygulama, Türkiye Ulusal Geoidi (TG-20) grid verilerini ve küresel EGM96 modellerini kendi hafızasında barındırır. Ölçüm yapılan koordinatın etrafındaki en yakın 4 grid düğüm noktası tespit edilerek "Bilineer İnterpolasyon" yöntemiyle o noktadaki net ondülasyon değeri saniyede bir kez dinamik olarak türetilir. Bu sayede, arazide ek bir ölçü aletine ihtiyaç duymadan gerçek zamanlı ortometrik kot üretilmiş olunur. Bilineer geoid interpolasyon servisinin hesap çekirdeği, koordinatın ilgili grid hücresi içindeki normalleştirilmiş göreceli pozisyonlarını da hesaplayacak biçimde, kod satırlarında aşağıdaki şekilde sergilenmektedir:</p>
+    <pre class="code-block">
 // Dört sınır grid noktasından ondülasyon katsayısı türetilmesi
 const n00 = grid[latIdx][lngIdx];
 const n10 = grid[latIdx + 1][lngIdx];
@@ -215,16 +200,14 @@ const N = (1 - u) * (1 - v) * n00
         + u * (1 - v) * n10 
         + (1 - u) * v * n01 
         + u * v * n11;
-    </div>
+    </pre>
 
     <h2>2.4. Gerçek Zamanlı İstatistiksel Süzme Çerçevesi (6 Farklı Süzme Modülü)</h2>
-    <p>Sahada toplanan her bir saniyelik GNSS verisi, çevresel yansımalar ve uydu konfigürasyonlarındaki anlık değişimler nedeniyle rastgele ve sistemsel hatalar barındırır. ${FULL_BRAND}, bu hataları ayıklamak ve kararlı sonuçlar elde etmek amacıyla arazide 3 temel yöntem, AR-GE modülünde ise toplamda 6 farklı ileri düzey istatistiksel filtreleme kütüphanesi sunar:</p>
+    <p>Sahada toplanan her bir saniyelik GNSS verisi, çevresel yansımalar ve uydu konfigürasyonlarındaki anlık değişimler nedeniyle rastgele ve sistemsel hatalar barındırır. ${FULL_BRAND}, bu hataları ayıklamak ve kararlı sonuçlar elde etmek amacıyla arazide 3 temel yöntem, AR-GE modülünde ise toplamda 6 farklı ileri düzey istatistiksel filtreleme kütüphanesini doğrudan kaynak kod yapısında barındırır:</p>
 
     <h3>2.4.1. Aritmetik Ortalama (Mean)</h3>
-    <p>Aritmetik ortalama yöntemi, zaman serisi gözlem havuzundaki tüm koordinat değerlerinin eşit ağırlıklı toplamının veri adedine bölünmesi esasına dayanır. Dengeli ve açık havadaki ölçümlerde, aşırı sapan (outlier) değerlerin bulunmadığı kararlı durumlarda standart bazlı hızlı bir süzme ve ortalama konumsal çözüm üretimi sağlar.</p>
-    <div class="formula">μ = (1/n) * Σ xᵢ</div>
-    <p class="no-indent">Bu temel algoritmayı icra eden ve yatay konum dağılımına bağlı standart sapma (dispersion) sembollerini üreten TS kod kesiti aşağıdadır:</p>
-    <div class="code-block">
+    <p>Aritmetik ortalama yöntemi, zaman serisi gözlem havuzundaki tüm koordinat değerlerinin eşit ağırlıklı toplamının veri adedine bölünmesi esasına dayanır. Dengeli ve açık havadaki ölçümlerde, aşırı sapan (outlier) değerlerin bulunmadığı kararlı durumlarda standart bazlı hızlı bir süzme ve ortalama konumsal çözüm üretimi sağlar. Bu temel algoritmayı icra eden ve yatay konum dağılımına bağlı standart sapma (dispersion) değerlerini hesaplayan TS kod kesiti aşağıdadır:</p>
+    <pre class="code-block">
 export function calculateAverage(samples: Coordinate[]): Coordinate {
   const validAltitudes = samples.filter(s => s.altitude !== null);
   const validAltAccuracies = samples.filter(s => s.altitudeAccuracy !== null);
@@ -260,10 +243,8 @@ export function calculateAverage(samples: Coordinate[]): Coordinate {
     </div>
 
     <h3>2.4.2. Ağırlıklı En Küçük Kareler (Weighted Least Squares - WLS)</h3>
-    <p>Ağırlıklı en küçük kareler süzgeci, her bir GNSS ölçüm epokunda cihazın uydu sinyal kalitesi ve uyduların göksel yapısına göre bildirdiği dinamik kalitesel standart sapma değeri ($\sigma$) üzerinden ağırlık üretir. En yüksek hassasiyete sahip olan ve düşük gürültülü saniyelerdeki verilere daha yüksek ağırlık vererek hassas verinin genel konum sonucundaki payını artırır.</p>
-    <div class="formula">x̂ = (Σ Pᵢ xᵢ) / (Σ Pᵢ) , Pᵢ = 1/σᵢ²</div>
-    <p class="no-indent">Saniyede 1 kez çalışan bu ağırlıklı dengeleme ve ağırlık matrisi üretimini yürüten ana TS kodu şu şekildedir:</p>
-    <div class="code-block">
+    <p>Ağırlıklı en küçük kareler süzgeci, her bir GNSS ölçüm epokunda cihazın uydu sinyal kalitesi ve uyduların göksel yapısına göre bildirdiği dinamik kalitesel standart sapma değeri üzerinden ağırlık üretir. En yüksek hassasiyete sahip olan ve düşük gürültülü saniyelerdeki verilere daha yüksek ağırlık vererek hassas verinin genel konum sonucundaki payını artırır. Saniyede 1 kez çalışan bu ağırlıklı dengeleme ve ağırlık matrisi üretimini yürüten ana TS kodu şu şekildedir:</p>
+    <pre class="code-block">
 function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
   if (samples.length === 0) return { result: samples[0], usedIndices: [0] };
   
@@ -288,11 +269,11 @@ function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; used
   
   return { result, usedIndices: samples.map((_, i) => i) };
 }
-    </div>
+    </pre>
 
     <h3>2.4.3. MidRange + K-Means + Baarda Hibrit Yaklaşımı</h3>
     <p>Uygulamanın amiral gemisi olarak nitelendirilen bu hibrit yaklaşım, saniyede bir okunan konum gözlemlerini öncelikle Mid-Range referans modeline göre epsilon sınırında filtreler, ardından kalan verileri K-Means kümeleme algoritmasıyla (K=4) segmentlere ayırır. Her bir segment kendi içinde ağırlıklı en küçük kareler modeliyle çözümlendikten sonra, kümeler arası uyuşmazlık dereceleri Baarda Kalın Hata Testi ile sınanarak sistemsel yansıma (multipath) kaynaklı gürültüler ve sürüklenmeler elenir. Özellikle yoğun kentsel kanyonlarda ve ağaç altı zorlu arazi koşullarında üstün operasyonel kararlılık başarısı gösterir. Algoritma adımlarını gerçekleştiren kod bloğu aşağıda dökümlenmiştir:</p>
-    <div class="code-block">
+    <pre class="code-block">
 function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
   if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
 
@@ -354,11 +335,11 @@ function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; use
     clusters: finalValidClusters.filter(c => c.length > 0)
   };
 }
-    </div>
+    </pre>
 
     <h3>2.4.4. K-Means (4-Way Segmentasyon) Süzgeci</h3>
     <p>Bu filtreleme modeli, küme içi varyans ve kareler toplamının minimum edilmesi kriterine göre 2 boyutlu konumsal koordinat verilerini 4 ayrı gruba segmentler. İstatistiksel olarak en kararlı, saçılım genişliği en dar ve yoğunluğu en yüksek olan küme seçilerek, sadece bu küme içerisindeki gözlemlerin ağırlıklı en küçük kareler ortalaması genel sonuç kabul edilir. K-Means mekanizmasının iterative mesafe ve küme güncelleme döngüleri aşağıda sunulmuştur:</p>
-    <div class="code-block">
+    <pre class="code-block">
 function runKMeans(samples: Coordinate[], k: number): number[] {
   let centroids = samples.slice(0, k).map(s => ({ lat: s.lat, lng: s.lng }));
   if (samples.length > k) {
@@ -398,11 +379,11 @@ function runKMeans(samples: Coordinate[], k: number): number[] {
   }
   return assignments;
 }
-    </div>
+    </pre>
 
     <h3>2.4.5. Baarda Kalın Hata Elemesi (Baarda's Reliability Test / Snooping)</h3>
     <p>Jeodezik ölçü standartlarının temeli olan Baarda'nın veri gözetleme yöntemi (data snooping), normalize edilmiş ve standardize edilmiş ölçü uyuşmazlığı hatalarının istatistiksel test büyüklüğünü denetler. Kritik sınır değerleri aşan uyuşmazlık hataları ardışık olarak tespit edilerek en büyük kalın hatadan başlanarak döngüsel düzende sistemden temizlenir. Baarda kalın hata test büyüklüğünü ve standartlaştırılmış uyuşmazlık denetimini koşturan kritik fonksiyon aşağıda yer almaktadır:</p>
-    <div class="code-block">
+    <pre class="code-block">
 function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndices: number[] } {
   if (samples.length < 4) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
 
@@ -448,13 +429,11 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
 
   return { result: calculateAverage(currentSamples), usedIndices: currentSamples.map(s => s._originalIdx) };
 }
-    </div>
+    </pre>
 
     <h3>2.4.6. MidRange (Maksimum-Minimum Sınır Ortalama Süzgeci)</h3>
-    <p>MidRange süzgeci, veri setindeki en büyük koordinat değerleri ile en küçük koordinat değerlerinin aritmetik ortalamasını alarak uç sınırların tam ortasını temsil eden bir referans merkez noktası üretir. Özellikle simetrik dağılımlarda ve dış gürültünün veri kümesini her iki uçtan da dengeli etkilediği senaryolarda hızlı ve kararlı bir referans tespiti sağlar.</p>
-    <div class="formula">MidRange = (Min(x) + Max(x)) / 2</div>
-    <p class="no-indent">Bu geometrik uç süzgecini yürüten fonksiyonun tam TS kod dizilimi şu şekildedir:</p>
-    <div class="code-block">
+    <p>MidRange süzgeci, veri setindeki en büyük koordinat değerleri ile en küçük koordinat değerlerinin aritmetik ortalamasını alarak uç sınırların tam ortasını temsil eden bir referans merkez noktası üretir. Özellikle simetrik dağılımlarda ve dış gürültünün veri kümesini her iki uçtan da dengeli etkilediği senaryolarda hızlı ve kararlı bir referans tespiti sağlar. Bu geometrik uç süzgecini yürüten fonksiyonun tam TS kod dizilimi şu şekildedir:</p>
+    <pre class="code-block">
 export function calculateMidRange(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
   if (samples.length === 0) { return { result: samples[0], usedIndices: [0] }; }
   const lats = samples.map(s => s.lat);
@@ -474,11 +453,9 @@ export function calculateMidRange(samples: Coordinate[]): { result: Coordinate; 
     usedIndices: samples.map((_, i) => i)
   };
 }
-    </div>
+    </pre>
 
-    <p>Filtrelemelerin yanı sıra, yatay konumsal belirsizliği (Yatay Hassasiyet) güvene almak için aşağıdaki özgün "Maksimum Saçılım ve Ortalama Donanım Hatası" karşılaştırma formülasyonu ($Max(d_{max}, \sigma_{avg})$) geliştirilmiştir:</p>
-    <div class="formula">Hassasiyet = Max( d_max, σ_avg )</div>
-    <p class="no-indent">Burada d_max, ölçüm havuzundaki en uzak iki koordinat arasındaki fiziksel mesafeyi (maksimum saçılım) temsil ederken; σ_avg ise cihazın GNSS çipinden gelen saniyelik ham donanımsal hassasiyetlerin ortalamasıdır. Bu sayede, cihaz yapay olarak çok yüksek bir hassasiyet bildirse bile (Örn: 2m), veriler arazide çevre parazitlerinden dolayı 6 metrelik bir alana saçılıyorsa, sistem güvenli tarafta kalmak üzere kullanıcıya gerçekçi hassasiyet yarıçapını 6 metre olarak ilan eder.</p>
+    <p>Filtrelemelerin yanı sıra, yatay konumsal belirsizliği (Yatay Hassasiyet) güvene almak için Maksimum Saçılım ve Ortalama Donanım Hatası karşılaştırma modeli geliştirilmiştir. Burada d_max, ölçüm havuzundaki en uzak iki koordinat arasındaki fiziksel mesafeyi (maksimum saçılım) temsil ederken; o_avg ise cihazın GNSS çipinden gelen saniyelik ham donanımsal hassasiyetlerin ortalamasıdır. Bu sayede, cihaz yapay olarak çok yüksek bir hassasiyet bildirse bile (Örn: 2m), veriler arazide çevre parazitlerinden dolayı 6 metrelik bir alana saçılıyorsa, sistem güvenli tarafta kalmak üzere kullanıcıya gerçekçi hassasiyet yarıçapını 6 metre olarak ilan eder.</p>
 
     <h2>2.5. Yapay Zeka Tabanlı Yazılım Geliştirme Metodolojisi</h2>
     <p>Ağır jeodezi denklemlerinin (7 parametreli Bursa-Wolf, 7. derece Krüger-N serileri vb.) sıfır mantıksal ve derleme hatasıyla doğrudan TypeScript diline kazandırılmasında ve geliştirilme süreçlerinde <span class="bold">Google AI Studio</span> geliştirme platformu kullanılmıştır. Alan uzmanı ve mühendis ortaklığındaki "Expert-in-the-Loop" geliştirme modeli çerçevesinde, yapay zekanın jeodezik modelleme sınırlarını test eden vaka analizleri (Otokritik süreçler) ve bu süreçte başarımızı güvence altına alan alan uzmanının doğru yönlendirici istemleri (Optimized Expert Prompts) aşağıda belgelenmiştir:</p>
@@ -563,7 +540,7 @@ export function calculateMidRange(samples: Coordinate[]): { result: Coordinate; 
         </ul>
       </li>
       <li><span class="bold">Fiziksel Dosya ve Dizin Klasör Dağılım Şeması (Project Folder Layout):</span> GPS Plus yazılım mimarisinin tüm dizin ve alt modül ağacı, sistem dosya standardı uyarınca aşağıda listelenmiştir:
-        <div class="code-block">
+        <pre class="code-block">
 ├── .github/                 # GitHub workflows & CI/CD configs
 ├── components/              # User Interface & Render Modules
 │   ├── Dashboard.tsx        # Dynamic home panel displaying core geodetic statuses
@@ -595,7 +572,7 @@ export function calculateMidRange(samples: Coordinate[]): { result: Coordinate; 
 ├── version.ts               # Brand configurations and build metadata
 ├── index.html               # Main SPA DOM mount point
 └── tsconfig.json            # Strict TypeScript compilation rules
-        </div>
+        </pre>
       </li>
     </ul>
 
