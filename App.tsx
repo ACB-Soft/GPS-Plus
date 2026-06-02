@@ -194,7 +194,7 @@ const App = () => {
 
   useEffect(() => {
     if (view === 'dashboard') {
-      checkLocation(false);
+      // Do not auto-check on dashboard mount to prevent prompt or overlay modal on load
     }
   }, [view]);
 
