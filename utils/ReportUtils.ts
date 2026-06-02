@@ -537,22 +537,43 @@ export function calculateMidRange(samples: Coordinate[]): { result: Coordinate; 
     <p>Bu araştırma kapsamında geliştirilen <span class="bold">${FULL_BRAND} v5.0</span>, harita mühendisliği alanındaki ağır ve sunucu bağımlı jeodezik hesaplamaları, akıllı telefonların yerel donanım güçlerini kullanarak tamamen çevrimdışı ve tarayıcı tabanlı yürütebilen öncü bir PWA platformu ortaya koymuştur. Geliştirilen platform; yerel ITRF96/ED50 projeksiyon sistemleri, Türkiye Ulusal Jeoid Modeli (TG-20) interpolasyon şemaları ve gürültü elemede kullanılan 6 farklı ileri düzey istatistiksel filtreleme algoritması ile tüketici sınıfı akıllı telefonların bile haritacılık mühendisliği çalışmalarında güvenle kullanılabileceğini kanıtlamıştır.</p>
     <p>Ayrıca çalışma dahilinde yürütülen "Yapay Zeka Destekli Yazılım Geliştirme Metodolojisi", Google AI Studio'nun mühendislik alanındaki karmaşık formülleri hatasız bir şekilde TypeScript diline tercüme edebildiğini, alan uzmanı kontrolünde (Expert-in-the-Loop) işletildiğinde yazılım üretim ve test maliyetlerini %85 mertebesinde azalttığını ortaya koymuştur. Sonuç olarak ${FULL_BRAND}, sunduğu üstün arazi ergonomisi, çevrimdışı çalışma kabiliyeti ve yüksek matematiksel hassasiyeti ile yer bilimleri, coğrafi bilgi sistemleri ve arazi kadastro çalışmalarında yeni nesil sunucusuz jeodezi çağını başlatmıştır.</p>
 
-    <h1>4. KAYNAKÇA VE AKADEMİK ATIFLAR (REFERENCES)</h1>
-    <p class="no-indent" style="margin-bottom: 12pt;"><span class="bold">Atıf Gösterim Rehberi:</span> Bu çalışmada kullanılan tüm jeodezik matematik, istatistiksel filtreler ve CBS modelleri aşağıdaki temel ulusal/uluslararası literatüre dayanmaktadır:</p>
-    <ol>
-      <li><span class="bold">Baarda, W. (1968).</span> A testing procedure for use in geodetic networks. Netherlands Geodetic Commission. (Jeodezik Baarda Snooping kalın hata testleri için).</li>
-      <li><span class="bold">Hampel, F. R. (1974).</span> The influence curve and its role in robust estimation. Journal of the American Statistical Association. (Median Absolute Deviation - MAD yöntemi için).</li>
-      <li><span class="bold">Fischler, M. A., & Bolles, R. C. (1981).</span> Random sample consensus: a paradigm for model fitting with applications to image analysis and automated cartography. Communications of the ACM. (RANSAC algoritması için).</li>
-      <li><span class="bold">Silverman, B. W. (1986).</span> Density Estimation for Statistics and Data Analysis. CRC Press. (Kernel Density Estimation - KDE yöntemleri için).</li>
-      <li><span class="bold">Kaplan, E. D., & Hegarty, C. (2017).</span> Understanding GPS/GNSS: Principles and Applications. Artech House. (Hata modelleri ve sinyal işleme prensipleri için).</li>
-      <li><span class="bold">Teunissen, P. J. G. (2000).</span> The Least-Squares Equation. Delft University Press. (En Küçük Kareler yöntemi jeodezik uygulamaları için).</li>
-      <li><span class="bold">Hofmann-Wellenhof, B., Lichtenegger, H., & Wasle, E. (2007).</span> GNSS – Global Navigation Satellite Systems. Springer. (Koordinat dönüşümleri ve projeksiyon sistemleri için).</li>
-      <li><span class="bold">Harita Genel Müdürlüğü (HGM). (2020).</span> Türkiye Geoidi - 2020 (TG-20) Teknik Dökümanı. (Yerel düşey datum ve ondülasyon hesaplamaları için).</li>
-      <li><span class="bold">Lemoine, F. G., et al. (1998).</span> The Development of the Joint NASA GSFC and NIMA Geopotential Model EGM96. NASA/TP-1998-206861. (Global jeoid modeli EGM96 için).</li>
-      <li><span class="bold">Bursa, M. (1962).</span> The theory of the determination of the non-parallelism of the minor axis of the reference ellipsoid. Studia Geophysica et Geodaetica. (7-Parametreli Bursa-Wolf dönüşüm modeli için).</li>
-      <li><span class="bold">Evenden, G. I. (1990).</span> Cartographic Projection Procedures for the UNIX Environment — A User's Manual. USGS Open-File Report. (Proj4 kütüphanesinin temelini oluşturan matematiksel algoritmalar için).</li>
-      <li><span class="bold">Agafonkin, V. (2011).</span> Leaflet: An Open-Source JavaScript Library for Mobile-Friendly Interactive Maps. (Harita görselleştirme mimarisi için).</li>
-      <li><span class="bold">OSGeo (Open Source Geospatial Foundation).</span> PROJ: Generic coordinate transformation software. (Projeksiyon dönüşümleri standartları için).</li>
+    <h1>4. KAYNAKÇA, MEVZUAT VE VERİ KAYNAKLARI (REFERENCES & DATA SOURCES)</h1>
+    <p class="no-indent" style="margin-bottom: 8pt;"><span class="bold">Atıf Gösterim ve Güven Rehberi:</span> Bu çalışmada işletilen tüm istatistiksel, konumsal, düşey kartografik dönüşümler ve veri görselleştirme/ihraç yaklaşımları aşağıdaki uluslararası standartlara, veri kaynaklarına ve yazılım kütüphanelerine dayanmaktadır:</p>
+    
+    <p class="bold" style="color: #0056b3; margin-top: 10pt; margin-bottom: 4pt; font-size: 11pt;">4.1. Akademik Yayınlar ve Jeodezik Standartlar (Academic Literature)</p>
+    <ol style="margin-top: 0; padding-left: 20px;">
+      <li><span class="bold">Baarda, W. (1968).</span> A testing procedure for use in geodetic networks. Netherlands Geodetic Commission. (Jeodezik Baarda Snooping kalın hata testleri ve güven elipsi analizleri için).</li>
+      <li><span class="bold">Bursa, M. (1962).</span> The theory of the determination of the non-parallelism of the minor axis of the reference ellipsoid. Studia Geophysica et Geodaetica. (7-Parametreli Bursa-Wolf datum dönüşüm modeli için).</li>
+      <li><span class="bold">Hofmann-Wellenhof, B., Lichtenegger, H., & Wasle, E. (2007).</span> GNSS – Global Navigation Satellite Systems. Springer. (Koordinat dönüşümleri ve elipsoidal/coğrafi projeksiyon sistemleri için).</li>
+      <li><span class="bold">Kaplan, E. D., & Hegarty, C. (2017).</span> Understanding GPS/GNSS: Principles and Applications. Artech House. (L1/L5 çift frekans sinyalleri, SNR kalitesi ve atalet/sensör füzyon modelleri için).</li>
+      <li><span class="bold">Krüger, L. (1912).</span> Konforme Abbildung des Erdellipsoids in der Ebene. Veröffentlichung des Königlich Preuszischen Geodätischen Institutes. (7. mertebeden ileri düzey Krüger-N meridyen yay serileri ve Gauss-Krüger/UTM projeksiyon dönüşümleri için).</li>
+      <li><span class="bold">MacQueen, J. (1967).</span> Some methods for classification and analysis of multivariate observations. Proceedings of the Fifth Berkeley Symposium on Mathematical Statistics and Probability. (K-Means kümeleme segmentasyon algoritması için).</li>
+      <li><span class="bold">Teunissen, P. J. G. (2000).</span> The Least-Squares Equation. Delft University Press. (Ağırlıklı En Küçük Kareler (WLS) yöntemi jeodezik uygulamaları için).</li>
+    </ol>
+
+    <p class="bold" style="color: #0056b3; margin-top: 10pt; margin-bottom: 4pt; font-size: 11pt;">4.2. Donanım Verileri, Jeoit ve Yer Çekimi Modelleri (Hardware & Geodetic Models)</p>
+    <ol style="margin-top: 0; padding-left: 20px;">
+      <li><span class="bold">W3C Geolocation API Specification (2016).</span> World Wide Web Consortium. (Akıllı mobil cihazların ham uydu verilerine ve GPS/GNSS alıcısı donanım katmanına erişmek için).</li>
+      <li><span class="bold">Harita Genel Müdürlüğü (HGM). (2020).</span> Türkiye Geoidi - 2020 (TG-20) Teknik Dökümanı. (5'x5' çözünürlüklü yerel düşey datum, anlık ondülasyon ve iki boyutlu bilineer interpolasyon katsayı hesaplamaları için).</li>
+      <li><span class="bold">Lemoine, F. G., et al. (1998).</span> The Development of the Joint NASA GSFC and NIMA Geopotential Model EGM96. NASA/TP-1998-206861. (5'x5' çözünürlüklü küresel jeoit dalgalanması modeli ve TG-20 dışı kıyı bölgeleri için yedek geopotansiyel referans filtresi).</li>
+      <li><span class="bold">EPSG Geodetic Parameter Dataset.</span> International Association of Oil & Gas Producers (IOGP). (ED50, ITRF96, WGS84 yerel dilim ortak parametreleri ve Transverse Mercator projeksiyon dönüşüm katsayıları için).</li>
+    </ol>
+
+    <p class="bold" style="color: #0056b3; margin-top: 10pt; margin-bottom: 4pt; font-size: 11pt;">4.3. Harita Servisleri ve Sağlayıcıları (Map Services & Providers)</p>
+    <ol style="margin-top: 0; padding-left: 20px;">
+      <li><span class="bold">Google Maps API (Satellite/Hybrid Tiles).</span> Google LLC. (Gerçek zamanlı uydu fotoğrafları, hibrit altlık görselleri ve arazi koordinat haritalama doğruluk testleri için).</li>
+      <li><span class="bold">OpenStreetMap (OSM) Contributors.</span> © OpenStreetMap Vakfı. (Açık kaynaklı harita altlık servisi ve vektörel sokak/topografya katmanları için).</li>
+    </ol>
+
+    <p class="bold" style="color: #0056b3; margin-top: 10pt; margin-bottom: 4pt; font-size: 11pt;">4.4. Yazılım ve Yazım Kütüphaneleri (Software & Presentation Libraries)</p>
+    <ol style="margin-top: 0; padding-left: 20px;">
+      <li><span class="bold">Proj4js Library (v2.20).</span> OSGeo (Open Source Geospatial Foundation). (İstemci tarafında hızlı ve yüksek duyarlılıklı datum ve koordinat projeksiyon dönüşümleri için).</li>
+      <li><span class="bold">Leaflet JS Engine (v1.9) & React-Leaflet (v5.0).</span> Vladimir Agafonkin. (Mobil uyumlu ve yüksek performanslı harita katman kontrolü, çokgen çizim ve Web-CAD görselleştirmesi için).</li>
+      <li><span class="bold">SheetJS (xlsx v0.18.5) Export Engine.</span> SheetJS LLC. (İstemci tarafında sunucu bağımsız Excel formatında ölçüm karnesi ve teknik özet tabloları türetmek için).</li>
+      <li><span class="bold">JSZip Library (v3.10) & FileSaver.js (v2.0).</span> Stuart Knightley & Eli Grey. (Üretilen CAD, KMZ, Excel ve XML dosyalarını arka planda paketleyerek anlık indirmeye sunan sıkıştırma ve aktarım servisleri için).</li>
+      <li><span class="bold">Recharts Visualization Library (v3.8).</span> recharts.org. (Ölçüm esnasında toplanan koordinatların hata yayılım profillerini ve regresyon eğrilerini dinamik çizmek için).</li>
+      <li><span class="bold">Lucide React & FontAwesome Free (v7.2).</span> Lucide & Fonticons Inc. (Hassas CAD simgeleri, uyduların konumsal durum göstergeleri ve harita araç barı ikonları için).</li>
+      <li><span class="bold">Fontsource Fonts.</span> banyan.gdn. (Sistem arayüzünde yüksek okunabilirlik sağlayan "Plus Jakarta Sans" ve "JetBrains Mono" akademik/konsol yazı tipleri için).</li>
     </ol>
 
     <div class="footer">
