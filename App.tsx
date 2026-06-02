@@ -32,6 +32,8 @@ const App = () => {
   const [locations, setLocations] = useState<SavedLocation[]>([]);
   const [lastResult, setLastResult] = useState<SavedLocation | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ type: 'capture' | 'stakeout'; continuing?: boolean } | null>(null);
+  const [isCheckingLocation, setIsCheckingLocation] = useState(false);
   const [resultSource, setResultSource] = useState<'capture' | 'list'>('capture');
   const [autoShowMap, setAutoShowMap] = useState(false);
   const [isContinuing, setIsContinuing] = useState(false);
@@ -147,56 +149,97 @@ const App = () => {
     }
   }, [settings.calculationMethod, settings.gnssOnlyMode]);
 
-  const checkLocation = (forcePrompt: boolean = false) => {
-    if (navigator.geolocation) {
-      // Use permissions API if available to check status without triggering a prompt
-      if (navigator.permissions && navigator.permissions.query) {
-        navigator.permissions.query({ name: 'geolocation' as PermissionName }).then((result) => {
-          if (result.state === 'denied') {
-            setLocationError("PERMISSION_DENIED");
-          } else if (result.state === 'granted') {
-            setLocationError(null);
-          } else {
-            // 'prompt' state - only check if we force it
-            if (forcePrompt) {
-              performActualCheck();
-            } else {
-              setLocationError(null);
-            }
-          }
-        }).catch(() => {
-          if (forcePrompt) performActualCheck();
-        });
-      } else {
-        if (forcePrompt) performActualCheck();
-      }
-    } else {
+  const triggerProtectedAction = (actionType: 'capture' | 'stakeout', continuing: boolean = false) => {
+    if (!navigator.geolocation) {
       setLocationError("NOT_SUPPORTED");
+      setPendingAction({ type: actionType, continuing });
+      return;
     }
-  };
 
-  const performActualCheck = () => {
-    navigator.geolocation.getCurrentPosition(
-      () => setLocationError(null),
-      (err) => {
-        // Only show the modal if permission is explicitly denied (code 1)
-        if (err.code === 1) {
+    const executeAction = () => {
+      setLocationError(null);
+      setPendingAction(null);
+      if (actionType === 'capture') {
+        handleNewMeasurement(continuing);
+      } else {
+        navigateTo('stakeout', 'MENU');
+      }
+    };
+
+    setIsCheckingLocation(true);
+
+    // Use permissions API first if available for an instant transition if already granted
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'geolocation' as PermissionName }).then((result) => {
+        if (result.state === 'granted') {
+          setIsCheckingLocation(false);
+          executeAction();
+        } else if (result.state === 'denied') {
+          setIsCheckingLocation(false);
           setLocationError("PERMISSION_DENIED");
+          setPendingAction({ type: actionType, continuing });
         } else {
-          // For other errors (timeout, position unavailable), 
-          // we don't show the "Permission Required" modal
-          setLocationError(null);
+          // 'prompt' state - perform actual getCurrentPosition to trigger browser dialog
+          navigator.geolocation.getCurrentPosition(
+            () => {
+              setIsCheckingLocation(false);
+              executeAction();
+            },
+            (err) => {
+              setIsCheckingLocation(false);
+              if (err.code === 1) { // PERMISSION_DENIED
+                setLocationError("PERMISSION_DENIED");
+                setPendingAction({ type: actionType, continuing });
+              } else {
+                // Other errors (timeout/unavailable) mean permission IS granted, but direct GPS signal is not ready.
+                // We should let them enter the screen.
+                executeAction();
+              }
+            },
+            { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
+          );
         }
-      },
-      { enableHighAccuracy: false, timeout: 3000, maximumAge: 60000 }
-    );
+      }).catch(() => {
+        // Fallback if permissions query fails
+        navigator.geolocation.getCurrentPosition(
+          () => {
+            setIsCheckingLocation(false);
+            executeAction();
+          },
+          (err) => {
+            setIsCheckingLocation(false);
+            if (err.code === 1) {
+              setLocationError("PERMISSION_DENIED");
+              setPendingAction({ type: actionType, continuing });
+            } else {
+              executeAction();
+            }
+          },
+          { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
+        );
+      });
+    } else {
+      // No permissions API support (e.g., older iOS), just run getCurrentPosition
+      navigator.geolocation.getCurrentPosition(
+        () => {
+          setIsCheckingLocation(false);
+          executeAction();
+        },
+        (err) => {
+          setIsCheckingLocation(false);
+          if (err.code === 1) {
+            setLocationError("PERMISSION_DENIED");
+            setPendingAction({ type: actionType, continuing });
+          } else {
+            executeAction();
+          }
+        },
+        { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
+      );
+    }
   };
 
-  useEffect(() => {
-    if (view === 'dashboard') {
-      // Do not auto-check on dashboard mount to prevent prompt or overlay modal on load
-    }
-  }, [view]);
+
 
   useEffect(() => {
     const CURRENT_KEY = 'gps_locations_v5.0';
@@ -283,14 +326,14 @@ const App = () => {
         {view === 'dashboard' && (
           <div className="flex-1 flex flex-col overflow-y-auto h-full no-scrollbar">
             <Dashboard 
-              onStartCapture={() => handleNewMeasurement(false)} 
-              onStakeout={() => navigateTo('stakeout', 'MENU')}
+              onStartCapture={() => triggerProtectedAction('capture')} 
+              onStakeout={() => triggerProtectedAction('stakeout')}
               onShowList={() => navigateTo('list')}
               onShowExport={() => navigateTo('export')}
               onShowHelp={() => navigateTo('help')}
               onShowSettings={() => navigateTo('settings')}
-              onRetryLocation={() => checkLocation(true)}
-              locationError={locationError}
+              onRetryLocation={() => {}}
+              locationError={null}
             />
             <GlobalFooter />
           </div>
@@ -397,7 +440,7 @@ const App = () => {
               />
               <div className="mt-8 space-y-4">
                  <button 
-                   onClick={() => handleNewMeasurement(true)} 
+                   onClick={() => triggerProtectedAction('capture', true)} 
                    className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black shadow-2xl shadow-blue-200 active:scale-95 transition-all text-[13px] uppercase tracking-[0.2em] leading-none"
                  >
                    {t("YENİ NOKTA EKLE")}
@@ -411,6 +454,91 @@ const App = () => {
               </div>
             </div>
             <GlobalFooter noPadding={true} />
+          </div>
+        )}
+
+        {/* Dynamic Location Permissions overlays */}
+        {isCheckingLocation && (
+          <div className="fixed inset-0 z-[2000] flex flex-col items-center justify-center bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200">
+            <div className="bg-white/95 backdrop-blur-md px-6 py-5 rounded-3xl shadow-2xl border border-slate-150 flex items-center gap-4 animate-in zoom-in-95 duration-200">
+              <div className="w-8 h-8 rounded-full border-4 border-slate-100 border-t-blue-600 animate-spin"></div>
+              <div className="text-left">
+                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none mb-1">{t("CİHAZ BAĞLANTISI")}</p>
+                <h4 className="text-xs font-black text-slate-800 leading-tight">{t("Konum İzni Denetleniyor...")}</h4>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {locationError && (
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="w-full max-w-sm bg-white rounded-[2.5rem] shadow-2xl border border-red-100 overflow-hidden animate-in zoom-in-95 duration-300">
+              <div className="p-8">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center text-red-600 shrink-0 shadow-inner">
+                    <i className="fas fa-triangle-exclamation text-2xl"></i>
+                  </div>
+                  <div>
+                    <h3 className="text-red-900 font-black uppercase tracking-tight text-lg leading-tight animate-pulse">
+                      {locationError === "NOT_SUPPORTED" ? t("Desteklenmiyor") : (
+                        <>{t("Konum İzni")}<br/>{t("Gerekli")}</>
+                      )}
+                    </h3>
+                  </div>
+                </div>
+                
+                <div className="space-y-4 text-[13px] font-bold text-slate-600 leading-snug">
+                  {locationError === "NOT_SUPPORTED" ? (
+                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                      {t("Tarayıcınız konum servisini desteklemiyor. Lütfen farklı bir tarayıcı deneyin veya cihaz ayarlarınızı kontrol edin.")}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <span className="text-red-600 block mb-1 uppercase text-[10px] tracking-widest font-black">{t("1. Android Kullanıcıları")}</span>
+                        {t("Üst bildiri panelinden konum servislerini aktif hale getirin.")}
+                      </div>
+                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <span className="text-red-600 block mb-1 uppercase text-[10px] tracking-widest font-black">{t("2. iOS Kullanıcıları")}</span>
+                        {t("Ayarlar-Konum-Safari Siteleri-Konum iznini aktif hale getirin.")}
+                      </div>
+                    </>
+                  )}
+                  
+                  <div className="pt-2 flex flex-col gap-2">
+                    <button 
+                      onClick={() => {
+                        if (pendingAction) {
+                          triggerProtectedAction(pendingAction.type, pendingAction.continuing);
+                        } else {
+                          // Fallback check
+                          navigator.geolocation.getCurrentPosition(
+                            () => setLocationError(null),
+                            (err) => {
+                              if (err.code === 1) setLocationError("PERMISSION_DENIED");
+                            }
+                          );
+                        }
+                      }}
+                      className="w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-[13px] uppercase tracking-[0.2em] active:scale-95 transition-all shadow-xl shadow-red-200 flex items-center justify-center gap-3 cursor-pointer"
+                    >
+                      <i className="fas fa-rotate-right"></i>
+                      {locationError === "NOT_SUPPORTED" ? t("Tekrar Dene") : t("İzni Tekrar Kontrol Et")}
+                    </button>
+
+                    <button 
+                      onClick={() => {
+                        setLocationError(null);
+                        setPendingAction(null);
+                      }}
+                      className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl font-black text-[11px] uppercase tracking-[0.15em] active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer mt-1"
+                    >
+                      {t("İptal")}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

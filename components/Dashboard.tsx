@@ -25,55 +25,6 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
 
   return (
     <div className="flex-1 flex flex-col bg-slate-200 animate-in px-8 pt-20 md:pt-28 justify-start relative">
-      {locationError && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="w-full max-w-sm bg-white rounded-[2.5rem] shadow-2xl border border-red-100 overflow-hidden animate-in zoom-in-95 duration-300">
-            <div className="p-8">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center text-red-600 shrink-0 shadow-inner">
-                  <i className="fas fa-triangle-exclamation text-2xl"></i>
-                </div>
-                <div>
-                  <h3 className="text-red-900 font-black uppercase tracking-tight text-lg leading-tight animate-pulse">
-                    {locationError === "NOT_SUPPORTED" ? t("Desteklenmiyor") : (
-                      <>{t("Konum İzni")}<br/>{t("Gerekli")}</>
-                    )}
-                  </h3>
-                </div>
-              </div>
-              
-              <div className="space-y-4 text-[13px] font-bold text-slate-600 leading-snug">
-                {locationError === "NOT_SUPPORTED" ? (
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    {t("Tarayıcınız konum servisini desteklemiyor. Lütfen farklı bir tarayıcı deneyin veya cihaz ayarlarınızı kontrol edin.")}
-                  </div>
-                ) : (
-                  <>
-                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                      <span className="text-red-600 block mb-1 uppercase text-[10px] tracking-widest font-black">{t("1. Android Kullanıcıları")}</span>
-                      {t("Üst bildiri panelinden konum servislerini aktif hale getirin.")}
-                    </div>
-                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                      <span className="text-red-600 block mb-1 uppercase text-[10px] tracking-widest font-black">{t("2. iOS Kullanıcıları")}</span>
-                      {t("Ayarlar-Konum-Safari Siteleri-Konum iznini aktif hale getirin.")}
-                    </div>
-                  </>
-                )}
-                
-                <div className="pt-2">
-                  <button 
-                    onClick={onRetryLocation}
-                    className="w-full py-4 bg-red-600 text-white rounded-2xl font-black text-[13px] uppercase tracking-[0.2em] active:scale-95 transition-all shadow-xl shadow-red-200 flex items-center justify-center gap-3 cursor-pointer"
-                  >
-                    <i className="fas fa-rotate-right"></i>
-                    {locationError === "NOT_SUPPORTED" ? t("Tekrar Dene") : t("İzni Tekrar Kontrol Et")}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
       {/* Dil / Bayrak - Sol Üst Köşe */}
       <div className="absolute top-6 left-8 z-30">
         <button 

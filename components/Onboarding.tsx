@@ -16,26 +16,7 @@ const Onboarding: React.FC<Props> = ({ onFinish }) => {
     } else {
       localStorage.removeItem('show_onboarding_every_time');
     }
-
-    // iOS Safari için "User Gesture" (Kullanıcı Dokunuşu) ile doğrudan izin isteği
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        () => {
-          // İzin verildi veya zaten vardı
-          onFinish();
-        },
-        (error) => {
-          console.warn("Konum izni reddedildi veya hata oluştu:", error);
-          // Hata olsa bile devam et, kullanıcı sonraki ekranlarda tekrar deneyebilir
-          // veya ayarlardan düzeltebilir.
-          onFinish();
-        },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-      );
-    } else {
-      // Tarayıcı desteklemiyorsa direkt geç
-      onFinish();
-    }
+    onFinish();
   };
 
   return (
