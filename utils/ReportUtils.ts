@@ -3,7 +3,7 @@ import { FULL_BRAND, APP_VERSION } from '../version';
 /**
  * GPS Plus Akademik Teknik Rapor Üreticisi v7.0
  * Bu modül, Arial fontlarında, son derece akademik, detaylı ve profesyonel bir rapor üretir.
- * "Jeodezik Formüller için Yapay Zeka Tabanlı Bir PWA Platformu Geliştirilmesi: Akıllı Telefon GNSS Örnek Çalışması"
+ * "Jeodezik Formüller için AI Tabanlı Bir PWA Platformu Geliştirilmesi: Akıllı Telefon GNSS Örnek Çalışması"
  */
 export const generateTechnicalReport = () => {
   const dateStr = new Date().toLocaleDateString('tr-TR');
