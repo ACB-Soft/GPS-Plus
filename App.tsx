@@ -147,7 +147,7 @@ const App = () => {
     }
   }, [settings.calculationMethod, settings.gnssOnlyMode]);
 
-  const checkLocation = () => {
+  const checkLocation = (forcePrompt: boolean = false) => {
     if (navigator.geolocation) {
       // Use permissions API if available to check status without triggering a prompt
       if (navigator.permissions && navigator.permissions.query) {
@@ -157,12 +157,18 @@ const App = () => {
           } else if (result.state === 'granted') {
             setLocationError(null);
           } else {
-            // 'prompt' state - we need to call getCurrentPosition to check
-            performActualCheck();
+            // 'prompt' state - only check if we force it
+            if (forcePrompt) {
+              performActualCheck();
+            } else {
+              setLocationError(null);
+            }
           }
-        }).catch(() => performActualCheck());
+        }).catch(() => {
+          if (forcePrompt) performActualCheck();
+        });
       } else {
-        performActualCheck();
+        if (forcePrompt) performActualCheck();
       }
     } else {
       setLocationError("NOT_SUPPORTED");
@@ -188,7 +194,7 @@ const App = () => {
 
   useEffect(() => {
     if (view === 'dashboard') {
-      checkLocation();
+      checkLocation(false);
     }
   }, [view]);
 
@@ -283,7 +289,7 @@ const App = () => {
               onShowExport={() => navigateTo('export')}
               onShowHelp={() => navigateTo('help')}
               onShowSettings={() => navigateTo('settings')}
-              onRetryLocation={checkLocation}
+              onRetryLocation={() => checkLocation(true)}
               locationError={locationError}
             />
             <GlobalFooter />

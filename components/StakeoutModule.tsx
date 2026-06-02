@@ -355,6 +355,11 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
       },
       (err) => {
         console.error(err);
+        if (err.code === 1) {
+          showToast(t("Konum izni reddedildi. Lütfen cihaz ayarlarınızdan izin verin."), "error");
+        } else {
+          showToast(`${t("Konum alınamıyor")}: ${err.message}`, "error");
+        }
       },
       { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
     );
