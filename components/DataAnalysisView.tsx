@@ -40,13 +40,10 @@ const MapSetBounds = ({ points }: { points: [number, number][] }) => {
 const METHOD_COLORS: Record<string, string> = {
   ARITHMETIC_MEAN: '#ec4899',
   WEIGHTED_LSE: '#8b5cf6',
-  KMEANS_BAARDA: '#3b82f6',
+  MIDRANGE_KMEANS_BAARDA: '#3b82f6',
   KMEANS_4: '#06b6d4',
-  DBSCAN: '#10b981',
   BAARDA: '#f59e0b',
-  ROBUST_HUBER: '#ef4444',
-  STATIC_KALMAN: '#14b8a6',
-  STATIC_PARTICLE: '#eab308'
+  MIDRANGE: '#14b8a6'
 };
 
 const CLUSTER_COLORS = [
@@ -128,7 +125,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [preciseWgs, setPreciseWgs] = useState<[number, number] | null>(null);
   
   const [analysisResults, setAnalysisResults] = useState<any[] | null>(null);
-  const [dbscanClusters, setDbscanClusters] = useState<number[][] | null>(null);
+  const [computedClusters, setComputedClusters] = useState<number[][] | null>(null);
 
   const bestMethod = useMemo(() => {
     if (!analysisResults || analysisResults.length === 0) return null;
@@ -144,26 +141,20 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const methods = useMemo<CalculationMethod[]>(() => [
     'ARITHMETIC_MEAN', 
     'WEIGHTED_LSE',
-    'KMEANS_BAARDA',
+    'MIDRANGE_KMEANS_BAARDA',
     'KMEANS_4',
-    'DBSCAN',
     'BAARDA',
-    'ROBUST_HUBER',
-    'STATIC_KALMAN',
-    'STATIC_PARTICLE'
+    'MIDRANGE'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
     const labels: Record<string, string> = {
       'ARITHMETIC_MEAN': t("Aritmetik Ortalama"),
       'WEIGHTED_LSE': t("Ağırlıklı Dengeleme"),
-      'KMEANS_BAARDA': t("K-Means+Baarda"),
+      'MIDRANGE_KMEANS_BAARDA': "MidRange + K-Means + Baarda",
       'KMEANS_4': t("K-Means (4 Küme)"),
-      'DBSCAN': t("DBSCAN"),
       'BAARDA': t("Baarda Eleme"),
-      'ROBUST_HUBER': t("Robust (Huber)"),
-      'STATIC_KALMAN': t("Statik Kalman Filtresi"),
-      'STATIC_PARTICLE': t("Statik Parçacık Filtresi")
+      'MIDRANGE': t("MidRange")
     };
     return labels[m] || m;
   };
@@ -207,14 +198,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       });
     }
 
-    let dbscanResults: number[][] | null = null;
+    let clusterResults: number[][] | null = null;
 
     const results = methods.map(method => {
       // 1. Calculate point for this method
       const { result, clusters } = calculateResult(location.samples!, method, accuracyLimit);
       
-      if ((method === 'KMEANS_BAARDA' || method === 'KMEANS_4' || method === 'DBSCAN') && clusters) {
-        dbscanResults = clusters;
+      if ((method === 'MIDRANGE_KMEANS_BAARDA' || method === 'KMEANS_4') && clusters) {
+        clusterResults = clusters;
       }
       
       // 2. Convert result to comparison system (meters)
@@ -242,7 +233,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     });
 
     setAnalysisResults(results);
-    setDbscanClusters(dbscanResults);
+    setComputedClusters(clusterResults);
   };
 
   const multipathAnalysis = useMemo(() => {
@@ -333,8 +324,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       
       // Find which cluster this point belongs to
       let clusterId = -1;
-      if (dbscanClusters) {
-        dbscanClusters.forEach((cluster, cIdx) => {
+      if (computedClusters) {
+        computedClusters.forEach((cluster, cIdx) => {
           if (cluster.includes(originalIdx)) {
             clusterId = cIdx;
           }
@@ -352,7 +343,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
         clusterId
       };
     });
-  }, [location, analysisType, preciseN, preciseE, useLocal, dbscanClusters]);
+  }, [location, analysisType, preciseN, preciseE, useLocal, computedClusters]);
 
   const distributionData = useMemo(() => {
     if (chartData.length === 0) return { rawPoints: [], methodPoints: [], centerPoint: [], range: 0.5 };
@@ -467,7 +458,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
     const results = methods.map(method => {
       const { result, clusters } = calculateResult(location.samples!, method, accuracyLimit);
-      if (method === 'KMEANS_BAARDA' && clusters) {
+      if (method === 'MIDRANGE_KMEANS_BAARDA' && clusters) {
         clusterResults = clusters;
       }
       const conv = convertCoordinate(result.lat, result.lng, sys);
@@ -484,7 +475,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       };
     });
     setAnalysisResults(results);
-    setDbscanClusters(clusterResults);
+    setComputedClusters(clusterResults);
   };
 
   return (
@@ -672,9 +663,27 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[9px] font-black text-blue-600 uppercase">{t("K-Means+Baarda")}</p>
+                    <p className="text-[9px] font-black text-blue-600 uppercase">MidRange + K-Means + Baarda</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
                       {t("Mid-range üzerinde 1.0 kat payı ile sıkı filtreleme yapar, K-Means ile 4 kümeye böler ve Baarda testi ile final uyuşmazlık denetimi sağlar.")}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[9px] font-black text-cyan-600 uppercase">{t("K-Means (4 Küme)")}</p>
+                    <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
+                      {t("Ham konum verilerini mekansal yakınlıklarına göre 4 temel kümeye segmentler, en kararlı ve yoğun kümenin ağırlıklı merkezini alır.")}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[9px] font-black text-amber-600 uppercase">{t("Baarda Eleme")}</p>
+                    <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
+                      {t("Jeodezik Baarda kalın hata testi ile uyuşumsuz ve kaba hatalı uç koordinat verilerini sistemden döngüsel olarak temizler.")}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[9px] font-black text-teal-600 uppercase">MidRange</p>
+                    <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
+                      {t("Ölçüm serisindeki en büyük ve en küçük sınırsal enlemlerin/boylamların ortalamasını alarak geometrik uç merkezini süzgeçten geçirir.")}
                     </p>
                   </div>
                </div>
@@ -692,7 +701,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     setSelectedFolder(e.target.value);
                     setSelectedPointId('');
                     setAnalysisResults(null);
-                    setDbscanClusters(null);
+                    setComputedClusters(null);
                   }}
                   className="w-full p-4 bg-slate-100 rounded-2xl font-bold text-slate-900 appearance-none border-2 border-transparent focus:border-blue-500 outline-none transition-all text-sm"
                 >
@@ -714,7 +723,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   onChange={(e) => {
                     setSelectedPointId(e.target.value);
                     setAnalysisResults(null);
-                    setDbscanClusters(null);
+                    setComputedClusters(null);
                   }}
                   disabled={!selectedFolder}
                   className="w-full p-4 bg-slate-100 rounded-2xl font-bold text-slate-900 appearance-none border-2 border-transparent focus:border-blue-500 outline-none transition-all text-sm disabled:opacity-50"
@@ -1016,11 +1025,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   </div>
 
                   {/* Clusters Info */}
-                  {dbscanClusters && dbscanClusters.length > 0 && (
+                  {computedClusters && computedClusters.length > 0 && (
                     <div className="mt-2 p-3 bg-blue-950/30 rounded-xl border border-blue-500/20">
                       <p className="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-2">{t("Kümeleme Analiz Özeti")}</p>
                       <div className="flex flex-wrap gap-3">
-                        {dbscanClusters.map((cluster, cIdx) => (
+                        {computedClusters.map((cluster, cIdx) => (
                           <div key={cIdx} className="flex items-center gap-1.5">
                             <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CLUSTER_COLORS[cIdx % CLUSTER_COLORS.length] }}></div>
                             <span className="text-[8px] font-bold text-slate-300 uppercase">{t("Küme")} {cIdx + 1}: {cluster.length} {t("nokta")}</span>

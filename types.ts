@@ -11,13 +11,10 @@ export interface Coordinate {
 export type CalculationMethod = 
   | 'ARITHMETIC_MEAN' 
   | 'WEIGHTED_LSE' 
-  | 'KMEANS_BAARDA' 
+  | 'MIDRANGE_KMEANS_BAARDA' 
   | 'KMEANS_4' 
-  | 'DBSCAN' 
-  | 'BAARDA' 
-  | 'ROBUST_HUBER' 
-  | 'STATIC_KALMAN' 
-  | 'STATIC_PARTICLE';
+  | 'BAARDA'
+  | 'MIDRANGE';
 
 export interface SavedLocation extends Coordinate {
   id: string;

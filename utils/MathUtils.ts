@@ -44,7 +44,7 @@ export function calculateResult(
       resultData = lseResult.result;
       finalCalculatedUsedIndices = lseResult.usedIndices;
       break;
-    case 'KMEANS_BAARDA':
+    case 'MIDRANGE_KMEANS_BAARDA':
       const kmeansRes = calculateKMeansBaarda(sourceData);
       resultData = kmeansRes.result;
       finalCalculatedUsedIndices = kmeansRes.usedIndices;
@@ -56,31 +56,15 @@ export function calculateResult(
       finalCalculatedUsedIndices = kmeans4Res.usedIndices;
       clusters = kmeans4Res.clusters;
       break;
-    case 'DBSCAN':
-      const dbscanRes = calculateDBSCAN(sourceData);
-      resultData = dbscanRes.result;
-      finalCalculatedUsedIndices = dbscanRes.usedIndices;
-      clusters = dbscanRes.clusters;
-      break;
     case 'BAARDA':
       const pureBaardaRes = calculateBaardaPure(sourceData);
       resultData = pureBaardaRes.result;
       finalCalculatedUsedIndices = pureBaardaRes.usedIndices;
       break;
-    case 'ROBUST_HUBER':
-      const huberRes = calculateRobustHuber(sourceData);
-      resultData = huberRes.result;
-      finalCalculatedUsedIndices = huberRes.usedIndices;
-      break;
-    case 'STATIC_KALMAN':
-      const kalmanRes = calculateStaticKalman(sourceData);
-      resultData = kalmanRes.result;
-      finalCalculatedUsedIndices = kalmanRes.usedIndices;
-      break;
-    case 'STATIC_PARTICLE':
-      const particleRes = calculateStaticParticle(sourceData);
-      resultData = particleRes.result;
-      finalCalculatedUsedIndices = particleRes.usedIndices;
+    case 'MIDRANGE':
+      const midRangeRes = calculateMidRange(sourceData);
+      resultData = midRangeRes.result;
+      finalCalculatedUsedIndices = midRangeRes.usedIndices;
       break;
     default:
       const defaultLse = calculateWeightedLSE(sourceData);
@@ -237,7 +221,7 @@ export function calculateVariance(samples: Coordinate[], mean: Coordinate): numb
 }
 
 /**
- * K-Means + Baarda Algorithm
+ * MidRange + K-Means + Baarda Algorithm
  * 1. Mid-Range Reference
  * 2. 1.0 * Eps Filtering (Strict)
  * 3. K-Means (k=4)
@@ -427,68 +411,7 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
   return { result: calculateAverage(currentSamples), usedIndices: currentSamples.map(s => s._originalIdx) };
 }
 
-/**
- * Applies a static Kalman Filter to coordinates.
- * Assumes the object is non-moving (static measurement).
- */
-function applyStaticKalmanFilter(samples: Coordinate[]): Coordinate[] {
-  if (samples.length === 0) return [];
 
-  // Initial State: First measurement
-  let x_lat = samples[0].lat;
-  let x_lng = samples[0].lng;
-  let x_alt = samples[0].altitude || 0;
-
-  // Initial Uncertainty: High
-  let p_lat = 1.0;
-  let p_lng = 1.0;
-  let p_alt = 1.0;
-
-  // Measurement Noise (Q): Very small for static target
-  const Q = 1e-9; 
-
-  const smoothed: Coordinate[] = [];
-
-  for (let i = 0; i < samples.length; i++) {
-    const s = samples[i];
-    
-    // Prediction Step (Static model: x_k = x_{k-1})
-    p_lat = p_lat + Q;
-    p_lng = p_lng + Q;
-    p_alt = p_alt + Q;
-
-    // Measurement Noise (R): Actual sensor reported accuracy
-    // Convert meters back to proportional degree variance roughly
-    const R_h = Math.pow(s.accuracy / 111320, 2);
-    const R_v = Math.pow((s.altitudeAccuracy || s.accuracy) / 111320, 2);
-
-    // Update Step - Latitude
-    const k_lat = p_lat / (p_lat + R_h);
-    x_lat = x_lat + k_lat * (s.lat - x_lat);
-    p_lat = (1 - k_lat) * p_lat;
-
-    // Update Step - Longitude
-    const k_lng = p_lng / (p_lng + R_h);
-    x_lng = x_lng + k_lng * (s.lng - x_lng);
-    p_lng = (1 - k_lng) * p_lng;
-
-    // Update Step - Altitude
-    if (s.altitude !== null) {
-      const k_alt = p_alt / (p_alt + R_v);
-      x_alt = x_alt + k_alt * (s.altitude - x_alt);
-      p_alt = (1 - k_alt) * p_alt;
-    }
-
-    smoothed.push({
-      ...s,
-      lat: x_lat,
-      lng: x_lng,
-      altitude: s.altitude !== null ? x_alt : null
-    });
-  }
-
-  return smoothed;
-}
 
 function calculateKMeans4(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
   if (samples.length < 4) {
@@ -522,94 +445,6 @@ function calculateKMeans4(samples: Coordinate[]): { result: Coordinate; usedIndi
   };
 }
 
-function calculateDBSCAN(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
-  if (samples.length < 3) {
-    return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
-  }
-  
-  const avgAcc = samples.reduce((a, b) => a + b.accuracy, 0) / samples.length;
-  const eps = Math.max(0.5, avgAcc * 1.2);
-  const minPts = Math.max(2, Math.floor(samples.length * 0.15));
-  
-  const n = samples.length;
-  const visited = new Set<number>();
-  const noise = new Set<number>();
-  const clusters: number[][] = [];
-  
-  const getDistance = (s1: Coordinate, s2: Coordinate) => {
-    const dLat = (s1.lat - s2.lat) * 111320;
-    const dLng = (s1.lng - s2.lng) * 111320 * Math.cos(s1.lat * Math.PI / 180);
-    return Math.sqrt(dLat * dLat + dLng * dLng);
-  };
-  
-  const getNeighbors = (idx: number) => {
-    const neighbors: number[] = [];
-    for (let i = 0; i < n; i++) {
-      if (getDistance(samples[idx], samples[i]) <= eps) {
-        neighbors.push(i);
-      }
-    }
-    return neighbors;
-  };
-  
-  const expandCluster = (idx: number, neighbors: number[], currentCluster: number[]) => {
-    currentCluster.push(idx);
-    
-    for (let i = 0; i < neighbors.length; i++) {
-      const neighborIdx = neighbors[i];
-      if (!visited.has(neighborIdx)) {
-        visited.add(neighborIdx);
-        const nextNeighbors = getNeighbors(neighborIdx);
-        if (nextNeighbors.length >= minPts) {
-          neighbors.push(...nextNeighbors.filter(ni => !neighbors.includes(ni)));
-        }
-      }
-      
-      if (!clusters.some(c => c.includes(neighborIdx)) && !currentCluster.includes(neighborIdx)) {
-        currentCluster.push(neighborIdx);
-      }
-    }
-  };
-  
-  for (let i = 0; i < n; i++) {
-    if (visited.has(i)) continue;
-    visited.add(i);
-    
-    const neighbors = getNeighbors(i);
-    if (neighbors.length < minPts) {
-      noise.add(i);
-    } else {
-      const newCluster: number[] = [];
-      expandCluster(i, neighbors, newCluster);
-      clusters.push(newCluster);
-    }
-  }
-  
-  if (clusters.length === 0) {
-    const lse = calculateWeightedLSE(samples);
-    return { result: lse.result, usedIndices: lse.usedIndices };
-  }
-  
-  let bestClusterIdx = 0;
-  let maxCount = -1;
-  clusters.forEach((c, idx) => {
-    if (c.length > maxCount) {
-      maxCount = c.length;
-      bestClusterIdx = idx;
-    }
-  });
-  
-  const bestClusterPoints = clusters[bestClusterIdx].map(idx => samples[idx]);
-  const lseRes = calculateWeightedLSE(bestClusterPoints);
-  const originalUsedIndices = lseRes.usedIndices.map(i => clusters[bestClusterIdx][i]);
-  
-  return {
-    result: lseRes.result,
-    usedIndices: originalUsedIndices,
-    clusters: clusters
-  };
-}
-
 function calculateBaardaPure(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
   if (samples.length < 4) {
     return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
@@ -622,190 +457,49 @@ function calculateBaardaPure(samples: Coordinate[]): { result: Coordinate; usedI
   };
 }
 
-function calculateRobustHuber(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  if (samples.length < 3) {
-    return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
+export function calculateMidRange(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length === 0) {
+    return { result: samples[0], usedIndices: [0] };
+  }
+  const lats = samples.map(s => s.lat);
+  const lngs = samples.map(s => s.lng);
+  
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs);
+  const maxLng = Math.max(...lngs);
+  
+  const midLat = (minLat + maxLat) / 2;
+  const midLng = (minLng + maxLng) / 2;
+  
+  const validAlts = samples.map(s => s.altitude).filter((alt): alt is number => alt !== null && alt !== undefined);
+  let midAlt: number | null = null;
+  if (validAlts.length > 0) {
+    midAlt = (Math.min(...validAlts) + Math.max(...validAlts)) / 2;
   }
   
-  let meanLat = samples.reduce((sum, s) => sum + s.lat, 0) / samples.length;
-  let meanLng = samples.reduce((sum, s) => sum + s.lng, 0) / samples.length;
-  
-  const c = 1.345;
-  let iterations = 0;
-  const maxIterations = 15;
-  let diff = 1.0;
-  let weights = samples.map(s => 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
-  
-  while (diff > 1e-8 && iterations < maxIterations) {
-    iterations++;
-    const prevLat = meanLat;
-    const prevLng = meanLng;
-    
-    const residuals = samples.map(s => {
-      const dLat = (s.lat - meanLat) * 111320;
-      const dLng = (s.lng - meanLng) * 111320 * Math.cos(meanLat * Math.PI / 180);
-      return Math.sqrt(dLat * dLat + dLng * dLng);
-    });
-    
-    const sortedResiduals = [...residuals].sort((a, b) => a - b);
-    const medianResidual = sortedResiduals[Math.floor(sortedResiduals.length / 2)];
-    const mad = sortedResiduals.map(r => Math.abs(r - medianResidual)).sort((a,b) => a-b)[Math.floor(sortedResiduals.length / 2)];
-    const sigma = Math.max(0.01, 1.4826 * mad);
-    
-    const huberWeights = samples.map((s, i) => {
-      const sensorWeight = 1 / Math.pow(Math.max(0.1, s.accuracy), 2);
-      const r_i = residuals[i];
-      if (r_i <= c * sigma) {
-        return sensorWeight;
-      } else {
-        return sensorWeight * (c * sigma / r_i);
-      }
-    });
-    
-    const sumW = huberWeights.reduce((a, b) => a + b, 0);
-    if (sumW === 0) break;
-    
-    meanLat = samples.reduce((a, s, i) => a + s.lat * huberWeights[i], 0) / sumW;
-    meanLng = samples.reduce((a, s, i) => a + s.lng * huberWeights[i], 0) / sumW;
-    
-    const dLatMeters = (meanLat - prevLat) * 111320;
-    const dLngMeters = (meanLng - prevLng) * 111320 * Math.cos(meanLat * Math.PI / 180);
-    diff = Math.sqrt(dLatMeters * dLatMeters + dLngMeters * dLngMeters);
-    weights = huberWeights;
+  const validAltAccs = samples.map(s => s.altitudeAccuracy).filter((acc): acc is number => acc !== null && acc !== undefined);
+  let midAltAcc: number | null = null;
+  if (validAltAccs.length > 0) {
+    midAltAcc = (Math.min(...validAltAccs) + Math.max(...validAltAccs)) / 2;
   }
-  
-  const validAltitudes = samples.filter(s => s.altitude !== null);
-  const meanAlt = validAltitudes.length > 0
-    ? validAltitudes.reduce((sum, s) => sum + (s.altitude || 0), 0) / validAltitudes.length
-    : null;
-    
-  const sortedW = [...weights].sort((a, b) => a - b);
-  const cutoff = sortedW[Math.floor(sortedW.length * 0.15)] || 0;
-  const usedIndices = samples
-    .map((_, i) => weights[i] >= cutoff ? i : -1)
-    .filter(i => i !== -1);
-    
-  const result: Coordinate = {
-    ...samples[0],
-    lat: meanLat,
-    lng: meanLng,
-    altitude: meanAlt,
-    timestamp: Date.now()
-  };
-  
-  return { result, usedIndices };
-}
 
-function calculateStaticKalman(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  if (samples.length === 0) return { result: samples[0], usedIndices: [0] };
-  const smoothedList = applyStaticKalmanFilter(samples);
-  const lastState = smoothedList[smoothedList.length - 1];
+  const avgAcc = samples.reduce((a, b) => a + b.accuracy, 0) / samples.length;
+
   return {
-    result: lastState,
+    result: {
+      lat: midLat,
+      lng: midLng,
+      accuracy: avgAcc,
+      altitude: midAlt,
+      altitudeAccuracy: midAltAcc,
+      timestamp: Date.now()
+    },
     usedIndices: samples.map((_, i) => i)
   };
 }
 
-function calculateStaticParticle(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  if (samples.length === 0) return { result: samples[0], usedIndices: [0] };
-  
-  const N = 200;
-  const initialAvg = calculateAverage(samples);
-  const meanLat = initialAvg.lat;
-  const meanLng = initialAvg.lng;
-  const initAccMeters = initialAvg.accuracy;
-  
-  interface Particle {
-    lat: number;
-    lng: number;
-    alt: number;
-    weight: number;
-  }
-  
-  const randomNormal = (mean: number, stdDev: number) => {
-    const u1 = Math.random() || 1e-9;
-    const u2 = Math.random() || 1e-9;
-    const randStdNormal = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
-    return mean + stdDev * randStdNormal;
-  };
-  
-  const latStdDev = initAccMeters / 111320;
-  const lngStdDev = initAccMeters / (111320 * Math.cos(meanLat * Math.PI / 180));
-  
-  let particles: Particle[] = Array.from({ length: N }, () => ({
-    lat: randomNormal(meanLat, latStdDev),
-    lng: randomNormal(meanLng, lngStdDev),
-    alt: initialAvg.altitude || 0,
-    weight: 1.0 / N
-  }));
-  
-  samples.forEach(obs => {
-    const qLat = 0.02 / 111320;
-    const qLng = 0.02 / (111320 * Math.cos(meanLat * Math.PI / 180));
-    particles.forEach(p => {
-      p.lat += randomNormal(0, qLat);
-      p.lng += randomNormal(0, qLng);
-    });
-    
-    const rVar = Math.pow(obs.accuracy, 2);
-    let sumW = 0;
-    
-    particles.forEach(p => {
-      const dLat = (p.lat - obs.lat) * 111320;
-      const dLng = (p.lng - obs.lng) * 111320 * Math.cos(obs.lat * Math.PI / 180);
-      const distSq = dLat*dLat + dLng*dLng;
-      p.weight = Math.exp(-distSq / (2 * rVar || 0.1)) + 1e-99;
-      sumW += p.weight;
-    });
-    
-    particles.forEach(p => p.weight /= sumW);
-    
-    const cumulativeWeights: number[] = [];
-    let cumulativeSum = 0;
-    particles.forEach(p => {
-      cumulativeSum += p.weight;
-      cumulativeWeights.push(cumulativeSum);
-    });
-    
-    const nextParticles: Particle[] = [];
-    for (let j = 0; j < N; j++) {
-      const r = Math.random();
-      let selectedIdx = 0;
-      while (selectedIdx < N - 1 && cumulativeWeights[selectedIdx] < r) {
-        selectedIdx++;
-      }
-      const parent = particles[selectedIdx];
-      nextParticles.push({
-        lat: parent.lat,
-        lng: parent.lng,
-        alt: parent.alt,
-        weight: 1.0 / N
-      });
-    }
-    particles = nextParticles;
-  });
-  
-  const finalLat = particles.reduce((sum, p) => sum + p.lat, 0) / N;
-  const finalLng = particles.reduce((sum, p) => sum + p.lng, 0) / N;
-  
-  const validAltitudes = samples.filter(s => s.altitude !== null);
-  const meanAlt = validAltitudes.length > 0
-    ? validAltitudes.reduce((sum, s) => sum + (s.altitude || 0), 0) / validAltitudes.length
-    : null;
-    
-  const result: Coordinate = {
-    ...samples[0],
-    lat: finalLat,
-    lng: finalLng,
-    altitude: meanAlt,
-    timestamp: Date.now()
-  };
-  
-  return {
-    result,
-    usedIndices: samples.map((_, i) => i)
-  };
-}
+
 
 
 

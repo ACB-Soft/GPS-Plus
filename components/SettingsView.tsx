@@ -526,7 +526,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                 >
                   <option value="ARITHMETIC_MEAN">{t("1. Yöntem: Aritmetik Ortalama")}</option>
                   <option value="WEIGHTED_LSE">{t("2. Yöntem: Ağırlıklı Dengeleme (Varsayılan)")}</option>
-                  <option value="KMEANS_BAARDA">{t("3. Yöntem: K-Means+Baarda")}</option>
+                  <option value="MIDRANGE_KMEANS_BAARDA">{t("3. Yöntem: MidRange + K-Means + Baarda")}</option>
                 </select>
               </div>
 
