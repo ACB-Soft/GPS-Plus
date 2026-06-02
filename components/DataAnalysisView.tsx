@@ -75,6 +75,19 @@ const CustomScatterLabel = (props: any) => {
   );
 };
 
+const RawPointShape = (props: any) => {
+  const { cx, cy, fill, fillOpacity } = props;
+  return (
+    <circle 
+      cx={cx} 
+      cy={cy} 
+      r={2.5} 
+      fill={fill} 
+      fillOpacity={fillOpacity} 
+    />
+  );
+};
+
 interface Props {
   locations: SavedLocation[];
   initialSelectedId?: string;
@@ -410,10 +423,22 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     };
   }, [chartData, analysisResults, analysisType, preciseN, preciseE, useLocal, location]);
 
+  const maxTickLimit = useMemo(() => {
+    return Math.max(0.5, Math.ceil(distributionData.range * 2) / 2);
+  }, [distributionData.range]);
+
+  const scatterTicks = useMemo(() => {
+    return Array.from({length: Math.round(maxTickLimit * 4) + 1}, (_, i) => Number((-maxTickLimit + i * 0.5).toFixed(2)));
+  }, [maxTickLimit]);
+
   const exportChart = async (ref: React.RefObject<HTMLDivElement>, name: string) => {
     if (!ref.current) return;
     try {
-      const dataUrl = await toPng(ref.current, { backgroundColor: '#ffffff', quality: 1 });
+      const dataUrl = await toPng(ref.current, { 
+        backgroundColor: '#ffffff', 
+        quality: 1,
+        pixelRatio: 2
+      });
       saveAs(dataUrl, `${name}-${location?.name || 'export'}.png`);
     } catch (error) {
       console.error('Error exporting chart:', error);
@@ -527,32 +552,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     </p>
                   </div>
                 </div>
-                <div className="text-right bg-white/40 p-3 rounded-2xl border border-white/60">
-                   <div className={`text-md font-black uppercase tracking-wider leading-none ${
-                     multipathAnalysis.signalQuality === 'low' ? 'text-rose-600 animate-pulse' : 
-                     multipathAnalysis.signalQuality === 'medium' ? 'text-amber-600' : 'text-emerald-600'
-                   }`}>
-                     {multipathAnalysis.signalQuality === 'safe' && t("GÜVENLİ (YEŞİL)")}
-                     {multipathAnalysis.signalQuality === 'medium' && t("ORTA GÜVEN (TURUNCU)")}
-                     {multipathAnalysis.signalQuality === 'low' && t("GÜVENSİZ (KIRMIZI)")}
-                   </div>
-                   <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mt-1.5">{t("SINYAL DURUMU")}</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                <div className="bg-white/60 p-4 rounded-2xl border border-white/80 shadow-sm flex flex-col items-center">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{t("Max Saçılım")}</p>
-                  <p className="text-sm font-black text-slate-900 mono-font">±{multipathAnalysis.maxSpread.toFixed(2)}m</p>
-                </div>
-                <div className="bg-white/60 p-4 rounded-2xl border border-white/80 shadow-sm flex flex-col items-center">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{t("Standart Sapma")}</p>
-                  <p className="text-sm font-black text-slate-900 mono-font">±{multipathAnalysis.stdDev.toFixed(2)}m</p>
-                </div>
-                <div className="bg-white/60 p-4 rounded-2xl border border-white/80 shadow-sm flex flex-col items-center">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{t("Örnek Sayısı")}</p>
-                  <p className="text-sm font-black text-slate-900 mono-font">{location?.samples?.length || 0}</p>
-                </div>
               </div>
 
               {/* Veri Saçılım Analiz Özet Raporu */}
@@ -562,6 +561,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   <span className="text-[9px] font-black text-slate-700 uppercase tracking-wider">{t("Veri Saçılım Özeti")}</span>
                 </div>
                 <div className="text-[10px] space-y-1.5 leading-relaxed text-slate-600 font-medium font-sans">
+                  <p className="flex justify-between border-b border-dashed border-slate-100 pb-1">
+                    <span className="text-slate-500">{t("Örnek Sayısı:")}</span>
+                    <span className="font-bold text-slate-900 mono-font font-medium">{location?.samples?.length || 0}</span>
+                  </p>
                   <p className="flex justify-between border-b border-dashed border-slate-100 pb-1">
                     <span className="text-slate-500">{t("Maksimum Saçılım Genişliği:")}</span>
                     <span className="font-bold text-slate-900 mono-font font-medium">±{multipathAnalysis.maxSpread.toFixed(3)} m</span>
@@ -909,20 +912,20 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           dataKey="dE" 
                           name="ΔE" 
                           unit="m" 
-                          domain={[-distributionData.range, distributionData.range]} 
+                          domain={[-maxTickLimit, maxTickLimit]} 
+                          ticks={scatterTicks}
                           tick={{fontSize: 7, fontWeight: 900}} 
                           axisLine={{ stroke: '#cbd5e1' }}
-                          label={{ value: 'ΔE (Sağa) [m]', position: 'bottom', offset: 15, fontSize: 8, fontWeight: 900, fill: '#64748b' }}
                         />
                         <YAxis 
                           type="number" 
                           dataKey="dN" 
                           name="ΔN" 
                           unit="m" 
-                          domain={[-distributionData.range, distributionData.range]} 
+                          domain={[-maxTickLimit, maxTickLimit]} 
+                          ticks={scatterTicks}
                           tick={{fontSize: 7, fontWeight: 900}} 
                           axisLine={{ stroke: '#cbd5e1' }}
-                          label={{ value: 'ΔN (Yukarı) [m]', angle: -90, position: 'left', offset: 10, fontSize: 8, fontWeight: 900, fill: '#64748b' }}
                         />
                         <ZAxis type="number" range={[20, 300]} />
                         <Tooltip 
@@ -944,11 +947,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                       </div>
                                     )}
                                     <div className="flex justify-between gap-4">
-                                      <span className="opacity-60 text-[8px] uppercase">Δ Sağa (E):</span>
+                                      <span className="opacity-60 text-[8px] uppercase">ΔE:</span>
                                       <span className="font-black text-blue-400">{data.dE.toFixed(4)} m</span>
                                     </div>
                                     <div className="flex justify-between gap-4">
-                                      <span className="opacity-60 text-[8px] uppercase">Δ Yukarı (N):</span>
+                                      <span className="opacity-60 text-[8px] uppercase">ΔN:</span>
                                       <span className="font-black text-indigo-400">{data.dN.toFixed(4)} m</span>
                                     </div>
                                   </div>
@@ -980,7 +983,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         <Scatter 
                           name={t("Ham Ölçümler")} 
                           data={distributionData.rawPoints} 
-                          shape="circle" 
+                          shape={<RawPointShape />} 
                         >
                           {distributionData.rawPoints.map((entry, index) => (
                             <Cell 
