@@ -85,10 +85,9 @@ export function calculateResult(
   // (As per user request: "en uzak 2 nokta arası mesafe" over all samples)
   const maxDistance = calculateMaxDistance(samples);
 
-  // Final Accuracy formula: Max(Statistical Estimation, Max Distance, Average Sensor Accuracy)
-  // This ensures we don't report better precision than the sensor actually reports during measurement.
+  // Final Accuracy formula: Max(Sample Spread, Hardware Reported Accuracy)
   const avgSensorAccuracy = sourceData.reduce((a, b) => a + b.accuracy, 0) / sourceData.length;
-  resultData.accuracy = Math.max(resultData.accuracy, maxDistance, avgSensorAccuracy);
+  resultData.accuracy = Math.max(maxDistance, avgSensorAccuracy);
   
   // Ensure it doesn't drop below a realistic threshold (0.1m)
   resultData.accuracy = Math.max(0.1, resultData.accuracy);

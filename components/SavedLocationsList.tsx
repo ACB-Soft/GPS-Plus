@@ -224,7 +224,11 @@ const SavedLocationItem: React.FC<{
             </div>
             <div className="flex flex-col">
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t("Saçılım")}</span>
-              <p className="text-[13px] mono-font text-slate-800 font-black leading-tight">±{maxSpread.toFixed(2)}m</p>
+              <p className={`text-[13px] mono-font font-black leading-tight ${
+                reliability === 'HIGH' ? 'text-emerald-600' :
+                reliability === 'MEDIUM' || reliability === 'UNKNOWN' ? 'text-amber-600' : 
+                'text-rose-600'
+              }`}>±{maxSpread.toFixed(2)}m</p>
             </div>
             <div className="flex flex-col">
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t("GPS Sinyali")}</span>

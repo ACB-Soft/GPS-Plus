@@ -236,8 +236,9 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
               <div className="flex flex-col">
                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t("Hassasiyet")}</p>
                 <p className={`text-base font-black mono-font leading-none ${
-                  dynamicAccuracy <= 10 ? 'text-emerald-600' : 
-                  dynamicAccuracy <= 20 ? 'text-amber-600' : 'text-rose-600'
+                  reliability === 'HIGH' ? 'text-emerald-600' : 
+                  reliability === 'MEDIUM' || reliability === 'UNKNOWN' ? 'text-amber-600' : 
+                  'text-rose-600'
                 }`}>
                   ±{dynamicAccuracy.toFixed(1)}m
                 </p>
