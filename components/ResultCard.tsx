@@ -146,9 +146,9 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
               <div className="text-[9px] md:text-[10px] text-slate-400 font-black uppercase mb-1 leading-none">{t(labelY)}</div>
               <div className="text-[14px] md:text-[16px] font-bold text-slate-900 mono-font leading-none">{formattedY}</div>
             </div>
-            <div className="bg-blue-50/50 p-4 md:p-5 rounded-2xl md:rounded-3xl border border-blue-100 text-left shadow-sm">
-              <div className="text-[9px] md:text-[10px] text-blue-500 font-black mb-1 leading-none tracking-widest">{isOrthometric ? t('YÜKSEKLİK') : t('h-ELİPSOİD')}</div>
-              <div className="text-xl md:text-2xl font-black text-blue-600 mono-font leading-none">{displayHeight !== null ? displayHeight.toFixed(heightPrecision) : '---'}<span className="text-[10px] ml-1">m</span></div>
+            <div className="bg-slate-50 p-4 md:p-5 rounded-2xl md:rounded-3xl border border-slate-100 text-left shadow-sm">
+              <div className="text-[9px] md:text-[10px] text-slate-400 font-black mb-1 leading-none tracking-widest">{isOrthometric ? t('YÜKSEKLİK') : t('h-ELİPSOİD')}</div>
+              <div className="text-xl md:text-2xl font-black text-slate-900 mono-font leading-none">{displayHeight !== null ? displayHeight.toFixed(heightPrecision) : '---'}<span className="text-[10px] ml-1">m</span></div>
             </div>
             <div className={`p-4 md:p-5 rounded-2xl md:rounded-3xl border text-left transition-colors shadow-sm ${
               dynamicAccuracy <= 10 ? 'bg-emerald-50/50 border-emerald-100' : 
