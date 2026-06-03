@@ -47,22 +47,20 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
     return location.samples && location.samples.length >= 2 ? calculateMaxDistance(location.samples) : 0;
   }, [location.samples]);
 
+  const avgHardwareAccuracy = React.useMemo(() => {
+    if (!location.samples || location.samples.length === 0) return location.accuracy;
+    const limit = location.accuracyLimit || 5.0;
+    const reliableSamples = location.samples.filter(s => s.accuracy <= limit);
+    if (reliableSamples.length === 0) return location.accuracy;
+    return reliableSamples.reduce((sum, s) => sum + s.accuracy, 0) / reliableSamples.length;
+  }, [location.samples, location.accuracy, location.accuracyLimit]);
+
   // Re-calculate accuracy based on spread if samples are present
   // This ensures old data also reflects the "Max(Statistical, MaxDistance)" logic
   const dynamicAccuracy = React.useMemo(() => {
     if (!location.samples || location.samples.length <= 1) return location.accuracy;
-    
-    // Filter samples by accuracy limit as per user's latest logic
-    const limit = location.accuracyLimit || 5.0;
-    const reliableSamples = location.samples.filter(s => s.accuracy <= limit);
-    
-    if (reliableSamples.length <= 1) return location.accuracy;
-    
-    const maxSpread = calculateMaxDistance(reliableSamples);
-    const avgSensorAcc = reliableSamples.reduce((a, b) => a + b.accuracy, 0) / reliableSamples.length;
-    // Return the maximum of physical spread and sensor baseline as per user request
-    return Math.max(maxSpread, avgSensorAcc);
-  }, [location.samples, location.accuracyLimit]);
+    return Math.max(maxSpread, avgHardwareAccuracy);
+  }, [location.samples, maxSpread, avgHardwareAccuracy, location.accuracy]);
 
   const getMapProviderInfo = () => {
     const provider = localStorage.getItem('default_map_provider') || 'Google Hybrid';

@@ -48,21 +48,20 @@ const SavedLocationItem: React.FC<{
     return l.samples && l.samples.length >= 2 ? calculateMaxDistance(l.samples) : 0;
   }, [l.samples]);
 
+  // Average Hardware reported sensor accuracy
+  const avgHardwareAccuracy = React.useMemo(() => {
+    if (!l.samples || l.samples.length === 0) return l.accuracy;
+    const limit = l.accuracyLimit || 5.0;
+    const reliableSamples = l.samples.filter(s => s.accuracy <= limit);
+    if (reliableSamples.length === 0) return l.accuracy;
+    return reliableSamples.reduce((sum, s) => sum + s.accuracy, 0) / reliableSamples.length;
+  }, [l.samples, l.accuracy, l.accuracyLimit]);
+
   // Re-calculate accuracy based on spread if samples are present
   const dynamicAccuracy = React.useMemo(() => {
     if (!l.samples || l.samples.length <= 1) return l.accuracy;
-    
-    // Filter samples by accuracy limit
-    const limit = l.accuracyLimit || 5.0;
-    const reliableSamples = l.samples.filter(s => s.accuracy <= limit);
-    
-    if (reliableSamples.length <= 1) return l.accuracy;
-    
-    const spread = calculateMaxDistance(reliableSamples);
-    const avgSensorAcc = reliableSamples.reduce((a, b) => a + b.accuracy, 0) / reliableSamples.length;
-    // Return the maximum of physical spread and sensor baseline as per user request
-    return Math.max(spread, avgSensorAcc);
-  }, [l.samples, l.accuracyLimit]);
+    return Math.max(maxSpread, avgHardwareAccuracy);
+  }, [l.samples, maxSpread, avgHardwareAccuracy, l.accuracy]);
 
   // Reliability calculation logic
   const reliability = React.useMemo(() => {
@@ -221,7 +220,7 @@ const SavedLocationItem: React.FC<{
           <div className="grid grid-cols-3 gap-2">
             <div className="flex flex-col">
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t("Hassasiyet")}</span>
-              <p className={`text-[13px] mono-font font-black leading-tight ${getAccuracyColor(dynamicAccuracy)}`}>±{dynamicAccuracy.toFixed(1)}m</p>
+              <p className={`text-[13px] mono-font font-black leading-tight ${getAccuracyColor(avgHardwareAccuracy)}`}>±{avgHardwareAccuracy.toFixed(1)}m</p>
             </div>
             <div className="flex flex-col">
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t("Saçılım")}</span>

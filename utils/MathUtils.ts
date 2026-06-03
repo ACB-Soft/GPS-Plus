@@ -81,10 +81,9 @@ export function calculateResult(
     usedIndices = finalCalculatedUsedIndices;
   }
 
-  // CRITICAL: Calculate max distance between any two points in the filtered source data
-  // (As per user request: "en uzak 2 nokta arası mesafe")
-  // We use sourceData (which filters by accuracy limit) to analyze the spread of reliable observations.
-  const maxDistance = calculateMaxDistance(sourceData);
+  // CRITICAL: Calculate max distance between any two points in the unfiltered samples
+  // (As per user request: "en uzak 2 nokta arası mesafe" over all samples)
+  const maxDistance = calculateMaxDistance(samples);
 
   // Final Accuracy formula: Max(Statistical Estimation, Max Distance, Average Sensor Accuracy)
   // This ensures we don't report better precision than the sensor actually reports during measurement.
