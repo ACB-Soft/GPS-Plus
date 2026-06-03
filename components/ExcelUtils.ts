@@ -46,18 +46,18 @@ export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings
   const dataRows = locations.map(loc => {
     const { x, y } = convertCoordinate(loc.lat, loc.lng, loc.coordinateSystem || 'WGS84');
     
-    const val1 = isWGS84 ? x.toFixed(7) : x.toFixed(locPrecision);
-    const val2 = isWGS84 ? y.toFixed(7) : y.toFixed(locPrecision);
+    const val1 = x.toFixed(2);
+    const val2 = y.toFixed(2);
     
     const correctedH = getCorrectedHeight(loc.lat, loc.lng, loc.altitude);
-    const orthometricH = correctedH !== null ? correctedH.toFixed(heightPrecision) : '---';
+    const orthometricH = correctedH !== null ? correctedH.toFixed(2) : '---';
     
     const ellipVal = getEllipsoidalHeight(loc.lat, loc.lng, loc.altitude);
-    const ellipsoidalH = ellipVal !== null ? ellipVal.toFixed(heightPrecision) : '---';
+    const ellipsoidalH = ellipVal !== null ? ellipVal.toFixed(2) : '---';
     
     let undulationVal = '---';
     if (ellipVal !== null && correctedH !== null) {
-      undulationVal = (ellipVal - correctedH).toFixed(heightPrecision);
+      undulationVal = (ellipVal - correctedH).toFixed(2);
     }
 
     const accuracy = loc.accuracy.toFixed(2);
@@ -215,24 +215,24 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     sliceResults.forEach(res => {
       intervalAnalysisRows.push([
         getMethodName(res.method),
-        isWGS84 ? res.x.toFixed(8) : res.x.toFixed(locPrecision),
-        isWGS84 ? res.y.toFixed(8) : res.y.toFixed(locPrecision),
-        res.z !== null ? res.z.toFixed(heightPrecision) : '---',
+        res.x.toFixed(2),
+        res.y.toFixed(2),
+        res.z !== null ? res.z.toFixed(2) : '---',
         `${res.usedCount} / ${sliceSamples.length}`,
-        res.accuracy.toFixed(3),
-        res.variance.toFixed(6)
+        res.accuracy.toFixed(2),
+        res.variance.toFixed(2)
       ]);
     });
   });
 
   const dataRows = location.samples.map((s, idx) => {
     const { x, y } = convertCoordinate(s.lat, s.lng, sys);
-    const val1 = isWGS84 ? s.lat.toFixed(8) : x.toFixed(locPrecision);
-    const val2 = isWGS84 ? s.lng.toFixed(8) : y.toFixed(locPrecision);
+    const val1 = isWGS84 ? s.lat.toFixed(2) : x.toFixed(2);
+    const val2 = isWGS84 ? s.lng.toFixed(2) : y.toFixed(2);
     
     let status = "Kullanıldı";
     if (s.accuracy > accuracyLimit) {
-      status = `Düşük Hass. (> ${accuracyLimit}m)`;
+      status = `Düşük Hass. (> ${accuracyLimit.toFixed(2)}m)`;
     }
 
     const hValue = isOrthometricSetting 
@@ -244,7 +244,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
       new Date(s.timestamp).toLocaleTimeString('tr-TR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
       val1,
       val2,
-      hValue !== null ? hValue.toFixed(heightPrecision) : '---',
+      hValue !== null ? hValue.toFixed(2) : '---',
       s.accuracy.toFixed(2),
       s.altitudeAccuracy !== null ? s.altitudeAccuracy.toFixed(2) : '---',
       status
@@ -272,7 +272,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     ["Koordinat Sistemi:", getSystemDisplayLabel(sys)],
     ["Dilim Numarası:", convertCoordinate(location.lat, location.lng, sys).zone || "---"],
     ["Ölçüm Süresi:", `${location.measurementDuration || 0} sn`],
-    ["Hassasiyet Eşiği:", `${accuracyLimit} m`],
+    ["Hassasiyet Eşiği:", `${accuracyLimit.toFixed(2)} m`],
     ["Sinyal Güvenilirliği:", relLevel],
     ["Güvenilirlik Açıklaması:", relMsg],
     ["Maksimum Yayılım (Spread):", `${maxSpreadAll.toFixed(2)} m`],
@@ -286,12 +286,12 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     ["Yöntem", header1, header2, isOrthometricSetting ? "Yükseklik (m)" : "Elipsoidal Yükseklik (m)", "Kullanılan Örnek", "Hassasiyet (m)", "Varyans (m²)"],
     ...methodResults.map(res => [
       getMethodName(res.method),
-      isWGS84 ? res.x.toFixed(8) : res.x.toFixed(locPrecision),
-      isWGS84 ? res.y.toFixed(8) : res.y.toFixed(locPrecision),
-      res.z !== null ? res.z.toFixed(heightPrecision) : '---',
+      res.x.toFixed(2),
+      res.y.toFixed(2),
+      res.z !== null ? res.z.toFixed(2) : '---',
       `${res.usedCount} / ${location.samples!.length}`,
-      res.accuracy.toFixed(3),
-      res.variance.toFixed(6)
+      res.accuracy.toFixed(2),
+      res.variance.toFixed(2)
     ]),
     ...intervalAnalysisRows
   ];
@@ -352,10 +352,10 @@ export const downloadCombinedAnalysisReport = (
 
       rawData.push([
         idx + 1, 
-        isWgsPoint ? s.lat.toFixed(8) : conv.x.toFixed(locPrecision), 
-        isWgsPoint ? s.lng.toFixed(8) : conv.y.toFixed(locPrecision), 
-        hVal !== null ? hVal.toFixed(heightPrecision) : (s.altitude || 0).toFixed(heightPrecision), 
-        s.accuracy.toFixed(3), 
+        isWgsPoint ? s.lat.toFixed(2) : conv.x.toFixed(2), 
+        isWgsPoint ? s.lng.toFixed(2) : conv.y.toFixed(2), 
+        hVal !== null ? hVal.toFixed(2) : (s.altitude || 0).toFixed(2), 
+        s.accuracy.toFixed(2), 
         new Date(s.timestamp).toLocaleTimeString('tr-TR')
       ]);
     });
@@ -420,36 +420,36 @@ export const downloadCombinedAnalysisReport = (
     ["1. UYGULAMA ANA HESAPLAMA SONUÇLARI"],
     ["Koordinat Sistemi:", getSystemDisplayLabel(sys)],
     ["Kullanılan Ana Yöntem:", getMethodName(calculationMethod)],
-    ["Hesaplanan X/Lat:", location.lat.toFixed(sys === "WGS84" ? 8 : locPrecision)],
-    ["Hesaplanan Y/Lng:", location.lng.toFixed(sys === "WGS84" ? 8 : locPrecision)],
-    ["Hesaplanan Z/Alt:", (location.altitude || 0).toFixed(heightPrecision)],
-    ["Yatay Hassasiyet (RMS):", `${location.accuracy.toFixed(3)} m`],
+    ["Hesaplanan X/Lat:", location.lat.toFixed(2)],
+    ["Hesaplanan Y/Lng:", location.lng.toFixed(2)],
+    ["Hesaplanan Z/Alt:", (location.altitude || 0).toFixed(2)],
+    ["Yatay Hassasiyet (RMS):", `${location.accuracy.toFixed(2)} m`],
     ["Ölçüm Süresi:", `${location.measurementDuration || 0} sn`],
     ["Toplam Örnek Sayısı:", `${location.samples?.length || 0}`],
     [],
     ["2. KESİN REFERANS DEĞERLER (GROUND TRUTH)"],
     [preciseCoords.isWgs84 ? "Enlem" : "Sağa (Y)", preciseCoords.isWgs84 ? "Boylam" : "Yukarı (X)", preciseCoords.isWgs84 ? "Alt (Elip.H)" : "Kot (Z)"],
-    [preciseCoords.x, preciseCoords.y, preciseCoords.z],
+    [preciseCoords.x.toFixed(2), preciseCoords.y.toFixed(2), preciseCoords.z.toFixed(2)],
     [],
     ["3. ALGORİTMA BAZLI HATA ANALİZİ (KIYASLAMA)"],
     ["Hassasiyet Hesaplama Metodu:", "Max(İstatistiksel Hassasiyet, Maksimum Örnek Yayılımı)"],
-    ["Veri Filtreleme:", `Analizde sadece hassasiyeti ${accuracyLimit}m altındaki veriler kullanılmıştır.`],
+    ["Veri Filtreleme:", `Analizde sadece hassasiyeti ${accuracyLimit.toFixed(2)}m altındaki veriler kullanılmıştır.`],
     ["Yöntem", preciseCoords.isWgs84 ? "Enlem (Lat)" : "Sağa (Y)", preciseCoords.isWgs84 ? "Boylam (Lng)" : "Yukarı (X)", preciseCoords.isWgs84 ? "Alt (Elip.H)" : "Kot (Z)", "ΔX (m)", "ΔY (m)", "Yatay Hata (m)", "DURUM"],
     ...results.map(res => [
       getMethodName(res.method),
-      (preciseCoords.isWgs84 ? res.calculated.x : res.calculated.x).toFixed(preciseCoords.isWgs84 ? 8 : locPrecision),
-      (preciseCoords.isWgs84 ? res.calculated.y : res.calculated.y).toFixed(preciseCoords.isWgs84 ? 8 : locPrecision),
-      res.calculated.z.toFixed(heightPrecision),
-      res.errors.dx.toFixed(3),
-      res.errors.dy.toFixed(3),
-      res.errors.dhz.toFixed(3),
+      res.calculated.x.toFixed(2),
+      res.calculated.y.toFixed(2),
+      res.calculated.z.toFixed(2),
+      res.errors.dx.toFixed(2),
+      res.errors.dy.toFixed(2),
+      res.errors.dhz.toFixed(2),
       res.method === bestMethod.method ? "EN BAŞARILI (YATAY)" : ""
     ]),
     [],
     ["4. VERI SACILIMI VE SINYAL GUVENILIRLIK OZETI"],
-    ["Maksimum Saçılım Genişliği (Spread):", `${maxSpreadAll.toFixed(3)} m`],
-    ["Konumsal Standart Sapma (1σ):", `${stdDevValue.toFixed(3)} m`],
-    ["Ortalama Alıcı Sensör Hassasiyeti:", `${avgAccAll.toFixed(3)} m`],
+    ["Maksimum Saçılım Genişliği (Spread):", `${maxSpreadAll.toFixed(2)} m`],
+    ["Konumsal Standart Sapma (1σ):", `${stdDevValue.toFixed(2)} m`],
+    ["Ortalama Alıcı Sensör Hassasiyeti:", `${avgAccAll.toFixed(2)} m`],
     ["Sinyal Güvenilirlik Durumu:", signalQualityLabel],
     ["Geodezik Analiz Genel Yorumu:", interpretation],
     [],
@@ -506,10 +506,10 @@ export const downloadCombinedAnalysisReport = (
 
     timeSeriesData.push([
       `${t} sn`,
-      (sys === "WGS84" ? result.lat : dispConv.x).toFixed(sys === "WGS84" ? 8 : locPrecision),
-      (sys === "WGS84" ? result.lng : dispConv.y).toFixed(sys === "WGS84" ? 8 : locPrecision),
-      (result.altitude || 0).toFixed(heightPrecision),
-      dhz.toFixed(3),
+      (sys === "WGS84" ? result.lat : dispConv.x).toFixed(2),
+      (sys === "WGS84" ? result.lng : dispConv.y).toFixed(2),
+      (result.altitude || 0).toFixed(2),
+      dhz.toFixed(2),
       slice.length
     ]);
   });
