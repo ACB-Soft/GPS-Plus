@@ -1213,9 +1213,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     position={[s.lat, s.lng]} 
                     icon={L.divIcon({
                       className: 'raw-marker',
-                      html: `<div style="width: 11px; height: 11px; background: #9333ea; border: 1.5px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(147, 51, 234, 0.61);"></div>`,
-                      iconSize: [11, 11],
-                      iconAnchor: [5.5, 5.5]
+                      html: `<div style="width: 6px; height: 6px; background: #9333ea; border: 1px solid white; border-radius: 50%; box-shadow: 0 0 3px rgba(147, 51, 234, 0.61);"></div>`,
+                      iconSize: [6, 6],
+                      iconAnchor: [3, 3]
                     })}
                   >
                     <Popup>
