@@ -238,7 +238,7 @@ const SavedLocationItem: React.FC<{
                 'text-rose-600'
               }`}>
                 {reliability === 'HIGH' ? t('GÜVENLİ') : 
-                 reliability === 'MEDIUM' ? t('ORTA GÜVEN') : 
+                 reliability === 'MEDIUM' ? t('Orta') : 
                  reliability === 'LOW' ? t('GÜVENSİZ') : t('VERİ AZ')}
               </p>
             </div>

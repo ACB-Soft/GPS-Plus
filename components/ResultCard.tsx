@@ -120,7 +120,7 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
               }`}>
                 <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] leading-none">
                   {reliability === 'HIGH' ? t('GÜVENLİ') : 
-                   reliability === 'MEDIUM' ? t('ORTA GÜVEN') : 
+                   reliability === 'MEDIUM' ? t('Orta') : 
                    reliability === 'LOW' ? t('GÜVENSİZ') : t('VERİ AZ')}
                 </span>
               </div>

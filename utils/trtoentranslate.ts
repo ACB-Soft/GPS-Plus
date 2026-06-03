@@ -142,6 +142,9 @@ export const trToEnMap: Record<string, string> = {
 
   "== SUMMARY CARD & ANALYSIS ==": "",
   "GÜVENLİ": "RELIABLE",
+  "ORTA LIGHT": "MODERATE",
+  "ORTA": "Medium",
+  "Orta": "Medium",
   "ORTA GÜVEN": "MEDIUM RELIABILITY",
   "GÜVENSİZ": "UNRELIABLE",
   "VERİ AZ": "LOW DATA",
