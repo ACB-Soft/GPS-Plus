@@ -43,6 +43,10 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
   const geoidInfo = useOrthometricHeight(location.altitude, location.lat, location.lng);
   const displayHeight = isOrthometric ? geoidInfo.orthometricHeight : geoidInfo.ellipsoidalHeight;
   
+  const maxSpread = React.useMemo(() => {
+    return location.samples && location.samples.length >= 2 ? calculateMaxDistance(location.samples) : 0;
+  }, [location.samples]);
+
   // Re-calculate accuracy based on spread if samples are present
   // This ensures old data also reflects the "Max(Statistical, MaxDistance)" logic
   const dynamicAccuracy = React.useMemo(() => {

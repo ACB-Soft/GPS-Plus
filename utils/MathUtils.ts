@@ -84,18 +84,7 @@ export function calculateResult(
   // CRITICAL: Calculate max distance between any two points in the filtered source data
   // (As per user request: "en uzak 2 nokta arası mesafe")
   // We use sourceData (which filters by accuracy limit) to analyze the spread of reliable observations.
-  let maxDistance = 0;
-  if (sourceData.length > 1) {
-    const meanLat = sourceData.reduce((a, b) => a + b.lat, 0) / sourceData.length;
-    for (let i = 0; i < sourceData.length; i++) {
-      for (let j = i + 1; j < sourceData.length; j++) {
-        const dLat = (sourceData[i].lat - sourceData[j].lat) * 111320;
-        const dLng = (sourceData[i].lng - sourceData[j].lng) * 111320 * Math.cos(meanLat * Math.PI / 180);
-        const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-        if (dist > maxDistance) maxDistance = dist;
-      }
-    }
-  }
+  const maxDistance = calculateMaxDistance(sourceData);
 
   // Final Accuracy formula: Max(Statistical Estimation, Max Distance, Average Sensor Accuracy)
   // This ensures we don't report better precision than the sensor actually reports during measurement.

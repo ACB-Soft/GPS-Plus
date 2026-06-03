@@ -37,6 +37,17 @@ const SavedLocationItem: React.FC<{
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState(l.name);
 
+  // Pre-calculate coordinate translation values for clean layout structure
+  const { x, y, labelX, labelY } = convertCoordinate(l.lat, l.lng, l.coordinateSystem || 'WGS84');
+  const isUTM = l.coordinateSystem && l.coordinateSystem !== 'WGS84';
+  const locPrecision = settings.locationPrecision ?? 1;
+  const formattedX = isUTM ? x.toFixed(locPrecision) : x.toFixed(7);
+  const formattedY = isUTM ? y.toFixed(locPrecision) : y.toFixed(7);
+
+  const maxSpread = React.useMemo(() => {
+    return l.samples && l.samples.length >= 2 ? calculateMaxDistance(l.samples) : 0;
+  }, [l.samples]);
+
   // Re-calculate accuracy based on spread if samples are present
   const dynamicAccuracy = React.useMemo(() => {
     if (!l.samples || l.samples.length <= 1) return l.accuracy;
@@ -47,10 +58,10 @@ const SavedLocationItem: React.FC<{
     
     if (reliableSamples.length <= 1) return l.accuracy;
     
-    const maxSpread = calculateMaxDistance(reliableSamples);
+    const spread = calculateMaxDistance(reliableSamples);
     const avgSensorAcc = reliableSamples.reduce((a, b) => a + b.accuracy, 0) / reliableSamples.length;
     // Return the maximum of physical spread and sensor baseline as per user request
-    return Math.max(maxSpread, avgSensorAcc);
+    return Math.max(spread, avgSensorAcc);
   }, [l.samples, l.accuracyLimit]);
 
   // Reliability calculation logic
@@ -60,7 +71,6 @@ const SavedLocationItem: React.FC<{
       ? samples.reduce((a, b) => a + b.accuracy, 0) / samples.length 
       : l.accuracy;
 
-    const maxSpread = samples.length >= 2 ? calculateMaxDistance(samples) : 0;
     const samplesCount = samples.length;
 
     // 1. GÜVENSİZ VERİ (KIRMIZI): Donanımsal Hassasiyet > 20m VEYA Veri Saçılımı > 20m VEYA Veri Saçılımı > Donanımsal Hassasiyet * 3
@@ -75,7 +85,7 @@ const SavedLocationItem: React.FC<{
     
     // 3. ORTA GÜVENLİ VERİ / VERİ AZ (TURUNCU)
     return 'MEDIUM';
-  }, [l.samples, l.accuracy]);
+  }, [l.samples, l.accuracy, maxSpread]);
 
   const handleSave = () => {
     if (newName.trim() && newName !== l.name) {
@@ -192,30 +202,43 @@ const SavedLocationItem: React.FC<{
       </div>
       {expanded && (
         <div className="px-5 pb-5 animate-in fade-in duration-300">
-          <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100 mb-3">
-            {renderCoordinates(l)}
-          </div>
-          <div className="grid grid-cols-3 gap-2">
+          {/* Top Row: Sağa, Yukarı, Yükseklik */}
+          <div className="grid grid-cols-3 gap-2 pt-4 border-t border-slate-100 mb-3">
+            <div className="flex flex-col">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t(labelX)}</span>
+              <p className="text-[13px] mono-font text-slate-800 font-bold leading-tight">{formattedX}</p>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t(labelY)}</span>
+              <p className="text-[13px] mono-font text-slate-800 font-bold leading-tight">{formattedY}</p>
+            </div>
             <div className="flex flex-col">
               <span className="text-[9px] font-black text-slate-400 tracking-widest leading-none mb-0.5">{isOrthometric ? t('YÜKSEKLİK') : t('h-ELİPSOİD')}</span>
-              <p className="text-[13px] md:text-[14px] mono-font text-blue-600 font-black leading-tight">{displayHeight !== null ? `${displayHeight.toFixed(heightPrecision)}m` : '---'}</p>
+              <p className="text-[13px] mono-font text-slate-800 font-black leading-tight">{displayHeight !== null ? `${displayHeight.toFixed(heightPrecision)}m` : '---'}</p>
             </div>
+          </div>
+          {/* Bottom Row: Hassasiyet, Saçılım, GPS Sinyali */}
+          <div className="grid grid-cols-3 gap-2">
             <div className="flex flex-col">
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t("Hassasiyet")}</span>
-              <p className={`text-[13px] md:text-[14px] mono-font font-black leading-tight ${getAccuracyColor(dynamicAccuracy)}`}>±{dynamicAccuracy.toFixed(1)}m</p>
+              <p className={`text-[13px] mono-font font-black leading-tight ${getAccuracyColor(dynamicAccuracy)}`}>±{dynamicAccuracy.toFixed(1)}m</p>
             </div>
             <div className="flex flex-col">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t("GPS Sinyali")}</span>
-                <p className={`text-[9px] font-black uppercase tracking-widest leading-tight mt-0.5 ${
-                  reliability === 'HIGH' ? 'text-emerald-600' :
-                  reliability === 'MEDIUM' || reliability === 'UNKNOWN' ? 'text-amber-600' : 
-                  'text-rose-600'
-                }`}>
-                  {reliability === 'HIGH' ? t('GÜVENLİ') : 
-                   reliability === 'MEDIUM' ? t('ORTA GÜVEN') : 
-                   reliability === 'LOW' ? t('GÜVENSİZ') : t('VERİ AZ')}
-                </p>
-              </div>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t("Saçılım")}</span>
+              <p className="text-[13px] mono-font text-slate-800 font-black leading-tight">±{maxSpread.toFixed(2)}m</p>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t("GPS Sinyali")}</span>
+              <p className={`text-[11px] font-black uppercase tracking-widest leading-tight mt-0.5 ${
+                reliability === 'HIGH' ? 'text-emerald-600' :
+                reliability === 'MEDIUM' || reliability === 'UNKNOWN' ? 'text-amber-600' : 
+                'text-rose-600'
+              }`}>
+                {reliability === 'HIGH' ? t('GÜVENLİ') : 
+                 reliability === 'MEDIUM' ? t('ORTA GÜVEN') : 
+                 reliability === 'LOW' ? t('GÜVENSİZ') : t('VERİ AZ')}
+              </p>
+            </div>
           </div>
           <div className="mt-4 pt-4 border-t border-slate-50 flex flex-col gap-2">
             <button 

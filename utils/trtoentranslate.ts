@@ -313,6 +313,7 @@ export const trToEnMap: Record<string, string> = {
   "Gelişmiş Raporlama Sistemi": "Advanced Reporting System",
   "Güvenilirlik Analizi": "Reliability Analysis",
   "GÜVEN SKORU": "RELIABILITY SCORE",
+  "Saçılım": "Spread",
   "Max Saçılım": "Max Spread",
   "Sensör Hass.": "Sensor Accuracy",
   "Örnek Sayısı": "Number of Samples",
