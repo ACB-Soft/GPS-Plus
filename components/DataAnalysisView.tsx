@@ -1191,17 +1191,18 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
             <MapContainer 
               center={[location.lat, location.lng]} 
-              zoom={20} 
-              maxZoom={40}
+              zoom={mapInfo.maxNativeZoom} 
+              maxZoom={22}
               style={{ height: '100%', width: '100%' }}
               className="grid-background-fine"
               zoomControl={false}
               attributionControl={false}
             >
               <TileLayer
-                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-                opacity={0}
-                maxZoom={40}
+                url={mapInfo.url}
+                attribution={localStorage.getItem('default_map_provider') === 'OpenTopoMap' ? '&copy; OpenTopoMap' : '&copy; Google'}
+                maxZoom={22}
+                maxNativeZoom={mapInfo.maxNativeZoom}
               />
               
               {/* Raw Samples Cloud (Filtered by Accuracy Limit) */}
@@ -1212,9 +1213,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     position={[s.lat, s.lng]} 
                     icon={L.divIcon({
                       className: 'raw-marker',
-                      html: `<div style="width: 6px; height: 6px; background: rgba(0,0,0,0.15); border: 0.5px solid rgba(0,0,0,0.3); border-radius: 50%;"></div>`,
-                      iconSize: [6, 6],
-                      iconAnchor: [3, 3]
+                      html: `<div style="width: 11px; height: 11px; background: #9333ea; border: 1.5px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(147, 51, 234, 0.61);"></div>`,
+                      iconSize: [11, 11],
+                      iconAnchor: [5.5, 5.5]
                     })}
                   >
                     <Popup>
@@ -1311,7 +1312,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     </div>
                   ))}
                   <div className="flex items-center gap-2 pt-1 border-t">
-                    <div className="w-1 h-1 rounded-full bg-slate-300"></div>
+                    <div className="w-1.5 h-1.5 rounded-full bg-purple-600"></div>
                     <span className="text-[7px] font-bold text-slate-400 uppercase">{t("HAM VERİ")}</span>
                   </div>
                 </div>
