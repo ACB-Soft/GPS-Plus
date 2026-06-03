@@ -110,7 +110,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
         isOpen: true,
         title: t('Güncelleştirme Denetimi'),
         type: 'info',
-        message: `${t('Uygulama Güncel')}\n\n${FULL_BRAND} v${APP_VERSION}`
+        message: `${t('Uygulama Güncel')}\n\n${FULL_BRAND}`
       });
     } catch {
       setModal({
