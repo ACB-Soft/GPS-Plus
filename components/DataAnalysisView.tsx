@@ -437,7 +437,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       const dataUrl = await toPng(ref.current, { 
         backgroundColor: '#ffffff', 
         quality: 1,
-        pixelRatio: 2
+        pixelRatio: 4
       });
       saveAs(dataUrl, `${name}-${location?.name || 'export'}.png`);
     } catch (error) {
@@ -896,16 +896,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   </div>
 
                   <div ref={rawChartRef} className="bg-white rounded-2xl p-4 shadow-2xl aspect-square w-full max-w-sm mx-auto relative overflow-hidden">
-                    {/* Technical Grid Overlay */}
-                    <div className="absolute inset-0 pointer-events-none opacity-[0.02] flex items-center justify-center">
-                      <div className="absolute inset-0 border-2 border-black/10 m-4"></div>
-                      <div className="w-[20%] h-[20%] border border-black rounded-full"></div>
-                      <div className="absolute w-[40%] h-[40%] border border-black rounded-full"></div>
-                      <div className="absolute w-[80%] h-[80%] border border-black rounded-full"></div>
-                    </div>
-
                     <ResponsiveContainer width="100%" height="100%">
-                      <ScatterChart margin={{ top: 10, right: 10, bottom: 30, left: 30 }}>
+                      <ScatterChart margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
                         <CartesianGrid strokeDasharray="1 1" strokeOpacity={0.1} stroke="#000" />
                         <XAxis 
                           type="number" 
