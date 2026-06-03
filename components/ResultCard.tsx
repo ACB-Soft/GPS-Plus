@@ -6,6 +6,7 @@ import { convertCoordinate, getSystemDisplayLabel } from '../utils/CoordinateUti
 import { useOrthometricHeight } from '../hooks/useGeoid';
 import { calculateMaxDistance } from '../utils/MathUtils';
 import { useLanguage } from '../utils/LanguageContext';
+import { getAccuracyColor } from '../utils/StyleUtils';
 
 
 // Map rendering fix for modals
@@ -106,84 +107,91 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
 
   return (
     <>
-      <div className="soft-card p-5 md:p-6 border-slate-200/60 space-y-5 md:space-y-6 text-center animate-in relative overflow-hidden bg-white max-w-sm mx-auto shadow-2xl shadow-slate-300/50">
+      <div className="soft-card p-5 md:p-6 border-slate-200/60 space-y-5 md:space-y-6 text-center animate-in relative overflow-hidden bg-white w-full max-w-sm mx-auto shadow-2xl shadow-slate-300/50">
         <div className="space-y-2 md:space-y-3">
-          <div className="flex items-center justify-center gap-2 font-sans">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-50 rounded-full border border-emerald-100 shadow-sm">
-               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-               <span className="text-[10px] md:text-[11px] font-black text-emerald-600 uppercase tracking-[0.2em] leading-none">{t("Kayıt Edildi")}</span>
-            </div>
-            <div className={`inline-flex items-center justify-center px-4 py-1.5 rounded-full border shadow-sm min-w-[100px] ${
-                reliability === 'HIGH' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
-                reliability === 'MEDIUM' || reliability === 'UNKNOWN' ? 'bg-amber-50 border-amber-100 text-amber-600' : 
-                'bg-rose-50 border-rose-100 text-rose-600'
-              }`}>
-                <span className="text-[10px] md:text-[11px] font-black uppercase tracking-[0.1em] leading-none">
-                  {reliability === 'HIGH' ? t('GÜVENLİ') : 
-                   reliability === 'MEDIUM' ? t('Orta') : 
-                   reliability === 'LOW' ? t('GÜVENSİZ') : t('VERİ AZ')}
-                </span>
-              </div>
-          </div>
           <div className="space-y-1">
             <p className="text-[14px] md:text-[16px] font-black text-slate-400 uppercase tracking-[0.3em] leading-none">{location.folderName}</p>
             <h3 className="text-3xl md:text-4xl font-black text-slate-900 leading-none tracking-tight truncate px-4">{location.name}</h3>
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 pt-4 border-t border-slate-100">
           {location.coordinateSystem && (
             <div className="text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] leading-none">
               {t(getSystemDisplayLabel(location.coordinateSystem))} {zone && `(${zone})`}
             </div>
           )}
-          <div className="grid grid-cols-2 gap-3 md:gap-4">
-            <div className="bg-slate-50 p-4 md:p-5 rounded-2xl md:rounded-3xl border border-slate-100 text-left shadow-sm">
-              <div className="text-[9px] md:text-[10px] text-slate-400 font-black uppercase mb-1 leading-none">{t(labelX)}</div>
-              <div className="text-[14px] md:text-[16px] font-bold text-slate-900 mono-font leading-none">{formattedX}</div>
-            </div>
-            <div className="bg-slate-50 p-4 md:p-5 rounded-2xl md:rounded-3xl border border-slate-100 text-left shadow-sm">
-              <div className="text-[9px] md:text-[10px] text-slate-400 font-black uppercase mb-1 leading-none">{t(labelY)}</div>
-              <div className="text-[14px] md:text-[16px] font-bold text-slate-900 mono-font leading-none">{formattedY}</div>
-            </div>
-            <div className="bg-slate-50 p-4 md:p-5 rounded-2xl md:rounded-3xl border border-slate-100 text-left shadow-sm">
-              <div className="text-[9px] md:text-[10px] text-slate-400 font-black mb-1 leading-none tracking-widest">{isOrthometric ? t('YÜKSEKLİK') : t('h-ELİPSOİD')}</div>
-              <div className="text-xl md:text-2xl font-black text-slate-900 mono-font leading-none">{displayHeight !== null ? displayHeight.toFixed(heightPrecision) : '---'}<span className="text-[10px] ml-1">m</span></div>
-            </div>
-            <div className={`p-4 md:p-5 rounded-2xl md:rounded-3xl border text-left transition-colors shadow-sm ${
-              dynamicAccuracy <= 10 ? 'bg-emerald-50/50 border-emerald-100' : 
-              dynamicAccuracy <= 20 ? 'bg-amber-50/50 border-amber-100' : 'bg-rose-50/50 border-rose-100'
-            }`}>
-              <div className={`text-[9px] md:text-[10px] font-black uppercase mb-1 leading-none ${
-                dynamicAccuracy <= 10 ? 'text-emerald-500' : 
-                dynamicAccuracy <= 20 ? 'text-amber-500' : 'text-rose-500'
-              }`}>{t("Hassasiyet")}</div>
-              <div className={`text-xl md:text-2xl font-black mono-font leading-none ${
-                dynamicAccuracy <= 10 ? 'text-emerald-600' : 
-                dynamicAccuracy <= 20 ? 'text-amber-600' : 'text-rose-600'
-              }`}>±{dynamicAccuracy.toFixed(1)}<span className="text-[10px] ml-1">m</span></div>
-            </div>
-          </div>
+          {/* Restructured 3 Rows & 2 Columns Layout */}
+          {(() => {
+            const boxBgClass = "bg-gradient-to-br from-slate-50 to-slate-100/80 border-slate-200/80 p-2.5 py-2.5 rounded-xl border flex flex-col items-center justify-center text-center shadow-sm";
+
+            return (
+              <div className="grid grid-cols-2 gap-3">
+                {/* Row 1: Sağa, Yukarı */}
+                <div className={boxBgClass}>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t(labelX)}</span>
+                  <p className="text-[15px] md:text-[16px] mono-font text-slate-800 font-black leading-tight">{formattedX}</p>
+                </div>
+                <div className={boxBgClass}>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t(labelY)}</span>
+                  <p className="text-[15px] md:text-[16px] mono-font text-slate-800 font-black leading-tight">{formattedY}</p>
+                </div>
+
+                {/* Row 2: Yükseklik, GPS Sinyali */}
+                <div className={boxBgClass}>
+                  <span className="text-[10px] font-black text-slate-400 tracking-widest leading-none mb-1">{isOrthometric ? t('YÜKSEKLİK') : t('h-ELİPSOİD')}</span>
+                  <p className="text-[15px] md:text-[16px] mono-font text-slate-800 font-black leading-tight">{displayHeight !== null ? `${displayHeight.toFixed(heightPrecision)}m` : '---'}</p>
+                </div>
+                <div className={boxBgClass}>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t("GPS Sinyali")}</span>
+                  <p className={`text-[11px] md:text-[12px] font-black uppercase tracking-widest leading-tight ${
+                    reliability === 'HIGH' ? 'text-emerald-500' :
+                    reliability === 'MEDIUM' || reliability === 'UNKNOWN' ? 'text-amber-500' : 
+                    'text-rose-500'
+                  }`}>
+                    {reliability === 'HIGH' ? t('GÜVENLİ') : 
+                     reliability === 'MEDIUM' ? t('Orta') : 
+                     reliability === 'LOW' ? t('GÜVENSİZ') : t('VERİ AZ')}
+                  </p>
+                </div>
+
+                {/* Row 3: Hassasiyet, Saçılım */}
+                <div className={boxBgClass}>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t("Hassasiyet")}</span>
+                  <p className={`text-[15px] md:text-[16px] mono-font font-black leading-tight ${getAccuracyColor(avgHardwareAccuracy)}`}>±{avgHardwareAccuracy.toFixed(1)}m</p>
+                </div>
+                <div className={boxBgClass}>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t("Saçılım")}</span>
+                  <p className={`text-[15px] md:text-[16px] mono-font font-black leading-tight ${
+                    reliability === 'HIGH' ? 'text-emerald-500' :
+                    reliability === 'MEDIUM' || reliability === 'UNKNOWN' ? 'text-amber-500' : 
+                    'text-rose-500'
+                  }`}>±{maxSpread.toFixed(1)}m</p>
+                </div>
+              </div>
+            );
+          })()}
         </div>
         
-        <button 
-          onClick={() => setShowMap(true)}
-          className="w-full pt-4 md:pt-5 border-t border-slate-100 flex items-center justify-center gap-3 text-[11px] font-black text-blue-600 uppercase tracking-[0.3em] active:scale-95 transition-all hover:text-blue-700 cursor-pointer"
-        >
-          <i className="fas fa-map-marked-alt text-sm"></i>
-          {t("HARİTADA GÖR")}
-        </button>
-
-        <button 
-          onClick={() => {
-            const url = `https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lng}`;
-            window.open(url, '_blank');
-          }}
-          className="w-full pt-4 md:pt-5 border-t border-slate-100 flex items-center justify-center gap-3 text-[11px] font-black text-emerald-600 uppercase tracking-[0.3em] active:scale-95 transition-all hover:text-emerald-700 cursor-pointer"
-        >
-          <i className="fas fa-route text-sm"></i>
-          {t("NAVİGASYONA GÖNDER")}
-        </button>
+        <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col gap-2">
+          <button 
+            onClick={() => setShowMap(true)}
+            className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-blue-600/20 cursor-pointer"
+          >
+            <i className="fas fa-map-location-dot"></i>
+            {t("Harita Üzerinde Gör")}
+          </button>
+          <button 
+            onClick={() => {
+              const url = `https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lng}`;
+              window.open(url, '_blank');
+            }}
+            className="w-full py-2.5 bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-emerald-600/20 cursor-pointer"
+          >
+            <i className="fas fa-route"></i>
+            {t("Navigasyona Gönder")}
+          </button>
+        </div>
       </div>
 
       {showMap && (
