@@ -886,320 +886,245 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   </button>
                 </div>
 
-                {/* Vertical Academic Sheet: Automatically captured inside PNG */}
+                {/* 3:2 Aspect Ratio Precision Sheet: Optimized styling, minimum bleed margins */}
                 <div 
                   ref={rawChartRef} 
-                  className="bg-white rounded-[2rem] p-7 border-2 border-slate-200 flex flex-col gap-5 text-slate-900 w-full max-w-[480px] mx-auto relative overflow-hidden"
+                  className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-3.5 flex flex-col gap-2.5 text-slate-900 w-full max-w-[620px] aspect-[3/2] mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
                 >
-                  {/* Academic Report Header */}
-                  <div className="border-b-2 border-slate-900 pb-3 relative z-10 text-left">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h2 className="text-slate-900 font-extrabold text-[12px] uppercase tracking-[0.16em] leading-tight font-sans">
-                          GPS+ GEODETIC PRECISION ANALYSIS REPORT
-                        </h2>
-                        <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mt-1 font-sans">
-                          STOCHASTIC MODELING &amp; MULTI-ALGORITHMIC COORDINATE DISPERSION
-                        </p>
-                      </div>
-                      <span className="text-[7px] font-black px-1.5 py-0.5 bg-slate-900 text-white rounded tracking-widest">
-                        v5.0
-                      </span>
+                  {/* Dynamic & Compact Geodetic Header (English) */}
+                  <div className="flex justify-between items-center border-b border-slate-900/10 pb-1.5 min-h-0 shrink-0">
+                    <div className="min-w-0">
+                      <h2 className="text-slate-900 font-extrabold text-[10px] uppercase tracking-wider leading-none font-sans">
+                        GPS+ GEODETIC PRECISION CONTROLLER
+                      </h2>
+                      <p className="text-slate-400 text-[6.5px] font-bold uppercase tracking-widest mt-0.5 font-mono">
+                        STATION: {location?.name || 'N/A'} &bull; SYSTEM: {getSystemDisplayLabel(location?.coordinateSystem)} &bull; {location?.samples?.length || 0} EPOCHS
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0 font-mono text-[6.5px] text-slate-400 font-bold uppercase leading-none">
+                      <span>v5.0</span>
+                      <span className="text-[8px] text-blue-500 font-black leading-none">&bull;</span>
+                      <span>STABLE</span>
                     </div>
                   </div>
 
-                  {/* Metadata Grid (In English) */}
-                  <div className="grid grid-cols-2 gap-3 text-[8.5px] border-b border-dashed border-slate-200 pb-3 text-left">
-                    <div className="space-y-1">
-                      <p className="text-slate-500 font-semibold uppercase tracking-wider">{t("Nokta İsmi")} / STATION ID</p>
-                      <p className="font-extrabold text-slate-900 bg-slate-50 p-1.5 rounded border border-slate-100 uppercase truncate">
-                        {location?.name || 'N/A'}
-                      </p>
-                      <p className="text-slate-500 font-semibold uppercase tracking-wider mt-1">{t("Referans Merkez")} / CENTER REF (0,0)</p>
-                      <p className="font-extrabold text-slate-800 bg-slate-50 p-1.5 rounded border border-slate-100 uppercase truncate">
-                        {analysisType === 'precise' ? 'GROUND TRUTH (REF)' : 'EMPIRICAL CENTROID'}
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-slate-500 font-semibold uppercase tracking-wider">EPSG DATUM / SYSTEM</p>
-                      <p className="font-extrabold text-slate-900 bg-slate-50 p-1.5 rounded border border-slate-100 uppercase truncate">
-                        {getSystemDisplayLabel(location?.coordinateSystem)}
-                      </p>
-                      <p className="text-slate-500 font-semibold uppercase tracking-wider mt-1 font-sans">OBSERVATION VOLUME (n)</p>
-                      <p className="font-extrabold text-slate-800 bg-slate-50 p-1.5 rounded border border-slate-100 uppercase font-mono">
-                        {location?.samples?.length || 0} Epochs (60s Max)
-                      </p>
-                    </div>
+                  {/* Main Visualization Grid (Left: 1:1 Chart, Right: Compact Legend) */}
+                  <div className="flex-1 flex flex-row gap-3.5 min-h-0 pt-0.5">
                     
-                    <div className="col-span-2 grid grid-cols-3 gap-1.5 pt-1.5 border-t border-slate-100/60 mt-1">
-                      <div className="text-center bg-slate-50 border border-slate-100 rounded p-1">
-                        <span className="text-slate-400 block text-[7.5px] font-semibold uppercase leading-none mb-0.5 font-sans">MAX SPREAD</span>
-                        <span className="font-bold text-slate-800 font-mono text-[9px]">
-                          ±{multipathAnalysis ? multipathAnalysis.maxSpread.toFixed(4) : '0.000'}m
-                        </span>
+                    {/* Left Panel: 1:1 Aspect-Square Scatter Chart */}
+                    <div className="h-full aspect-square bg-slate-50 border border-slate-200 rounded-xl relative overflow-hidden flex items-center justify-center p-1 shrink-0">
+                      <div className="absolute top-1 left-1.5 z-10 bg-white/80 backdrop-blur-xs px-1 py-0.5 rounded border border-slate-100 font-mono text-[5.5px] font-black text-slate-400 uppercase tracking-wider">
+                        SCATTER PLOT (1:1)
                       </div>
-                      <div className="text-center bg-slate-50 border border-slate-100 rounded p-1">
-                        <span className="text-slate-400 block text-[7.5px] font-semibold uppercase leading-none mb-0.5 font-sans font-sans">STD DEV (1σ)</span>
-                        <span className="font-bold text-slate-800 font-mono text-[9px]">
-                          ±{multipathAnalysis ? multipathAnalysis.stdDev.toFixed(4) : '0.000'}m
-                        </span>
-                      </div>
-                      <div className="text-center bg-slate-50 border border-slate-100 rounded p-1">
-                        <span className="text-slate-400 block text-[7.5px] font-semibold uppercase leading-none mb-0.5 font-sans font-sans">AVG SENSOR ACC</span>
-                        <span className="font-bold text-slate-800 font-mono text-[9px]">
-                          ±{multipathAnalysis ? multipathAnalysis.avgSensorAcc.toFixed(4) : '0.000'}m
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Figure Subhead in English */}
-                  <div className="text-left">
-                    <h3 className="text-slate-900 font-extrabold text-[10px] uppercase tracking-wider leading-none mb-1 font-sans">
-                      FIGURE 1: COORDINATE DISPERSION &amp; MODEL BIASES
-                    </h3>
-                    <p className="text-slate-400 text-[8px] leading-tight font-sans">
-                      Scatter plot of relative horizontal deviations from the specified geodetic reference center.
-                    </p>
-                  </div>
-
-                  {/* The Chart (Aspect-Square Vertical Section) */}
-                  <div className="bg-slate-50/75 rounded-2xl p-3 border border-slate-200 aspect-square w-full max-w-[340px] mx-auto relative overflow-hidden">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ScatterChart margin={{ top: 12, right: 12, bottom: 12, left: 12 }}>
-                        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" />
-                        <XAxis 
-                          type="number" 
-                          dataKey="dE" 
-                          name="ΔE" 
-                          unit="m" 
-                          domain={[-maxTickLimit, maxTickLimit]} 
-                          ticks={scatterTicks}
-                          tick={{fontSize: 7.5, fontWeight: 700, fill: '#334155'}} 
-                          axisLine={{ stroke: '#475569', strokeWidth: 1.5 }}
-                        />
-                        <YAxis 
-                          type="number" 
-                          dataKey="dN" 
-                          name="ΔN" 
-                          unit="m" 
-                          domain={[-maxTickLimit, maxTickLimit]} 
-                          ticks={scatterTicks}
-                          tick={{fontSize: 7.5, fontWeight: 700, fill: '#334155'}} 
-                          axisLine={{ stroke: '#475569', strokeWidth: 1.5 }}
-                        />
-                        <ZAxis type="number" range={[25, 250]} />
-                        <Tooltip 
-                          cursor={{ strokeDasharray: '3 3', stroke: '#475569' }} 
-                          content={({ active, payload }) => {
-                            if (active && payload && payload.length) {
-                              const data = payload[0].payload;
-                              const isMethod = data.method !== undefined;
-                              const getMethodLabelEn = (m: CalculationMethod) => {
-                                const labels: Record<string, string> = {
-                                  'ARITHMETIC_MEAN': 'Arithmetic Mean',
-                                  'WEIGHTED_LSE': 'Weighted LSE (1/σ²)',
-                                  'MIDRANGE_KMEANS_BAARDA': 'MidRange + K-Means + Baarda',
-                                  'KMEANS_4': 'K-Means (k=4)',
-                                  'BAARDA': 'Baarda Outliers Rejection',
-                                  'MIDRANGE': 'MidRange Envelope'
+                      <ResponsiveContainer width="100%" height="100%">
+                        <ScatterChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+                          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" />
+                          <XAxis 
+                            type="number" 
+                            dataKey="dE" 
+                            name="ΔE" 
+                            unit="m" 
+                            domain={[-maxTickLimit, maxTickLimit]} 
+                            ticks={scatterTicks}
+                            tick={{fontSize: 6.5, fontWeight: 700, fill: '#334155'}} 
+                            axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
+                            tickLine={{ stroke: '#475569', strokeWidth: 1 }}
+                          />
+                          <YAxis 
+                            type="number" 
+                            dataKey="dN" 
+                            name="ΔN" 
+                            unit="m" 
+                            domain={[-maxTickLimit, maxTickLimit]} 
+                            ticks={scatterTicks}
+                            tick={{fontSize: 6.5, fontWeight: 700, fill: '#334155'}} 
+                            axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
+                            tickLine={{ stroke: '#475569', strokeWidth: 1 }}
+                          />
+                          <ZAxis type="number" range={[15, 120]} />
+                          <Tooltip 
+                            cursor={{ strokeDasharray: '3 3', stroke: '#475569' }} 
+                            content={({ active, payload }) => {
+                              if (active && payload && payload.length) {
+                                const data = payload[0].payload;
+                                const isMethod = data.method !== undefined;
+                                const getMethodLabelEn = (m: CalculationMethod) => {
+                                  const labels: Record<string, string> = {
+                                    'ARITHMETIC_MEAN': 'Arithmetic Mean',
+                                    'WEIGHTED_LSE': 'Weighted LSE (1/σ²)',
+                                    'MIDRANGE_KMEANS_BAARDA': 'MidRange + K-Means + Baarda',
+                                    'KMEANS_4': 'K-Means (k=4)',
+                                    'BAARDA': 'Baarda Outliers Rejection',
+                                    'MIDRANGE': 'MidRange Envelope'
+                                  };
+                                  return labels[m] || m;
                                 };
-                                return labels[m] || m;
-                              };
-                              return (
-                                <div className="bg-slate-900 border border-slate-800 text-white p-3 rounded-xl shadow-xl z-50 text-[9px] text-left">
-                                  <p className="font-bold uppercase text-blue-400 mb-1 pb-1 border-b border-slate-800 leading-none">
-                                    {isMethod ? `${getMethodLabelEn(data.method)}` : `Raw Epoch #${data.id}`}
-                                  </p>
-                                  <div className="space-y-0.5 font-mono">
-                                    {!isMethod && data.clusterId !== -1 && (
-                                      <div className="flex justify-between gap-3 mb-0.5">
-                                        <span className="opacity-60 text-[8px] uppercase">CLUSTER:</span>
-                                        <span className="font-black px-1 rounded text-[8px]" style={{ backgroundColor: CLUSTER_COLORS[data.clusterId % CLUSTER_COLORS.length], color: 'white' }}>#{data.clusterId + 1}</span>
+                                return (
+                                  <div className="bg-slate-900 border border-slate-800 text-white p-2.5 rounded-lg shadow-xl z-50 text-[8px] text-left">
+                                    <p className="font-bold uppercase text-blue-400 mb-0.5 pb-0.5 border-b border-slate-800 leading-none">
+                                      {isMethod ? `${getMethodLabelEn(data.method)}` : `Raw Epoch #${data.id}`}
+                                    </p>
+                                    <div className="space-y-0.5 font-mono">
+                                      {!isMethod && data.clusterId !== -1 && (
+                                        <div className="flex justify-between gap-2">
+                                          <span className="opacity-60 text-[7px] uppercase">CLUSTER:</span>
+                                          <span className="font-black px-1 rounded text-[7px]" style={{ backgroundColor: CLUSTER_COLORS[data.clusterId % CLUSTER_COLORS.length], color: 'white' }}>#{data.clusterId + 1}</span>
+                                        </div>
+                                      )}
+                                      <div className="flex justify-between gap-2">
+                                        <span className="opacity-60 text-[7px] uppercase">ΔE (Easting):</span>
+                                        <span className="font-bold text-emerald-400">{data.dE.toFixed(4)} m</span>
                                       </div>
-                                    )}
-                                    <div className="flex justify-between gap-3">
-                                      <span className="opacity-60 text-[8px] uppercase">ΔEAST (dE):</span>
-                                      <span className="font-bold text-emerald-400">{data.dE.toFixed(4)} m</span>
-                                    </div>
-                                    <div className="flex justify-between gap-3">
-                                      <span className="opacity-60 text-[8px] uppercase">ΔNORTH (dN):</span>
-                                      <span className="font-bold text-sky-400">{data.dN.toFixed(4)} m</span>
+                                      <div className="flex justify-between gap-2">
+                                        <span className="opacity-60 text-[7px] uppercase">ΔN (Northing):</span>
+                                        <span className="font-bold text-sky-400">{data.dN.toFixed(4)} m</span>
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              );
-                            }
-                            return null;
-                          }}
-                        />
-                        
-                        <ReferenceLine x={0} stroke="#475569" strokeWidth={1.5} strokeDasharray="3 3" />
-                        <ReferenceLine y={0} stroke="#475569" strokeWidth={1.5} strokeDasharray="3 3" />
-                        
-                        {/* Layer 0: Ground Truth Point */}
-                        {analysisType === 'precise' && (
-                          <Scatter 
-                            name="GROUND TRUTH (REF)" 
-                            data={[{ dE: 0, dN: 0 }]} 
-                            fill="#10b981" 
-                            shape="diamond" 
-                            line={false}
-                          >
-                            <Cell fill="#10b981" stroke="#059669" strokeWidth={2} />
-                          </Scatter>
-                        )}
-
-                        {/* Layer 1: Raw Points Cloud (with cluster coloring) */}
-                        <Scatter 
-                          name="Raw Satellite Epochs" 
-                          data={distributionData.rawPoints} 
-                          shape={<RawPointShape />} 
-                        >
-                          {distributionData.rawPoints.map((entry, index) => (
-                            <Cell 
-                              key={`cell-${index}`} 
-                              fill={entry.clusterId !== -1 ? CLUSTER_COLORS[entry.clusterId % CLUSTER_COLORS.length] : '#64748b'} 
-                              fillOpacity={entry.clusterId !== -1 ? 0.7 : 0.25} 
-                            />
-                          ))}
-                        </Scatter>
-                        
-                        {/* Layer 2: Method Aggregates */}
-                        {distributionData.methodPoints.map((mp) => {
-                          const getMethodLabelEn = (m: CalculationMethod) => {
-                            const labels: Record<string, string> = {
-                              'ARITHMETIC_MEAN': 'Arithmetic Mean',
-                              'WEIGHTED_LSE': 'Weighted LSE (1/σ²)',
-                              'MIDRANGE_KMEANS_BAARDA': 'MidRange + K-Means + Baarda',
-                              'KMEANS_4': 'K-Means (k=4)',
-                              'BAARDA': 'Baarda Outliers Rejection',
-                              'MIDRANGE': 'MidRange Envelope'
-                            };
-                            return labels[m] || m;
-                          };
-                          return (
+                                );
+                              }
+                              return null;
+                            }}
+                          />
+                          
+                          <ReferenceLine x={0} stroke="#475569" strokeWidth={1} strokeDasharray="3 3" />
+                          <ReferenceLine y={0} stroke="#475569" strokeWidth={1} strokeDasharray="3 3" />
+                          
+                          {/* Layer 0: Ground Truth Point */}
+                          {analysisType === 'precise' && (
                             <Scatter 
-                              key={mp.method} 
-                              name={getMethodLabelEn(mp.method)} 
-                              data={[mp]} 
-                              fill={mp.color}
-                              shape="circle"
-                            />
-                          );
-                        })}
+                              name="GROUND TRUTH (REF)" 
+                              data={[{ dE: 0, dN: 0 }]} 
+                              fill="#10b981" 
+                              shape="diamond" 
+                              line={false}
+                            >
+                              <Cell fill="#10b981" stroke="#059669" strokeWidth={1.5} />
+                            </Scatter>
+                          )}
 
-                        {/* Layer 3: Numeric Labels for Methods */}
-                        <Scatter 
-                          data={distributionData.methodPoints} 
-                          shape={<CustomScatterLabel />} 
-                        />
-                      </ScatterChart>
-                    </ResponsiveContainer>
-                  </div>
+                          {/* Layer 1: Raw Points Cloud */}
+                          <Scatter 
+                            name="Raw Satellite Epochs" 
+                            data={distributionData.rawPoints} 
+                            shape={<RawPointShape />} 
+                          >
+                            {distributionData.rawPoints.map((entry, index) => (
+                              <Cell 
+                                key={`cell-${index}`} 
+                                fill={entry.clusterId !== -1 ? CLUSTER_COLORS[entry.clusterId % CLUSTER_COLORS.length] : '#64748b'} 
+                                fillOpacity={entry.clusterId !== -1 ? 0.7 : 0.25} 
+                              />
+                            ))}
+                          </Scatter>
+                          
+                          {/* Layer 2: Method Aggregates */}
+                          {distributionData.methodPoints.map((mp) => {
+                            const getMethodLabelEn = (m: CalculationMethod) => {
+                              const labels: Record<string, string> = {
+                                'ARITHMETIC_MEAN': 'Arithmetic Mean',
+                                'WEIGHTED_LSE': 'Weighted LSE (1/σ²)',
+                                'MIDRANGE_KMEANS_BAARDA': 'MidRange + K-Means + Baarda',
+                                'KMEANS_4': 'K-Means (k=4)',
+                                'BAARDA': 'Baarda Outliers Rejection',
+                                'MIDRANGE': 'MidRange Envelope'
+                              };
+                              return labels[m] || m;
+                            };
+                            return (
+                              <Scatter 
+                                key={mp.method} 
+                                name={getMethodLabelEn(mp.method)} 
+                                data={[mp]} 
+                                fill={mp.color}
+                                shape="circle"
+                              />
+                            );
+                          })}
 
-                  {/* Geodetic Models Error Indexes Table */}
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-left">
-                    <div className="text-[9px] font-bold text-slate-800 uppercase tracking-wider mb-2 border-b border-slate-200 pb-1.5 flex items-center gap-1.5">
-                      <i className="fas fa-list-ol text-slate-500"></i>
-                      <span>ESTIMATED MATHEMATICAL ENGINE CENTROIDS</span>
+                          {/* Layer 3: Numeric Labels for Methods */}
+                          <Scatter 
+                            data={distributionData.methodPoints} 
+                            shape={<CustomScatterLabel />} 
+                          />
+                        </ScatterChart>
+                      </ResponsiveContainer>
                     </div>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {distributionData.methodPoints.map(m => {
-                        const getMethodLabelEn = (m: CalculationMethod) => {
-                          const labels: Record<string, string> = {
-                            'ARITHMETIC_MEAN': 'Arithmetic Mean',
-                            'WEIGHTED_LSE': 'Weighted LSE (1/σ²)',
-                            'MIDRANGE_KMEANS_BAARDA': 'MidRange + K-Means + Baarda',
-                            'KMEANS_4': 'K-Means (k=4)',
-                            'BAARDA': 'Baarda Outliers Rejection',
-                            'MIDRANGE': 'MidRange Envelope'
-                          };
-                          return labels[m] || m;
-                        };
-                        return (
-                          <div key={m.id} className="flex items-center gap-2 p-1.5 bg-white rounded-lg border border-slate-200/60 shadow-sm min-w-0">
-                            <div className="w-4 h-4 flex items-center justify-center rounded text-[8px] font-black text-white shrink-0 shadow-sm" style={{ backgroundColor: m.color }}>{m.id}</div>
-                            <div className="flex flex-col min-w-0">
-                              <span className="text-[8px] font-extrabold text-slate-800 uppercase tracking-tight truncate leading-tight">
-                                {getMethodLabelEn(m.method)}
-                              </span>
-                              <span className="text-[7.5px] font-bold text-blue-600 uppercase tracking-widest leading-none mt-0.5">
-                                {m.errors?.dhz ? `dH_2D = ${m.errors.dhz.toFixed(4)} m` : 'STABILIZED'}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
 
-                  {/* Outlier Outlying K-Means Clustering Panels */}
-                  {computedClusters && computedClusters.length > 0 && (
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-left text-[8px]">
-                      <p className="font-bold text-slate-800 uppercase tracking-wider mb-1.5 border-b border-slate-200 pb-1 flex items-center gap-1">
-                        <i className="fas fa-project-diagram text-slate-500"></i>
-                        <span>SPATIAL DENSITY SEGMENTATION (K-MEANS)</span>
-                      </p>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1">
-                        {computedClusters.map((cluster, cIdx) => (
-                          <div key={cIdx} className="flex items-center gap-1.5">
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CLUSTER_COLORS[cIdx % CLUSTER_COLORS.length] }}></div>
-                            <span className="font-semibold text-slate-700 uppercase">
-                              Cluster #{cIdx + 1}: <span className="font-black text-slate-900 font-mono">{cluster.length}</span> Epochs
+                    {/* Right Panel: High-Density Legend & Key Stochastic Indexes */}
+                    <div className="flex-1 flex flex-col justify-between min-w-0 pr-0.5">
+                      
+                      {/* Sub-Legend Group: Precise Indicators */}
+                      <div>
+                        <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-wider block leading-none mb-1">
+                          STOCHASTIC ACCURACY MEASURES
+                        </span>
+                        <div className="grid grid-cols-2 gap-1">
+                          <div className="bg-slate-50 border border-slate-200/60 rounded p-1">
+                            <span className="text-slate-400 block text-[5px] font-bold uppercase leading-none font-sans">STD DEV (1σ)</span>
+                            <span className="font-extrabold text-slate-800 font-mono text-[7px] tracking-tight leading-none mt-0.5 block">
+                              ±{multipathAnalysis ? multipathAnalysis.stdDev.toFixed(4) : '0.000'}m
                             </span>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* STOCHASTIC METHODOLOGY DEFINITIONS (EXPRESSLY EMBEDDED IN PNG AS THE USER REQUESTED) */}
-                  <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-3.5 text-left">
-                    <div className="text-[9px] font-bold text-slate-800 uppercase tracking-wider mb-2 border-b border-slate-200 pb-1.5 flex items-center gap-1.5">
-                      <i className="fas fa-info-circle text-slate-500"></i>
-                      <span>STOCHASTIC ENGINE METHODOLOGY NOTES</span>
-                    </div>
-                    <div className="space-y-2 text-[7.5px] leading-normal text-slate-600 font-sans">
-                      <div className="grid grid-cols-1 gap-y-2">
-                        <div>
-                          <p className="font-extrabold text-pink-600 uppercase tracking-wider leading-none">1. Arithmetic Mean</p>
-                          <p className="text-slate-500 font-medium italic mt-0.5">Unweighted coordinate barycenter. Base reference under normal distribution profiles.</p>
-                        </div>
-                        <div>
-                          <p className="font-extrabold text-violet-600 uppercase tracking-wider leading-none">2. Weighted LSE</p>
-                          <p className="text-slate-500 font-medium italic mt-0.5">Weights are inverse square of hardware dispersion (1/σ²). Strongly dampens high-multipath noise.</p>
-                        </div>
-                        <div>
-                          <p className="font-extrabold text-blue-600 uppercase tracking-wider leading-none">3. MidRange-KMeans-Baarda</p>
-                          <p className="text-slate-500 font-medium italic mt-0.5">High-performance three-stage processing filter combing range bounds, spatial density grids, and Baarda test stats.</p>
-                        </div>
-                        <div>
-                          <p className="font-extrabold text-cyan-600 uppercase tracking-wider leading-none">4. K-Means (k=4)</p>
-                          <p className="text-slate-500 font-medium italic mt-0.5">Classifies coordinates geographically, seeking the centroid of the densest spatial cluster.</p>
-                        </div>
-                        <div>
-                          <p className="font-extrabold text-amber-600 uppercase tracking-wider leading-none">5. Baarda Rejection</p>
-                          <p className="text-slate-500 font-medium italic mt-0.5">Geodetic alpha-outlier screening loop. Systematically cleans anomalous blunders from final result.</p>
-                        </div>
-                        <div>
-                          <p className="font-extrabold text-teal-600 uppercase tracking-wider leading-none">6. MidRange Envelope</p>
-                          <p className="text-slate-500 font-medium italic mt-0.5">Center of boundary box containing maximum extremes of satellite coordinate observations.</p>
+                          <div className="bg-slate-50 border border-slate-200/60 rounded p-1">
+                            <span className="text-slate-400 block text-[5px] font-bold uppercase leading-none font-sans">MAX SPREAD</span>
+                            <span className="font-extrabold text-slate-800 font-mono text-[7px] tracking-tight leading-none mt-0.5 block">
+                              ±{multipathAnalysis ? multipathAnalysis.maxSpread.toFixed(4) : '0.000'}m
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
 
-                  {/* Academic Verification Footer Stamp */}
-                  <div className="border-t border-slate-200 pt-2.5 text-center relative z-10">
-                    <p className="text-slate-400 font-mono text-[7px] tracking-widest uppercase mb-0.5">
-                      GPS+ ADVANCED GEOPHYSICAL CALIBRATION ENGINE &copy; 2026
-                    </p>
-                    <p className="text-slate-500 font-bold text-[7px] tracking-wide uppercase leading-none">
-                      Expert prompt tuned &bull; Compliant with GUM &bull; Client-side Isolated State Engine
-                    </p>
+                      {/* Sub-Legend Group: Math Algorithms & Relative H_2D Errors */}
+                      <div className="flex-1 flex flex-col justify-center gap-1 my-1 py-1 border-t border-b border-slate-100">
+                        <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-wider block leading-none mb-1">
+                          STOCHASTIC METHODOLOGY INDEX
+                        </span>
+                        <div className="space-y-1">
+                          {distributionData.methodPoints.map(m => {
+                            const getMethodLabelEn = (m: CalculationMethod) => {
+                              const labels: Record<string, string> = {
+                                'ARITHMETIC_MEAN': 'Arithmetic Mean',
+                                'WEIGHTED_LSE': 'Weighted LSE (1/σ²)',
+                                'MIDRANGE_KMEANS_BAARDA': 'MidRange + Baarda',
+                                'KMEANS_4': 'K-Means Clustered',
+                                'BAARDA': 'Baarda Outlier Rejection',
+                                'MIDRANGE': 'MidRange Envelope'
+                              };
+                              return labels[m] || m;
+                            };
+                            return (
+                              <div key={m.id} className="flex items-center gap-1 text-left leading-none">
+                                <div className="w-3.5 h-3.5 flex items-center justify-center rounded text-[6.5px] font-black text-white shrink-0 shadow-xs" style={{ backgroundColor: m.color }}>{m.id}</div>
+                                <div className="min-w-0">
+                                  <p className="text-[6.5px] font-extrabold text-slate-800 uppercase tracking-tight truncate leading-none">
+                                    {getMethodLabelEn(m.method)}
+                                  </p>
+                                  <p className="text-[5.5px] font-bold text-blue-600 font-mono tracking-tight leading-none mt-0.5">
+                                    {m.errors?.dhz ? `dH_2d = ${m.errors.dhz.toFixed(4)}m` : 'BARYCENTER'}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Sub-Legend Group: Calibration Footnote */}
+                      <div className="space-y-0.5">
+                        <p className="text-[5px] text-slate-500 italic leading-tight">
+                          Positioning error vectors calculated horizontally relative to reference baseline and filtered in real-time.
+                        </p>
+                        <p className="text-slate-400 font-mono text-[5px] tracking-wider uppercase leading-none pt-1 border-t border-slate-100/60 font-black">
+                          ADVANCED GEOPHYSICAL ENGINE &bull; GPS+
+                        </p>
+                      </div>
+
+                    </div>
+
                   </div>
                 </div>
+              </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
@@ -1263,7 +1188,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     </p>
                   </div>
                 )}
-              </div>
 
                 <button 
                   onClick={handleDownloadTechnicalReportAction}
