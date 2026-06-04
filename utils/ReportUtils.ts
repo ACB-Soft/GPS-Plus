@@ -122,10 +122,13 @@ export const generateTechnicalReport = () => {
     <p>Hassas jeodezi motoru, elipsoidal ve düzlemsel koordinat dönüşüm denklemlerini tamamen istemci tarafında saniyeler içinde çözer.</p>
 
     <h3>2.3.1. 7-Parametreli Bursa-Wolf Dönüşümü</h3>
-    <p>Küresel WGS 84 coğrafi koordinatları ile yerel datumlar (ED 50 veya ITRF 96) arasındaki dönüşümler, 3 boyutlu Helmert benzeri Bursa-Wolf matrisi ile koşturulur. Bu model; 3 adet öteleme parametresi, 3 adet eksenel dönme parametresi ve 1 adet ölçek değişim faktörü kullanarak koordinat dönüşümünü milimetrik bazda gerçekleştirir. Bu dönüşüm, yerel ve küresel elipsoidlerin uyumlaştırılmasında, özellikle eski harita paftalarıyla (ED50) modern CBS verilerinin entegrasyonunda arazide anlık çözümler üretir. Uygulamada Proj4js kütüphanesi ile entegre edilen 7-Parametreli Helmert dönüşüm mantığı ve ED50 tanımı aşağıdaki kod satırlarında açıkça görülmektedir:</p>
+    <p>Küresel WGS 84 coğrafi koordinatları ile yerel datumlar (ED 50 veya ITRF 96) arasındaki dönüşümler, 3 boyutlu Helmert benzeri Bursa-Wolf matrisi ve Proj4js projeksiyon formülasyonu ile koşturulur. Bu model; ED50 sistemi için 3 adet öteleme parametresi, 3 adet eksenel dönme parametresi ve 1 adet ölçek değişim faktörü kullanarak koordinat dönüşümünü milimetrik bazda gerçekleştirir. ITRF96 ve WGS84 datumları ise geometrik ve fiziksel olarak çakışık olduğundan (GRS80 elipsoidi referans alınarak) aralarında ek bir Helmert öteleme vektörüne ihtiyaç duyulmadan doğrudan projeksiyon matrisi ile koordinat düzlemine izdüşürülür. Uygulamada Proj4js kütüphanesi ile entegre edilen ED50 ve ITRF96 tanımları aşağıdaki kod satırlarında açıkça görülmektedir:</p>
     <pre class="code-block">
 // Define Destination Projection (ED50 UTM) with 7-parameter Helmert shift values:
-destProj = "+proj=tmerc +lat_0=0 +lon_0=" + dom + " +k=1 +x_0=500000 +y_0=0 +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs";
+destProj_ed50 = "+proj=tmerc +lat_0=0 +lon_0=" + dom + " +k=1 +x_0=500000 +y_0=0 +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs";
+
+// Define Destination Projection (ITRF96 UTM / TM3) using GRS80 ellipsoid (structurally aligned with WGS84):
+destProj_itrf96 = "+proj=tmerc +lat_0=0 +lon_0=" + dom + " +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs";
     </pre>
 
     <h3>2.3.2. İleri Mertebe Krüger-N Serileri ile Projeksiyon Dönüşümü</h3>
