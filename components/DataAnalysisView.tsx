@@ -447,6 +447,38 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     return Array.from({length: Math.round(maxTickLimit * 4) + 1}, (_, i) => Number((-maxTickLimit + i * 0.5).toFixed(2)));
   }, [maxTickLimit]);
 
+  const timeSeriesChartData = useMemo(() => {
+    if (chartData.length === 0) return [];
+    const res = [];
+    for (let i = 0; i <= 12; i++) {
+      const dataIdx = Math.min(Math.round(i * (chartData.length - 1) / 12), chartData.length - 1);
+      if (dataIdx >= 0 && dataIdx < chartData.length) {
+        const originalPoint = chartData[dataIdx];
+        const label = i === 0 ? "1.sn" : `${i * 5}.sn`;
+        res.push({
+          ...originalPoint,
+          timeLabel: label
+        });
+      }
+    }
+    return res;
+  }, [chartData]);
+
+  const timeSeriesYTicks = useMemo(() => {
+    if (timeSeriesChartData.length === 0) return [0, 0.5, 1.0];
+    const maxVal = Math.max(...timeSeriesChartData.map(d => d.errorHz || 0), 0.5);
+    const limit = Math.ceil(maxVal / 0.5) * 0.5;
+    const ticks = [];
+    for (let val = 0; val <= limit + 0.01; val += 0.5) {
+      ticks.push(parseFloat(val.toFixed(1)));
+    }
+    return ticks;
+  }, [timeSeriesChartData]);
+
+  const timeSeriesXTicks = useMemo(() => {
+    return ["1.sn", "5.sn", "10.sn", "15.sn", "20.sn", "25.sn", "30.sn", "35.sn", "40.sn", "45.sn", "50.sn", "55.sn", "60.sn"];
+  }, []);
+
   const exportChart = async (ref: React.RefObject<HTMLDivElement>, name: string) => {
     if (!ref.current) return;
     try {
@@ -1102,11 +1134,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   </button>
                 </div>
 
-                {/* 1:1 Aspect-Ratio Time Series Panel */}
-                <div 
-                  ref={timeErrorChartRef}
-                  className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] aspect-square mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
-                >
+                {/* 1:1 Aspect-Ratio Time Series Panel Wrapper (On Screen) */}
+                <div className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] aspect-square mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none">
+                  
                   {/* English Geodetic Header */}
                   <div className="flex justify-between items-center border-b border-slate-900/10 pb-1.5 min-h-0 shrink-0">
                     <div className="min-w-0">
@@ -1124,19 +1154,24 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     </div>
                   </div>
 
-                  {/* The Chart - 1:1 proportion is maintained by the aspect-square container parent */}
-                  <div className="flex-1 min-h-0 min-w-0">
+                  {/* ONLY THE CHART CONTAINER WITH WHITE BACKGROUND & INDEPENDENT PADDING IS EXPORTED TO KEEP IT BORDERLESS AND CLEAR OF HEADERS/FOOTERS */}
+                  <div 
+                    ref={timeErrorChartRef}
+                    className="flex-1 min-h-0 min-w-0 bg-white p-5 rounded-[1rem]"
+                  >
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={chartData} margin={{ top: 8, right: 12, bottom: 4, left: 0 }}>
+                      <LineChart data={timeSeriesChartData} margin={{ top: 8, right: 16, bottom: 4, left: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.15} stroke="#64748b" />
                         <XAxis 
-                          dataKey="time" 
+                          dataKey="timeLabel" 
+                          ticks={timeSeriesXTicks}
                           tick={{ fontSize: 7, fontWeight: 700, fill: '#64748b' }} 
                           axisLine={{ stroke: '#cbd5e1', strokeWidth: 1 }}
                           tickLine={{ stroke: '#cbd5e1' }}
                         />
                         <YAxis 
                           domain={[0, 'auto']} 
+                          ticks={timeSeriesYTicks}
                           tick={{ fontSize: 7, fontWeight: 700, fill: '#64748b' }} 
                           axisLine={{ stroke: '#cbd5e1', strokeWidth: 1 }}
                           tickLine={{ stroke: '#cbd5e1' }}
@@ -1154,7 +1189,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           name="Deviation"
                           stroke="#f43f5e" 
                           strokeWidth={2.5} 
-                          dot={false} 
+                          dot={{ r: 2.5, fill: '#f43f5e', stroke: '#fff', strokeWidth: 1 }} 
                           activeDot={{ r: 4, stroke: '#f43f5e', strokeWidth: 2, fill: '#fff' }}
                         />
                       </LineChart>
