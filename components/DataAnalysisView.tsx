@@ -574,112 +574,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 no-scrollbar">
-          
-          {/* Multipath / Reliability Analysis */}
-          {multipathAnalysis && (
-            <div className={`p-6 rounded-[2.5rem] border-2 animate-in slide-in-from-top-4 ${
-              multipathAnalysis.signalQuality === 'low' ? 'bg-rose-50 border-rose-100' : 
-              multipathAnalysis.signalQuality === 'medium' ? 'bg-amber-50 border-amber-100' : 'bg-emerald-50 border-emerald-100'
-            }`}>
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 rounded-3xl flex items-center justify-center shadow-2xl ${
-                    multipathAnalysis.signalQuality === 'low' ? 'bg-rose-100 text-rose-600' : 
-                    multipathAnalysis.signalQuality === 'medium' ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
-                  }`}>
-                    <i className={`fas ${
-                      multipathAnalysis.signalQuality === 'low' ? 'fa-signal text-rose-600 opacity-60' : 
-                      multipathAnalysis.signalQuality === 'medium' ? 'fa-signal text-amber-600' : 'fa-signal text-emerald-600'
-                    } text-2xl`}></i>
-                  </div>
-                  <div>
-                    <h3 className={`text-sm font-black uppercase tracking-[0.2em] leading-none mb-1.5 ${
-                      multipathAnalysis.signalQuality === 'low' ? 'text-rose-700' : 
-                      multipathAnalysis.signalQuality === 'medium' ? 'text-amber-700' : 'text-emerald-700'
-                    }`}>{t("Güvenilirlik Analizi")}</h3>
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-80 leading-none">
-                      {multipathAnalysis.signalQuality === 'safe' && t("GÜVENLİ SİNYAL (YEŞİL)")}
-                      {multipathAnalysis.signalQuality === 'medium' && t("ORTA GÜVENLİ SİNYAL (TURUNCU)")}
-                      {multipathAnalysis.signalQuality === 'low' && t("DÜŞÜK GÜVENLİ SİNYAL (KIRMIZI)")}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Veri Saçılım Analiz Özet Raporu */}
-              <div className="bg-white/80 p-4 rounded-2xl border border-white/90 shadow-sm space-y-2">
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                  <i className="fas fa-file-invoice text-blue-500 text-xs"></i>
-                  <span className="text-[9px] font-black text-slate-700 uppercase tracking-wider">{t("Veri Saçılım Özeti")}</span>
-                </div>
-                <div className="text-[10px] space-y-1.5 leading-relaxed text-slate-600 font-medium font-sans">
-                  <p className="flex justify-between border-b border-dashed border-slate-100 pb-1">
-                    <span className="text-slate-500">{t("Örnek Sayısı:")}</span>
-                    <span className="font-bold text-slate-900 mono-font font-medium">{location?.samples?.length || 0}</span>
-                  </p>
-                  <p className="flex justify-between border-b border-dashed border-slate-100 pb-1">
-                    <span className="text-slate-500">{t("Maksimum Saçılım Genişliği:")}</span>
-                    <span className="font-bold text-slate-900 mono-font font-medium">±{multipathAnalysis.maxSpread.toFixed(3)} m</span>
-                  </p>
-                  <p className="flex justify-between border-b border-dashed border-slate-100 pb-1">
-                    <span className="text-slate-500">{t("Konumsal Standart Sapma (1σ):")}</span>
-                    <span className="font-bold text-slate-900 mono-font font-medium">±{multipathAnalysis.stdDev.toFixed(3)} m</span>
-                  </p>
-                  <p className="flex justify-between border-b border-dashed border-slate-100 pb-1">
-                    <span className="text-slate-500">{t("Alıcı Sensör Hassasiyeti:")}</span>
-                    <span className="font-bold text-slate-900 mono-font font-medium">±{multipathAnalysis.avgSensorAcc.toFixed(3)} m</span>
-                  </p>
-                  <div className="text-[11px] text-slate-700 bg-slate-50/50 p-3 rounded-xl border border-slate-100 mt-2 space-y-2">
-                    <span className="font-black text-slate-900 block uppercase text-[8px] tracking-wider border-b border-slate-100 pb-1 mb-1 shadow-none">
-                      {t("Geodezik Sinyal Raporu / Yorumu:")}
-                    </span>
-                    {multipathAnalysis.signalQuality === 'safe' && (
-                      <div className="space-y-1 text-slate-600">
-                        <p className="font-black text-emerald-600 uppercase text-[9px] tracking-wide mb-1">
-                          ● {t("Güvenilir Veri (Yeşil Sinyal)")}
-                        </p>
-                        <p className="font-medium">{t("Veriler yüksek tutarlılıktadır.")}</p>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">
-                          {t("Kriter: Donanımsal Hassasiyet ≤ 10m, Veri Saçılımı ≤ 10m, Veri Sayısı ≥ 5")}
-                        </p>
-                        {multipathAnalysis.maxSpread > multipathAnalysis.avgSensorAcc ? (
-                          <p className="text-amber-600 font-extrabold text-[10px] bg-amber-50 rounded-lg p-2 border border-amber-100/50 mt-1.5 normal-case">
-                            {t("UYARI: Sinyal yeşildir fakat maksimum saçılım alıcı sensörün donanımsal hassasiyetinden fazla olduğu için hafif çoklu yansıma (multipath) etkisi mevcuttur.")}
-                          </p>
-                        ) : (
-                          <p className="text-emerald-600 font-extrabold text-[10px] bg-emerald-50 rounded-lg p-1 px-2 border border-emerald-100/30 mt-1.5 normal-case">
-                            {t("Konumsal dağılım son derece stabil ve kümelenmiştir, multipath / sapma etkisi saptanmamıştır.")}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    {multipathAnalysis.signalQuality === 'medium' && (
-                      <div className="space-y-1 text-slate-600">
-                        <p className="font-black text-amber-600 uppercase text-[9px] tracking-wide mb-1">
-                          ● {multipathAnalysis.samplesCount < 5 ? t("VERİ AZ (TURUNCU SİNYAL)") : t("ORTA GÜVENLİ VERİ (TURUNCU SİNYAL)")}
-                        </p>
-                        <p className="font-medium">{t("Veriler orta tutarlılıktadır.")}</p>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">
-                          {t("Kriterler: 10m < Donanımsal Hassasiyet ≤ 20m veya 10m < Veri Saçılımı ≤ 20m veya Veri Saçılımı > Donanımsal Hassasiyet veya Veri Sayısı < 5")}
-                        </p>
-                      </div>
-                    )}
-                    {multipathAnalysis.signalQuality === 'low' && (
-                      <div className="space-y-1 text-slate-600">
-                        <p className="font-black text-rose-600 uppercase text-[9px] tracking-wide mb-1">
-                          ● {t("GÜVENSİZ VERİ (KIRMIZI SİNYAL)")}
-                        </p>
-                        <p className="font-medium text-rose-700/95 font-semibold bg-rose-50/70 p-1.5 rounded-lg border border-rose-100/30 leading-snug">{t("Veriler yüksek oranda sapmalı ve güvensizdir.")}</p>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">
-                          {t("Kriterler: Donanımsal Hassasiyet > 20m veya Veri Saçılımı > 20m veya Veri Saçılımı > Donanımsal Hassasiyet x 3")}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* STEP 1: Method Selection */}
           <div className="space-y-4">
@@ -858,6 +752,112 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               <div className="flex items-center justify-between px-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">5. Analiz Sonuçları</label>
               </div>
+
+              {/* Multipath / Reliability Analysis */}
+              {multipathAnalysis && (
+                <div className={`p-6 rounded-[2.5rem] border-2 animate-in slide-in-from-top-4 ${
+                  multipathAnalysis.signalQuality === 'low' ? 'bg-rose-50 border-rose-100' : 
+                  multipathAnalysis.signalQuality === 'medium' ? 'bg-amber-50 border-amber-100' : 'bg-emerald-50 border-emerald-100'
+                }`}>
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-14 h-14 rounded-3xl flex items-center justify-center shadow-2xl ${
+                        multipathAnalysis.signalQuality === 'low' ? 'bg-rose-100 text-rose-600' : 
+                        multipathAnalysis.signalQuality === 'medium' ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
+                      }`}>
+                        <i className={`fas ${
+                          multipathAnalysis.signalQuality === 'low' ? 'fa-signal text-rose-600 opacity-60' : 
+                          multipathAnalysis.signalQuality === 'medium' ? 'fa-signal text-amber-600' : 'fa-signal text-emerald-600'
+                        } text-2xl`}></i>
+                      </div>
+                      <div>
+                        <h3 className={`text-sm font-black uppercase tracking-[0.2em] leading-none mb-1.5 ${
+                          multipathAnalysis.signalQuality === 'low' ? 'text-rose-700' : 
+                          multipathAnalysis.signalQuality === 'medium' ? 'text-amber-700' : 'text-emerald-700'
+                        }`}>{t("Güvenilirlik Analizi")}</h3>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-80 leading-none">
+                          {multipathAnalysis.signalQuality === 'safe' && t("GÜVENLİ SİNYAL (YEŞİL)")}
+                          {multipathAnalysis.signalQuality === 'medium' && t("ORTA GÜVENLİ SİNYAL (TURUNCU)")}
+                          {multipathAnalysis.signalQuality === 'low' && t("DÜŞÜK GÜVENLİ SİNYAL (KIRMIZI)")}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Veri Saçılım Analiz Özet Raporu */}
+                  <div className="bg-white/80 p-4 rounded-2xl border border-white/90 shadow-sm space-y-2">
+                    <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                      <i className="fas fa-file-invoice text-blue-500 text-xs"></i>
+                      <span className="text-[9px] font-black text-slate-700 uppercase tracking-wider">{t("Veri Saçılım Özeti")}</span>
+                    </div>
+                    <div className="text-[10px] space-y-1.5 leading-relaxed text-slate-600 font-medium font-sans">
+                      <p className="flex justify-between border-b border-dashed border-slate-100 pb-1">
+                        <span className="text-slate-500">{t("Örnek Sayısı:")}</span>
+                        <span className="font-bold text-slate-900 mono-font font-medium">{location?.samples?.length || 0}</span>
+                      </p>
+                      <p className="flex justify-between border-b border-dashed border-slate-100 pb-1">
+                        <span className="text-slate-500">{t("Maksimum Saçılım Genişliği:")}</span>
+                        <span className="font-bold text-slate-900 mono-font font-medium">±{multipathAnalysis.maxSpread.toFixed(3)} m</span>
+                      </p>
+                      <p className="flex justify-between border-b border-dashed border-slate-100 pb-1">
+                        <span className="text-slate-500">{t("Konumsal Standart Sapma (1σ):")}</span>
+                        <span className="font-bold text-slate-900 mono-font font-medium">±{multipathAnalysis.stdDev.toFixed(3)} m</span>
+                      </p>
+                      <p className="flex justify-between border-b border-dashed border-slate-100 pb-1">
+                        <span className="text-slate-500">{t("Alıcı Sensör Hassasiyeti:")}</span>
+                        <span className="font-bold text-slate-900 mono-font font-medium">±{multipathAnalysis.avgSensorAcc.toFixed(3)} m</span>
+                      </p>
+                      <div className="text-[11px] text-slate-700 bg-slate-50/50 p-3 rounded-xl border border-slate-100 mt-2 space-y-2">
+                        <span className="font-black text-slate-900 block uppercase text-[8px] tracking-wider border-b border-slate-100 pb-1 mb-1 shadow-none">
+                          {t("Geodezik Sinyal Raporu / Yorumu:")}
+                        </span>
+                        {multipathAnalysis.signalQuality === 'safe' && (
+                          <div className="space-y-1 text-slate-600">
+                            <p className="font-black text-emerald-600 uppercase text-[9px] tracking-wide mb-1">
+                              ● {t("Güvenilir Veri (Yeşil Sinyal)")}
+                            </p>
+                            <p className="font-medium">{t("Veriler yüksek tutarlılıktadır.")}</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+                              {t("Kriter: Donanımsal Hassasiyet ≤ 10m, Veri Saçılımı ≤ 10m, Veri Sayısı ≥ 5")}
+                            </p>
+                            {multipathAnalysis.maxSpread > multipathAnalysis.avgSensorAcc ? (
+                              <p className="text-amber-600 font-extrabold text-[10px] bg-amber-50 rounded-lg p-2 border border-amber-100/50 mt-1.5 normal-case">
+                                {t("UYARI: Sinyal yeşildir fakat maksimum saçılım alıcı sensörün donanımsal hassasiyetinden fazla olduğu için hafif çoklu yansıma (multipath) etkisi mevcuttur.")}
+                              </p>
+                            ) : (
+                              <p className="text-emerald-600 font-extrabold text-[10px] bg-emerald-50 rounded-lg p-1 px-2 border border-emerald-100/30 mt-1.5 normal-case">
+                                {t("Konumsal dağılım son derece stabil ve kümelenmiştir, multipath / sapma etkisi saptanmamıştır.")}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        {multipathAnalysis.signalQuality === 'medium' && (
+                          <div className="space-y-1 text-slate-600">
+                            <p className="font-black text-amber-600 uppercase text-[9px] tracking-wide mb-1">
+                              ● {multipathAnalysis.samplesCount < 5 ? t("VERİ AZ (TURUNCU SİNYAL)") : t("ORTA GÜVENLİ VERİ (TURUNCU SİNYAL)")}
+                            </p>
+                            <p className="font-medium">{t("Veriler orta tutarlılıktadır.")}</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+                              {t("Kriterler: 10m < Donanımsal Hassasiyet ≤ 20m veya 10m < Veri Saçılımı ≤ 20m veya Veri Saçılımı > Donanımsal Hassasiyet veya Veri Sayısı < 5")}
+                            </p>
+                          </div>
+                        )}
+                        {multipathAnalysis.signalQuality === 'low' && (
+                          <div className="space-y-1 text-slate-600">
+                            <p className="font-black text-rose-600 uppercase text-[9px] tracking-wide mb-1">
+                              ● {t("GÜVENSİZ VERİ (KIRMIZI SİNYAL)")}
+                            </p>
+                            <p className="font-medium text-rose-700/95 font-semibold bg-rose-50/70 p-1.5 rounded-lg border border-rose-100/30 leading-snug">{t("Veriler yüksek oranda sapmalı ve güvensizdir.")}</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+                              {t("Kriterler: Donanımsal Hassasiyet > 20m veya Veri Saçılımı > 20m veya Veri Saçılımı > Donanımsal Hassasiyet x 3")}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <button 
                 onClick={() => setShowMap(true)}
