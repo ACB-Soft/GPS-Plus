@@ -940,7 +940,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   {/* Top Panel: Large/Expanded Borderless Scatter Chart */}
                   <div className="flex-1 min-h-0 min-w-0 w-full relative">
                     <ResponsiveContainer width="100%" height="100%">
-                      <ScatterChart margin={{ top: 12, right: 12, bottom: 12, left: 12 }}>
+                      <ScatterChart margin={{ top: 12, right: 12, bottom: 25, left: 12 }}>
                         <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" horizontal={true} vertical={true} />
                         <XAxis 
                           type="number" 
@@ -950,6 +950,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           domain={[-maxTickLimit, maxTickLimit]} 
                           ticks={scatterTicks}
                           interval={0}
+                          angle={-90}
+                          textAnchor="end"
+                          height={30}
                           tick={{fontSize: 7.5, fontWeight: 700, fill: '#334155'}} 
                           axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
                           tickLine={{ stroke: '#475569', strokeWidth: 1 }}
@@ -1154,12 +1157,15 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     className="flex-1 min-h-0 min-w-0 bg-white p-5 rounded-[1rem]"
                   >
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={timeSeriesChartData} margin={{ top: 8, right: 16, bottom: 4, left: 0 }}>
+                      <LineChart data={timeSeriesChartData} margin={{ top: 8, right: 16, bottom: 25, left: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={true} strokeOpacity={0.15} stroke="#000000" />
                         <XAxis 
                           dataKey="timeLabel" 
                           ticks={timeSeriesXTicks}
                           interval={0}
+                          angle={-90}
+                          textAnchor="end"
+                          height={30}
                           tick={{ fontSize: 7, fontWeight: 800, fill: '#000000' }} 
                           axisLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                           tickLine={{ stroke: '#000000', strokeWidth: 1.5 }}

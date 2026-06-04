@@ -245,13 +245,13 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             <div className="soft-card p-6 space-y-4">
               <p 
                 className="text-sm text-slate-700 font-medium leading-relaxed text-justify"
-                dangerouslySetInnerHTML={{ __html: t("Uygulama, toplanan ham GPS verilerini nihai bir koordinata dönüştürmek için 3 farklı matematiksel model sunar. Bu yöntemleri <b>Ayarlar</b> menüsünden değiştirebilirsiniz:") }}
+                dangerouslySetInnerHTML={{ __html: t("Uygulama, toplanan ham GPS verilerini nihai bir koordinata dönüştürmek için 5 farklı matematiksel model sunar. Bu yöntemleri <b>Ayarlar</b> menüsünden değiştirebilirsiniz:") }}
               />
               
               <div className="space-y-4">
                 <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm ring-1 ring-blue-50">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight">{t("1. Yöntem: Ağırlıklı En Küçük Kareler (Varsayılan)")}</h4>
+                    <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight">{t("1. Ağırlıklı En Küçük Kareler")}</h4>
                     <span className="text-[11px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold">{t("VARSAYILAN")}</span>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed">
@@ -261,7 +261,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
 
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("2. Yöntem: MidRange")}</h4>
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("2. MidRange")}</h4>
                     <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">{t("GEOMETRİK")}</span>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed">
@@ -271,7 +271,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
 
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("3. Yöntem: KMeans")}</h4>
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("3. KMeans")}</h4>
                     <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">{t("KÜMELEME")}</span>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed">
@@ -281,7 +281,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
 
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("4. Yöntem: Baarda")}</h4>
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("4. Baarda")}</h4>
                     <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">{t("İSTATİSTİK")}</span>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed">
@@ -291,7 +291,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
 
                 <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm ring-1 ring-blue-50">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight">{t("5. Yöntem: MidRange+KMeans+Baarda")}</h4>
+                    <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight">{t("5. MidRange + KMeans + Baarda")}</h4>
                     <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">{t("HİBRİT")}</span>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed mb-3">
@@ -310,7 +310,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                         3-<b>K-Means:</b> {t("Temizlenmiş veri 4 bağımsız yoğunluk kümesine bölünür.")}
                       </li>
                       <li className="text-sm text-slate-700 leading-tight">
-                        4-<b>Ağırlıklı Özet:</b> {t("Her küme kendi içinde ağırlıklı dengeleme ile tek bir noktaya dönüştürürlür.")}
+                        4-<b>Ağırlıklı Özet:</b> {t("Her küme kendi içinde ağırlıklı dengeleme ile tek bir noktaya dönüştürülür.")}
                       </li>
                       <li className="text-sm text-slate-700 leading-tight">
                         5-<b>Baarda Testi:</b> {t("4 özet nokta arasında uyuşmazlık denetimi yapılarak sonuç konum hesaplanır.")}
