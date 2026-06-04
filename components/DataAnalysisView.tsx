@@ -132,6 +132,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [preciseN, setPreciseN] = useState<string>(''); // Northing (X)
   const [preciseE, setPreciseE] = useState<string>(''); // Easting (Y)
   const [preciseZ, setPreciseZ] = useState<string>('');
+  const [appliedPreciseN, setAppliedPreciseN] = useState<string>('');
+  const [appliedPreciseE, setAppliedPreciseE] = useState<string>('');
+  const [appliedPreciseZ, setAppliedPreciseZ] = useState<string>('');
   const [preciseWgs, setPreciseWgs] = useState<[number, number] | null>(null);
   
   const [analysisResults, setAnalysisResults] = useState<any[] | null>(null);
@@ -177,6 +180,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       alert("Lütfen kesin koordinatları eksiksiz giriniz.");
       return;
     }
+
+    // Set applied values to trigger charts and metrics calculation
+    setAppliedPreciseN(preciseN);
+    setAppliedPreciseE(preciseE);
+    setAppliedPreciseZ(preciseZ);
 
     const accuracyLimit = location.accuracyLimit || 5.0;
     const sys = location.coordinateSystem || 'ITRF96_3';
@@ -300,8 +308,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     let hasRef = false;
 
     if (analysisType === 'precise') {
-      const pn = parseFloat(preciseN);
-      const pe = parseFloat(preciseE);
+      const pn = parseFloat(appliedPreciseN);
+      const pe = parseFloat(appliedPreciseE);
       if (!isNaN(pn) && !isNaN(pe)) {
         if (useLocal) {
           refN = pn; 
@@ -366,7 +374,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
         clusterId
       };
     });
-  }, [location, analysisType, preciseN, preciseE, useLocal, computedClusters]);
+  }, [location, analysisType, appliedPreciseN, appliedPreciseE, useLocal, computedClusters]);
 
   const distributionData = useMemo(() => {
     if (chartData.length === 0) return { rawPoints: [], methodPoints: [], centerPoint: [], range: 0.5 };
@@ -377,8 +385,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     let isPrecise = false;
 
     if (analysisType === 'precise') {
-      const pn = parseFloat(preciseN); // Yukarı (X)
-      const pe = parseFloat(preciseE); // Sağa (Y)
+      const pn = parseFloat(appliedPreciseN); // Yukarı (X)
+      const pe = parseFloat(appliedPreciseE); // Sağa (Y)
       
       if (!isNaN(pn) && !isNaN(pe)) {
         const sys = location?.coordinateSystem || 'ITRF96_3';
@@ -431,7 +439,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       centerLabel: isPrecise ? t('KESİN NOKTA') : t('ORTALAMA'),
       range 
     };
-  }, [chartData, analysisResults, analysisType, preciseN, preciseE, useLocal, location]);
+  }, [chartData, analysisResults, analysisType, appliedPreciseN, appliedPreciseE, useLocal, location]);
 
   const maxTickLimit = useMemo(() => {
     return Math.max(0.5, Math.ceil(distributionData.range * 2) / 2);
@@ -499,9 +507,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     downloadCombinedAnalysisReport(
       location,
       { 
-        x: parseFloat(preciseN), 
-        y: parseFloat(preciseE), 
-        z: parseFloat(preciseZ), 
+        x: parseFloat(appliedPreciseN), 
+        y: parseFloat(appliedPreciseE), 
+        z: parseFloat(appliedPreciseZ), 
         isWgs84: !useLocal 
       },
       analysisResults,
@@ -650,6 +658,13 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     setSelectedPointId(e.target.value);
                     setAnalysisResults(null);
                     setComputedClusters(null);
+                    setPreciseN('');
+                    setPreciseE('');
+                    setPreciseZ('');
+                    setAppliedPreciseN('');
+                    setAppliedPreciseE('');
+                    setAppliedPreciseZ('');
+                    setPreciseWgs(null);
                   }}
                   disabled={!selectedFolder}
                   className="w-full p-4 bg-slate-100 rounded-2xl font-bold text-slate-900 appearance-none border-2 border-transparent focus:border-blue-500 outline-none transition-all text-sm disabled:opacity-50"
@@ -1327,7 +1342,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       <p className="text-xs font-black text-emerald-600 mb-1">{t("KESİN KOORDİNAT (REFERANS)")}</p>
                       <p className="text-[10px] font-bold text-slate-500">{t("Nirengi Noktası (Referans)")}</p>
                       <p className="text-[9px] font-mono mt-1">
-                        {useLocal ? `N: ${preciseN} \nE: ${preciseE}` : `Lat: ${preciseN} \nLng: ${preciseE}`}
+                        {useLocal ? `N: ${appliedPreciseN} \nE: ${appliedPreciseE}` : `Lat: ${appliedPreciseN} \nLng: ${appliedPreciseE}`}
                       </p>
                     </div>
                   </Popup>
