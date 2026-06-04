@@ -131,6 +131,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   }, [locations, selectedPointId]);
   const rawChartRef = React.useRef<HTMLDivElement>(null);
   const comparisonChartRef = React.useRef<HTMLDivElement>(null);
+  const timeErrorChartRef = React.useRef<HTMLDivElement>(null);
 
   const [preciseN, setPreciseN] = useState<string>(''); // Northing (X)
   const [preciseE, setPreciseE] = useState<string>(''); // Easting (Y)
@@ -324,6 +325,21 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     const accuracyFilteredIndices = location.samples
       .map((s, idx) => s.accuracy <= limit ? idx : -1)
       .filter(idx => idx !== -1);
+
+    // If not precise mode, calculate the average (mean centroid) to use as reference error center
+    if (!hasRef && accuracyFilteredIndices.length > 0) {
+      let sumN = 0;
+      let sumE = 0;
+      accuracyFilteredIndices.forEach(originalIdx => {
+        const s = location.samples![originalIdx];
+        const conv = convertCoordinate(s.lat, s.lng, sys);
+        sumN += conv.y;
+        sumE += conv.x;
+      });
+      refN = sumN / accuracyFilteredIndices.length;
+      refE = sumE / accuracyFilteredIndices.length;
+      hasRef = true;
+    }
 
     return accuracyFilteredIndices.map((originalIdx, chartIdx) => {
       const s = location.samples![originalIdx];
@@ -1126,68 +1142,91 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 </div>
               </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
-                      <i className="fas fa-history mr-2 text-indigo-500"></i>
-                      Zamana Bağlı Yukarı (X)
-                    </h3>
-                    <div className="h-40 w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={chartData}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
-                          <XAxis dataKey="time" hide />
-                          <YAxis domain={['auto', 'auto']} tick={{fontSize: 8}} axisLine={false} width={45} />
-                          <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontWeight: 'bold' }} />
-                          <Line type="monotone" dataKey="y" stroke="#6366f1" strokeWidth={2} dot={false} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                  <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
-                      <i className="fas fa-history mr-2 text-amber-500"></i>
-                      Zamana Bağlı Sağa (Y)
-                    </h3>
-                    <div className="h-40 w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={chartData}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
-                          <XAxis dataKey="time" hide />
-                          <YAxis domain={['auto', 'auto']} tick={{fontSize: 8}} axisLine={false} width={45} />
-                          <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none', fontWeight: 'bold' }} />
-                          <Line type="monotone" dataKey="x" stroke="#f59e0b" strokeWidth={2} dot={false} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
+              {/* Technical Analysis Position Error Chart (With 1:3 PNG Export capability) */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center px-2">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    {t("Zamana Bağlı Hata Analizi")}
+                  </span>
+                  <button 
+                    onClick={() => exportChart(timeErrorChartRef, 'gps-plus-time-error-chart')}
+                    type="button"
+                    className="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-1.5"
+                  >
+                    <i className="fas fa-camera text-rose-400"></i> PNG Download (1:3)
+                  </button>
                 </div>
 
-                {analysisType === 'precise' && (
-                  <div className="bg-slate-50 rounded-3xl p-6 border border-slate-200">
-                    <h3 className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] mb-4">
-                      <i className="fas fa-chart-line mr-2"></i>
-                      {t("Zamana Bağlı Sistematik Yatay Hata (ΔHz)")}
-                    </h3>
-                    <div className="h-48 w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={chartData}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
-                          <XAxis dataKey="time" hide />
-                          <YAxis domain={[0, 'auto']} tick={{fontSize: 8}} axisLine={false} width={45} unit="m" />
-                          <Tooltip 
-                            contentStyle={{ borderRadius: '1rem', border: 'none', fontWeight: 'black', background: '#0f172a', color: '#fff' }} 
-                            formatter={(value: number) => [`${value.toFixed(3)} m`, t('Yatay Hata')]}
-                          />
-                          <Line type="monotone" dataKey="errorHz" stroke="#f43f5e" strokeWidth={3} dot={false} />
-                        </LineChart>
-                      </ResponsiveContainer>
+                {/* 1:3 Aspect-Ratio Time Series Panel */}
+                <div 
+                  ref={timeErrorChartRef}
+                  className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[720px] aspect-[3/1] mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
+                >
+                  {/* English Geodetic Header */}
+                  <div className="flex justify-between items-center border-b border-slate-900/10 pb-1.5 min-h-0 shrink-0">
+                    <div className="min-w-0">
+                      <h2 className="text-slate-900 font-extrabold text-[10px] uppercase tracking-wider leading-none font-sans">
+                        GPS+ TIME-SERIES POSITION ERROR ANALYSIS
+                      </h2>
+                      <p className="text-slate-400 text-[6.5px] font-bold uppercase tracking-widest mt-0.5 font-mono">
+                        HORIZONTAL DEVIATION OVER TIME (ΔHz) &bull; {location?.name || 'MEASUREMENT'}
+                      </p>
                     </div>
-                    <p className="text-[9px] text-slate-500 font-bold mt-2 text-center uppercase tracking-tight">
-                      {t("* Her bir ölçüm noktasının kesin koordinata olan mesafesinin zamanla değişimi")}
+                    <div className="text-right shrink-0">
+                      <span className="bg-rose-50 border border-rose-100 text-rose-600 font-mono text-[7px] font-black px-1.5 py-0.5 rounded">
+                        GUM COMPLIANT
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* The Chart - 1:3 proportion is maintained by the aspect-[3/1] container parent */}
+                  <div className="flex-1 min-h-0 min-w-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={chartData} margin={{ top: 8, right: 12, bottom: 4, left: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.15} stroke="#64748b" />
+                        <XAxis 
+                          dataKey="time" 
+                          tick={{ fontSize: 7, fontWeight: 700, fill: '#64748b' }} 
+                          axisLine={{ stroke: '#cbd5e1', strokeWidth: 1 }}
+                          tickLine={{ stroke: '#cbd5e1' }}
+                        />
+                        <YAxis 
+                          domain={[0, 'auto']} 
+                          tick={{ fontSize: 7, fontWeight: 700, fill: '#64748b' }} 
+                          axisLine={{ stroke: '#cbd5e1', strokeWidth: 1 }}
+                          tickLine={{ stroke: '#cbd5e1' }}
+                          width={35} 
+                          unit="m" 
+                        />
+                        <Tooltip 
+                          contentStyle={{ borderRadius: '0.75rem', border: '1px solid #e2e8f0', fontWeight: 'black', background: '#ffffff', color: '#0f172a', fontSize: '9px' }} 
+                          formatter={(value: number) => [`${value.toFixed(3)} m`, 'Horizontal Deviation']}
+                          labelFormatter={(label) => `Time: ${label}`}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="errorHz" 
+                          name="Deviation"
+                          stroke="#f43f5e" 
+                          strokeWidth={2.5} 
+                          dot={false} 
+                          activeDot={{ r: 4, stroke: '#f43f5e', strokeWidth: 2, fill: '#fff' }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Footnote Explanation */}
+                  <div className="flex justify-between items-center border-t border-slate-900/10 pt-1.5 min-h-0 shrink-0">
+                    <p className="text-[6.5px] text-slate-500 font-black tracking-wide uppercase leading-none">
+                      * Calculates distance deviation of each measurement point from geodetic reference over duration
+                    </p>
+                    <p className="text-slate-400 font-bold text-[6px] tracking-wide uppercase leading-none font-mono">
+                      UNIT: METERS (m) &bull; SCALE: 3:1 (1:3 HORIZ)
                     </p>
                   </div>
-                )}
+                </div>
+              </div>
 
                 <button 
                   onClick={handleDownloadTechnicalReportAction}
