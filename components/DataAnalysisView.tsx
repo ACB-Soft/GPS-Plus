@@ -874,31 +874,31 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
               {/* Technical Analysis Pafta */}
               <div className="space-y-4">
-                <div className="bg-slate-900 rounded-[2rem] p-5 shadow-2xl relative overflow-hidden group border border-white/5">
-                  <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-all pointer-events-none">
-                    <i className="fas fa-bullseye text-6xl text-blue-400"></i>
+                <div className="bg-white rounded-[2rem] p-6 shadow-md border-2 border-slate-200 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.06] transition-all pointer-events-none">
+                     <i className="fas fa-bullseye text-6xl text-slate-800"></i>
                   </div>
                   
-                  <div className="flex justify-between items-center mb-4 relative z-10">
+                  <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-100 relative z-10">
                     <div className="flex items-center gap-3">
-                      <div className="h-6 w-[2px] bg-blue-500 rounded-full"></div>
+                      <div className="h-6 w-[3px] bg-slate-800 rounded-full"></div>
                       <div className="space-y-0.5">
-                        <h3 className="text-white font-black text-[9px] uppercase tracking-[0.2em]">Hassasiyet Analiz Paftası</h3>
-                        <p className="text-blue-400 text-[7px] font-bold uppercase tracking-widest opacity-80">Ref: {distributionData.centerLabel}</p>
+                        <h3 className="text-slate-900 font-extrabold text-[12px] md:text-[13px] uppercase tracking-[0.15em]">{t("Şekil 1: Hassasiyet Analiz Paftası (Hata Dağılımı)")}</h3>
+                        <p className="text-slate-500 text-[8px] md:text-[9px] font-semibold uppercase tracking-widest leading-none">Jeodezik Karşılaştırma Merkezi Ref: {distributionData.centerLabel}</p>
                       </div>
                     </div>
                     <button 
                       onClick={() => exportChart(rawChartRef, 'teknik-analiz-paftasi')}
-                      className="bg-white/5 hover:bg-white/10 text-white px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all backdrop-blur-md border border-white/10"
+                      className="bg-slate-50 hover:bg-slate-100 text-slate-700 px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border border-slate-200/80 shadow-sm cursor-pointer flex items-center gap-1.5"
                     >
-                      <i className="fas fa-camera mr-1"></i> PNG
+                      <i className="fas fa-camera"></i> PNG
                     </button>
                   </div>
 
-                  <div ref={rawChartRef} className="bg-white rounded-2xl p-4 shadow-2xl aspect-square w-full max-w-sm mx-auto relative overflow-hidden">
+                  <div ref={rawChartRef} className="bg-slate-50/50 rounded-2xl p-4 border border-slate-200 aspect-square w-full max-w-sm mx-auto relative overflow-hidden">
                     <ResponsiveContainer width="100%" height="100%">
-                      <ScatterChart margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
-                        <CartesianGrid strokeDasharray="1 1" strokeOpacity={0.1} stroke="#000" />
+                      <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" />
                         <XAxis 
                           type="number" 
                           dataKey="dE" 
@@ -906,8 +906,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           unit="m" 
                           domain={[-maxTickLimit, maxTickLimit]} 
                           ticks={scatterTicks}
-                          tick={{fontSize: 7, fontWeight: 900}} 
-                          axisLine={{ stroke: '#cbd5e1' }}
+                          tick={{fontSize: 8, fontWeight: 700, fill: '#334155'}} 
+                          axisLine={{ stroke: '#475569', strokeWidth: 1.5 }}
                         />
                         <YAxis 
                           type="number" 
@@ -916,35 +916,35 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           unit="m" 
                           domain={[-maxTickLimit, maxTickLimit]} 
                           ticks={scatterTicks}
-                          tick={{fontSize: 7, fontWeight: 900}} 
-                          axisLine={{ stroke: '#cbd5e1' }}
+                          tick={{fontSize: 8, fontWeight: 700, fill: '#334155'}} 
+                          axisLine={{ stroke: '#475569', strokeWidth: 1.5 }}
                         />
-                        <ZAxis type="number" range={[20, 300]} />
+                        <ZAxis type="number" range={[25, 250]} />
                         <Tooltip 
-                          cursor={{ strokeDasharray: '2 2', stroke: '#94a3b8' }} 
+                          cursor={{ strokeDasharray: '3 3', stroke: '#475569' }} 
                           content={({ active, payload }) => {
                             if (active && payload && payload.length) {
                               const data = payload[0].payload;
                               const isMethod = data.method !== undefined;
                               return (
-                                <div className="bg-slate-900 border border-white/10 text-white p-3 rounded-2xl shadow-2xl backdrop-blur-md z-50">
-                                  <p className="text-[9px] font-black uppercase text-blue-400 mb-2 pb-1 border-b border-white/5">
-                                    {isMethod ? `Yöntem: ${getMethodLabel(data.method)}` : `Ham Ölçüm #${data.id}`}
+                                <div className="bg-slate-900 border border-slate-800 text-white p-3.5 rounded-xl shadow-xl z-50">
+                                  <p className="text-[10px] font-bold uppercase text-blue-400 mb-1.5 pb-1 border-b border-slate-800">
+                                    {isMethod ? `${t("Yöntem")}: ${getMethodLabel(data.method)}` : `${t("Gözlem")} #${data.id}`}
                                   </p>
                                   <div className="space-y-1 font-mono text-[9px]">
                                     {!isMethod && data.clusterId !== -1 && (
                                       <div className="flex justify-between gap-4 mb-1">
-                                        <span className="opacity-60 text-[8px] uppercase">Küme:</span>
-                                        <span className="font-black px-1 rounded" style={{ backgroundColor: CLUSTER_COLORS[data.clusterId % CLUSTER_COLORS.length], color: 'white' }}>#{data.clusterId + 1}</span>
+                                        <span className="opacity-60 text-[8px] uppercase">{t("Küme")}:</span>
+                                        <span className="font-black px-1.5 rounded text-[8px]" style={{ backgroundColor: CLUSTER_COLORS[data.clusterId % CLUSTER_COLORS.length], color: 'white' }}>#{data.clusterId + 1}</span>
                                       </div>
                                     )}
                                     <div className="flex justify-between gap-4">
-                                      <span className="opacity-60 text-[8px] uppercase">ΔE:</span>
-                                      <span className="font-black text-blue-400">{data.dE.toFixed(4)} m</span>
+                                      <span className="opacity-60 text-[8px] uppercase">ΔSağa (dE):</span>
+                                      <span className="font-bold text-emerald-400">{data.dE.toFixed(4)} m</span>
                                     </div>
                                     <div className="flex justify-between gap-4">
-                                      <span className="opacity-60 text-[8px] uppercase">ΔN:</span>
-                                      <span className="font-black text-indigo-400">{data.dN.toFixed(4)} m</span>
+                                      <span className="opacity-60 text-[8px] uppercase">ΔYukarı (dN):</span>
+                                      <span className="font-bold text-sky-400">{data.dN.toFixed(4)} m</span>
                                     </div>
                                   </div>
                                 </div>
@@ -954,8 +954,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           }}
                         />
                         
-                        <ReferenceLine x={0} stroke="#cbd5e1" strokeWidth={1} />
-                        <ReferenceLine y={0} stroke="#cbd5e1" strokeWidth={1} />
+                        <ReferenceLine x={0} stroke="#475569" strokeWidth={1.5} strokeDasharray="3 3" />
+                        <ReferenceLine y={0} stroke="#475569" strokeWidth={1.5} strokeDasharray="3 3" />
                         
                         {/* Layer 0: Ground Truth Point */}
                         {analysisType === 'precise' && (
@@ -966,7 +966,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             shape="diamond" 
                             line={false}
                           >
-                            {/* Inner glow for reference */}
                             <Cell fill="#10b981" stroke="#059669" strokeWidth={2} />
                           </Scatter>
                         )}
@@ -981,7 +980,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             <Cell 
                               key={`cell-${index}`} 
                               fill={entry.clusterId !== -1 ? CLUSTER_COLORS[entry.clusterId % CLUSTER_COLORS.length] : '#64748b'} 
-                              fillOpacity={entry.clusterId !== -1 ? 0.6 : 0.15} 
+                              fillOpacity={entry.clusterId !== -1 ? 0.7 : 0.25} 
                             />
                           ))}
                         </Scatter>
@@ -1006,28 +1005,37 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     </ResponsiveContainer>
                   </div>
 
-                  {/* Legend / Method Reference */}
-                  <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-2 bg-white/5 p-4 rounded-xl border border-white/5">
-                    {distributionData.methodPoints.map(m => (
-                      <div key={m.id} className="flex items-center gap-2">
-                        <div className="w-4 h-4 flex items-center justify-center rounded-md text-[8px] font-black text-white shadow-lg shrink-0" style={{ backgroundColor: m.color }}>{m.id}</div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-[7px] font-black text-white uppercase tracking-tighter truncate leading-tight">{getMethodLabel(m.method)}</span>
-                          <span className="text-[6px] font-bold text-blue-400 uppercase tracking-widest leading-tight">{m.errors?.dhz ? `${m.errors.dhz.toFixed(3)}m` : 'Hesaplandı'}</span>
+                  {/* Legend / Method Reference - Academic Layout */}
+                  <div className="mt-5 bg-slate-50 border border-slate-200 rounded-xl p-4">
+                    <div className="text-[10px] font-bold text-slate-800 uppercase tracking-wider mb-2.5 border-b border-slate-200 pb-1.5 flex items-center gap-1.5">
+                      <i className="fas fa-list-ol text-slate-500 text-xs"></i>
+                      <span>{t("Algoritma Sonuç Göstergeleri ve Bağıl Hata (dhz)")}</span>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {distributionData.methodPoints.map(m => (
+                        <div key={m.id} className="flex items-center gap-2.5 p-2 bg-white rounded-lg border border-slate-200/60 shadow-sm text-left">
+                          <div className="w-5 h-5 flex items-center justify-center rounded-md text-[10px] font-black text-white shadow-sm shrink-0" style={{ backgroundColor: m.color }}>{m.id}</div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-[9px] font-bold text-slate-800 uppercase tracking-tight truncate leading-tight">{getMethodLabel(m.method)}</span>
+                            <span className="text-[8px] font-bold text-blue-600 uppercase tracking-widest leading-none mt-0.5">{m.errors?.dhz ? `${m.errors.dhz.toFixed(4)}m` : 'Hesaplandı'}</span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
 
                   {/* Clusters Info */}
                   {computedClusters && computedClusters.length > 0 && (
-                    <div className="mt-2 p-3 bg-blue-950/30 rounded-xl border border-blue-500/20">
-                      <p className="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-2">{t("Kümeleme Analiz Özeti")}</p>
-                      <div className="flex flex-wrap gap-3">
+                    <div className="mt-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                      <p className="text-[10px] font-bold text-slate-800 uppercase tracking-wider mb-2 border-b border-slate-200 pb-1 flex items-center gap-1.5">
+                        <i className="fas fa-project-diagram text-slate-500 text-xs"></i>
+                        <span>{t("Kümeleme Analiz Özeti (K-Means)")}</span>
+                      </p>
+                      <div className="flex flex-wrap gap-4">
                         {computedClusters.map((cluster, cIdx) => (
-                          <div key={cIdx} className="flex items-center gap-1.5">
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CLUSTER_COLORS[cIdx % CLUSTER_COLORS.length] }}></div>
-                            <span className="text-[8px] font-bold text-slate-300 uppercase">{t("Küme")} {cIdx + 1}: {cluster.length} {t("nokta")}</span>
+                          <div key={cIdx} className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full border border-slate-300 shadow-sm" style={{ backgroundColor: CLUSTER_COLORS[cIdx % CLUSTER_COLORS.length] }}></div>
+                            <span className="text-[9px] font-extrabold text-slate-700 uppercase">{t("Küme")} {cIdx + 1}: <span className="font-mono text-slate-900 font-bold">{cluster.length}</span> {t("nokta")}</span>
                           </div>
                         ))}
                       </div>
