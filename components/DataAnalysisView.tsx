@@ -452,8 +452,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     try {
       const dataUrl = await toPng(ref.current, { 
         backgroundColor: '#ffffff', 
-        quality: 1,
-        pixelRatio: 4
+        width: 720,
+        height: 720,
+        style: {
+          width: '720px',
+          height: '720px',
+          transform: 'none',
+          borderRadius: '0px'
+        }
       });
       saveAs(dataUrl, `${name}-${location?.name || 'export'}.png`);
     } catch (error) {
@@ -902,247 +908,186 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   </button>
                 </div>
 
-                {/* 3:2 Aspect Ratio Precision Sheet: Optimized styling, minimum bleed margins */}
+                {/* 1:1 Aspect Ratio Precision Sheet: Borderless & Extremely Clean layout */}
                 <div 
                   ref={rawChartRef} 
-                  className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-3.5 flex flex-col gap-2.5 text-slate-900 w-full max-w-[620px] aspect-[3/2] mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
+                  className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] aspect-square mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
                 >
-                  {/* Dynamic & Compact Geodetic Header (English) */}
-                  <div className="flex justify-between items-center border-b border-slate-900/10 pb-1.5 min-h-0 shrink-0">
-                    <div className="min-w-0">
-                      <h2 className="text-slate-900 font-extrabold text-[10px] uppercase tracking-wider leading-none font-sans">
-                        GPS+ GEODETIC PRECISION CONTROLLER
-                      </h2>
-                      <p className="text-slate-400 text-[6.5px] font-bold uppercase tracking-widest mt-0.5 font-mono">
-                        STATION: {location?.name || 'N/A'} &bull; SYSTEM: {getSystemDisplayLabel(location?.coordinateSystem)} &bull; {location?.samples?.length || 0} EPOCHS
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0 font-mono text-[6.5px] text-slate-400 font-bold uppercase leading-none">
-                      <span>v5.0</span>
-                      <span className="text-[8px] text-blue-500 font-black leading-none">&bull;</span>
-                      <span>STABLE</span>
-                    </div>
-                  </div>
-
-                  {/* Main Visualization Grid (Left: 1:1 Chart, Right: Compact Legend) */}
-                  <div className="flex-1 flex flex-row gap-3.5 min-h-0 pt-0.5">
-                    
-                    {/* Left Panel: 1:1 Aspect-Square Scatter Chart */}
-                    <div className="h-full aspect-square bg-slate-50 border border-slate-200 rounded-xl relative overflow-hidden flex items-center justify-center p-1 shrink-0">
-                      <div className="absolute top-1 left-1.5 z-10 bg-white/80 backdrop-blur-xs px-1 py-0.5 rounded border border-slate-100 font-mono text-[5.5px] font-black text-slate-400 uppercase tracking-wider">
-                        SCATTER PLOT (1:1)
-                      </div>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <ScatterChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-                          <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" />
-                          <XAxis 
-                            type="number" 
-                            dataKey="dE" 
-                            name="ΔE" 
-                            unit="m" 
-                            domain={[-maxTickLimit, maxTickLimit]} 
-                            ticks={scatterTicks}
-                            tick={{fontSize: 6.5, fontWeight: 700, fill: '#334155'}} 
-                            axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
-                            tickLine={{ stroke: '#475569', strokeWidth: 1 }}
-                          />
-                          <YAxis 
-                            type="number" 
-                            dataKey="dN" 
-                            name="ΔN" 
-                            unit="m" 
-                            domain={[-maxTickLimit, maxTickLimit]} 
-                            ticks={scatterTicks}
-                            tick={{fontSize: 6.5, fontWeight: 700, fill: '#334155'}} 
-                            axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
-                            tickLine={{ stroke: '#475569', strokeWidth: 1 }}
-                          />
-                          <ZAxis type="number" range={[15, 120]} />
-                          <Tooltip 
-                            cursor={{ strokeDasharray: '3 3', stroke: '#475569' }} 
-                            content={({ active, payload }) => {
-                              if (active && payload && payload.length) {
-                                const data = payload[0].payload;
-                                const isMethod = data.method !== undefined;
-                                const getMethodLabelEn = (m: CalculationMethod) => {
-                                  const labels: Record<string, string> = {
-                                    'ARITHMETIC_MEAN': 'Arithmetic Mean',
-                                    'WEIGHTED_LSE': 'Weighted LSE (1/σ²)',
-                                    'MIDRANGE_KMEANS_BAARDA': 'MidRange + K-Means + Baarda',
-                                    'KMEANS_4': 'K-Means (k=4)',
-                                    'BAARDA': 'Baarda Outliers Rejection',
-                                    'MIDRANGE': 'MidRange Envelope'
-                                  };
-                                  return labels[m] || m;
+                  {/* Top Panel: Large/Expanded Borderless Scatter Chart */}
+                  <div className="flex-1 min-h-0 min-w-0 w-full relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ScatterChart margin={{ top: 12, right: 12, bottom: 12, left: 12 }}>
+                        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.15} stroke="#64748b" />
+                        <XAxis 
+                          type="number" 
+                          dataKey="dE" 
+                          name="ΔE" 
+                          unit="m" 
+                          domain={[-maxTickLimit, maxTickLimit]} 
+                          ticks={scatterTicks}
+                          tick={{fontSize: 7.5, fontWeight: 700, fill: '#334155'}} 
+                          axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
+                          tickLine={{ stroke: '#475569', strokeWidth: 1 }}
+                        />
+                        <YAxis 
+                          type="number" 
+                          dataKey="dN" 
+                          name="ΔN" 
+                          unit="m" 
+                          domain={[-maxTickLimit, maxTickLimit]} 
+                          ticks={scatterTicks}
+                          tick={{fontSize: 7.5, fontWeight: 700, fill: '#334155'}} 
+                          axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
+                          tickLine={{ stroke: '#475569', strokeWidth: 1 }}
+                        />
+                        <ZAxis type="number" range={[15, 120]} />
+                        <Tooltip 
+                          cursor={{ strokeDasharray: '3 3', stroke: '#475569' }} 
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0].payload;
+                              const isMethod = data.method !== undefined;
+                              const getMethodLabelEn = (m: CalculationMethod) => {
+                                const labels: Record<string, string> = {
+                                  'ARITHMETIC_MEAN': 'Arithmetic Mean',
+                                  'WEIGHTED_LSE': 'Weighted LSE (1/σ²)',
+                                  'MIDRANGE_KMEANS_BAARDA': 'MidRange + K-Means + Baarda',
+                                  'KMEANS_4': 'K-Means (k=4)',
+                                  'BAARDA': 'Baarda Outliers Rejection',
+                                  'MIDRANGE': 'MidRange Envelope'
                                 };
-                                return (
-                                  <div className="bg-slate-900 border border-slate-800 text-white p-2.5 rounded-lg shadow-xl z-50 text-[8px] text-left">
-                                    <p className="font-bold uppercase text-blue-400 mb-0.5 pb-0.5 border-b border-slate-800 leading-none">
-                                      {isMethod ? `${getMethodLabelEn(data.method)}` : `Raw Epoch #${data.id}`}
-                                    </p>
-                                    <div className="space-y-0.5 font-mono">
-                                      {!isMethod && data.clusterId !== -1 && (
-                                        <div className="flex justify-between gap-2">
-                                          <span className="opacity-60 text-[7px] uppercase">CLUSTER:</span>
-                                          <span className="font-black px-1 rounded text-[7px]" style={{ backgroundColor: CLUSTER_COLORS[data.clusterId % CLUSTER_COLORS.length], color: 'white' }}>#{data.clusterId + 1}</span>
-                                        </div>
-                                      )}
+                                return labels[m] || m;
+                              };
+                              return (
+                                <div className="bg-slate-900 border border-slate-800 text-white p-2.5 rounded-lg shadow-xl z-50 text-[8px] text-left">
+                                  <p className="font-bold uppercase text-blue-400 mb-0.5 pb-0.5 border-b border-slate-800 leading-none">
+                                    {isMethod ? `${getMethodLabelEn(data.method)}` : `Raw Epoch #${data.id}`}
+                                  </p>
+                                  <div className="space-y-0.5 font-mono">
+                                    {!isMethod && data.clusterId !== -1 && (
                                       <div className="flex justify-between gap-2">
-                                        <span className="opacity-60 text-[7px] uppercase">ΔE (Easting):</span>
-                                        <span className="font-bold text-emerald-400">{data.dE.toFixed(4)} m</span>
+                                        <span className="opacity-60 text-[7px] uppercase">CLUSTER:</span>
+                                        <span className="font-black px-1 rounded text-[7px]" style={{ backgroundColor: CLUSTER_COLORS[data.clusterId % CLUSTER_COLORS.length], color: 'white' }}>#{data.clusterId + 1}</span>
                                       </div>
-                                      <div className="flex justify-between gap-2">
-                                        <span className="opacity-60 text-[7px] uppercase">ΔN (Northing):</span>
-                                        <span className="font-bold text-sky-400">{data.dN.toFixed(4)} m</span>
-                                      </div>
+                                    )}
+                                    <div className="flex justify-between gap-2">
+                                      <span className="opacity-60 text-[7px] uppercase">ΔE (Easting):</span>
+                                      <span className="font-bold text-emerald-400">{data.dE.toFixed(4)} m</span>
+                                    </div>
+                                    <div className="flex justify-between gap-2">
+                                      <span className="opacity-60 text-[7px] uppercase">ΔN (Northing):</span>
+                                      <span className="font-bold text-sky-400">{data.dN.toFixed(4)} m</span>
                                     </div>
                                   </div>
-                                );
-                              }
-                              return null;
-                            }}
-                          />
-                          
-                          <ReferenceLine x={0} stroke="#475569" strokeWidth={1} strokeDasharray="3 3" />
-                          <ReferenceLine y={0} stroke="#475569" strokeWidth={1} strokeDasharray="3 3" />
-                          
-                          {/* Layer 0: Ground Truth Point */}
-                          {analysisType === 'precise' && (
-                            <Scatter 
-                              name="GROUND TRUTH (REF)" 
-                              data={[{ dE: 0, dN: 0 }]} 
-                              fill="#10b981" 
-                              shape="diamond" 
-                              line={false}
-                            >
-                              <Cell fill="#10b981" stroke="#059669" strokeWidth={1.5} />
-                            </Scatter>
-                          )}
-
-                          {/* Layer 1: Raw Points Cloud */}
-                          <Scatter 
-                            name="Raw Satellite Epochs" 
-                            data={distributionData.rawPoints} 
-                            shape={<RawPointShape />} 
-                          >
-                            {distributionData.rawPoints.map((entry, index) => (
-                              <Cell 
-                                key={`cell-${index}`} 
-                                fill={entry.clusterId !== -1 ? CLUSTER_COLORS[entry.clusterId % CLUSTER_COLORS.length] : '#64748b'} 
-                                fillOpacity={entry.clusterId !== -1 ? 0.7 : 0.25} 
-                              />
-                            ))}
-                          </Scatter>
-                          
-                          {/* Layer 2: Method Aggregates */}
-                          {distributionData.methodPoints.map((mp) => {
-                            const getMethodLabelEn = (m: CalculationMethod) => {
-                              const labels: Record<string, string> = {
-                                'ARITHMETIC_MEAN': 'Arithmetic Mean',
-                                'WEIGHTED_LSE': 'Weighted LSE (1/σ²)',
-                                'MIDRANGE_KMEANS_BAARDA': 'MidRange + K-Means + Baarda',
-                                'KMEANS_4': 'K-Means (k=4)',
-                                'BAARDA': 'Baarda Outliers Rejection',
-                                'MIDRANGE': 'MidRange Envelope'
-                              };
-                              return labels[m] || m;
-                            };
-                            return (
-                              <Scatter 
-                                key={mp.method} 
-                                name={getMethodLabelEn(mp.method)} 
-                                data={[mp]} 
-                                fill={mp.color}
-                                shape="circle"
-                              />
-                            );
-                          })}
-
-                          {/* Layer 3: Numeric Labels for Methods */}
-                          <Scatter 
-                            data={distributionData.methodPoints} 
-                            shape={<CustomScatterLabel />} 
-                          />
-                        </ScatterChart>
-                      </ResponsiveContainer>
-                    </div>
-
-                    {/* Right Panel: High-Density Legend & Key Stochastic Indexes */}
-                    <div className="flex-1 flex flex-col justify-between min-w-0 pr-0.5">
-                      
-                      {/* Sub-Legend Group: Precise Indicators */}
-                      <div>
-                        <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-wider block leading-none mb-1">
-                          STOCHASTIC ACCURACY MEASURES
-                        </span>
-                        <div className="grid grid-cols-2 gap-1">
-                          <div className="bg-slate-50 border border-slate-200/60 rounded p-1">
-                            <span className="text-slate-400 block text-[5px] font-bold uppercase leading-none font-sans">STD DEV (1σ)</span>
-                            <span className="font-extrabold text-slate-800 font-mono text-[7px] tracking-tight leading-none mt-0.5 block">
-                              ±{multipathAnalysis ? multipathAnalysis.stdDev.toFixed(4) : '0.000'}m
-                            </span>
-                          </div>
-                          <div className="bg-slate-50 border border-slate-200/60 rounded p-1">
-                            <span className="text-slate-400 block text-[5px] font-bold uppercase leading-none font-sans">MAX SPREAD</span>
-                            <span className="font-extrabold text-slate-800 font-mono text-[7px] tracking-tight leading-none mt-0.5 block">
-                              ±{multipathAnalysis ? multipathAnalysis.maxSpread.toFixed(4) : '0.000'}m
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Sub-Legend Group: Math Algorithms & Relative H_2D Errors */}
-                      <div className="flex-1 flex flex-col justify-center gap-1 my-1 py-1 border-t border-b border-slate-100">
-                        <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-wider block leading-none mb-1">
-                          STOCHASTIC METHODOLOGY INDEX
-                        </span>
-                        <div className="space-y-1">
-                          {distributionData.methodPoints.map(m => {
-                            const getMethodLabelEn = (m: CalculationMethod) => {
-                              const labels: Record<string, string> = {
-                                'ARITHMETIC_MEAN': 'Arithmetic Mean',
-                                'WEIGHTED_LSE': 'Weighted LSE (1/σ²)',
-                                'MIDRANGE_KMEANS_BAARDA': 'MidRange + Baarda',
-                                'KMEANS_4': 'K-Means Clustered',
-                                'BAARDA': 'Baarda Outlier Rejection',
-                                'MIDRANGE': 'MidRange Envelope'
-                              };
-                              return labels[m] || m;
-                            };
-                            return (
-                              <div key={m.id} className="flex items-center gap-1 text-left leading-none">
-                                <div className="w-3.5 h-3.5 flex items-center justify-center rounded text-[6.5px] font-black text-white shrink-0 shadow-xs" style={{ backgroundColor: m.color }}>{m.id}</div>
-                                <div className="min-w-0">
-                                  <p className="text-[6.5px] font-extrabold text-slate-800 uppercase tracking-tight truncate leading-none">
-                                    {getMethodLabelEn(m.method)}
-                                  </p>
-                                  <p className="text-[5.5px] font-bold text-blue-600 font-mono tracking-tight leading-none mt-0.5">
-                                    {m.errors?.dhz ? `dH_2d = ${m.errors.dhz.toFixed(4)}m` : 'BARYCENTER'}
-                                  </p>
                                 </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        
+                        <ReferenceLine x={0} stroke="#475569" strokeWidth={1} strokeDasharray="3 3" />
+                        <ReferenceLine y={0} stroke="#475569" strokeWidth={1} strokeDasharray="3 3" />
+                        
+                        {/* Layer 0: Ground Truth Point */}
+                        {analysisType === 'precise' && (
+                          <Scatter 
+                            name="GROUND TRUTH (REF)" 
+                            data={[{ dE: 0, dN: 0 }]} 
+                            fill="#10b981" 
+                            shape="diamond" 
+                            line={false}
+                          >
+                            <Cell fill="#10b981" stroke="#059669" strokeWidth={1.5} />
+                          </Scatter>
+                        )}
 
-                      {/* Sub-Legend Group: Calibration Footnote */}
-                      <div className="space-y-0.5">
-                        <p className="text-[5px] text-slate-500 italic leading-tight">
-                          Positioning error vectors calculated horizontally relative to reference baseline and filtered in real-time.
-                        </p>
-                        <p className="text-slate-400 font-mono text-[5px] tracking-wider uppercase leading-none pt-1 border-t border-slate-100/60 font-black">
-                          ADVANCED GEOPHYSICAL ENGINE &bull; GPS+
-                        </p>
-                      </div>
+                        {/* Layer 1: Raw Points Cloud */}
+                        <Scatter 
+                          name="Raw Satellite Epochs" 
+                          data={distributionData.rawPoints} 
+                          shape={<RawPointShape />} 
+                        >
+                          {distributionData.rawPoints.map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={entry.clusterId !== -1 ? CLUSTER_COLORS[entry.clusterId % CLUSTER_COLORS.length] : '#64748b'} 
+                              fillOpacity={entry.clusterId !== -1 ? 0.7 : 0.25} 
+                            />
+                          ))}
+                        </Scatter>
+                        
+                        {/* Layer 2: Method Aggregates */}
+                        {distributionData.methodPoints.map((mp) => {
+                          const getMethodLabelEn = (m: CalculationMethod) => {
+                            const labels: Record<string, string> = {
+                              'ARITHMETIC_MEAN': 'Arithmetic Mean',
+                              'WEIGHTED_LSE': 'Weighted LSE (1/σ²)',
+                              'MIDRANGE_KMEANS_BAARDA': 'MidRange + K-Means + Baarda',
+                              'KMEANS_4': 'K-Means (k=4)',
+                              'BAARDA': 'Baarda Outliers Rejection',
+                              'MIDRANGE': 'MidRange Envelope'
+                            };
+                            return labels[m] || m;
+                          };
+                          return (
+                            <Scatter 
+                              key={mp.method} 
+                              name={getMethodLabelEn(mp.method)} 
+                              data={[mp]} 
+                              fill={mp.color}
+                              shape="circle"
+                            />
+                          );
+                        })}
 
+                        {/* Layer 3: Numeric Labels for Methods */}
+                        <Scatter 
+                          data={distributionData.methodPoints} 
+                          shape={<CustomScatterLabel />} 
+                        />
+                      </ScatterChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Bottom Panel: Shrunk & Very Compact Legend */}
+                  <div className="shrink-0 border-t border-slate-100 pt-2 flex flex-col gap-1.5 w-full">
+                    <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-widest block leading-none mb-1 text-center font-mono">
+                      STOCHASTIC METHODOLOGY INDEX
+                    </span>
+                    <div className="grid grid-cols-3 gap-x-3 gap-y-1">
+                      {distributionData.methodPoints.map(m => {
+                        const getMethodLabelEn = (m: CalculationMethod) => {
+                          const labels: Record<string, string> = {
+                            'ARITHMETIC_MEAN': 'Arithmetic Mean',
+                            'WEIGHTED_LSE': 'Weighted LSE (1/σ²)',
+                            'MIDRANGE_KMEANS_BAARDA': 'MidRange + Baarda',
+                            'KMEANS_4': 'K-Means Clustered',
+                            'BAARDA': 'Baarda Outlier Rejection',
+                            'MIDRANGE': 'MidRange Envelope'
+                          };
+                          return labels[m] || m;
+                        };
+                        return (
+                          <div key={m.id} className="flex items-center gap-1.5 text-left leading-none min-w-0">
+                            <div className="w-3.5 h-3.5 flex items-center justify-center rounded text-[7px] font-black text-white shrink-0 shadow-xs" style={{ backgroundColor: m.color }}>{m.id}</div>
+                            <div className="min-w-0">
+                              <p className="text-[6.5px] font-extrabold text-slate-800 uppercase tracking-tight truncate leading-none">
+                                {getMethodLabelEn(m.method)}
+                              </p>
+                              <p className="text-[5.5px] font-bold text-blue-600 font-mono tracking-tight leading-none mt-0.5">
+                                {m.errors?.dhz ? `dH_2d = ${m.errors.dhz.toFixed(4)}m` : 'BARYCENTER'}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-
                   </div>
                 </div>
               </div>
 
-              {/* Technical Analysis Position Error Chart (With 1:3 PNG Export capability) */}
+              {/* Technical Analysis Position Error Chart (With 1:1 PNG Export capability) */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center px-2">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -1153,14 +1098,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     type="button"
                     className="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-1.5"
                   >
-                    <i className="fas fa-camera text-rose-400"></i> PNG Download (1:3)
+                    <i className="fas fa-camera text-rose-400"></i> PNG Download (1:1)
                   </button>
                 </div>
 
-                {/* 1:3 Aspect-Ratio Time Series Panel */}
+                {/* 1:1 Aspect-Ratio Time Series Panel */}
                 <div 
                   ref={timeErrorChartRef}
-                  className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[720px] aspect-[3/1] mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
+                  className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] aspect-square mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
                 >
                   {/* English Geodetic Header */}
                   <div className="flex justify-between items-center border-b border-slate-900/10 pb-1.5 min-h-0 shrink-0">
@@ -1179,7 +1124,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     </div>
                   </div>
 
-                  {/* The Chart - 1:3 proportion is maintained by the aspect-[3/1] container parent */}
+                  {/* The Chart - 1:1 proportion is maintained by the aspect-square container parent */}
                   <div className="flex-1 min-h-0 min-w-0">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={chartData} margin={{ top: 8, right: 12, bottom: 4, left: 0 }}>
@@ -1222,7 +1167,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       * Calculates distance deviation of each measurement point from geodetic reference over duration
                     </p>
                     <p className="text-slate-400 font-bold text-[6px] tracking-wide uppercase leading-none font-mono">
-                      UNIT: METERS (m) &bull; SCALE: 3:1 (1:3 HORIZ)
+                      UNIT: METERS (m) &bull; SCALE: 1:1
                     </p>
                   </div>
                 </div>
