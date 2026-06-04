@@ -8,12 +8,11 @@ import { geoidService } from '../services/GeoidService';
 
 const getMethodName = (m: CalculationMethod) => {
   switch(m) {
-    case 'ARITHMETIC_MEAN': return "Aritmetik Ortalama";
-    case 'WEIGHTED_LSE': return "Ağırlıklı Dengeleme";
-    case 'MIDRANGE_KMEANS_BAARDA': return "MidRange + K-Means + Baarda";
+    case 'WEIGHTED_LSE': return "Ağırlıklı En Küçük Kareler";
+    case 'MIDRANGE': return "MidRange";
     case 'KMEANS_4': return "K-Means (4 Küme)";
     case 'BAARDA': return "Baarda Eleme";
-    case 'MIDRANGE': return "MidRange";
+    case 'MIDRANGE_KMEANS_BAARDA': return "MidRange + K-Means + Baarda";
     default: return m;
   }
 };
@@ -149,12 +148,11 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   const accuracyLimit = location.accuracyLimit || 5.0;
   
   const methods: CalculationMethod[] = [
-    'ARITHMETIC_MEAN', 
     'WEIGHTED_LSE', 
-    'MIDRANGE_KMEANS_BAARDA',
+    'MIDRANGE',
     'KMEANS_4',
     'BAARDA',
-    'MIDRANGE'
+    'MIDRANGE_KMEANS_BAARDA'
   ];
   const methodResults = methods.map(method => {
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
@@ -365,7 +363,7 @@ export const downloadCombinedAnalysisReport = (
   XLSX.utils.book_append_sheet(workbook, wsRaw, "Ölçüm Kayıtları");
 
   // --- SAYFA 2: İSTATİSTİKSEL ANALİZ VE AR-GE SONUÇLARI ---
-  const calculationMethod = location.calculationMethod || 'ARITHMETIC_MEAN';
+  const calculationMethod = location.calculationMethod || 'WEIGHTED_LSE';
   const bestMethod = results.sort((a,b) => a.errors.dhz - b.errors.dhz)[0];
   const accuracyLimit = location.accuracyLimit || 5.0;
 

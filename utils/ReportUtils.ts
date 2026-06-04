@@ -198,42 +198,10 @@ const N = (1 - u) * (1 - v) * n00
         + u * v * n11;
     </pre>
 
-    <h2>2.4. Gerçek Zamanlı İstatistiksel Süzme Çerçevesi (6 Farklı Süzme Modülü)</h2>
-    <p>Sahada toplanan her bir saniyelik GNSS verisi, çevresel yansımalar ve uydu konfigürasyonlarındaki anlık değişimler nedeniyle rastgele ve sistemsel hatalar barındırır. ${FULL_BRAND}, bu hataları ayıklamak ve kararlı sonuçlar elde etmek amacıyla arazide 3 temel yöntem, ACB - Labs modülünde ise toplamda 6 farklı ileri düzey istatistiksel filtreleme kütüphanesini doğrudan kaynak kod yapısında barındırır:</p>
+    <h2>2.4. Gerçek Zamanlı İstatistiksel Süzme Çerçevesi (5 Farklı Süzme Modülü)</h2>
+    <p>Sahada toplanan her bir saniyelik GNSS verisi, çevresel yansımalar ve uydu konfigürasyonlarındaki anlık değişimler nedeniyle rastgele ve sistemsel hatalar barındırır. ${FULL_BRAND}, bu hataları ayıklamak ve kararlı sonuçlar elde etmek amacıyla arazide ve ACB - Labs modülünde toplamda 5 farklı ileri düzey istatistiksel filtreleme kütüphanesini doğrudan kaynak kod yapısında barındırır:</p>
 
-    <h3>2.4.1. Aritmetik Ortalama (Mean)</h3>
-    <p>Aritmetik ortalama yöntemi, zaman serisi gözlem havuzundaki tüm koordinat değerlerinin eşit ağırlıklı toplamının veri adedine bölünmesi esasına dayanır. Dengeli ve açık havadaki ölçümlerde, aşırı sapan (outlier) değerlerin bulunmadığı kararlı durumlarda standart bazlı hızlı bir süzme ve ortalama konumsal çözüm üretimi sağlar. Bu temel algoritmayı icra eden ve yatay konum dağılımına bağlı standart sapma (dispersion) değerlerini hesaplayan TS kod kesiti aşağıdadır:</p>
-    <pre class="code-block">
-export function calculateAverage(samples: Coordinate[]): Coordinate {
-  const validAltitudes = samples.filter(s => s.altitude !== null);
-  const validAltAccuracies = samples.filter(s => s.altitudeAccuracy !== null);
-  const meanLat = samples.reduce((a, b) => a + b.lat, 0) / samples.length;
-  const meanLng = samples.reduce((a, b) => a + b.lng, 0) / samples.length;
-  const residualsInMeters = samples.map(s => {
-    const dLat = (s.lat - meanLat) * 111320;
-    const dLng = (s.lng - meanLng) * 111320 * Math.cos(meanLat * Math.PI / 180);
-    return dLat * dLat + dLng * dLng;
-  });
-  const hVariance = residualsInMeters.reduce((a, b) => a + b, 0) / Math.max(1, samples.length - 1);
-  const hStdDev = Math.sqrt(hVariance);
-  const avgSensorAccuracy = samples.reduce((a, b) => a + b.accuracy, 0) / samples.length;
-  let finalAccuracy = avgSensorAccuracy;
-  if (samples.length > 1) {
-    const standardError = hStdDev / Math.sqrt(samples.length);
-    finalAccuracy = Math.sqrt(Math.pow(standardError, 2) + Math.pow(avgSensorAccuracy / Math.sqrt(samples.length), 2));
-  }
-  return {
-    lat: meanLat,
-    lng: meanLng,
-    accuracy: finalAccuracy,
-    altitude: validAltitudes.length > 0 ? validAltitudes.reduce((a, b) => a + (b.altitude || 0), 0) / validAltitudes.length : null,
-    altitudeAccuracy: validAltAccuracies.length > 0 ? validAltAccuracies.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / validAltAccuracies.length : null,
-    timestamp: Date.now()
-  };
-}
-    </pre>
-
-    <h3>2.4.2. Ağırlıklı En Küçük Kareler (Weighted Least Squares - WLS)</h3>
+    <h3>2.4.1. Ağırlıklı En Küçük Kareler (Weighted Least Squares - WLS)</h3>
     <p>Ağırlıklı en küçük kareler süzgeci, her bir GNSS ölçüm epokunda cihazın uydu sinyal kalitesi ve uyduların göksel yapısına göre bildirdiği dinamik kalitesel standart sapma değeri üzerinden ağırlık üretir. En yüksek hassasiyete sahip olan ve düşük gürültülü saniyelerdeki verilere daha yüksek ağırlık vererek hassas verinin genel konum sonucundaki payını artırır. Saniyede 1 kez çalışan bu ağırlıklı dengeleme ve ağırlık matrisi üretimini yürüten ana TS kodu şu şekildedir:</p>
     <pre class="code-block">
 function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
@@ -255,7 +223,7 @@ function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; used
 }
     </pre>
 
-    <h3>2.4.3. MidRange + K-Means + Baarda Hibrit Yaklaşımı</h3>
+    <h3>2.4.2. MidRange + K-Means + Baarda Hibrit Yaklaşımı</h3>
     <p>Uygulamanın amiral gemisi olarak nitelendirilen bu hibrit yaklaşım, saniyede bir okunan konum gözlemlerini öncelikle Mid-Range referans modeline göre epsilon sınırında filtreler, ardından kalan verileri K-Means kümeleme algoritmasıyla (K=4) segmentlere ayırır. Her bir segment kendi içinde ağırlıklı en küçük kareler modeliyle çözümlendikten sonra, kümeler arası uyuşmazlık dereceleri Baarda Kalın Hata Testi ile sınanarak sistemsel yansıma (multipath) kaynaklı gürültüler ve sürüklenmeler elenir. Özellikle yoğun kentsel kanyonlarda ve ağaç altı zorlu arazi koşullarında üstün operasyonel kararlılık başarısı gösterir. Algoritma adımlarını gerçekleştiren kod bloğu aşağıda dökümlenmiştir:</p>
     <pre class="code-block">
 function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
@@ -310,7 +278,7 @@ function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; use
 }
     </pre>
 
-    <h3>2.4.4. K-Means (4-Way Segmentasyon) Süzgeci</h3>
+    <h3>2.4.3. K-Means (4-Way Segmentasyon) Süzgeci</h3>
     <p>Bu filtreleme modeli, küme içi varyans ve kareler toplamının minimum edilmesi kriterine göre 2 boyutlu konumsal koordinat verilerini 4 ayrı gruba segmentler. İstatistiksel olarak en kararlı, saçılım genişliği en dar ve yoğunluğu en yüksek olan küme seçilerek, sadece bu küme içerisindeki gözlemlerin ağırlıklı en küçük kareler ortalaması genel sonuç kabul edilir. K-Means mekanizmasının iterative mesafe ve küme güncelleme döngüleri aşağıda sunulmuştur:</p>
     <pre class="code-block">
 function runKMeans(samples: Coordinate[], k: number): number[] {
@@ -350,7 +318,7 @@ function runKMeans(samples: Coordinate[], k: number): number[] {
 }
     </pre>
 
-    <h3>2.4.5. Baarda Kalın Hata Elemesi (Baarda's Reliability Test / Snooping)</h3>
+    <h3>2.4.4. Baarda Kalın Hata Elemesi (Baarda's Reliability Test / Snooping)</h3>
     <p>Jeodezik ölçü standartlarının temeli olan Baarda'nın veri gözetleme yöntemi (data snooping), normalize edilmiş ve standardize edilmiş ölçü uyuşmazlığı hatalarının istatistiksel test büyüklüğünü denetler. Kritik sınır değerleri aşan uyuşmazlık hataları ardışık olarak tespit edilerek en büyük kalın hatadan başlanarak döngüsel düzende sistemden temizlenir. Baarda kalın hata test büyüklüğünü ve standartlaştırılmış uyuşmazlık denetimini koşturan kritik fonksiyon aşağıda yer almaktadır:</p>
     <pre class="code-block">
 function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndices: number[] } {
@@ -392,7 +360,7 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
 }
     </pre>
 
-    <h3>2.4.6. MidRange (Maksimum-Minimum Sınır Ortalama Süzgeci)</h3>
+    <h3>2.4.5. MidRange (Maksimum-Minimum Sınır Ortalama Süzgeci)</h3>
     <p>MidRange süzgeci, veri setindeki en büyük koordinat değerleri ile en küçük koordinat değerlerinin aritmetik ortalamasını alarak uç sınırların tam ortasını temsil eden bir referans merkez noktası üretir. Özellikle simetrik dağılımlarda ve dış gürültünün veri kümesini her iki uçtan da dengeli etkilediği senaryolarda hızlı ve kararlı bir referans tespiti sağlar. Bu geometrik uç süzgecini yürüten fonksiyonun tam TS kod dizilimi şu şekildedir:</p>
     <pre class="code-block">
 export function calculateMidRange(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {

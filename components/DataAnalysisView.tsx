@@ -153,22 +153,20 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   }, [location]);
 
   const methods = useMemo<CalculationMethod[]>(() => [
-    'ARITHMETIC_MEAN', 
     'WEIGHTED_LSE',
-    'MIDRANGE_KMEANS_BAARDA',
+    'MIDRANGE',
     'KMEANS_4',
     'BAARDA',
-    'MIDRANGE'
+    'MIDRANGE_KMEANS_BAARDA'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
     const labels: Record<string, string> = {
-      'ARITHMETIC_MEAN': t("Aritmetik Ortalama"),
-      'WEIGHTED_LSE': t("Ağırlıklı Dengeleme"),
-      'MIDRANGE_KMEANS_BAARDA': "MidRange + K-Means + Baarda",
+      'WEIGHTED_LSE': t("Ağırlıklı En Küçük Kareler"),
+      'MIDRANGE': t("MidRange"),
       'KMEANS_4': t("K-Means (4 Küme)"),
       'BAARDA': t("Baarda Eleme"),
-      'MIDRANGE': t("MidRange")
+      'MIDRANGE_KMEANS_BAARDA': "MidRange + K-Means + Baarda"
     };
     return labels[m] || m;
   };
@@ -708,21 +706,15 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t("Model Açıklamaları")}</h4>
                <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-1">
-                    <p className="text-[9px] font-black text-pink-600 uppercase">{t("Aritmetik Ortalama")}</p>
-                    <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      {t("Tüm ham ölçümlerin ağırlıksız ortalamasını hesaplar. Veriler homojen olduğunda kararlıdır.")}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[9px] font-black text-violet-600 uppercase">{t("Ağırlıklı Dengeleme")}</p>
+                    <p className="text-[9px] font-black text-violet-600 uppercase">{t("Ağırlıklı En Küçük Kareler (Varsayılan)")}</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
                       {t("Ölçüm hassasiyetine (accuracy) göre ters ağırlıklı modelleme yaparak güvensiz verilerin etkisini azaltır.")}
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[9px] font-black text-blue-600 uppercase">MidRange + K-Means + Baarda</p>
+                    <p className="text-[9px] font-black text-teal-600 uppercase">MidRange</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      {t("Mid-range üzerinde 1.0 kat payı ile sıkı filtreleme yapar, K-Means ile 4 kümeye böler ve Baarda testi ile final uyuşmazlık denetimi sağlar.")}
+                      {t("Ölçüm serisindeki en büyük ve en küçük sınırsal enlemlerin/boylamların ortalamasını alarak geometrik uç merkezini süzgeçten geçirir.")}
                     </p>
                   </div>
                   <div className="space-y-1">
@@ -738,9 +730,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[9px] font-black text-teal-600 uppercase">MidRange</p>
+                    <p className="text-[9px] font-black text-blue-600 uppercase">MidRange + K-Means + Baarda</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      {t("Ölçüm serisindeki en büyük ve en küçük sınırsal enlemlerin/boylamların ortalamasını alarak geometrik uç merkezini süzgeçten geçirir.")}
+                      {t("Mid-range üzerinde 1.0 kat payı ile sıkı filtreleme yapar, K-Means ile 4 kümeye böler ve Baarda testi ile final uyuşmazlık denetimi sağlar.")}
                     </p>
                   </div>
                </div>
@@ -949,7 +941,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   <div className="flex-1 min-h-0 min-w-0 w-full relative">
                     <ResponsiveContainer width="100%" height="100%">
                       <ScatterChart margin={{ top: 12, right: 12, bottom: 12, left: 12 }}>
-                        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.15} stroke="#64748b" />
+                        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" horizontal={true} vertical={true} />
                         <XAxis 
                           type="number" 
                           dataKey="dE" 
@@ -957,6 +949,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           unit="m" 
                           domain={[-maxTickLimit, maxTickLimit]} 
                           ticks={scatterTicks}
+                          interval={0}
                           tick={{fontSize: 7.5, fontWeight: 700, fill: '#334155'}} 
                           axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
                           tickLine={{ stroke: '#475569', strokeWidth: 1 }}
@@ -968,6 +961,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           unit="m" 
                           domain={[-maxTickLimit, maxTickLimit]} 
                           ticks={scatterTicks}
+                          interval={0}
                           tick={{fontSize: 7.5, fontWeight: 700, fill: '#334155'}} 
                           axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
                           tickLine={{ stroke: '#475569', strokeWidth: 1 }}
@@ -1161,10 +1155,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   >
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={timeSeriesChartData} margin={{ top: 8, right: 16, bottom: 4, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.3} stroke="#000000" />
+                        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={true} strokeOpacity={0.15} stroke="#000000" />
                         <XAxis 
                           dataKey="timeLabel" 
                           ticks={timeSeriesXTicks}
+                          interval={0}
                           tick={{ fontSize: 7, fontWeight: 800, fill: '#000000' }} 
                           axisLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                           tickLine={{ stroke: '#000000', strokeWidth: 1.5 }}
@@ -1172,6 +1167,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         <YAxis 
                           domain={[0, timeSeriesMaxLimit]} 
                           ticks={timeSeriesYTicks}
+                          interval={0}
                           tick={{ fontSize: 7, fontWeight: 800, fill: '#000000' }} 
                           axisLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                           tickLine={{ stroke: '#000000', strokeWidth: 1.5 }}

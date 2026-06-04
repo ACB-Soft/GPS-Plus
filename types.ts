@@ -9,7 +9,7 @@ export interface Coordinate {
 }
 
 export type CalculationMethod = 
-  | 'ARITHMETIC_MEAN' 
+  | 'ARITHMETIC_MEAN'
   | 'WEIGHTED_LSE' 
   | 'MIDRANGE_KMEANS_BAARDA' 
   | 'KMEANS_4' 
