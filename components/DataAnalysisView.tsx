@@ -1161,20 +1161,20 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   >
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={timeSeriesChartData} margin={{ top: 8, right: 16, bottom: 4, left: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.15} stroke="#64748b" />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.3} stroke="#000000" />
                         <XAxis 
                           dataKey="timeLabel" 
                           ticks={timeSeriesXTicks}
-                          tick={{ fontSize: 7, fontWeight: 700, fill: '#64748b' }} 
-                          axisLine={{ stroke: '#cbd5e1', strokeWidth: 1 }}
-                          tickLine={{ stroke: '#cbd5e1' }}
+                          tick={{ fontSize: 7, fontWeight: 800, fill: '#000000' }} 
+                          axisLine={{ stroke: '#000000', strokeWidth: 1.5 }}
+                          tickLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                         />
                         <YAxis 
                           domain={[0, timeSeriesMaxLimit]} 
                           ticks={timeSeriesYTicks}
-                          tick={{ fontSize: 7, fontWeight: 700, fill: '#64748b' }} 
-                          axisLine={{ stroke: '#cbd5e1', strokeWidth: 1 }}
-                          tickLine={{ stroke: '#cbd5e1' }}
+                          tick={{ fontSize: 7, fontWeight: 800, fill: '#000000' }} 
+                          axisLine={{ stroke: '#000000', strokeWidth: 1.5 }}
+                          tickLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                           width={45} 
                           tickFormatter={(val) => val.toFixed(1) + 'm'}
                         />
