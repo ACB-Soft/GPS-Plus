@@ -8,6 +8,7 @@ import { convertCoordinate, getSystemDisplayLabel } from '../utils/CoordinateUti
 import { calculateResult, calculateAverage, calculateMaxDistance } from '../utils/MathUtils';
 import { downloadCombinedAnalysisReport } from './ExcelUtils';
 import { generateTechnicalReport } from '../utils/ReportUtils';
+import Header from './Header';
 import { 
   ScatterChart, Scatter, LineChart, Line, XAxis, YAxis, ZAxis, CartesianGrid, 
   Tooltip, ResponsiveContainer, Cell, ReferenceLine, Legend
@@ -103,12 +104,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [showMap, setShowMap] = useState(false);
 
   const handleDownloadTechnicalReportAction = () => {
-    const password = prompt(t("Teknik raporu indirmek için şifreyi giriniz:"));
-    if (password === "748123") {
-      generateTechnicalReport();
-    } else if (password !== null) {
-      alert(t("Hatalı şifre!"));
-    }
+    generateTechnicalReport();
   };
 
   const folders = useMemo(() => {
@@ -556,24 +552,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white w-full max-w-2xl rounded-[2.5rem] overflow-hidden shadow-2xl animate-in slide-in-from-bottom-10 flex flex-col max-h-[95vh]">
-        
-        {/* Header */}
-        <div className="bg-slate-900 px-8 py-5 text-white shrink-0">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-sm font-black uppercase tracking-[0.2em] leading-none">{t("Hassas Analiz & ACB - Labs")}</h2>
-              <p className="text-blue-400 text-[8px] font-bold mt-1 uppercase tracking-widest opacity-80">{t("Gelişmiş Raporlama Sistemi")}</p>
-            </div>
-            <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center active:scale-90 transition-all text-xs">
-              <i className="fas fa-times"></i>
-            </button>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 no-scrollbar">
+    <div className="fixed inset-0 z-50 bg-slate-200 flex flex-col animate-in h-screen overflow-hidden">
+      <Header title="Hassas Analiz & ACB - Labs" onBack={onClose} sticky={true} />
+      
+      <div className="flex-1 overflow-y-auto no-scrollbar py-6 px-4 md:px-8">
+        <div className="max-w-2xl mx-auto w-full bg-white rounded-[2.5rem] p-6 md:p-8 shadow-md space-y-6">
 
           {/* STEP 1: Method Selection */}
           <div className="space-y-4">
@@ -1081,10 +1064,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
                   {/* Bottom Panel: Shrunk & Very Compact Legend */}
                   <div className="shrink-0 border-t border-slate-100 pt-2 flex flex-col gap-1.5 w-full">
-                    <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-widest block leading-none mb-1 text-center font-mono">
-                      STOCHASTIC METHODOLOGY INDEX
-                    </span>
-                    <div className="grid grid-cols-3 gap-x-3 gap-y-1">
+                    <div className="grid grid-cols-1 gap-y-1.5">
                       {distributionData.methodPoints.map(m => {
                         const getMethodLabelEn = (m: CalculationMethod) => {
                           const labels: Record<string, string> = {
