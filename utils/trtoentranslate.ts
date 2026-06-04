@@ -394,7 +394,7 @@ export const trToEnMap: Record<string, string> = {
   "Denetleniyor...": "Checking...",
   "Ölçüm Ayarları": "Measurement Settings",
   "Wi-Fi / Şebeke Verilerini Filtrele": "Filter Wi-Fi / Cellular Data",
-  "1. Yöntem: Ağırlık En Küçük Kareler (Varsayılan)": "Method 1: Weighted Least Squares (Default)",
+  "1. Yöntem: Ağırlıklı En Küçük Kareler (Varsayılan)": "Method 1: Weighted Least Squares (Default)",
   "2. Yöntem: MidRange": "Method 2: MidRange",
   "3. Yöntem: KMeans": "Method 3: KMeans",
   "4. Yöntem: Baarda": "Method 4: Baarda",

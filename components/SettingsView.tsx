@@ -524,7 +524,7 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
                   onChange={(e) => setCalculationMethod(e.target.value)}
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
-                  <option value="WEIGHTED_LSE">{t("1. Yöntem: Ağırlık En Küçük Kareler (Varsayılan)")}</option>
+                  <option value="WEIGHTED_LSE">{t("1. Yöntem: Ağırlıklı En Küçük Kareler (Varsayılan)")}</option>
                   <option value="MIDRANGE">{t("2. Yöntem: MidRange")}</option>
                   <option value="KMEANS_4">{t("3. Yöntem: KMeans")}</option>
                   <option value="BAARDA">{t("4. Yöntem: Baarda")}</option>

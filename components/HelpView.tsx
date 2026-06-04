@@ -251,7 +251,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
               <div className="space-y-4">
                 <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm ring-1 ring-blue-50">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight">{t("1. Yöntem: Ağırlık En Küçük Kareler (Varsayılan)")}</h4>
+                    <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight">{t("1. Yöntem: Ağırlıklı En Küçük Kareler (Varsayılan)")}</h4>
                     <span className="text-[11px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold">{t("VARSAYILAN")}</span>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed">
