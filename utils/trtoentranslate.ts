@@ -224,7 +224,8 @@ export const trToEnMap: Record<string, string> = {
   "Kayıtlı Proje Bulunamadı": "No Saved Projects Found",
   "Excel Dökümanı (.XLSX)": "Excel Document (.XLSX)",
   "Metin Belgesi (.TXT)": "Text File (.TXT)",
-  "AR-GE MODÜLÜ": "R&D MODULE",
+  "ACB - LABS": "ACB - Labs",
+  "Hassas Analiz & ACB - Labs": "Precision Analysis & ACB - Labs",
   "Analiz sayfasına giriş için şifreyi giriniz:": "Enter password to access analysis page:",
   "Hatalı şifre!": "Incorrect password!",
 

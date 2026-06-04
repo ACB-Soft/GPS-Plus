@@ -457,7 +457,7 @@ export const downloadCombinedAnalysisReport = (
     ["- Delta (Δ): Kesin Değer - Hesaplanan Değer farkıdır."],
     ["- Yatay Hata: Konumsal (2D) vektörel sapmadır."],
     ["- En Başarılı Seçimi: Yatay hatası (ΔHz) en düşük olan algoritmaya göre yapılmıştır."],
-    [`- Bu rapor ${FULL_BRAND} Ar-Ge platformu üzerinden otomatik üretilmiştir.`]
+    [`- Bu rapor ${FULL_BRAND} ACB - Labs platformu üzerinden otomatik üretilmiştir.`]
   ];
 
   const wsAnalysis = XLSX.utils.aoa_to_sheet(analysisData);

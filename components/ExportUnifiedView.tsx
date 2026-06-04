@@ -126,7 +126,7 @@ const ExportUnifiedView: React.FC<Props> = ({ locations, settings }) => {
               className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] hover:text-blue-400 transition-colors py-2 px-4 border border-slate-100 rounded-full"
             >
               <i className="fas fa-flask mr-2 opacity-50"></i>
-              {t("AR-GE MODÜLÜ")}
+              {t("ACB - LABS")}
             </button>
           </div>
         </div>

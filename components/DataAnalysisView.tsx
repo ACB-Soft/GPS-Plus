@@ -454,7 +454,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       const dataIdx = Math.min(Math.round(i * (chartData.length - 1) / 12), chartData.length - 1);
       if (dataIdx >= 0 && dataIdx < chartData.length) {
         const originalPoint = chartData[dataIdx];
-        const label = i === 0 ? "1.sn" : `${i * 5}.sn`;
+        const label = i === 0 ? "1.sec" : `${i * 5}.sec`;
         res.push({
           ...originalPoint,
           timeLabel: label
@@ -464,19 +464,22 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     return res;
   }, [chartData]);
 
-  const timeSeriesYTicks = useMemo(() => {
-    if (timeSeriesChartData.length === 0) return [0, 0.5, 1.0];
+  const timeSeriesMaxLimit = useMemo(() => {
+    if (timeSeriesChartData.length === 0) return 1.0;
     const maxVal = Math.max(...timeSeriesChartData.map(d => d.errorHz || 0), 0.5);
-    const limit = Math.ceil(maxVal / 0.5) * 0.5;
+    return Math.ceil(maxVal / 0.5) * 0.5;
+  }, [timeSeriesChartData]);
+
+  const timeSeriesYTicks = useMemo(() => {
     const ticks = [];
-    for (let val = 0; val <= limit + 0.01; val += 0.5) {
+    for (let val = 0; val <= timeSeriesMaxLimit + 0.01; val += 0.5) {
       ticks.push(parseFloat(val.toFixed(1)));
     }
     return ticks;
-  }, [timeSeriesChartData]);
+  }, [timeSeriesMaxLimit]);
 
   const timeSeriesXTicks = useMemo(() => {
-    return ["1.sn", "5.sn", "10.sn", "15.sn", "20.sn", "25.sn", "30.sn", "35.sn", "40.sn", "45.sn", "50.sn", "55.sn", "60.sn"];
+    return ["1.sec", "5.sec", "10.sec", "15.sec", "20.sec", "25.sec", "30.sec", "35.sec", "40.sec", "45.sec", "50.sec", "55.sec", "60.sec"];
   }, []);
 
   const exportChart = async (ref: React.RefObject<HTMLDivElement>, name: string) => {
@@ -484,11 +487,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     try {
       const dataUrl = await toPng(ref.current, { 
         backgroundColor: '#ffffff', 
-        width: 720,
-        height: 720,
+        pixelRatio: 3,
         style: {
-          width: '720px',
-          height: '720px',
           transform: 'none',
           borderRadius: '0px'
         }
@@ -565,7 +565,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
         <div className="bg-slate-900 px-8 py-5 text-white shrink-0">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-sm font-black uppercase tracking-[0.2em] leading-none">{t("Hassas Analiz & AR-GE")}</h2>
+              <h2 className="text-sm font-black uppercase tracking-[0.2em] leading-none">{t("Hassas Analiz & ACB - Labs")}</h2>
               <p className="text-blue-400 text-[8px] font-bold mt-1 uppercase tracking-widest opacity-80">{t("Gelişmiş Raporlama Sistemi")}</p>
             </div>
             <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center active:scale-90 transition-all text-xs">
@@ -1170,13 +1170,13 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           tickLine={{ stroke: '#cbd5e1' }}
                         />
                         <YAxis 
-                          domain={[0, 'auto']} 
+                          domain={[0, timeSeriesMaxLimit]} 
                           ticks={timeSeriesYTicks}
                           tick={{ fontSize: 7, fontWeight: 700, fill: '#64748b' }} 
                           axisLine={{ stroke: '#cbd5e1', strokeWidth: 1 }}
                           tickLine={{ stroke: '#cbd5e1' }}
-                          width={35} 
-                          unit="m" 
+                          width={45} 
+                          tickFormatter={(val) => val.toFixed(1) + 'm'}
                         />
                         <Tooltip 
                           contentStyle={{ borderRadius: '0.75rem', border: '1px solid #e2e8f0', fontWeight: 'black', background: '#ffffff', color: '#0f172a', fontSize: '9px' }} 

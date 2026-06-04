@@ -199,7 +199,7 @@ const N = (1 - u) * (1 - v) * n00
     </pre>
 
     <h2>2.4. Gerçek Zamanlı İstatistiksel Süzme Çerçevesi (6 Farklı Süzme Modülü)</h2>
-    <p>Sahada toplanan her bir saniyelik GNSS verisi, çevresel yansımalar ve uydu konfigürasyonlarındaki anlık değişimler nedeniyle rastgele ve sistemsel hatalar barındırır. ${FULL_BRAND}, bu hataları ayıklamak ve kararlı sonuçlar elde etmek amacıyla arazide 3 temel yöntem, AR-GE modülünde ise toplamda 6 farklı ileri düzey istatistiksel filtreleme kütüphanesini doğrudan kaynak kod yapısında barındırır:</p>
+    <p>Sahada toplanan her bir saniyelik GNSS verisi, çevresel yansımalar ve uydu konfigürasyonlarındaki anlık değişimler nedeniyle rastgele ve sistemsel hatalar barındırır. ${FULL_BRAND}, bu hataları ayıklamak ve kararlı sonuçlar elde etmek amacıyla arazide 3 temel yöntem, ACB - Labs modülünde ise toplamda 6 farklı ileri düzey istatistiksel filtreleme kütüphanesini doğrudan kaynak kod yapısında barındırır:</p>
 
     <h3>2.4.1. Aritmetik Ortalama (Mean)</h3>
     <p>Aritmetik ortalama yöntemi, zaman serisi gözlem havuzundaki tüm koordinat değerlerinin eşit ağırlıklı toplamının veri adedine bölünmesi esasına dayanır. Dengeli ve açık havadaki ölçümlerde, aşırı sapan (outlier) değerlerin bulunmadığı kararlı durumlarda standart bazlı hızlı bir süzme ve ortalama konumsal çözüm üretimi sağlar. Bu temel algoritmayı icra eden ve yatay konum dağılımına bağlı standart sapma (dispersion) değerlerini hesaplayan TS kod kesiti aşağıdadır:</p>
