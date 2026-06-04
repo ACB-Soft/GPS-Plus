@@ -874,30 +874,99 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
               {/* Technical Analysis Pafta */}
               <div className="space-y-4">
-                <div className="bg-white rounded-[2rem] p-6 shadow-md border-2 border-slate-200 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.06] transition-all pointer-events-none">
-                     <i className="fas fa-bullseye text-6xl text-slate-800"></i>
-                  </div>
-                  
-                  <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-100 relative z-10">
-                    <div className="flex items-center gap-3">
-                      <div className="h-6 w-[3px] bg-slate-800 rounded-full"></div>
-                      <div className="space-y-0.5">
-                        <h3 className="text-slate-900 font-extrabold text-[12px] md:text-[13px] uppercase tracking-[0.15em]">{t("Şekil 1: Hassasiyet Analiz Paftası (Hata Dağılımı)")}</h3>
-                        <p className="text-slate-500 text-[8px] md:text-[9px] font-semibold uppercase tracking-widest leading-none">Jeodezik Karşılaştırma Merkezi Ref: {distributionData.centerLabel}</p>
+                <div className="flex justify-between items-center px-2">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    {t("Uluslararası Teknik Grafik Çıktısı")}
+                  </span>
+                  <button 
+                    onClick={() => exportChart(rawChartRef, 'gps-plus-precision-sheet')}
+                    className="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-1.5"
+                  >
+                    <i className="fas fa-camera text-blue-400"></i> {t("PNG İndir (İngilizce)")}
+                  </button>
+                </div>
+
+                {/* Vertical Academic Sheet: Automatically captured inside PNG */}
+                <div 
+                  ref={rawChartRef} 
+                  className="bg-white rounded-[2rem] p-7 border-2 border-slate-200 flex flex-col gap-5 text-slate-900 w-full max-w-[480px] mx-auto relative overflow-hidden"
+                >
+                  {/* Academic Report Header */}
+                  <div className="border-b-2 border-slate-900 pb-3 relative z-10 text-left">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h2 className="text-slate-900 font-extrabold text-[12px] uppercase tracking-[0.16em] leading-tight font-sans">
+                          GPS+ GEODETIC PRECISION ANALYSIS REPORT
+                        </h2>
+                        <p className="text-slate-500 text-[8px] font-bold uppercase tracking-widest mt-1 font-sans">
+                          STOCHASTIC MODELING &amp; MULTI-ALGORITHMIC COORDINATE DISPERSION
+                        </p>
                       </div>
+                      <span className="text-[7px] font-black px-1.5 py-0.5 bg-slate-900 text-white rounded tracking-widest">
+                        v5.0
+                      </span>
                     </div>
-                    <button 
-                      onClick={() => exportChart(rawChartRef, 'teknik-analiz-paftasi')}
-                      className="bg-slate-50 hover:bg-slate-100 text-slate-700 px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border border-slate-200/80 shadow-sm cursor-pointer flex items-center gap-1.5"
-                    >
-                      <i className="fas fa-camera"></i> PNG
-                    </button>
                   </div>
 
-                  <div ref={rawChartRef} className="bg-slate-50/50 rounded-2xl p-4 border border-slate-200 aspect-square w-full max-w-sm mx-auto relative overflow-hidden">
+                  {/* Metadata Grid (In English) */}
+                  <div className="grid grid-cols-2 gap-3 text-[8.5px] border-b border-dashed border-slate-200 pb-3 text-left">
+                    <div className="space-y-1">
+                      <p className="text-slate-500 font-semibold uppercase tracking-wider">{t("Nokta İsmi")} / STATION ID</p>
+                      <p className="font-extrabold text-slate-900 bg-slate-50 p-1.5 rounded border border-slate-100 uppercase truncate">
+                        {location?.name || 'N/A'}
+                      </p>
+                      <p className="text-slate-500 font-semibold uppercase tracking-wider mt-1">{t("Referans Merkez")} / CENTER REF (0,0)</p>
+                      <p className="font-extrabold text-slate-800 bg-slate-50 p-1.5 rounded border border-slate-100 uppercase truncate">
+                        {analysisType === 'precise' ? 'GROUND TRUTH (REF)' : 'EMPIRICAL CENTROID'}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-slate-500 font-semibold uppercase tracking-wider">EPSG DATUM / SYSTEM</p>
+                      <p className="font-extrabold text-slate-900 bg-slate-50 p-1.5 rounded border border-slate-100 uppercase truncate">
+                        {getSystemDisplayLabel(location?.coordinateSystem)}
+                      </p>
+                      <p className="text-slate-500 font-semibold uppercase tracking-wider mt-1 font-sans">OBSERVATION VOLUME (n)</p>
+                      <p className="font-extrabold text-slate-800 bg-slate-50 p-1.5 rounded border border-slate-100 uppercase font-mono">
+                        {location?.samples?.length || 0} Epochs (60s Max)
+                      </p>
+                    </div>
+                    
+                    <div className="col-span-2 grid grid-cols-3 gap-1.5 pt-1.5 border-t border-slate-100/60 mt-1">
+                      <div className="text-center bg-slate-50 border border-slate-100 rounded p-1">
+                        <span className="text-slate-400 block text-[7.5px] font-semibold uppercase leading-none mb-0.5 font-sans">MAX SPREAD</span>
+                        <span className="font-bold text-slate-800 font-mono text-[9px]">
+                          ±{multipathAnalysis ? multipathAnalysis.maxSpread.toFixed(4) : '0.000'}m
+                        </span>
+                      </div>
+                      <div className="text-center bg-slate-50 border border-slate-100 rounded p-1">
+                        <span className="text-slate-400 block text-[7.5px] font-semibold uppercase leading-none mb-0.5 font-sans font-sans">STD DEV (1σ)</span>
+                        <span className="font-bold text-slate-800 font-mono text-[9px]">
+                          ±{multipathAnalysis ? multipathAnalysis.stdDev.toFixed(4) : '0.000'}m
+                        </span>
+                      </div>
+                      <div className="text-center bg-slate-50 border border-slate-100 rounded p-1">
+                        <span className="text-slate-400 block text-[7.5px] font-semibold uppercase leading-none mb-0.5 font-sans font-sans">AVG SENSOR ACC</span>
+                        <span className="font-bold text-slate-800 font-mono text-[9px]">
+                          ±{multipathAnalysis ? multipathAnalysis.avgSensorAcc.toFixed(4) : '0.000'}m
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Figure Subhead in English */}
+                  <div className="text-left">
+                    <h3 className="text-slate-900 font-extrabold text-[10px] uppercase tracking-wider leading-none mb-1 font-sans">
+                      FIGURE 1: COORDINATE DISPERSION &amp; MODEL BIASES
+                    </h3>
+                    <p className="text-slate-400 text-[8px] leading-tight font-sans">
+                      Scatter plot of relative horizontal deviations from the specified geodetic reference center.
+                    </p>
+                  </div>
+
+                  {/* The Chart (Aspect-Square Vertical Section) */}
+                  <div className="bg-slate-50/75 rounded-2xl p-3 border border-slate-200 aspect-square w-full max-w-[340px] mx-auto relative overflow-hidden">
                     <ResponsiveContainer width="100%" height="100%">
-                      <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                      <ScatterChart margin={{ top: 12, right: 12, bottom: 12, left: 12 }}>
                         <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" />
                         <XAxis 
                           type="number" 
@@ -906,7 +975,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           unit="m" 
                           domain={[-maxTickLimit, maxTickLimit]} 
                           ticks={scatterTicks}
-                          tick={{fontSize: 8, fontWeight: 700, fill: '#334155'}} 
+                          tick={{fontSize: 7.5, fontWeight: 700, fill: '#334155'}} 
                           axisLine={{ stroke: '#475569', strokeWidth: 1.5 }}
                         />
                         <YAxis 
@@ -916,7 +985,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           unit="m" 
                           domain={[-maxTickLimit, maxTickLimit]} 
                           ticks={scatterTicks}
-                          tick={{fontSize: 8, fontWeight: 700, fill: '#334155'}} 
+                          tick={{fontSize: 7.5, fontWeight: 700, fill: '#334155'}} 
                           axisLine={{ stroke: '#475569', strokeWidth: 1.5 }}
                         />
                         <ZAxis type="number" range={[25, 250]} />
@@ -926,24 +995,35 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             if (active && payload && payload.length) {
                               const data = payload[0].payload;
                               const isMethod = data.method !== undefined;
+                              const getMethodLabelEn = (m: CalculationMethod) => {
+                                const labels: Record<string, string> = {
+                                  'ARITHMETIC_MEAN': 'Arithmetic Mean',
+                                  'WEIGHTED_LSE': 'Weighted LSE (1/σ²)',
+                                  'MIDRANGE_KMEANS_BAARDA': 'MidRange + K-Means + Baarda',
+                                  'KMEANS_4': 'K-Means (k=4)',
+                                  'BAARDA': 'Baarda Outliers Rejection',
+                                  'MIDRANGE': 'MidRange Envelope'
+                                };
+                                return labels[m] || m;
+                              };
                               return (
-                                <div className="bg-slate-900 border border-slate-800 text-white p-3.5 rounded-xl shadow-xl z-50">
-                                  <p className="text-[10px] font-bold uppercase text-blue-400 mb-1.5 pb-1 border-b border-slate-800">
-                                    {isMethod ? `${t("Yöntem")}: ${getMethodLabel(data.method)}` : `${t("Gözlem")} #${data.id}`}
+                                <div className="bg-slate-900 border border-slate-800 text-white p-3 rounded-xl shadow-xl z-50 text-[9px] text-left">
+                                  <p className="font-bold uppercase text-blue-400 mb-1 pb-1 border-b border-slate-800 leading-none">
+                                    {isMethod ? `${getMethodLabelEn(data.method)}` : `Raw Epoch #${data.id}`}
                                   </p>
-                                  <div className="space-y-1 font-mono text-[9px]">
+                                  <div className="space-y-0.5 font-mono">
                                     {!isMethod && data.clusterId !== -1 && (
-                                      <div className="flex justify-between gap-4 mb-1">
-                                        <span className="opacity-60 text-[8px] uppercase">{t("Küme")}:</span>
-                                        <span className="font-black px-1.5 rounded text-[8px]" style={{ backgroundColor: CLUSTER_COLORS[data.clusterId % CLUSTER_COLORS.length], color: 'white' }}>#{data.clusterId + 1}</span>
+                                      <div className="flex justify-between gap-3 mb-0.5">
+                                        <span className="opacity-60 text-[8px] uppercase">CLUSTER:</span>
+                                        <span className="font-black px-1 rounded text-[8px]" style={{ backgroundColor: CLUSTER_COLORS[data.clusterId % CLUSTER_COLORS.length], color: 'white' }}>#{data.clusterId + 1}</span>
                                       </div>
                                     )}
-                                    <div className="flex justify-between gap-4">
-                                      <span className="opacity-60 text-[8px] uppercase">ΔSağa (dE):</span>
+                                    <div className="flex justify-between gap-3">
+                                      <span className="opacity-60 text-[8px] uppercase">ΔEAST (dE):</span>
                                       <span className="font-bold text-emerald-400">{data.dE.toFixed(4)} m</span>
                                     </div>
-                                    <div className="flex justify-between gap-4">
-                                      <span className="opacity-60 text-[8px] uppercase">ΔYukarı (dN):</span>
+                                    <div className="flex justify-between gap-3">
+                                      <span className="opacity-60 text-[8px] uppercase">ΔNORTH (dN):</span>
                                       <span className="font-bold text-sky-400">{data.dN.toFixed(4)} m</span>
                                     </div>
                                   </div>
@@ -960,7 +1040,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         {/* Layer 0: Ground Truth Point */}
                         {analysisType === 'precise' && (
                           <Scatter 
-                            name={t("KESİN NOKTA (REF)")} 
+                            name="GROUND TRUTH (REF)" 
                             data={[{ dE: 0, dN: 0 }]} 
                             fill="#10b981" 
                             shape="diamond" 
@@ -972,7 +1052,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
                         {/* Layer 1: Raw Points Cloud (with cluster coloring) */}
                         <Scatter 
-                          name={t("Ham Ölçümler")} 
+                          name="Raw Satellite Epochs" 
                           data={distributionData.rawPoints} 
                           shape={<RawPointShape />} 
                         >
@@ -986,15 +1066,28 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         </Scatter>
                         
                         {/* Layer 2: Method Aggregates */}
-                        {distributionData.methodPoints.map((mp) => (
-                          <Scatter 
-                            key={mp.method} 
-                            name={getMethodLabel(mp.method)} 
-                            data={[mp]} 
-                            fill={mp.color}
-                            shape="circle"
-                          />
-                        ))}
+                        {distributionData.methodPoints.map((mp) => {
+                          const getMethodLabelEn = (m: CalculationMethod) => {
+                            const labels: Record<string, string> = {
+                              'ARITHMETIC_MEAN': 'Arithmetic Mean',
+                              'WEIGHTED_LSE': 'Weighted LSE (1/σ²)',
+                              'MIDRANGE_KMEANS_BAARDA': 'MidRange + K-Means + Baarda',
+                              'KMEANS_4': 'K-Means (k=4)',
+                              'BAARDA': 'Baarda Outliers Rejection',
+                              'MIDRANGE': 'MidRange Envelope'
+                            };
+                            return labels[m] || m;
+                          };
+                          return (
+                            <Scatter 
+                              key={mp.method} 
+                              name={getMethodLabelEn(mp.method)} 
+                              data={[mp]} 
+                              fill={mp.color}
+                              shape="circle"
+                            />
+                          );
+                        })}
 
                         {/* Layer 3: Numeric Labels for Methods */}
                         <Scatter 
@@ -1005,42 +1098,107 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     </ResponsiveContainer>
                   </div>
 
-                  {/* Legend / Method Reference - Academic Layout */}
-                  <div className="mt-5 bg-slate-50 border border-slate-200 rounded-xl p-4">
-                    <div className="text-[10px] font-bold text-slate-800 uppercase tracking-wider mb-2.5 border-b border-slate-200 pb-1.5 flex items-center gap-1.5">
-                      <i className="fas fa-list-ol text-slate-500 text-xs"></i>
-                      <span>{t("Algoritma Sonuç Göstergeleri ve Bağıl Hata (dhz)")}</span>
+                  {/* Geodetic Models Error Indexes Table */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-left">
+                    <div className="text-[9px] font-bold text-slate-800 uppercase tracking-wider mb-2 border-b border-slate-200 pb-1.5 flex items-center gap-1.5">
+                      <i className="fas fa-list-ol text-slate-500"></i>
+                      <span>ESTIMATED MATHEMATICAL ENGINE CENTROIDS</span>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                      {distributionData.methodPoints.map(m => (
-                        <div key={m.id} className="flex items-center gap-2.5 p-2 bg-white rounded-lg border border-slate-200/60 shadow-sm text-left">
-                          <div className="w-5 h-5 flex items-center justify-center rounded-md text-[10px] font-black text-white shadow-sm shrink-0" style={{ backgroundColor: m.color }}>{m.id}</div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-[9px] font-bold text-slate-800 uppercase tracking-tight truncate leading-tight">{getMethodLabel(m.method)}</span>
-                            <span className="text-[8px] font-bold text-blue-600 uppercase tracking-widest leading-none mt-0.5">{m.errors?.dhz ? `${m.errors.dhz.toFixed(4)}m` : 'Hesaplandı'}</span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {distributionData.methodPoints.map(m => {
+                        const getMethodLabelEn = (m: CalculationMethod) => {
+                          const labels: Record<string, string> = {
+                            'ARITHMETIC_MEAN': 'Arithmetic Mean',
+                            'WEIGHTED_LSE': 'Weighted LSE (1/σ²)',
+                            'MIDRANGE_KMEANS_BAARDA': 'MidRange + K-Means + Baarda',
+                            'KMEANS_4': 'K-Means (k=4)',
+                            'BAARDA': 'Baarda Outliers Rejection',
+                            'MIDRANGE': 'MidRange Envelope'
+                          };
+                          return labels[m] || m;
+                        };
+                        return (
+                          <div key={m.id} className="flex items-center gap-2 p-1.5 bg-white rounded-lg border border-slate-200/60 shadow-sm min-w-0">
+                            <div className="w-4 h-4 flex items-center justify-center rounded text-[8px] font-black text-white shrink-0 shadow-sm" style={{ backgroundColor: m.color }}>{m.id}</div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-[8px] font-extrabold text-slate-800 uppercase tracking-tight truncate leading-tight">
+                                {getMethodLabelEn(m.method)}
+                              </span>
+                              <span className="text-[7.5px] font-bold text-blue-600 uppercase tracking-widest leading-none mt-0.5">
+                                {m.errors?.dhz ? `dH_2D = ${m.errors.dhz.toFixed(4)} m` : 'STABILIZED'}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 
-                  {/* Clusters Info */}
+                  {/* Outlier Outlying K-Means Clustering Panels */}
                   {computedClusters && computedClusters.length > 0 && (
-                    <div className="mt-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                      <p className="text-[10px] font-bold text-slate-800 uppercase tracking-wider mb-2 border-b border-slate-200 pb-1 flex items-center gap-1.5">
-                        <i className="fas fa-project-diagram text-slate-500 text-xs"></i>
-                        <span>{t("Kümeleme Analiz Özeti (K-Means)")}</span>
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-left text-[8px]">
+                      <p className="font-bold text-slate-800 uppercase tracking-wider mb-1.5 border-b border-slate-200 pb-1 flex items-center gap-1">
+                        <i className="fas fa-project-diagram text-slate-500"></i>
+                        <span>SPATIAL DENSITY SEGMENTATION (K-MEANS)</span>
                       </p>
-                      <div className="flex flex-wrap gap-4">
+                      <div className="flex flex-wrap gap-x-4 gap-y-1">
                         {computedClusters.map((cluster, cIdx) => (
-                          <div key={cIdx} className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full border border-slate-300 shadow-sm" style={{ backgroundColor: CLUSTER_COLORS[cIdx % CLUSTER_COLORS.length] }}></div>
-                            <span className="text-[9px] font-extrabold text-slate-700 uppercase">{t("Küme")} {cIdx + 1}: <span className="font-mono text-slate-900 font-bold">{cluster.length}</span> {t("nokta")}</span>
+                          <div key={cIdx} className="flex items-center gap-1.5">
+                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CLUSTER_COLORS[cIdx % CLUSTER_COLORS.length] }}></div>
+                            <span className="font-semibold text-slate-700 uppercase">
+                              Cluster #{cIdx + 1}: <span className="font-black text-slate-900 font-mono">{cluster.length}</span> Epochs
+                            </span>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
+
+                  {/* STOCHASTIC METHODOLOGY DEFINITIONS (EXPRESSLY EMBEDDED IN PNG AS THE USER REQUESTED) */}
+                  <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-3.5 text-left">
+                    <div className="text-[9px] font-bold text-slate-800 uppercase tracking-wider mb-2 border-b border-slate-200 pb-1.5 flex items-center gap-1.5">
+                      <i className="fas fa-info-circle text-slate-500"></i>
+                      <span>STOCHASTIC ENGINE METHODOLOGY NOTES</span>
+                    </div>
+                    <div className="space-y-2 text-[7.5px] leading-normal text-slate-600 font-sans">
+                      <div className="grid grid-cols-1 gap-y-2">
+                        <div>
+                          <p className="font-extrabold text-pink-600 uppercase tracking-wider leading-none">1. Arithmetic Mean</p>
+                          <p className="text-slate-500 font-medium italic mt-0.5">Unweighted coordinate barycenter. Base reference under normal distribution profiles.</p>
+                        </div>
+                        <div>
+                          <p className="font-extrabold text-violet-600 uppercase tracking-wider leading-none">2. Weighted LSE</p>
+                          <p className="text-slate-500 font-medium italic mt-0.5">Weights are inverse square of hardware dispersion (1/σ²). Strongly dampens high-multipath noise.</p>
+                        </div>
+                        <div>
+                          <p className="font-extrabold text-blue-600 uppercase tracking-wider leading-none">3. MidRange-KMeans-Baarda</p>
+                          <p className="text-slate-500 font-medium italic mt-0.5">High-performance three-stage processing filter combing range bounds, spatial density grids, and Baarda test stats.</p>
+                        </div>
+                        <div>
+                          <p className="font-extrabold text-cyan-600 uppercase tracking-wider leading-none">4. K-Means (k=4)</p>
+                          <p className="text-slate-500 font-medium italic mt-0.5">Classifies coordinates geographically, seeking the centroid of the densest spatial cluster.</p>
+                        </div>
+                        <div>
+                          <p className="font-extrabold text-amber-600 uppercase tracking-wider leading-none">5. Baarda Rejection</p>
+                          <p className="text-slate-500 font-medium italic mt-0.5">Geodetic alpha-outlier screening loop. Systematically cleans anomalous blunders from final result.</p>
+                        </div>
+                        <div>
+                          <p className="font-extrabold text-teal-600 uppercase tracking-wider leading-none">6. MidRange Envelope</p>
+                          <p className="text-slate-500 font-medium italic mt-0.5">Center of boundary box containing maximum extremes of satellite coordinate observations.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Academic Verification Footer Stamp */}
+                  <div className="border-t border-slate-200 pt-2.5 text-center relative z-10">
+                    <p className="text-slate-400 font-mono text-[7px] tracking-widest uppercase mb-0.5">
+                      GPS+ ADVANCED GEOPHYSICAL CALIBRATION ENGINE &copy; 2026
+                    </p>
+                    <p className="text-slate-500 font-bold text-[7px] tracking-wide uppercase leading-none">
+                      Expert prompt tuned &bull; Compliant with GUM &bull; Client-side Isolated State Engine
+                    </p>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
