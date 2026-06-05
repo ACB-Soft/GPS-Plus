@@ -443,7 +443,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   }, [chartData, analysisResults, analysisType, appliedPreciseN, appliedPreciseE, useLocal, location]);
 
   const maxTickLimit = useMemo(() => {
-    return Math.max(0.5, Math.ceil(distributionData.range * 2) / 2);
+    return Math.max(3.0, Math.ceil(distributionData.range * 2) / 2);
   }, [distributionData.range]);
 
   const scatterTicks = useMemo(() => {
