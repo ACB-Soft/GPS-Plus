@@ -518,9 +518,18 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       const dataUrl = await toPng(ref.current, { 
         backgroundColor: '#ffffff', 
         pixelRatio: 3,
+        width: 720,
+        height: 720,
         style: {
           transform: 'none',
-          borderRadius: '0px'
+          borderRadius: '0px',
+          width: '720px',
+          height: '720px',
+          padding: '5px',
+          margin: '0px',
+          border: 'none',
+          display: 'flex',
+          flexDirection: 'column'
         }
       });
       saveAs(dataUrl, `${name}-${location?.name || 'export'}.png`);
