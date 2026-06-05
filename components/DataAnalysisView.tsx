@@ -9,6 +9,7 @@ import { calculateResult, calculateAverage, calculateMaxDistance } from '../util
 import { downloadCombinedAnalysisReport } from './ExcelUtils';
 import { generateTechnicalReport } from '../utils/ReportUtils';
 import Header from './Header';
+import GlobalFooter from './GlobalFooter';
 import { 
   ScatterChart, Scatter, LineChart, Line, XAxis, YAxis, ZAxis, CartesianGrid, 
   Tooltip, ResponsiveContainer, Cell, ReferenceLine, Legend
@@ -561,7 +562,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-200 flex flex-col animate-in h-screen overflow-hidden">
-      <Header title="Hassas Analiz & ACB - Labs" onBack={onClose} sticky={true} />
+      <Header title="ACB Labs" onBack={onClose} sticky={true} />
       
       <div className="flex-1 overflow-y-auto no-scrollbar py-6 px-4 md:px-8">
         <div className="max-w-2xl mx-auto w-full bg-white rounded-[2.5rem] p-6 md:p-8 shadow-md space-y-6">
@@ -938,7 +939,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   {/* Top Panel: Large/Expanded Borderless Scatter Chart */}
                   <div className="flex-1 min-h-0 min-w-0 w-full relative">
                     <ResponsiveContainer width="100%" height="100%">
-                      <ScatterChart margin={{ top: 10, right: 10, bottom: -12, left: -25 }}>
+                      <ScatterChart margin={{ top: 12, right: 12, bottom: 20, left: -5 }}>
                         <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" horizontal={true} vertical={true} />
                         <XAxis 
                           type="number" 
@@ -950,7 +951,12 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           interval={0}
                           angle={-90}
                           textAnchor="end"
-                          height={18}
+                          height={32}
+                          tickFormatter={(val) => {
+                            if (val > 0) return `+${val.toFixed(2)} m`;
+                            if (val < 0) return `${val.toFixed(2)} m`;
+                            return `0.00 m`;
+                          }}
                           tick={{fontSize: 7.5, fontWeight: 700, fill: '#334155'}} 
                           axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
                           tickLine={{ stroke: '#475569', strokeWidth: 1 }}
@@ -963,6 +969,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           domain={[-maxTickLimit, maxTickLimit]} 
                           ticks={scatterTicks}
                           interval={0}
+                          tickFormatter={(val) => {
+                            if (val > 0) return `+${val.toFixed(2)} m`;
+                            if (val < 0) return `${val.toFixed(2)} m`;
+                            return `0.00 m`;
+                          }}
                           tick={{fontSize: 7.5, fontWeight: 700, fill: '#334155'}} 
                           axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
                           tickLine={{ stroke: '#475569', strokeWidth: 1 }}
@@ -1079,7 +1090,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
                   {/* Bottom Panel: Shrunk & Very Compact Legend */}
                   <div className="shrink-0 border-t border-slate-100 pt-2 flex flex-col gap-1.5 w-full">
-                    <div className="grid grid-cols-1 gap-y-1.5">
+                    <div className="grid grid-cols-3 gap-x-2 gap-y-1.5">
                       {distributionData.methodPoints.map(m => {
                         const getMethodLabelEn = (m: CalculationMethod) => {
                           const labels: Record<string, string> = {
@@ -1248,6 +1259,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
           )}
         </div>
       </div>
+      <GlobalFooter />
 
       {/* Map Modal */}
       {showMap && location && analysisResults && (
