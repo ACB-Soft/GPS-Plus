@@ -129,6 +129,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const rawChartRef = React.useRef<HTMLDivElement>(null);
   const comparisonChartRef = React.useRef<HTMLDivElement>(null);
   const timeErrorChartRef = React.useRef<HTMLDivElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   const [preciseN, setPreciseN] = useState<string>(''); // Northing (X)
   const [preciseE, setPreciseE] = useState<string>(''); // Easting (Y)
@@ -515,6 +516,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const exportChart = async (ref: React.RefObject<HTMLDivElement>, name: string) => {
     if (!ref.current) return;
     try {
+      setIsExporting(true);
+      // Wait for React & Recharts to re-render in the new 720x720 dimensions
+      await new Promise(resolve => setTimeout(resolve, 200));
+
       const dataUrl = await toPng(ref.current, { 
         backgroundColor: '#ffffff', 
         pixelRatio: 3,
@@ -535,6 +540,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       saveAs(dataUrl, `${name}-${location?.name || 'export'}.png`);
     } catch (error) {
       console.error('Error exporting chart:', error);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -974,10 +981,22 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 <div 
                   ref={rawChartRef} 
                   className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] aspect-square mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
+                  style={isExporting ? { 
+                    width: '720px', 
+                    height: '720px', 
+                    maxWidth: 'none', 
+                    maxHeight: 'none', 
+                    minWidth: '720px', 
+                    minHeight: '720px', 
+                    padding: '5px',
+                    borderRadius: '0px',
+                    border: 'none',
+                    boxShadow: 'none'
+                  } : undefined}
                 >
                   {/* Top Panel: Large/Expanded Borderless Scatter Chart */}
                   <div className="flex-1 min-h-0 min-w-0 w-full relative">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width={isExporting ? 710 : "100%"} height={isExporting ? 585 : "100%"}>
                       <ScatterChart margin={{ top: 12, right: 12, bottom: 20, left: -5 }}>
                         <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" horizontal={true} vertical={true} />
                         <XAxis 
@@ -1169,7 +1188,22 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 </div>
 
                 {/* 1:1 Aspect-Ratio Time Series Panel Wrapper (On Screen) */}
-                <div className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] aspect-square mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none">
+                <div 
+                  ref={timeErrorChartRef}
+                  className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] aspect-square mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
+                  style={isExporting ? { 
+                    width: '720px', 
+                    height: '720px', 
+                    maxWidth: 'none', 
+                    maxHeight: 'none', 
+                    minWidth: '720px', 
+                    minHeight: '720px', 
+                    padding: '5px',
+                    borderRadius: '0px',
+                    border: 'none',
+                    boxShadow: 'none'
+                  } : undefined}
+                >
                   
                   {/* English Geodetic Header */}
                   <div className="flex justify-between items-center border-b border-slate-900/10 pb-1.5 min-h-0 shrink-0">
@@ -1190,10 +1224,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
                   {/* ONLY THE CHART CONTAINER WITH WHITE BACKGROUND & INDEPENDENT PADDING IS EXPORTED TO KEEP IT BORDERLESS AND CLEAR OF HEADERS/FOOTERS */}
                   <div 
-                    ref={timeErrorChartRef}
                     className="flex-1 min-h-0 min-w-0 bg-white p-5 rounded-[1rem]"
+                    style={isExporting ? { padding: '2px', borderRadius: '0px' } : undefined}
                   >
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width={isExporting ? 710 : "100%"} height={isExporting ? 595 : "100%"}>
                       <LineChart data={timeSeriesChartData} margin={{ top: 8, right: 16, bottom: 25, left: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={true} strokeOpacity={0.15} stroke="#000000" />
                         <XAxis 
