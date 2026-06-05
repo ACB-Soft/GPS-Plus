@@ -198,16 +198,21 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
 
                 // Check reliability
                 const currentSamples = samplesRef.current;
-                const currentAvgAcc = currentSamples.reduce((a, b) => a + b.accuracy, 0) / currentSamples.length;
-                
-                if (currentSamples.length >= 3) {
-                   const maxDist = calculateMaxDistance(currentSamples);
-                   
-                   if (currentAvgAcc > 20 || maxDist > 30 || maxDist > currentAvgAcc * 3) setReliabilityStatus('CRITICAL');
-                   else if (currentAvgAcc > 10 || maxDist > 15 || currentSamples.length < 5) setReliabilityStatus('WARNING');
-                   else setReliabilityStatus('GOOD');
-                } else if (currentAvgAcc > 10 || currentSamples.length > 0) {
-                  setReliabilityStatus('WARNING');
+                if (currentSamples.length > 0) {
+                  const currentAvgAcc = currentSamples.reduce((a, b) => a + b.accuracy, 0) / currentSamples.length;
+                  const maxDist = calculateMaxDistance(currentSamples);
+                  const sampleCountVal = currentSamples.length;
+
+                  const isRed = (currentAvgAcc > 20) || (maxDist > 20) || (maxDist > currentAvgAcc * 3);
+                  const isGreen = (currentAvgAcc <= 10) && (maxDist <= 10) && (maxDist <= currentAvgAcc) && (sampleCountVal >= 5);
+
+                  if (isRed) {
+                    setReliabilityStatus('CRITICAL');
+                  } else if (isGreen) {
+                    setReliabilityStatus('GOOD');
+                  } else {
+                    setReliabilityStatus('WARNING');
+                  }
                 } else {
                   setReliabilityStatus('UNKNOWN');
                 }
@@ -340,16 +345,21 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
 
           // Check reliability (repeated for mandatory saves)
           const currentSamples = samplesRef.current;
-          const currentAvgAcc = currentSamples.reduce((a, b) => a + b.accuracy, 0) / currentSamples.length;
-          
-          if (currentSamples.length >= 3) {
+          if (currentSamples.length > 0) {
+            const currentAvgAcc = currentSamples.reduce((a, b) => a + b.accuracy, 0) / currentSamples.length;
             const maxDist = calculateMaxDistance(currentSamples);
-            
-            if (currentAvgAcc > 20 || maxDist > 30 || maxDist > currentAvgAcc * 3) setReliabilityStatus('CRITICAL');
-            else if (currentAvgAcc > 10 || maxDist > 15 || currentSamples.length < 5) setReliabilityStatus('WARNING');
-            else setReliabilityStatus('GOOD');
-          } else if (currentAvgAcc > 10 || currentSamples.length > 0) {
-            setReliabilityStatus('WARNING');
+            const sampleCountVal = currentSamples.length;
+
+            const isRed = (currentAvgAcc > 20) || (maxDist > 20) || (maxDist > currentAvgAcc * 3);
+            const isGreen = (currentAvgAcc <= 10) && (maxDist <= 10) && (maxDist <= currentAvgAcc) && (sampleCountVal >= 5);
+
+            if (isRed) {
+              setReliabilityStatus('CRITICAL');
+            } else if (isGreen) {
+              setReliabilityStatus('GOOD');
+            } else {
+              setReliabilityStatus('WARNING');
+            }
           } else {
             setReliabilityStatus('UNKNOWN');
           }
