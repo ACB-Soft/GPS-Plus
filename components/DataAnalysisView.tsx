@@ -141,6 +141,12 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [analysisResults, setAnalysisResults] = useState<any[] | null>(null);
   const [computedClusters, setComputedClusters] = useState<number[][] | null>(null);
 
+  // Grafik özelleştirme seçenekleri
+  const [customScatterRange, setCustomScatterRange] = useState<string>('auto'); // 'auto', '1.0', '2.0', '3.0', '4.0', '5.0', '10.0', '15.0'
+  const [customScatterStep, setCustomScatterStep] = useState<string>('auto'); // 'auto', '0.1', '0.2', '0.5', '1.0', '2.0'
+  const [customTimeSeriesRange, setCustomTimeSeriesRange] = useState<string>('auto'); // 'auto', '2.0', '5.0', '10.0', '15.0', '20.0', '30.0', '50.0'
+  const [customTimeSeriesStep, setCustomTimeSeriesStep] = useState<string>('auto'); // 'auto', '0.1', '0.2', '0.5', '1.0', '2.0'
+
   const bestMethod = useMemo(() => {
     if (!analysisResults || analysisResults.length === 0) return null;
     const sorted = [...analysisResults].sort((a,b) => (a.errors?.dhz || 0) - (b.errors?.dhz || 0));
@@ -443,12 +449,35 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   }, [chartData, analysisResults, analysisType, appliedPreciseN, appliedPreciseE, useLocal, location]);
 
   const maxTickLimit = useMemo(() => {
+    if (customScatterRange !== 'auto') {
+      return parseFloat(customScatterRange);
+    }
     return Math.max(3.0, Math.ceil(distributionData.range * 2) / 2);
-  }, [distributionData.range]);
+  }, [distributionData.range, customScatterRange]);
 
   const scatterTicks = useMemo(() => {
-    return Array.from({length: Math.round(maxTickLimit * 4) + 1}, (_, i) => Number((-maxTickLimit + i * 0.5).toFixed(2)));
-  }, [maxTickLimit]);
+    let step = 0.5;
+    if (customScatterStep !== 'auto') {
+      step = parseFloat(customScatterStep);
+    } else {
+      if (maxTickLimit <= 1.0) step = 0.2;
+      else if (maxTickLimit <= 2.0) step = 0.5;
+      else if (maxTickLimit <= 4.0) step = 0.5;
+      else if (maxTickLimit <= 10.0) step = 1.0;
+      else step = 2.0;
+    }
+    const ticks = [];
+    const minVal = -maxTickLimit;
+    const maxVal = maxTickLimit;
+    let current = minVal;
+    let loops = 0;
+    while (current <= maxVal + 0.001 && loops < 200) {
+      ticks.push(parseFloat(current.toFixed(2)));
+      current += step;
+      loops++;
+    }
+    return ticks;
+  }, [maxTickLimit, customScatterStep]);
 
   const timeSeriesChartData = useMemo(() => {
     return chartData.map((point, index) => {
@@ -462,18 +491,39 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   }, [chartData]);
 
   const timeSeriesMaxLimit = useMemo(() => {
+    if (customTimeSeriesRange !== 'auto') {
+      return parseFloat(customTimeSeriesRange);
+    }
     if (timeSeriesChartData.length === 0) return 10.0;
     const maxVal = Math.max(...timeSeriesChartData.map(d => d.errorHz || 0), 0.5);
     return Math.max(10.0, Math.ceil(maxVal / 0.5) * 0.5);
-  }, [timeSeriesChartData]);
+  }, [timeSeriesChartData, customTimeSeriesRange]);
 
   const timeSeriesYTicks = useMemo(() => {
+    let step = 0.5;
+    if (customTimeSeriesStep !== 'auto') {
+      step = parseFloat(customTimeSeriesStep);
+    } else {
+      if (timeSeriesMaxLimit <= 2.0) {
+        step = 0.2;
+      } else if (timeSeriesMaxLimit <= 5.0) {
+        step = 0.5;
+      } else if (timeSeriesMaxLimit <= 15.0) {
+        step = 1.0;
+      } else if (timeSeriesMaxLimit <= 30.0) {
+        step = 2.0;
+      } else {
+        step = 5.0;
+      }
+    }
     const ticks = [];
-    for (let val = 0; val <= timeSeriesMaxLimit + 0.01; val += 0.5) {
-      ticks.push(parseFloat(val.toFixed(1)));
+    let loops = 0;
+    for (let val = 0; val <= timeSeriesMaxLimit + 0.01 && loops < 200; val += step) {
+      ticks.push(parseFloat(val.toFixed(2)));
+      loops++;
     }
     return ticks;
-  }, [timeSeriesMaxLimit]);
+  }, [timeSeriesMaxLimit, customTimeSeriesStep]);
 
   const timeSeriesXTicks = useMemo(() => {
     const total = timeSeriesChartData.length;
@@ -961,6 +1011,50 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   </button>
                 </div>
 
+                {/* Precision Sheet Config Panel */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-3 text-slate-800 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between text-xs shadow-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500 shrink-0">
+                      <i className="fas fa-sliders-h text-[9px]"></i>
+                    </div>
+                    <span className="font-extrabold text-[9px] uppercase text-slate-705 tracking-wider">HARİTA PAFTASI AYARLARI</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2.5 items-center justify-end">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase">Eksen:</span>
+                      <select 
+                        value={customScatterRange} 
+                        onChange={(e) => setCustomScatterRange(e.target.value)}
+                        className="bg-slate-100 hover:bg-slate-200 border border-slate-200/60 text-[9px] font-black rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="1.0">±1.0m</option>
+                        <option value="2.0">±2.0m</option>
+                        <option value="3.0">±3.0m</option>
+                        <option value="4.0">±4.0m</option>
+                        <option value="5.0">±5.0m</option>
+                        <option value="10.0">±10.0m</option>
+                        <option value="15.0">±15.0m</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase">Kılavuz Adımı:</span>
+                      <select 
+                        value={customScatterStep} 
+                        onChange={(e) => setCustomScatterStep(e.target.value)}
+                        className="bg-slate-100 hover:bg-slate-200 border border-slate-200/60 text-[9px] font-black rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="0.1">0.1m</option>
+                        <option value="0.2">0.2m</option>
+                        <option value="0.5">0.5m</option>
+                        <option value="1.0">1.0m</option>
+                        <option value="2.0">2.0m</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
                 {/* 1:1 Aspect Ratio Precision Sheet: Borderless & Extremely Clean layout */}
                 <div 
                   ref={rawChartRef} 
@@ -1157,6 +1251,51 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   >
                     <i className="fas fa-camera text-rose-400"></i> PNG Download (1:1)
                   </button>
+                </div>
+
+                {/* Time Series Error Chart Config Panel */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-3 text-slate-800 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between text-xs shadow-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-lg bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500 shrink-0">
+                      <i className="fas fa-sliders-h text-[9px]"></i>
+                    </div>
+                    <span className="font-extrabold text-[9px] uppercase text-slate-700 tracking-wider">ZAMAN SERİSİ GRAFİK AYARLARI</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2.5 items-center justify-end">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase">Eksen Limit:</span>
+                      <select 
+                        value={customTimeSeriesRange} 
+                        onChange={(e) => setCustomTimeSeriesRange(e.target.value)}
+                        className="bg-slate-100 hover:bg-slate-200 border border-slate-200/60 text-[9px] font-black rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
+                      >
+                        <option value="auto">Auto (En az 10m)</option>
+                        <option value="2.0">2.0m</option>
+                        <option value="5.0">5.0m</option>
+                        <option value="10.0">10.0m</option>
+                        <option value="15.0">15.0m</option>
+                        <option value="20.0">20.0m</option>
+                        <option value="30.0">30.0m</option>
+                        <option value="50.0">50.0m</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase">Kılavuz Adımı:</span>
+                      <select 
+                        value={customTimeSeriesStep} 
+                        onChange={(e) => setCustomTimeSeriesStep(e.target.value)}
+                        className="bg-slate-100 hover:bg-slate-200 border border-slate-200/60 text-[9px] font-black rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="0.1">0.1m</option>
+                        <option value="0.2">0.2m</option>
+                        <option value="0.5">0.5m</option>
+                        <option value="1.0">1.0m</option>
+                        <option value="2.0">2.0m</option>
+                        <option value="5.0">5.0m</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
 
                 {/* 1:1 Aspect-Ratio Time Series Panel Wrapper (On Screen) */}
