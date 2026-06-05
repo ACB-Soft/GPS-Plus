@@ -238,6 +238,9 @@ export const trToEnMap: Record<string, string> = {
   "Sağa Kaydır (X +1m)": "Shift Right (X +1m)",
   "Eksenleri Sıfırla": "Reset Axes",
   "SIFIRLA": "RESET",
+  "Kesin Koordinat (Referans Merkez)": "Precise Coordinate (Reference Center)",
+  "Kesin Koordinat": "Precise Coordinate",
+  "Ham Uydu Noktaları": "Raw Satellite Points",
 
   "== STAKEOUT MODULE (APLİKASYON) ==": "",
   "Aplikasyon Noktası Seçin": "Select Stakeout Point",

@@ -1226,12 +1226,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                     {isMethod ? `${getMethodLabelEn(data.method)}` : `Raw Epoch #${data.id}`}
                                   </p>
                                   <div className="space-y-0.5 font-mono">
-                                    {!isMethod && data.clusterId !== -1 && (
-                                      <div className="flex justify-between gap-2">
-                                        <span className="opacity-60 text-[7px] uppercase">CLUSTER:</span>
-                                        <span className="font-black px-1 rounded text-[7px]" style={{ backgroundColor: CLUSTER_COLORS[data.clusterId % CLUSTER_COLORS.length], color: 'white' }}>#{data.clusterId + 1}</span>
-                                      </div>
-                                    )}
                                     <div className="flex justify-between gap-2">
                                       <span className="opacity-60 text-[7px] uppercase">ΔE (Easting):</span>
                                       <span className="font-bold text-emerald-400">{data.dE.toFixed(4)} m</span>
@@ -1273,8 +1267,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           {distributionData.rawPoints.map((entry, index) => (
                             <Cell 
                               key={`cell-${index}`} 
-                              fill={entry.clusterId !== -1 ? CLUSTER_COLORS[entry.clusterId % CLUSTER_COLORS.length] : '#64748b'} 
-                              fillOpacity={entry.clusterId !== -1 ? 0.7 : 0.25} 
+                              fill="#ef4444" 
+                              fillOpacity={0.4} 
                             />
                           ))}
                         </Scatter>
@@ -1313,8 +1307,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   </div>
 
                   {/* Bottom Panel: Shrunk & Very Compact Legend */}
-                  <div className="shrink-0 border-t border-slate-100 pt-2 flex flex-col gap-1.5 w-full">
-                    <div className="grid grid-cols-3 gap-x-2 gap-y-1.5">
+                  <div className="shrink-0 border-t border-slate-100 pt-3 flex flex-col gap-2 w-full">
+                    <div className="grid grid-cols-3 gap-x-2 gap-y-1.5 font-sans">
                       {distributionData.methodPoints.map(m => {
                         const getMethodLabelEn = (m: CalculationMethod) => {
                           const labels: Record<string, string> = {
@@ -1335,7 +1329,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         return (
                           <div key={m.id} className="flex items-center gap-1.5 text-left leading-none min-w-0">
                             <div className="flex items-center justify-center rounded font-black text-white shrink-0 shadow-xs" style={{ backgroundColor: m.color, width: badgeSize, height: badgeSize, fontSize: badgeFontSize }}>{m.id}</div>
-                            <div className="min-w-0">
+                            <div className="min-w-0 font-sans">
                               <p className="font-extrabold text-slate-800 uppercase tracking-tight truncate leading-none" style={{ fontSize: titleFontSize }}>
                                 {getMethodLabelEn(m.method)}
                               </p>
@@ -1346,6 +1340,30 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           </div>
                         );
                       })}
+                      {analysisType === 'precise' && (
+                        <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
+                          <div 
+                            className="flex items-center justify-center bg-[#10b981] border border-[#059669] text-white font-black shrink-0 shadow-xs rotate-45" 
+                            style={{ 
+                              width: `${parseFloat(customScatterFontSize) + 2.5}px`, 
+                              height: `${parseFloat(customScatterFontSize) + 2.5}px`,
+                              borderRadius: '3px',
+                              marginLeft: '2px',
+                              marginRight: '2px'
+                            }}
+                          >
+                            <span className="text-[6px] font-black -rotate-45 block transform">REF</span>
+                          </div>
+                          <div className="min-w-0 font-sans">
+                            <p className="font-extrabold text-slate-800 uppercase tracking-tight truncate leading-none" style={{ fontSize: `${parseFloat(customScatterFontSize) - 1}px` }}>
+                              {t("Kesin Koordinat")}
+                            </p>
+                            <p className="font-bold text-emerald-600 font-mono tracking-tight leading-none mt-0.5 truncate" style={{ fontSize: `${parseFloat(customScatterFontSize) - 2}px` }}>
+                              Reference Center
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
