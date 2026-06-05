@@ -1359,7 +1359,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               {t("Kesin Koordinat")}
                             </p>
                             <p className="font-bold text-emerald-600 font-mono tracking-tight leading-none mt-0.5 truncate" style={{ fontSize: `${parseFloat(customScatterFontSize) - 2}px` }}>
-                              Reference Center
+                              Precise Coordinates
                             </p>
                           </div>
                         </div>
