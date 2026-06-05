@@ -231,6 +231,13 @@ export const trToEnMap: Record<string, string> = {
   "Hatalı şifre!": "Incorrect password!",
   "Aktivasyon Kodu": "Activation Code",
   "Giriş Yap": "Login",
+  "EKSEN KAYDIRMA (OFFSET NAVİGASYON)": "AXIS SHIFT (OFFSET NAVIGATION)",
+  "Yukarı Kaydır (Y +1m)": "Shift Up (Y +1m)",
+  "Aşağı Kaydır (Y -1m)": "Shift Down (Y -1m)",
+  "Sola Kaydır (X -1m)": "Shift Left (X -1m)",
+  "Sağa Kaydır (X +1m)": "Shift Right (X +1m)",
+  "Eksenleri Sıfırla": "Reset Axes",
+  "SIFIRLA": "RESET",
 
   "== STAKEOUT MODULE (APLİKASYON) ==": "",
   "Aplikasyon Noktası Seçin": "Select Stakeout Point",

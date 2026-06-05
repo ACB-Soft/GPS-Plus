@@ -145,6 +145,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [customScatterRange, setCustomScatterRange] = useState<string>('auto'); // 'auto', '1.0', '2.0', '3.0', '4.0', '5.0', '10.0', '15.0'
   const [customScatterStep, setCustomScatterStep] = useState<string>('auto'); // 'auto', '0.1', '0.2', '0.5', '1.0', '2.0'
   const [customScatterFontSize, setCustomScatterFontSize] = useState<string>('7.5'); // '6', '7', '7.5', '8', '9', '10', '12'
+  const [xOffset, setXOffset] = useState<number>(0);
+  const [yOffset, setYOffset] = useState<number>(0);
   const [customTimeSeriesRange, setCustomTimeSeriesRange] = useState<string>('auto'); // 'auto', '2.0', '5.0', '10.0', '15.0', '20.0', '30.0', '50.0'
   const [customTimeSeriesStep, setCustomTimeSeriesStep] = useState<string>('auto'); // 'auto', '0.1', '0.2', '0.5', '1.0', '2.0'
   const [customTimeSeriesFontSize, setCustomTimeSeriesFontSize] = useState<string>('7'); // '6', '7', '8', '9', '10', '12'
@@ -457,7 +459,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     return Math.max(3.0, Math.ceil(distributionData.range * 2) / 2);
   }, [distributionData.range, customScatterRange]);
 
-  const scatterTicks = useMemo(() => {
+  const xTicks = useMemo(() => {
     let step = 0.5;
     if (customScatterStep !== 'auto') {
       step = parseFloat(customScatterStep);
@@ -469,17 +471,47 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       else step = 2.0;
     }
     const ticks = [];
-    const minVal = -maxTickLimit;
-    const maxVal = maxTickLimit;
-    let current = minVal;
+    const minVal = -maxTickLimit + xOffset;
+    const maxVal = maxTickLimit + xOffset;
+    const start = Math.floor(minVal / step) * step;
+    let current = start;
     let loops = 0;
     while (current <= maxVal + 0.001 && loops < 200) {
-      ticks.push(parseFloat(current.toFixed(2)));
+      if (current >= minVal - 0.001) {
+        ticks.push(parseFloat(current.toFixed(2)));
+      }
       current += step;
       loops++;
     }
     return ticks;
-  }, [maxTickLimit, customScatterStep]);
+  }, [maxTickLimit, customScatterStep, xOffset]);
+
+  const yTicks = useMemo(() => {
+    let step = 0.5;
+    if (customScatterStep !== 'auto') {
+      step = parseFloat(customScatterStep);
+    } else {
+      if (maxTickLimit <= 1.0) step = 0.2;
+      else if (maxTickLimit <= 2.0) step = 0.5;
+      else if (maxTickLimit <= 4.0) step = 0.5;
+      else if (maxTickLimit <= 10.0) step = 1.0;
+      else step = 2.0;
+    }
+    const ticks = [];
+    const minVal = -maxTickLimit + yOffset;
+    const maxVal = maxTickLimit + yOffset;
+    const start = Math.floor(minVal / step) * step;
+    let current = start;
+    let loops = 0;
+    while (current <= maxVal + 0.001 && loops < 200) {
+      if (current >= minVal - 0.001) {
+        ticks.push(parseFloat(current.toFixed(2)));
+      }
+      current += step;
+      loops++;
+    }
+    return ticks;
+  }, [maxTickLimit, customScatterStep, yOffset]);
 
   const timeSeriesChartData = useMemo(() => {
     return chartData.map((point, index) => {
@@ -1055,7 +1087,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       </select>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[8.5px] font-bold text-slate-400 uppercase">Yazı Boyutu:</span>
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase font-sans">Yazı Boyutu:</span>
                       <select 
                         value={customScatterFontSize} 
                         onChange={(e) => setCustomScatterFontSize(e.target.value)}
@@ -1073,6 +1105,60 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   </div>
                 </div>
 
+                {/* Eksen Kaydırma (Offset Navigation) Kontrolleri */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-3 text-slate-800 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between text-xs shadow-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 shrink-0">
+                      <i className="fas fa-arrows-alt text-[9px]"></i>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-extrabold text-[9px] uppercase text-slate-700 tracking-wider">EKSEN KAYDIRMA (OFFSET NAVİGASYON)</span>
+                      <span className="text-[7.5px] font-bold text-slate-400 uppercase font-mono tracking-wide">
+                        OFFSET: X = {xOffset >= 0 ? `+${xOffset}` : xOffset}m • Y = {yOffset >= 0 ? `+${yOffset}` : yOffset}m
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-center gap-1.5 self-center">
+                    <button
+                      onClick={() => setXOffset(prev => prev - 1.0)}
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-8 rounded-lg flex items-center justify-center transition-all active:scale-90"
+                      title={t("Sola Kaydır (X -1m)")}
+                    >
+                      <i className="fas fa-chevron-left"></i>
+                    </button>
+                    <div className="flex flex-col gap-1 items-center justify-center">
+                      <button
+                        onClick={() => setYOffset(prev => prev + 1.0)}
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-3.5 rounded flex items-center justify-center transition-all active:scale-90 focus:outline-none"
+                        title={t("Yukarı Kaydır (Y +1m)")}
+                      >
+                        <i className="fas fa-chevron-up text-[7px]"></i>
+                      </button>
+                      <button
+                        onClick={() => setYOffset(prev => prev - 1.0)}
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-3.5 rounded flex items-center justify-center transition-all active:scale-90 focus:outline-none"
+                        title={t("Aşağı Kaydır (Y -1m)")}
+                      >
+                        <i className="fas fa-chevron-down text-[7px]"></i>
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => setXOffset(prev => prev + 1.0)}
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-8 rounded-lg flex items-center justify-center transition-all active:scale-90"
+                      title={t("Sağa Kaydır (X +1m)")}
+                    >
+                      <i className="fas fa-chevron-right"></i>
+                    </button>
+                    <button
+                      onClick={() => { setXOffset(0); setYOffset(0); }}
+                      className="ml-1 bg-rose-50 hover:bg-rose-100 text-rose-600 font-black text-[9px] uppercase px-2 py-2 rounded-lg flex items-center justify-center gap-1 transition-all active:scale-90"
+                      title={t("Eksenleri Sıfırla")}
+                    >
+                      <i className="fas fa-redo-alt"></i> <span className="text-[7.5px] font-extrabold">{t("SIFIRLA")}</span>
+                    </button>
+                  </div>
+                </div>
+
                 {/* 1:1 Aspect Ratio Precision Sheet: Borderless & Extremely Clean layout */}
                 <div 
                   ref={rawChartRef} 
@@ -1087,8 +1173,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           type="number" 
                           dataKey="dE" 
                           name="ΔE" 
-                          domain={[-maxTickLimit, maxTickLimit]} 
-                          ticks={scatterTicks}
+                          domain={[-maxTickLimit + xOffset, maxTickLimit + xOffset]} 
+                          ticks={xTicks}
                           interval={0}
                           angle={-90}
                           textAnchor="end"
@@ -1105,8 +1191,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           type="number" 
                           dataKey="dN" 
                           name="ΔN" 
-                          domain={[-maxTickLimit, maxTickLimit]} 
-                          ticks={scatterTicks}
+                          domain={[-maxTickLimit + yOffset, maxTickLimit + yOffset]} 
+                          ticks={yTicks}
                           interval={0}
                           tickFormatter={(val) => {
                             const isInteger = Math.abs(val - Math.round(val)) < 0.01;
