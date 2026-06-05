@@ -462,9 +462,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   }, [chartData]);
 
   const timeSeriesMaxLimit = useMemo(() => {
-    if (timeSeriesChartData.length === 0) return 1.0;
+    if (timeSeriesChartData.length === 0) return 10.0;
     const maxVal = Math.max(...timeSeriesChartData.map(d => d.errorHz || 0), 0.5);
-    return Math.ceil(maxVal / 0.5) * 0.5;
+    return Math.max(10.0, Math.ceil(maxVal / 0.5) * 0.5);
   }, [timeSeriesChartData]);
 
   const timeSeriesYTicks = useMemo(() => {
@@ -1206,7 +1206,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           axisLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                           tickLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                           width={45} 
-                          tickFormatter={(val) => val.toFixed(1) + 'm'}
+                          tickFormatter={(val) => {
+                            const isInteger = Math.abs(val - Math.round(val)) < 0.01;
+                            return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
+                          }}
                         />
                         <Tooltip 
                           contentStyle={{ borderRadius: '0.75rem', border: '1px solid #e2e8f0', fontWeight: 'black', background: '#ffffff', color: '#0f172a', fontSize: '9px' }} 
