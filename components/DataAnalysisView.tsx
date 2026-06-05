@@ -144,8 +144,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   // Grafik özelleştirme seçenekleri
   const [customScatterRange, setCustomScatterRange] = useState<string>('auto'); // 'auto', '1.0', '2.0', '3.0', '4.0', '5.0', '10.0', '15.0'
   const [customScatterStep, setCustomScatterStep] = useState<string>('auto'); // 'auto', '0.1', '0.2', '0.5', '1.0', '2.0'
+  const [customScatterFontSize, setCustomScatterFontSize] = useState<string>('7.5'); // '6', '7', '7.5', '8', '9', '10', '12'
   const [customTimeSeriesRange, setCustomTimeSeriesRange] = useState<string>('auto'); // 'auto', '2.0', '5.0', '10.0', '15.0', '20.0', '30.0', '50.0'
   const [customTimeSeriesStep, setCustomTimeSeriesStep] = useState<string>('auto'); // 'auto', '0.1', '0.2', '0.5', '1.0', '2.0'
+  const [customTimeSeriesFontSize, setCustomTimeSeriesFontSize] = useState<string>('7'); // '6', '7', '8', '9', '10', '12'
 
   const bestMethod = useMemo(() => {
     if (!analysisResults || analysisResults.length === 0) return null;
@@ -1052,6 +1054,22 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         <option value="2.0">2.0m</option>
                       </select>
                     </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase">Yazı Boyutu:</span>
+                      <select 
+                        value={customScatterFontSize} 
+                        onChange={(e) => setCustomScatterFontSize(e.target.value)}
+                        className="bg-slate-100 hover:bg-slate-200 border border-slate-200/60 text-[9px] font-black rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
+                      >
+                        <option value="6">6px</option>
+                        <option value="7">7px</option>
+                        <option value="7.5">7.5px</option>
+                        <option value="8">8px</option>
+                        <option value="9">9px</option>
+                        <option value="10">10px</option>
+                        <option value="12">12px</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
@@ -1076,8 +1094,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           angle={-90}
                           textAnchor="end"
                           height={32}
-                          tickFormatter={(val) => val.toFixed(1) + 'm'}
-                          tick={{fontSize: 7.5, fontWeight: 700, fill: '#334155', dy: 2.5, dx: -3}}
+                          tickFormatter={(val) => {
+                            const isInteger = Math.abs(val - Math.round(val)) < 0.01;
+                            return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
+                          }}
+                          tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155', dy: 2.5, dx: -3}}
                           axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
                           tickLine={{ stroke: '#475569', strokeWidth: 1 }}
                         />
@@ -1089,8 +1110,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           domain={[-maxTickLimit, maxTickLimit]} 
                           ticks={scatterTicks}
                           interval={0}
-                          tickFormatter={(val) => val.toFixed(1) + 'm'}
-                          tick={{fontSize: 7.5, fontWeight: 700, fill: '#334155'}} 
+                          tickFormatter={(val) => {
+                            const isInteger = Math.abs(val - Math.round(val)) < 0.01;
+                            return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
+                          }}
+                          tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155'}} 
                           axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
                           tickLine={{ stroke: '#475569', strokeWidth: 1 }}
                         />
@@ -1295,6 +1319,21 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         <option value="5.0">5.0m</option>
                       </select>
                     </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase">Yazı Boyutu:</span>
+                      <select 
+                        value={customTimeSeriesFontSize} 
+                        onChange={(e) => setCustomTimeSeriesFontSize(e.target.value)}
+                        className="bg-slate-100 hover:bg-slate-200 border border-slate-200/60 text-[9px] font-black rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
+                      >
+                        <option value="6">6px</option>
+                        <option value="7">7px</option>
+                        <option value="8">8px</option>
+                        <option value="9">9px</option>
+                        <option value="10">10px</option>
+                        <option value="12">12px</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
@@ -1333,7 +1372,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           angle={-90}
                           textAnchor="end"
                           height={30}
-                          tick={{ fontSize: 7, fontWeight: 800, fill: '#000000', dy: 2.5, dx: -3 }}
+                          tick={{ fontSize: parseFloat(customTimeSeriesFontSize), fontWeight: 800, fill: '#000000', dy: 2.5, dx: -3 }}
                           axisLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                           tickLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                         />
@@ -1341,7 +1380,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           domain={[0, timeSeriesMaxLimit]} 
                           ticks={timeSeriesYTicks}
                           interval={0}
-                          tick={{ fontSize: 7, fontWeight: 800, fill: '#000000' }} 
+                          tick={{ fontSize: parseFloat(customTimeSeriesFontSize), fontWeight: 800, fill: '#000000' }} 
                           axisLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                           tickLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                           width={45} 
