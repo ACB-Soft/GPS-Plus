@@ -956,7 +956,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           textAnchor="end"
                           height={32}
                           tickFormatter={(val) => val.toFixed(1) + 'm'}
-                          tick={{fontSize: 7.5, fontWeight: 700, fill: '#334155'}} 
+                          tick={{fontSize: 7.5, fontWeight: 700, fill: '#334155', dy: 2.5, dx: -3}}
                           axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
                           tickLine={{ stroke: '#475569', strokeWidth: 1 }}
                         />
@@ -1167,7 +1167,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           angle={-90}
                           textAnchor="end"
                           height={30}
-                          tick={{ fontSize: 7, fontWeight: 800, fill: '#000000' }} 
+                          tick={{ fontSize: 7, fontWeight: 800, fill: '#000000', dy: 2.5, dx: -3 }}
                           axisLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                           tickLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                         />
