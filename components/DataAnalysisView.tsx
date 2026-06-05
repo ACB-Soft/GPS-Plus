@@ -640,11 +640,12 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   };
 
   return (
-    <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-slate-200">
+    <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-slate-200">
       <Header title="ACB Labs" onBack={onClose} />
       
-      <div className="px-8 pt-4 pb-4 w-full">
-        <div className="max-w-sm mx-auto w-full space-y-6">
+      <div className="flex-1 overflow-y-auto no-scrollbar">
+        <div className="px-8 pt-4 pb-4 w-full">
+          <div className="max-w-sm mx-auto w-full space-y-6">
 
           {/* STEP 1: Method Selection */}
           <div className="bg-white rounded-3xl p-5 border border-slate-150/80 shadow-sm space-y-4">
@@ -655,21 +656,20 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 className={`flex-1 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all border-2 ${analysisType === 'precise' ? 'bg-blue-600 text-white border-blue-600 shadow-xl shadow-blue-100' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
               >
                 <i className="fas fa-bullseye mr-2"></i>
-                {t("Kesin Koordinatlı (Hata Analizi)")}
+                {t("Kesin Koordinatlı Hata Analizleri")}
               </button>
               <button 
                 onClick={() => { setAnalysisType('normal'); setAnalysisResults(null); }}
                 className={`flex-1 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all border-2 ${analysisType === 'normal' ? 'bg-blue-600 text-white border-blue-600 shadow-xl shadow-blue-100' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
               >
                 <i className="fas fa-chart-line mr-2"></i>
-                {t("Normal Karşılaştırmalı Analiz")}
+                {t("Koordinatsız Yöntem Analizleri")}
               </button>
             </div>
             
             {/* Info Box about Specialized Models */}
-            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-3">
-               <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t("Model Açıklamaları")}</h4>
-               <div className="grid grid-cols-1 gap-4">
+            <div className="hidden">
+               <div className="hidden">
                   <div className="space-y-1">
                     <p className="text-[9px] font-black text-violet-600 uppercase">{t("Ağırlıklı En Küçük Kareler (Varsayılan)")}</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
@@ -1003,7 +1003,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               <div className="space-y-4">
                 <div className="flex justify-between items-center px-2">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    {t("Uluslararası Teknik Grafik Çıktısı")}
+                    {t("Veri Saçılımı Grafiği")}
                   </span>
                   <button 
                     onClick={() => exportChart(rawChartRef, 'gps-plus-precision-sheet')}
@@ -1269,7 +1269,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               <div className="space-y-4">
                 <div className="flex justify-between items-center px-2">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    {t("Zamana Bağlı Hata Analizi")}
+                    {t("Zamana Bağlı Hata Grafiği")}
                   </span>
                   <button 
                     onClick={() => exportChart(timeErrorChartRef, 'gps-plus-time-error-chart')}
@@ -1458,12 +1458,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 )}
               </div>
 
-              <p className="text-[10px] text-slate-400 font-bold text-center italic px-4">
-                * Bu testler Android/iOS sensör verileri ile kesin koordinatlar arasındaki sistematik hatayı analiz etmek içindir.
-              </p>
+
             </div>
           )}
         </div>
+      </div>
       </div>
       <GlobalFooter />
 

@@ -21,6 +21,9 @@ const App = () => {
   type ViewType = 'onboarding' | 'dashboard' | 'capture' | 'list' | 'export' | 'result' | 'stakeout' | 'help' | 'settings' | 'acblabs';
   const [view, setView] = useState<ViewType>('onboarding');
   const [subView, setSubView] = useState<string | null>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const viewRef = React.useRef<ViewType>(view);
   const subViewRef = React.useRef<string | null>(subView);
 
@@ -313,12 +316,24 @@ const App = () => {
     navigateTo('result');
   };
 
-  const handleOpenACBLabs = () => {
-    const password = prompt(t("Analiz sayfasına giriş için şifreyi giriniz:"));
-    if (password === "748123") {
+   const handleOpenACBLabs = () => {
+    if (localStorage.getItem('acb_labs_authorized') === 'true') {
       navigateTo('acblabs');
-    } else if (password !== null) {
-      alert(t("Hatalı şifre!"));
+      return;
+    }
+    setPasswordInput('');
+    setPasswordError('');
+    setShowPasswordModal(true);
+  };
+
+  const handlePasswordSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (passwordInput === "748123") {
+      localStorage.setItem('acb_labs_authorized', 'true');
+      setShowPasswordModal(false);
+      navigateTo('acblabs');
+    } else {
+      setPasswordError(t("Hatalı şifre!"));
     }
   };
 
@@ -558,6 +573,71 @@ const App = () => {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ACB Labs Password Modal Prompt */}
+        {showPasswordModal && (
+          <div className="fixed inset-0 z-[4000] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+            <form 
+              onSubmit={handlePasswordSubmit}
+              className="w-full max-w-sm bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-300"
+            >
+              <div className="p-8">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-14 h-14 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-center text-blue-600 shrink-0 shadow-inner">
+                    <i className="fas fa-lock text-2xl animate-pulse"></i>
+                  </div>
+                  <div>
+                    <h3 className="text-slate-900 font-extrabold uppercase tracking-tight text-base leading-tight">
+                      {t("Aktivasyon Kodu")}
+                    </h3>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <input 
+                      type="password"
+                      autoFocus
+                      required
+                      placeholder="••••••"
+                      value={passwordInput}
+                      onChange={(e) => {
+                        setPasswordInput(e.target.value);
+                        setPasswordError('');
+                      }}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white text-slate-900 placeholder-slate-300 rounded-xl text-center font-mono text-lg font-black tracking-[0.3em] outline-none transition-all"
+                    />
+                  </div>
+
+                  {passwordError && (
+                    <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl flex items-center gap-2 text-rose-600 animate-in shake duration-200">
+                      <i className="fas fa-circle-exclamation text-xs"></i>
+                      <span className="text-[11px] font-bold uppercase tracking-tight">{passwordError}</span>
+                    </div>
+                  )}
+
+                  <div className="pt-2 flex flex-col gap-2">
+                    <button 
+                      type="submit"
+                      className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-[13px] uppercase tracking-[0.2em] active:scale-95 transition-all shadow-xl shadow-blue-200 flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <i className="fas fa-sign-in-alt"></i>
+                      {t("Giriş Yap")}
+                    </button>
+
+                    <button 
+                      type="button"
+                      onClick={() => setShowPasswordModal(false)}
+                      className="w-full py-3 bg-slate-50 hover:bg-slate-100 text-slate-500 border border-slate-200/60 rounded-xl font-black text-[11px] uppercase tracking-[0.15em] active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer mt-1"
+                    >
+                      {t("İptal")}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
           </div>
         )}
 
