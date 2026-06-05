@@ -1,25 +1,24 @@
 import React, { useState } from 'react';
 import { SavedLocation, AppSettings } from '../types';
 import { downloadKML } from './KMLUtils';
-import { downloadExcel, downloadTechnicalReport } from './ExcelUtils';
+import { downloadExcel } from './ExcelUtils';
 import { downloadTXT } from './TxtUtils';
-import DataAnalysisView from './DataAnalysisView';
 import { useLanguage } from '../utils/LanguageContext';
 
 interface Props {
   locations: SavedLocation[];
   settings: AppSettings;
+  onOpenACBLabs: () => void;
 }
 
-const ExportUnifiedView: React.FC<Props> = ({ locations, settings }) => {
+const ExportUnifiedView: React.FC<Props> = ({ locations, settings, onOpenACBLabs }) => {
   const { t } = useLanguage();
   const uniqueFolders: string[] = Array.from(new Set(locations.map(l => l.folderName)));
   const [selectedFolder, setSelectedFolder] = useState<string>(uniqueFolders.length > 0 ? uniqueFolders[0] : '');
   
   const filteredPoints = locations.filter(l => l.folderName === selectedFolder);
   const [selectedPointId, setSelectedPointId] = useState<string>(filteredPoints.length > 0 ? filteredPoints[0].id : '');
-  const [showAnalysis, setShowAnalysis] = useState(false);
-
+  
   // Reset selected point when folder changes
   React.useEffect(() => {
     const points = locations.filter(l => l.folderName === selectedFolder);
@@ -33,28 +32,11 @@ const ExportUnifiedView: React.FC<Props> = ({ locations, settings }) => {
   const getFiltered = () => filteredPoints;
   const getSelectedPoint = () => locations.find(l => l.id === selectedPointId);
 
-  const handleOpenAnalysis = () => {
-    const password = prompt(t("Analiz sayfasına giriş için şifreyi giriniz:"));
-    if (password === "748123") {
-      setShowAnalysis(true);
-    } else if (password !== null) {
-      alert(t("Hatalı şifre!"));
-    }
-  };
-
   const hasSelection = !!selectedFolder;
   const hasPointSelection = !!selectedPointId;
 
   return (
     <div className="space-y-8 pb-10 max-w-sm mx-auto w-full">
-      {showAnalysis && (
-        <DataAnalysisView 
-          locations={locations} 
-          initialSelectedId={selectedPointId}
-          settings={settings} 
-          onClose={() => setShowAnalysis(false)} 
-        />
-      )}
 
       <div className="space-y-3">
         {uniqueFolders.length > 0 ? (
@@ -122,8 +104,8 @@ const ExportUnifiedView: React.FC<Props> = ({ locations, settings }) => {
         <div className="pt-6 mt-4 border-t border-slate-100 flex flex-col gap-4">
           <div className="pt-4 mt-2 flex justify-center">
             <button 
-              onClick={handleOpenAnalysis} 
-              className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] hover:text-blue-400 transition-colors py-2 px-4 border border-slate-100 rounded-full"
+              onClick={onOpenACBLabs} 
+              className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] hover:text-blue-400 transition-colors py-2 px-4 border border-slate-100 rounded-full cursor-pointer"
             >
               <i className="fas fa-flask mr-2 opacity-50"></i>
               {t("ACB - LABS")}

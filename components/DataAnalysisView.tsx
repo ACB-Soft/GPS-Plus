@@ -561,15 +561,15 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-200 flex flex-col animate-in h-screen overflow-hidden">
-      <Header title="ACB Labs" onBack={onClose} sticky={true} />
+    <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-slate-200">
+      <Header title="ACB Labs" onBack={onClose} />
       
-      <div className="flex-1 overflow-y-auto no-scrollbar py-6 px-4 md:px-8">
-        <div className="max-w-2xl mx-auto w-full bg-white rounded-[2.5rem] p-6 md:p-8 shadow-md space-y-6">
+      <div className="px-8 pt-4 pb-4 w-full">
+        <div className="max-w-sm mx-auto w-full space-y-6">
 
           {/* STEP 1: Method Selection */}
-          <div className="space-y-4">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">{t("1. Analiz Yöntemini Seçin")}</label>
+          <div className="bg-white rounded-3xl p-5 border border-slate-150/80 shadow-sm space-y-4">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">{t("1. Analiz Yöntemini Seçin")}</label>
             <div className="grid grid-cols-2 gap-3">
               <button 
                 onClick={() => { setAnalysisType('precise'); setAnalysisResults(null); }}
@@ -625,8 +625,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* STEP 2: Project Selection */}
+          <div className="bg-white rounded-3xl p-5 border border-slate-150/80 shadow-sm space-y-4">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">{t("2. Proje ve Nokta Seçimi")}</label>
+            <div className="grid grid-cols-1 gap-4">
+              {/* STEP 2: Project Selection */}
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">{t("2. Proje Seçin")}</label>
               <div className="relative">
@@ -681,13 +683,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               </div>
             </div>
           </div>
+        </div>
 
           {/* STEP 4: Data Entry (Only for Precise) */}
           {analysisType === 'precise' && selectedPointId && (
-            <div className="space-y-4 pt-4 border-t border-slate-100">
-              <div className="flex justify-between items-center px-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  4. Kesin Koordinat Girişi ({getSystemDisplayLabel(location?.coordinateSystem)})
+            <div className="bg-white rounded-3xl p-5 border border-slate-150/80 shadow-sm space-y-4 pt-4">
+              <div className="flex justify-between items-center">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">
+                  3. Kesin Koordinat Girişi ({getSystemDisplayLabel(location?.coordinateSystem)})
                 </label>
               </div>
 
@@ -1103,7 +1106,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 {getMethodLabelEn(m.method)}
                               </p>
                               <p className="text-[5.5px] font-bold text-blue-600 font-mono tracking-tight leading-none mt-0.5">
-                                {m.errors?.dhz ? `dH_2d = ${m.errors.dhz.toFixed(4)}m` : 'BARYCENTER'}
+                                {m.errors?.dhz ? `d_2D = ${m.errors.dhz.toFixed(2)}m` : 'BARYCENTER'}
                               </p>
                             </div>
                           </div>

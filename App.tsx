@@ -8,6 +8,7 @@ import ResultCard from './components/ResultCard';
 import StakeoutModule from './components/StakeoutModule';
 import HelpView from './components/HelpView';
 import SettingsView from './components/SettingsView';
+import DataAnalysisView from './components/DataAnalysisView';
 import GlobalFooter from './components/GlobalFooter';
 import Header from './components/Header';
 import { SavedLocation, Coordinate, StakeoutPoint, AppSettings, CalculationMethod } from './types';
@@ -17,7 +18,7 @@ import { useLanguage } from './utils/LanguageContext';
 
 const App = () => {
   const { t } = useLanguage();
-  type ViewType = 'onboarding' | 'dashboard' | 'capture' | 'list' | 'export' | 'result' | 'stakeout' | 'help' | 'settings';
+  type ViewType = 'onboarding' | 'dashboard' | 'capture' | 'list' | 'export' | 'result' | 'stakeout' | 'help' | 'settings' | 'acblabs';
   const [view, setView] = useState<ViewType>('onboarding');
   const [subView, setSubView] = useState<string | null>(null);
   const viewRef = React.useRef<ViewType>(view);
@@ -312,6 +313,15 @@ const App = () => {
     navigateTo('result');
   };
 
+  const handleOpenACBLabs = () => {
+    const password = prompt(t("Analiz sayfasına giriş için şifreyi giriniz:"));
+    if (password === "748123") {
+      navigateTo('acblabs');
+    } else if (password !== null) {
+      alert(t("Hatalı şifre!"));
+    }
+  };
+
   return (
     <div className="h-full bg-slate-200 font-sans text-slate-900 overflow-hidden flex flex-col">
       <div className="flex-1 flex flex-col relative overflow-hidden h-full">
@@ -423,10 +433,18 @@ const App = () => {
           <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-slate-200">
             <Header title="Veri Aktar" />
             <div className="px-8 pt-4 pb-4">
-               <ExportUnifiedView locations={locations} settings={settings} />
+               <ExportUnifiedView locations={locations} settings={settings} onOpenACBLabs={handleOpenACBLabs} />
             </div>
             <GlobalFooter />
           </div>
+        )}
+
+        {view === 'acblabs' && (
+          <DataAnalysisView 
+            locations={locations} 
+            settings={settings} 
+            onClose={() => window.history.back()} 
+          />
         )}
 
         {view === 'result' && lastResult && (
