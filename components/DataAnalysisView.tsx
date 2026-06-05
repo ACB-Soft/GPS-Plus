@@ -451,20 +451,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   }, [maxTickLimit]);
 
   const timeSeriesChartData = useMemo(() => {
-    if (chartData.length === 0) return [];
-    const res = [];
-    for (let i = 0; i <= 12; i++) {
-      const dataIdx = Math.min(Math.round(i * (chartData.length - 1) / 12), chartData.length - 1);
-      if (dataIdx >= 0 && dataIdx < chartData.length) {
-        const originalPoint = chartData[dataIdx];
-        const label = i === 0 ? "1.sec" : `${i * 5}.sec`;
-        res.push({
-          ...originalPoint,
-          timeLabel: label
-        });
-      }
-    }
-    return res;
+    return chartData.map((point, index) => {
+      const secondNum = index + 1;
+      return {
+        ...point,
+        second: secondNum,
+        timeLabel: `${secondNum}.sec`
+      };
+    });
   }, [chartData]);
 
   const timeSeriesMaxLimit = useMemo(() => {
@@ -482,8 +476,41 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   }, [timeSeriesMaxLimit]);
 
   const timeSeriesXTicks = useMemo(() => {
-    return ["1.sec", "5.sec", "10.sec", "15.sec", "20.sec", "25.sec", "30.sec", "35.sec", "40.sec", "45.sec", "50.sec", "55.sec", "60.sec"];
-  }, []);
+    const total = timeSeriesChartData.length;
+    if (total === 0) return [];
+    
+    const ticks: string[] = [];
+    ticks.push("1.sec");
+    
+    let step = 5;
+    if (total <= 12) {
+      step = 1;
+    } else if (total <= 24) {
+      step = 2;
+    } else if (total <= 60) {
+      step = 5;
+    } else {
+      step = Math.ceil(total / 12);
+    }
+    
+    if (step === 1) {
+      for (let i = 2; i <= total; i++) {
+        ticks.push(`${i}.sec`);
+      }
+    } else {
+      for (let i = step; i <= total; i += step) {
+        if (i > 1 && !ticks.includes(`${i}.sec`)) {
+          ticks.push(`${i}.sec`);
+        }
+      }
+      const lastLabel = `${total}.sec`;
+      if (!ticks.includes(lastLabel) && total > 1) {
+        ticks.push(lastLabel);
+      }
+    }
+    
+    return ticks;
+  }, [timeSeriesChartData]);
 
   const exportChart = async (ref: React.RefObject<HTMLDivElement>, name: string) => {
     if (!ref.current) return;
