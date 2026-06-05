@@ -374,6 +374,7 @@ const App = () => {
               });
               window.history.back();
             }} 
+            onRestoreLocations={setLocations}
           />
         )}
 

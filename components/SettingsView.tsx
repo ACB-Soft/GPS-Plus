@@ -7,9 +7,10 @@ import { useLanguage } from '../utils/LanguageContext';
 
 interface Props {
   onBack: () => void;
+  onRestoreLocations?: (newLocs: any[]) => void;
 }
 
-const SettingsView: React.FC<Props> = ({ onBack }) => {
+const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
   const { t } = useLanguage();
   const [coordinateSystem, setCoordinateSystem] = useState(localStorage.getItem('default_coord_system') || 'WGS84');
   const [accuracyLimit, setAccuracyLimit] = useState(localStorage.getItem('default_accuracy_limit') || '5');
@@ -285,6 +286,9 @@ const SettingsView: React.FC<Props> = ({ onBack }) => {
 
                 // localStorage'a geri eşitleyelim
                 localStorage.setItem('gps_locations_v5.0', JSON.stringify(currentLocations));
+                if (onRestoreLocations) {
+                  onRestoreLocations(currentLocations);
+                }
               }
 
               // 2. Aplikasyon Noktaları (stakeout_points_v1) kurgusu

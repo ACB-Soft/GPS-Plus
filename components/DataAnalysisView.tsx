@@ -1241,14 +1241,19 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           };
                           return labels[m] || m;
                         };
+                        const fs = parseFloat(customScatterFontSize);
+                        const badgeSize = `${fs + 6.5}px`;
+                        const badgeFontSize = `${fs - 0.5}px`;
+                        const titleFontSize = `${fs - 1}px`;
+                        const subFontSize = `${fs - 2}px`;
                         return (
                           <div key={m.id} className="flex items-center gap-1.5 text-left leading-none min-w-0">
-                            <div className="w-3.5 h-3.5 flex items-center justify-center rounded text-[7px] font-black text-white shrink-0 shadow-xs" style={{ backgroundColor: m.color }}>{m.id}</div>
+                            <div className="flex items-center justify-center rounded font-black text-white shrink-0 shadow-xs" style={{ backgroundColor: m.color, width: badgeSize, height: badgeSize, fontSize: badgeFontSize }}>{m.id}</div>
                             <div className="min-w-0">
-                              <p className="text-[6.5px] font-extrabold text-slate-800 uppercase tracking-tight truncate leading-none">
+                              <p className="font-extrabold text-slate-800 uppercase tracking-tight truncate leading-none" style={{ fontSize: titleFontSize }}>
                                 {getMethodLabelEn(m.method)}
                               </p>
-                              <p className="text-[5.5px] font-bold text-blue-600 font-mono tracking-tight leading-none mt-0.5">
+                              <p className="font-bold text-blue-600 font-mono tracking-tight leading-none mt-0.5" style={{ fontSize: subFontSize }}>
                                 {m.errors?.dhz ? `d_2D = ${m.errors.dhz.toFixed(2)}m` : 'BARYCENTER'}
                               </p>
                             </div>
