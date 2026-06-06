@@ -41,12 +41,11 @@ export function calculateResult(
   let clusters: number[][] | undefined = undefined;
 
   // Let's implement the 30-epoch constraint check for professional mathematical models:
-  // KMEANS_4, BAARDA, MIDRANGE_KMEANS_BAARDA, KMEANS_BAARDA
+  // KMEANS_4, BAARDA, MIDRANGE_KMEANS_BAARDA
   const isProfessional = 
     method === 'KMEANS_4' || 
     method === 'BAARDA' || 
-    method === 'MIDRANGE_KMEANS_BAARDA' || 
-    method === 'KMEANS_BAARDA';
+    method === 'MIDRANGE_KMEANS_BAARDA';
   
   let finalMethod = method;
   let fallbackApplied = false;
@@ -71,12 +70,6 @@ export function calculateResult(
       resultData = kmeansRes.result;
       finalCalculatedUsedIndices = kmeansRes.usedIndices;
       clusters = kmeansRes.clusters;
-      break;
-    case 'KMEANS_BAARDA':
-      const pureKMeansBaardaRes = calculatePureKMeansBaarda(sourceData);
-      resultData = pureKMeansBaardaRes.result;
-      finalCalculatedUsedIndices = pureKMeansBaardaRes.usedIndices;
-      clusters = pureKMeansBaardaRes.clusters;
       break;
     case 'KMEANS_4':
       const kmeans4Res = calculateKMeans4(sourceData);
@@ -307,67 +300,6 @@ function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; use
     });
 
   // 5. Final Refinement (Baarda)
-  const baardaInput = clusterSummaries.map((s, idx) => ({ ...s, _originalIdx: idx }));
-  const baardaRes = calculateBaardaInternal(baardaInput as any);
-  
-  const finalResult = { ...baardaRes.result };
-  
-  // Z calculation
-  const validAlts = samples.filter(s => s.altitude !== null);
-  finalResult.altitude = validAlts.length > 0
-    ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length
-    : null;
-
-  const finalUsedIndices = baardaRes.usedIndices.flatMap(i => (clusterSummaries[i] as any)._originalIndices);
-  
-  return { 
-    result: finalResult, 
-    usedIndices: [...new Set(finalUsedIndices)], 
-    clusters: finalValidClusters.filter(c => c.length > 0)
-  };
-}
-
-/**
- * Pure K-Means + Baarda Algorithm
- * Direct K-Means clustering (k=4) without preliminary MidRange or Eps filtering
- * followed by Baarda outlier detection on cluster weighted centroids.
- */
-function calculatePureKMeansBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
-  if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
-
-  // 1. K-Means (k=4) directly on the full raw samples
-  const k = 4;
-  const clusterAssignments = runKMeans(samples, k);
-  
-  const finalValidClusters: number[][] = Array.from({ length: k }, () => []);
-  clusterAssignments.forEach((cIdx, i) => {
-    finalValidClusters[cIdx].push(i);
-  });
-
-  // 2. Summarize Clusters using weighted LSE
-  const clusterSummaries = finalValidClusters
-    .filter(cluster => cluster.length > 0)
-    .map(cluster => {
-      const clusterPoints = cluster.map(idx => samples[idx]);
-      const weights = clusterPoints.map(p => 1 / Math.pow(Math.max(0.1, p.accuracy), 2));
-      const sumW = weights.reduce((a, b) => a + b, 0);
-      
-      const cLat = clusterPoints.reduce((a, p, i) => a + p.lat * weights[i], 0) / sumW;
-      const cLng = clusterPoints.reduce((a, p, i) => a + p.lng * weights[i], 0) / sumW;
-      const cAcc = clusterPoints.reduce((a, p, i) => a + p.accuracy * weights[i], 0) / sumW;
-      
-      return {
-        lat: cLat,
-        lng: cLng,
-        accuracy: cAcc,
-        altitude: null,
-        altitudeAccuracy: null,
-        timestamp: Date.now(),
-        _originalIndices: cluster
-      };
-    });
-
-  // 3. Final Refinement (Baarda) on cluster centers
   const baardaInput = clusterSummaries.map((s, idx) => ({ ...s, _originalIdx: idx }));
   const baardaRes = calculateBaardaInternal(baardaInput as any);
   

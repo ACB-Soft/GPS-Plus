@@ -442,7 +442,6 @@ export const trToEnMap: Record<string, string> = {
   "3. KMeans": "3. KMeans",
   "4. Baarda": "4. Baarda",
   "5. MidRange + KMeans + Baarda": "5. MidRange + KMeans + Baarda",
-  "6. KMeans + Baarda Hibrit": "6. KMeans + Baarda Hybrid",
   "Aktif edildiğinde, sadece yükseklik verisi içeren uydu tabanlı konumlar ölçüme dahil edilir. Açık alanlarda hassasiyeti artırır.": "When enabled, only satellite-based positions with altitude data are included in measurements. Increases accuracy in open areas.",
   "Birim ve Duyarlılık": "Unit and Precision",
   "Konum (Virgülden sonraki duyarlılık)": "Location (Decimal precision)",
@@ -639,10 +638,8 @@ export const trToEnMap: Record<string, string> = {
   "Yöntem:": "Method:",
   "Gözlemleri mekansal yakınlıklarına göre 4 bağımsız yoğunluk grubuna ayırarak küme merkezini belirler.": "Clusters observation points into 4 independent density groups based on geospatial distance to establish a cluster centroid.",
   "Baarda kalın hata eleme teorisini kullanarak uyuşumsuz ve kaba hatalı koordinatları sistemden temizler.": "Iteratively purges outliers and gross coordinate errors from the dataset using geodetic Baarda gross error testing.",
-  "Doğrudan K-Means kümeleme yöntemi ve ardından küme ağırlıklı merkezlerinde Baarda uyuşumsuzluk testi ile süzme işlemi uygular.": "Applies direct K-Means clustering followed by Baarda reliability analysis at cluster weighted centers to filter out outliers.",
   "En az 30 epok veri gerektirir.": "Requires at least 30 epochs of data.",
-  "6-<b>KMeans + Baarda Hibrit:</b> K-Means kümeleme yöntemi ve Baarda uyuşumsuzluk testi ile süzme işlemi uygulayan hibrit bir modeldir.": "6-<b>KMeans + Baarda Hybrid:</b> A hybrid model applying K-Means clustering followed by Baarda reliability analysis to filter outliers.",
-  "KMeans, Baarda, MidRange+KMeans+Baarda ve KMeans+Baarda yöntemleri için en az 30 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.": "A minimum of 30 epochs is strictly required for KMeans, Baarda, MidRange+KMeans+Baarda, and KMeans+Baarda hybrid models. If less than 30 samples are collected, the system automatically and securely resolves the coordinates using the Weighted Least Squares (LSE) method."
+  "KMeans, Baarda ve MidRange+KMeans+Baarda yöntemleri için en az 30 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.": "A minimum of 30 epochs is strictly required for KMeans, Baarda, and MidRange+KMeans+Baarda hybrid models. If less than 30 samples are collected, the system automatically and securely resolves the coordinates using the Weighted Least Squares (LSE) method."
 };
 
 /**

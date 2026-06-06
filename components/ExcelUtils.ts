@@ -13,7 +13,6 @@ const getMethodName = (m: CalculationMethod) => {
     case 'KMEANS_4': return "K-Means (4 Küme)";
     case 'BAARDA': return "Baarda Eleme";
     case 'MIDRANGE_KMEANS_BAARDA': return "MidRange + K-Means + Baarda";
-    case 'KMEANS_BAARDA': return "K-Means + Baarda Hibrit";
     default: return m;
   }
 };
@@ -153,8 +152,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     'MIDRANGE',
     'KMEANS_4',
     'BAARDA',
-    'MIDRANGE_KMEANS_BAARDA',
-    'KMEANS_BAARDA'
+    'MIDRANGE_KMEANS_BAARDA'
   ];
   const methodResults = methods.map(method => {
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
