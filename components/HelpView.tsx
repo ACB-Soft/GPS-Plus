@@ -204,7 +204,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                       <p className="text-sm font-black text-emerald-700 uppercase tracking-tight">{t("Güvenilir Veri (Yeşil)")}</p>
                       <p 
                         className="text-sm text-slate-600 font-medium leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: t("Veriler yüksek tutarlılıktadır.<br/>Donanımsal Hassasiyet &le; 10m,<br/>Veri Saçılımı &le; 10m,<br/>Veri Saçılımı &le; Donanımsal Hassasiyet,<br/>Veri Sayısı &ge; 5") }}
+                        dangerouslySetInnerHTML={{ __html: t("Veriler yüksek tutarlılıktadır.<br/>Donanımsal Hassasiyet &le; 5m,<br/>Veri Saçılımı &le; 5m,<br/>Veri Saçılımı &le; Donanımsal Hassasiyet,<br/>Veri Sayısı &ge; 15") }}
                       />
                     </div>
                   </div>
@@ -214,7 +214,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                       <p className="text-sm font-black text-amber-700 uppercase tracking-tight">{t("Orta Güvenli Veri / Veri Az (Turuncu)")}</p>
                       <p 
                         className="text-sm text-slate-600 font-medium leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: t("Veriler orta tutarlılıktadır.<br/>10m &lt; Donanımsal Hassasiyet &le; 20m,<br/>10m &lt; Veri Saçılımı &le; 20m,<br/>Veri Saçılımı &gt; Donanımsal Hassasiyet,<br/>Veri Sayısı &lt; 5") }}
+                        dangerouslySetInnerHTML={{ __html: t("Veriler orta tutarlılıktadır.<br/>5m &lt; Donanımsal Hassasiyet &le; 20m,<br/>5m &lt; Veri Saçılımı &le; 20m,<br/>Veri Saçılımı &gt; Donanımsal Hassasiyet,<br/>Veri Sayısı &lt; 15") }}
                       />
                     </div>
                   </div>
@@ -304,16 +304,16 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                         1-<b>Mid-Range:</b> {t("Veri sınırları üzerinden tarafsız referans merkez noktası belirlenir.")}
                       </li>
                       <li className="text-sm text-slate-700 leading-tight">
-                        2-<b>Filtre:</b> {t("Referans noktasına ortalama donanımsal hassasiyetten daha uzak noktalar elenir.")}
+                        2-<b>{t("Filtre")}:</b> {t("Referans noktasına ortalama donanımsal hassasiyetten daha uzak noktalar elenir.")}
                       </li>
                       <li className="text-sm text-slate-700 leading-tight">
                         3-<b>K-Means:</b> {t("Temizlenmiş veri 4 bağımsız yoğunluk kümesine bölünür.")}
                       </li>
                       <li className="text-sm text-slate-700 leading-tight">
-                        4-<b>Ağırlıklı Özet:</b> {t("Her küme kendi içinde ağırlıklı dengeleme ile tek bir noktaya dönüştürülür.")}
+                        4-<b>{t("Ağırlıklı Özet")}:</b> {t("Her küme kendi içinde ağırlıklı dengeleme ile tek bir noktaya dönüştürülür.")}
                       </li>
                       <li className="text-sm text-slate-700 leading-tight">
-                        5-<b>Baarda Testi:</b> {t("4 özet nokta arasında uyuşmazlık denetimi yapılarak sonuç konum hesaplayan hibrit bir modeldir.")}
+                        5-<b>{t("Baarda Testi")}:</b> {t("4 özet nokta arasında uyuşmazlık denetimi yapılarak sonuç konum hesaplayan hibrit bir modeldir.")}
                       </li>
                     </ul>
                   </div>

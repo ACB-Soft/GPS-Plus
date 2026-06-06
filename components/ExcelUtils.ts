@@ -395,8 +395,8 @@ export const downloadCombinedAnalysisReport = (
     // 1. GÜVENSİZ VERİ (KIRMIZI): Donanımsal Hassasiyet > 20m VEYA Veri Saçılımı > 20m VEYA Veri Saçılımı > Donanımsal Hassasiyet * 3
     const isRed = avgAccAll > 20 || maxSpreadAll > 20 || maxSpreadAll > avgAccAll * 3;
 
-    // 2. GÜVENİLİR VERİ (YEŞİL): Donanımsal Hassasiyet <= 10m VE Veri Saçılımı <= 10m VE Veri Sayısı >= 5 VE Veri Saçılımı <= Donanımsal Hassasiyet
-    const isGreen = !isRed && avgAccAll <= 10 && maxSpreadAll <= 10 && samplesCount >= 5 && maxSpreadAll <= avgAccAll;
+    // 2. GÜVENİLİR VERİ (YEŞİL): Donanımsal Hassasiyet <= 5m VE Veri Saçılımı <= 5m VE Veri Sayısı >= 15 VE Veri Saçılımı <= Donanımsal Hassasiyet
+    const isGreen = !isRed && avgAccAll <= 5 && maxSpreadAll <= 5 && samplesCount >= 15 && maxSpreadAll <= avgAccAll;
 
     if (isRed) {
       signalQualityLabel = "GÜVENSİZ VERİ (KIRMIZI SİNYAL)";
@@ -405,8 +405,8 @@ export const downloadCombinedAnalysisReport = (
       signalQualityLabel = "GÜVENİLİR VERİ (YEŞİL SİNYAL)";
       interpretation = "Veriler yüksek tutarlılıktadır. Çoklu yansıma (multipath) veya sapma (drift) etkisi gözlenmemiştir. Sinyal kalitesi son derece güvenli seviyededir.";
     } else {
-      signalQualityLabel = samplesCount < 5 ? "VERİ AZ / ORTA GÜVENLİ VERİ (TURUNCU SİNYAL)" : "ORTA GÜVENLİ VERİ (TURUNCU SİNYAL)";
-      interpretation = "Veriler orta tutarlılıktadır. Kriterler: 10m < Donanımsal Hassasiyet <= 20m veya 10m < Veri Saçılımı <= 20m veya Veri Saçılımı > Donanımsal Hassasiyet veya Veri Sayısı < 5";
+      signalQualityLabel = samplesCount < 15 ? "VERİ AZ / ORTA GÜVENLİ VERİ (TURUNCU SİNYAL)" : "ORTA GÜVENLİ VERİ (TURUNCU SİNYAL)";
+      interpretation = "Veriler orta tutarlılıktadır. Kriterler: 5m < Donanımsal Hassasiyet <= 20m veya 5m < Veri Saçılımı <= 20m veya Veri Saçılımı > Donanımsal Hassasiyet veya Veri Sayısı < 15";
     }
   }
 

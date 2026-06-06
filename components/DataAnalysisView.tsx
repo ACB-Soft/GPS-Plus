@@ -327,8 +327,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     // 1. GÜVENSİZ VERİ (KIRMIZI): Donanımsal Hassasiyet > 20m VEYA Veri Saçılımı > 20m VEYA Veri Saçılımı > Donanımsal Hassasiyet * 3
     const isRed = avgSensorAcc > 20 || maxSpread > 20 || maxSpread > avgSensorAcc * 3;
 
-    // 2. GÜVENİLİR VERİ (YEŞİL): Donanımsal Hassasiyet <= 10m VE Veri Saçılımı <= 10m VE Veri Sayısı >= 5 VE Veri Saçılımı <= Donanımsal Hassasiyet
-    const isGreen = !isRed && avgSensorAcc <= 10 && maxSpread <= 10 && samplesCount >= 5 && maxSpread <= avgSensorAcc;
+    // 2. GÜVENİLİR VERİ (YEŞİL): Donanımsal Hassasiyet <= 5m VE Veri Saçılımı <= 5m VE Veri Sayısı >= 15 VE Veri Saçılımı <= Donanımsal Hassasiyet
+    const isGreen = !isRed && avgSensorAcc <= 5 && maxSpread <= 5 && samplesCount >= 15 && maxSpread <= avgSensorAcc;
 
     // 3. ORTA GÜVENLİ VERİ / VERİ AZ (TURUNCU)
     const signalQuality: 'safe' | 'medium' | 'low' = isRed ? 'low' : isGreen ? 'safe' : 'medium';
@@ -982,7 +982,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             </p>
                             <p className="font-medium">{t("Veriler yüksek tutarlılıktadır.")}</p>
                             <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">
-                              {t("Kriter: Donanımsal Hassasiyet ≤ 10m, Veri Saçılımı ≤ 10m, Veri Sayısı ≥ 5")}
+                              {t("Kriter: Donanımsal Hassasiyet ≤ 5m, Veri Saçılımı ≤ 5m, Veri Sayısı ≥ 15")}
                             </p>
                             {multipathAnalysis.maxSpread > multipathAnalysis.avgSensorAcc ? (
                               <p className="text-amber-600 font-extrabold text-[10px] bg-amber-50 rounded-lg p-2 border border-amber-100/50 mt-1.5 normal-case">
@@ -998,11 +998,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         {multipathAnalysis.signalQuality === 'medium' && (
                           <div className="space-y-1 text-slate-600">
                             <p className="font-black text-amber-600 uppercase text-[9px] tracking-wide mb-1">
-                              ● {multipathAnalysis.samplesCount < 5 ? t("VERİ AZ (TURUNCU SİNYAL)") : t("ORTA GÜVENLİ VERİ (TURUNCU SİNYAL)")}
+                              ● {multipathAnalysis.samplesCount < 15 ? t("VERİ AZ (TURUNCU SİNYAL)") : t("ORTA GÜVENLİ VERİ (TURUNCU SİNYAL)")}
                             </p>
                             <p className="font-medium">{t("Veriler orta tutarlılıktadır.")}</p>
                             <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">
-                              {t("Kriterler: 10m < Donanımsal Hassasiyet ≤ 20m veya 10m < Veri Saçılımı ≤ 20m veya Veri Saçılımı > Donanımsal Hassasiyet veya Veri Sayısı < 5")}
+                              {t("Kriterler: 5m < Donanımsal Hassasiyet ≤ 20m veya 5m < Veri Saçılımı ≤ 20m veya Veri Saçılımı > Donanımsal Hassasiyet veya Veri Sayısı < 15")}
                             </p>
                           </div>
                         )}
