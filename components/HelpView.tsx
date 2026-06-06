@@ -47,7 +47,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 />
                 <p 
                   className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
-                  dangerouslySetInnerHTML={{ __html: t("• <b>Ölçüm Süreci:</b> \"Ölçümü Başlat\" dediğinizde belirlediğiniz hassasiyette (2-100 m) ve belirlediğiniz sürede (5-60 sn) veri toplama süreci başlatılır. Uygulama bu aşamada konum örneği alarak verilerin ortalamasını hesaplar. En doğru sonuç için cihazı sabit bir zeminde ve açık bir alanda tutun.") }}
+                  dangerouslySetInnerHTML={{ __html: t("• <b>Ölçüm Süreci:</b> \"Ölçümü Başlat\" dediğinizde belirlediğiniz hassasiyette (2-100 m) ve belirlediğiniz sürede (5-120 sn) veri toplama süreci başlatılır. Uygulama bu aşamada konum örneği alarak verilerin ortalamasını hesaplar. En doğru sonuç için cihazı sabit bir zeminde ve açık bir alanda tutun.") }}
                 />
               </div>
 

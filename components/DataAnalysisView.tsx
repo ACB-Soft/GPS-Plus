@@ -148,7 +148,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [customScatterFontSize, setCustomScatterFontSize] = useState<string>('7.5'); // '6', '7', '7.5', '8', '9', '10', '12'
   const [xOffset, setXOffset] = useState<number>(0);
   const [yOffset, setYOffset] = useState<number>(0);
-  const [customTimeSeriesRange, setCustomTimeSeriesRange] = useState<string>('auto'); // 'auto', '2.0', '5.0', '10.0', '15.0', '20.0', '30.0', '50.0'
+  const [customTimeSeriesRange, setCustomTimeSeriesRange] = useState<string>('auto'); // 'auto', '2.0', '3.0', '4.0', '5.0', '10.0', '15.0', '20.0', '30.0', '50.0'
   const [customTimeSeriesStep, setCustomTimeSeriesStep] = useState<string>('auto'); // 'auto', '0.1', '0.2', '0.5', '1.0', '2.0'
   const [customTimeSeriesFontSize, setCustomTimeSeriesFontSize] = useState<string>('7'); // '6', '7', '8', '9', '10', '12'
 
@@ -1479,6 +1479,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       >
                         <option value="auto">{t("Auto (En az 10m)")}</option>
                         <option value="2.0">2.0m</option>
+                        <option value="3.0">3.0m</option>
+                        <option value="4.0">4.0m</option>
                         <option value="5.0">5.0m</option>
                         <option value="10.0">10.0m</option>
                         <option value="15.0">15.0m</option>
