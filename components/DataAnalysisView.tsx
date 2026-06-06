@@ -843,7 +843,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
             <div className="bg-white rounded-3xl p-5 border border-slate-150/80 shadow-sm space-y-4 pt-4">
               <div className="flex justify-between items-center">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">
-                  3. Kesin Koordinat Girişi ({getSystemDisplayLabel(location?.coordinateSystem)})
+                  {t("3. Kesin Koordinat Girişi (")}{getSystemDisplayLabel(location?.coordinateSystem)})
                 </label>
               </div>
 
@@ -875,7 +875,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase ml-2">{useLocal ? 'Sağa (Y)' : 'Enlem (Lat)'}</label>
+                  <label className="text-[9px] font-bold text-slate-500 uppercase ml-2">{useLocal ? t("Sağa (Y)") : t("Enlem (Lat)")}</label>
                   <input 
                     type="number" 
                     value={preciseE} 
@@ -888,7 +888,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase ml-2">{useLocal ? 'Yukarı (X)' : 'Boylam (Lng)'}</label>
+                  <label className="text-[9px] font-bold text-slate-500 uppercase ml-2">{useLocal ? t("Yukarı (X)") : t("Boylam (Lng)")}</label>
                   <input 
                     type="number" 
                     value={preciseN} 
@@ -901,7 +901,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase ml-2">{useLocal ? 'Z (Kot)' : 'Alt (H)'}</label>
+                  <label className="text-[9px] font-bold text-slate-500 uppercase ml-2">{useLocal ? t("Z (Kot)") : t("Alt (H)")}</label>
                   <input 
                     type="number" 
                     value={preciseZ} 
@@ -920,7 +920,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[12px] uppercase tracking-widest active:scale-95 transition-all shadow-xl flex items-center justify-center gap-3"
               >
                 <i className="fas fa-microchip"></i>
-                Analizi Gerçekleştir
+                {t("Analizi Gerçekleştir")}
               </button>
             </div>
           )}
@@ -932,7 +932,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[12px] uppercase tracking-widest active:scale-95 transition-all shadow-xl flex items-center justify-center gap-3"
             >
               <i className="fas fa-chart-bar"></i>
-              İstatistikleri Göster
+              {t("İstatistikleri Göster")}
             </button>
           )}
 
@@ -940,7 +940,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
           {analysisResults && analysisResults.length > 0 && (
             <div className="space-y-6 animate-in slide-in-from-top-4 duration-500">
               <div className="flex items-center justify-between px-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">5. Analiz Sonuçları</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("5. Analiz Sonuçları")}</label>
               </div>
 
               {/* Multipath / Reliability Analysis */}
@@ -1054,7 +1054,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-[12px] uppercase tracking-widest active:scale-95 transition-all shadow-xl flex items-center justify-center gap-3"
               >
                 <i className="fas fa-map-marked-alt"></i>
-                Analiz Sonuçlarını Haritada Gör
+                {t("Analiz Sonuçlarını Haritada Gör")}
               </button>
 
               {analysisType === 'precise' ? (
@@ -1062,9 +1062,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-slate-900 text-white text-[9px] uppercase tracking-widest">
-                        <th className="p-4 rounded-tl-3xl">Yöntem</th>
-                        <th className="p-4">ΔYatay (m)</th>
-                        <th className="p-4 rounded-tr-3xl">DURUM</th>
+                        <th className="p-4 rounded-tl-3xl">{t("Yöntem")}</th>
+                        <th className="p-4">{t("ΔYatay (m)")}</th>
+                        <th className="p-4 rounded-tr-3xl">{t("DURUM")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1076,7 +1076,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             <td className="p-4 font-bold text-xs text-blue-600">{res.errors.dhz.toFixed(3)}</td>
                             <td className="p-4">
                               {isBest && (
-                                <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter">EN İYİ</span>
+                                <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter">{t("EN İYİ")}</span>
                               )}
                             </td>
                           </tr>
@@ -1090,9 +1090,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                    <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-slate-900 text-white text-[9px] uppercase tracking-widest">
-                        <th className="p-4 rounded-tl-3xl">Yöntem</th>
-                        <th className="p-4">{useLocal ? 'Hesaplanan Y (Sağa)' : 'Hesaplanan Enlem (Lat)'}</th>
-                        <th className="p-4 rounded-tr-3xl">{useLocal ? 'Hesaplanan X (Yukarı)' : 'Hesaplanan Boylam (Lng)'}</th>
+                        <th className="p-4 rounded-tl-3xl">{t("Yöntem")}</th>
+                        <th className="p-4">{useLocal ? t("Hesaplanan Y (Sağa)") : t("Hesaplanan Enlem (Lat)")}</th>
+                        <th className="p-4 rounded-tr-3xl">{useLocal ? t("Hesaplanan X (Yukarı)") : t("Hesaplanan Boylam (Lng)")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1128,11 +1128,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     <div className="w-5 h-5 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500 shrink-0">
                       <i className="fas fa-sliders-h text-[9px]"></i>
                     </div>
-                    <span className="font-extrabold text-[9px] uppercase text-slate-705 tracking-wider">HARİTA PAFTASI AYARLARI</span>
+                    <span className="font-extrabold text-[9px] uppercase text-slate-705 tracking-wider">{t("HARİTA PAFTASI AYARLARI")}</span>
                   </div>
                   <div className="flex flex-wrap gap-2.5 items-center justify-end">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[8.5px] font-bold text-slate-400 uppercase">Eksen:</span>
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase">{t("Eksen:")}</span>
                       <select 
                         value={customScatterRange} 
                         onChange={(e) => setCustomScatterRange(e.target.value)}
@@ -1149,7 +1149,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       </select>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[8.5px] font-bold text-slate-400 uppercase">Kılavuz Adımı:</span>
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase">{t("Kılavuz Adımı:")}</span>
                       <select 
                         value={customScatterStep} 
                         onChange={(e) => setCustomScatterStep(e.target.value)}
@@ -1164,7 +1164,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       </select>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[8.5px] font-bold text-slate-400 uppercase font-sans">Yazı Boyutu:</span>
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase font-sans">{t("Yazı Boyutu:")}</span>
                       <select 
                         value={customScatterFontSize} 
                         onChange={(e) => setCustomScatterFontSize(e.target.value)}
@@ -1189,7 +1189,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       <i className="fas fa-arrows-alt text-[9px]"></i>
                     </div>
                     <div className="flex flex-col">
-                      <span className="font-extrabold text-[9px] uppercase text-slate-700 tracking-wider">EKSEN KAYDIRMA (OFFSET NAVİGASYON)</span>
+                      <span className="font-extrabold text-[9px] uppercase text-slate-700 tracking-wider">{t("EKSEN KAYDIRMA (OFFSET NAVİGASYON)")}</span>
                       <span className="text-[7.5px] font-bold text-slate-400 uppercase font-mono tracking-wide">
                         OFFSET: X = {xOffset >= 0 ? `+${xOffset}` : xOffset}m • Y = {yOffset >= 0 ? `+${yOffset}` : yOffset}m
                       </span>
@@ -1467,17 +1467,17 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     <div className="w-5 h-5 rounded-lg bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500 shrink-0">
                       <i className="fas fa-sliders-h text-[9px]"></i>
                     </div>
-                    <span className="font-extrabold text-[9px] uppercase text-slate-700 tracking-wider">ZAMAN SERİSİ GRAFİK AYARLARI</span>
+                    <span className="font-extrabold text-[9px] uppercase text-slate-700 tracking-wider">{t("ZAMAN SERİSİ GRAFİK AYARLARI")}</span>
                   </div>
                   <div className="flex flex-wrap gap-2.5 items-center justify-end">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[8.5px] font-bold text-slate-400 uppercase">Eksen Limit:</span>
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase">{t("Eksen Limit:")}</span>
                       <select 
                         value={customTimeSeriesRange} 
                         onChange={(e) => setCustomTimeSeriesRange(e.target.value)}
                         className="bg-slate-100 hover:bg-slate-200 border border-slate-200/60 text-[9px] font-black rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
                       >
-                        <option value="auto">Auto (En az 10m)</option>
+                        <option value="auto">{t("Auto (En az 10m)")}</option>
                         <option value="2.0">2.0m</option>
                         <option value="5.0">5.0m</option>
                         <option value="10.0">10.0m</option>
@@ -1488,7 +1488,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       </select>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[8.5px] font-bold text-slate-400 uppercase">Kılavuz Adımı:</span>
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase">{t("Kılavuz Adımı:")}</span>
                       <select 
                         value={customTimeSeriesStep} 
                         onChange={(e) => setCustomTimeSeriesStep(e.target.value)}
@@ -1504,7 +1504,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       </select>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[8.5px] font-bold text-slate-400 uppercase">Yazı Boyutu:</span>
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase">{t("Yazı Boyutu:")}</span>
                       <select 
                         value={customTimeSeriesFontSize} 
                         onChange={(e) => setCustomTimeSeriesFontSize(e.target.value)}
@@ -1658,7 +1658,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 <i className="fas fa-times"></i>
               </button>
               <div className="h-12 px-6 bg-white rounded-2xl flex items-center shadow-2xl border border-slate-200">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mr-2">Nokta:</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mr-2">{t("Nokta:")}</p>
                 <p className="text-sm font-black text-slate-900">{location.name}</p>
               </div>
             </div>
@@ -1716,8 +1716,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   >
                     <Popup>
                       <div className="p-2">
-                        <p className="text-[10px] font-black uppercase text-slate-500 mb-1">Ham Ölçüm (Güvenilir) #{idx+1}</p>
-                        <p className="text-xs font-bold font-mono">Hass: ±{s.accuracy.toFixed(2)}m</p>
+                        <p className="text-[10px] font-black uppercase text-slate-500 mb-1">{t("Ham Ölçüm (Güvenilir)")} #{idx+1}</p>
+                        <p className="text-xs font-bold font-mono">{t("Hass:")} ±{s.accuracy.toFixed(2)}m</p>
                       </div>
                     </Popup>
                   </Marker>
