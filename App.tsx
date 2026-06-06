@@ -117,7 +117,7 @@ const App = () => {
       const updated = prevLocations.map(loc => {
         if (loc.samples && loc.samples.length > 0 && 
            (loc.calculationMethod !== settings.calculationMethod || loc.gnssOnlyMode !== settings.gnssOnlyMode)) {
-          const { result, usedIndices } = calculateResult(loc.samples, settings.calculationMethod, loc.accuracyLimit || 5, settings.gnssOnlyMode);
+          const { result, usedIndices, fallbackApplied, actualMethodUsed } = calculateResult(loc.samples, settings.calculationMethod, loc.accuracyLimit || 5, settings.gnssOnlyMode);
           changed = true;
           return {
             ...loc,
@@ -128,7 +128,9 @@ const App = () => {
             altitudeAccuracy: result.altitudeAccuracy,
             calculationMethod: settings.calculationMethod,
             gnssOnlyMode: settings.gnssOnlyMode,
-            usedSampleIndices: usedIndices
+            usedSampleIndices: usedIndices,
+            fallbackApplied,
+            actualMethodUsed
           };
         }
         return loc;
@@ -138,7 +140,7 @@ const App = () => {
 
     if (lastResult && lastResult.samples && lastResult.samples.length > 0 && 
        (lastResult.calculationMethod !== settings.calculationMethod || lastResult.gnssOnlyMode !== settings.gnssOnlyMode)) {
-      const { result, usedIndices } = calculateResult(lastResult.samples, settings.calculationMethod, lastResult.accuracyLimit || 5, settings.gnssOnlyMode);
+      const { result, usedIndices, fallbackApplied, actualMethodUsed } = calculateResult(lastResult.samples, settings.calculationMethod, lastResult.accuracyLimit || 5, settings.gnssOnlyMode);
       setLastResult({
         ...lastResult,
         lat: result.lat,
@@ -148,7 +150,9 @@ const App = () => {
         altitudeAccuracy: result.altitudeAccuracy,
         calculationMethod: settings.calculationMethod,
         gnssOnlyMode: settings.gnssOnlyMode,
-        usedSampleIndices: usedIndices
+        usedSampleIndices: usedIndices,
+        fallbackApplied,
+        actualMethodUsed
       });
     }
   }, [settings.calculationMethod, settings.gnssOnlyMode]);
@@ -278,6 +282,7 @@ const App = () => {
   };
 
   const handleGPSComplete = (coord: Coordinate, folderName: string, pointName: string, description: string, coordinateSystem: string, duration: number, samples: Coordinate[], usedIndices: number[], accLimit: number, method: any, gnssOnly: boolean) => {
+    const { fallbackApplied, actualMethodUsed } = calculateResult(samples, method, accLimit, gnssOnly);
     const newLoc: SavedLocation = {
       ...coord,
       id: Date.now().toString(),
@@ -290,7 +295,9 @@ const App = () => {
       gnssOnlyMode: gnssOnly,
       samples: samples,
       usedSampleIndices: usedIndices,
-      accuracyLimit: accLimit
+      accuracyLimit: accLimit,
+      fallbackApplied,
+      actualMethodUsed
     };
     setLocations(prev => [newLoc, ...prev]);
     setLastResult(newLoc);

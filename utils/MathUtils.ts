@@ -8,7 +8,13 @@ export function calculateResult(
   method: CalculationMethod,
   accuracyLimit: number,
   gnssOnly: boolean = false
-): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
+): { 
+  result: Coordinate; 
+  usedIndices: number[]; 
+  clusters?: number[][]; 
+  fallbackApplied?: boolean; 
+  actualMethodUsed?: CalculationMethod;
+} {
   // Step 1: Filter by GNSS metadata if requested
   // GNSS usually provides altitude, while Wi-Fi/Network often doesn't in browsers
   let baseData = samples;
@@ -34,7 +40,23 @@ export function calculateResult(
   let finalCalculatedUsedIndices: number[] | null = null;
   let clusters: number[][] | undefined = undefined;
 
-  switch (method) {
+  // Let's implement the 30-epoch constraint check for professional mathematical models:
+  // KMEANS_4, BAARDA, MIDRANGE_KMEANS_BAARDA, KMEANS_BAARDA
+  const isProfessional = 
+    method === 'KMEANS_4' || 
+    method === 'BAARDA' || 
+    method === 'MIDRANGE_KMEANS_BAARDA' || 
+    method === 'KMEANS_BAARDA';
+  
+  let finalMethod = method;
+  let fallbackApplied = false;
+
+  if (isProfessional && samples.length < 30) {
+    finalMethod = 'WEIGHTED_LSE';
+    fallbackApplied = true;
+  }
+
+  switch (finalMethod) {
     case 'ARITHMETIC_MEAN':
       finalSamples = sourceData;
       resultData = calculateAverage(sourceData);
@@ -98,7 +120,13 @@ export function calculateResult(
   // Ensure it doesn't drop below a realistic threshold (0.1m)
   resultData.accuracy = Math.max(0.1, resultData.accuracy);
 
-  return { result: resultData, usedIndices, clusters };
+  return { 
+    result: resultData, 
+    usedIndices, 
+    clusters, 
+    fallbackApplied, 
+    actualMethodUsed: finalMethod 
+  };
 }
 
 export function calculateMaxDistance(samples: Coordinate[]): number {

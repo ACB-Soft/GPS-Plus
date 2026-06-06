@@ -275,7 +275,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                     <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">{t("KÜMELEME")}</span>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                    {t("Gözlemleri mekansal yakınlıklarına göre 4 bağımsız yoğunluk grubuna ayırarak küme merkezini belirler.")}
+                    {t("Gözlemleri mekansal yakınlıklarına göre 4 bağımsız yoğunluk grubuna ayırarak küme merkezini belirler.")} <span className="text-amber-600 font-black">{t("En az 30 epok veri gerektirir.")}</span>
                   </p>
                 </div>
 
@@ -285,7 +285,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                     <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">{t("İSTATİSTİK")}</span>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                    {t("Baarda kalın hata eleme teorisini kullanarak uyuşumsuz ve kaba hatalı koordinatları sistemden temizler.")}
+                    {t("Baarda kalın hata eleme teorisini kullanarak uyuşumsuz ve kaba hatalı koordinatları sistemden temizler.")} <span className="text-amber-600 font-black">{t("En az 30 epok veri gerektirir.")}</span>
                   </p>
                 </div>
 
@@ -295,7 +295,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                     <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">{t("HİBRİT")}</span>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed mb-3">
-                    {t("İstatistik yöntemler kullanılarak uygulamaya özel olarak iyileştirilmiş hibrit bir yöntemdir.")}
+                    {t("İstatistik yöntemler kullanılarak uygulamaya özel olarak iyileştirilmiş hibrit bir yöntemdir.")} <span className="text-amber-600 font-black">{t("En az 30 epok veri gerektirir.")}</span>
                   </p>
                   <div className="bg-blue-50/50 rounded-lg p-3 space-y-2 border border-blue-100/50">
                     <p className="text-sm font-black text-blue-800 uppercase tracking-widest">{t("İşlem Adımları:")}</p>
@@ -313,10 +313,25 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                         4-<b>Ağırlıklı Özet:</b> {t("Her küme kendi içinde ağırlıklı dengeleme ile tek bir noktaya dönüştürülür.")}
                       </li>
                       <li className="text-sm text-slate-700 leading-tight">
-                        5-<b>Baarda Testi:</b> {t("4 özet nokta arasında uyuşmazlık denetimi yapılarak sonuç konum hesaplanır.")}
+                        5-<b>Baarda Testi:</b> {t("4 özet nokta arasında uyuşmazlık denetimi yapılarak sonuç konum hesaplayan hibrit bir modeldir.")}
                       </li>
                     </ul>
                   </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("6. KMeans + Baarda Hibrit")}</h4>
+                    <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">{t("HİBRİT")}</span>
+                  </div>
+                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                    {t("Doğrudan K-Means kümeleme yöntemi ve ardından küme ağırlıklı merkezlerinde Baarda uyuşumsuzluk testi ile süzme işlemi uygular.")} <span className="text-amber-600 font-black">{t("En az 30 epok veri gerektirir.")}</span>
+                  </p>
+                </div>
+
+                <div className="bg-amber-50/70 rounded-2xl p-4 border border-amber-200/50 text-amber-900 leading-relaxed text-xs font-semibold text-justify">
+                  <span className="font-extrabold uppercase text-amber-700 block mb-1">⚠️ {t("UYARI / ÖNEMLİ KOŞUL:")}</span>
+                  {t("KMeans, Baarda, MidRange+KMeans+Baarda ve KMeans+Baarda yöntemleri için en az 30 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.")}
                 </div>
               </div>
             </div>

@@ -632,7 +632,18 @@ export const trToEnMap: Record<string, string> = {
   "Veriler orta tutarlılıktadır. Kriterler: 10m < Donanımsal Hassasiyet <= 20m veya 10m < Veri Saçılımı <= 20m veya Veri Saçılımı > Donanımsal Hassasiyet veya Veri Sayısı < 5": "Readings have moderate consistency. Criteria: 10m < Hardware Acc <= 20m OR 10m < Data Spread <= 20m OR Coordinate Spread > Hardware Accuracy OR Sample Count < 5",
   "Bu uygulama, saha çalışmalarında hızlı ve pratik koordinat ölçümü, aplikasyon ve veri yönetimi sağlamak ve basit CBS verisi toplamak amacıyla geliştirilmiştir. Uygulama ile ilgili herhangi bir sorun yaşıyorsanız veya bir özellik isteğiniz varsa e-posta yoluyla iletişime geçebilirsiniz.": "This geodetic app was designed to streamline rapid geomatics, local cadastral staking, and asset logging offline in the field. If you run into issues or have feature requests, feel free to send us an email.",
   "İletişim": "Contact / Feedback",
-  "acbmaps@gmail.com": "acbmaps@gmail.com"
+  "acbmaps@gmail.com": "acbmaps@gmail.com",
+  "Seçilen profesyonel istatistik yöntemi için en az 30 epok veri gereklidir. Ölçümünüzde 30 epok altında veri bulunduğu için konumunuz otomatik olarak Ağırlıklı En Küçük Kareler (Weighted LSE) yöntemi ile kararlı hale getirilmiştir.": "At least 30 epochs of data are required for the selected professional statistical method. Since your measurement contains less than 30 epochs of data, your position has been stabilized automatically using the Weighted Least Squares (Weighted LSE) method.",
+  "Kullanılan Yöntem:": "Method Used:",
+  "Kullanılan Yöntem": "Method Used",
+  "Yöntem:": "Method:",
+  "Gözlemleri mekansal yakınlıklarına göre 4 bağımsız yoğunluk grubuna ayırarak küme merkezini belirler.": "Clusters observation points into 4 independent density groups based on geospatial distance to establish a cluster centroid.",
+  "Baarda kalın hata eleme teorisini kullanarak uyuşumsuz ve kaba hatalı koordinatları sistemden temizler.": "Iteratively purges outliers and gross coordinate errors from the dataset using geodetic Baarda gross error testing.",
+  "İstatistik yöntemler kullanılarak uygulamaya özel olarak iyileştirilmiş hibrit bir yöntemdir.": "An advanced hybrid mathematical filter custom-designed for this application to reject spatial outliers:",
+  "Doğrudan K-Means kümeleme yöntemi ve ardından küme ağırlıklı merkezlerinde Baarda uyuşumsuzluk testi ile süzme işlemi uygular.": "Applies direct K-Means clustering followed by Baarda reliability analysis at cluster weighted centers to filter out outliers.",
+  "En az 30 epok veri gerektirir.": "Requires at least 30 epochs of data.",
+  "6-<b>KMeans + Baarda Hibrit:</b> K-Means kümeleme yöntemi ve Baarda uyuşumsuzluk testi ile süzme işlemi uygulayan hibrit bir modeldir.": "6-<b>KMeans + Baarda Hybrid:</b> A hybrid model applying K-Means clustering followed by Baarda reliability analysis to filter outliers.",
+  "KMeans, Baarda, MidRange+KMeans+Baarda ve KMeans+Baarda yöntemleri için en az 30 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.": "A minimum of 30 epochs is strictly required for KMeans, Baarda, MidRange+KMeans+Baarda, and KMeans+Baarda hybrid models. If less than 30 samples are collected, the system automatically and securely resolves the coordinates using the Weighted Least Squares (LSE) method."
 };
 
 /**

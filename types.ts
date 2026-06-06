@@ -29,6 +29,8 @@ export interface SavedLocation extends Coordinate {
   usedSampleIndices?: number[];
   accuracyLimit?: number;
   gnssOnlyMode?: boolean;
+  fallbackApplied?: boolean;
+  actualMethodUsed?: CalculationMethod;
 }
 
 export interface StakeoutPoint {
