@@ -123,7 +123,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     if (!orig) return undefined;
     return {
       ...orig,
-      samples: orig.samples ? orig.samples.slice(0, 60) : []
+      samples: orig.samples ? [...orig.samples] : []
     };
   }, [locations, selectedPointId]);
   const rawChartRef = React.useRef<HTMLDivElement>(null);
