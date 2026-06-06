@@ -172,15 +172,6 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
             );
           })()}
         </div>
-
-        {location.fallbackApplied && (
-          <div className="bg-amber-50 border border-amber-200/50 rounded-2xl p-4 flex items-start gap-3 text-justify shadow-inner">
-            <i className="fas fa-triangle-exclamation text-amber-500 mt-1 shrink-0 text-base"></i>
-            <p className="text-[11px] font-semibold text-amber-850 leading-relaxed">
-              {t("Seçilen profesyonel istatistik yöntemi için en az 30 epok veri gereklidir. Ölçümünüzde 30 epok altında veri bulunduğu için konumunuz otomatik olarak Ağırlıklı En Küçük Kareler (Weighted LSE) yöntemi ile kararlı hale getirilmiştir.")}
-            </p>
-          </div>
-        )}
         
         <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col gap-2">
           <button 

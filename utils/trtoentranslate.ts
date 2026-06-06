@@ -639,7 +639,6 @@ export const trToEnMap: Record<string, string> = {
   "Yöntem:": "Method:",
   "Gözlemleri mekansal yakınlıklarına göre 4 bağımsız yoğunluk grubuna ayırarak küme merkezini belirler.": "Clusters observation points into 4 independent density groups based on geospatial distance to establish a cluster centroid.",
   "Baarda kalın hata eleme teorisini kullanarak uyuşumsuz ve kaba hatalı koordinatları sistemden temizler.": "Iteratively purges outliers and gross coordinate errors from the dataset using geodetic Baarda gross error testing.",
-  "İstatistik yöntemler kullanılarak uygulamaya özel olarak iyileştirilmiş hibrit bir yöntemdir.": "An advanced hybrid mathematical filter custom-designed for this application to reject spatial outliers:",
   "Doğrudan K-Means kümeleme yöntemi ve ardından küme ağırlıklı merkezlerinde Baarda uyuşumsuzluk testi ile süzme işlemi uygular.": "Applies direct K-Means clustering followed by Baarda reliability analysis at cluster weighted centers to filter out outliers.",
   "En az 30 epok veri gerektirir.": "Requires at least 30 epochs of data.",
   "6-<b>KMeans + Baarda Hibrit:</b> K-Means kümeleme yöntemi ve Baarda uyuşumsuzluk testi ile süzme işlemi uygulayan hibrit bir modeldir.": "6-<b>KMeans + Baarda Hybrid:</b> A hybrid model applying K-Means clustering followed by Baarda reliability analysis to filter outliers.",
