@@ -442,6 +442,7 @@ export const trToEnMap: Record<string, string> = {
   "3. KMeans": "3. KMeans",
   "4. Baarda": "4. Baarda",
   "5. MidRange + KMeans + Baarda": "5. MidRange + KMeans + Baarda",
+  "6. KMeans + Baarda Hibrit": "6. KMeans + Baarda Hybrid",
   "Aktif edildiğinde, sadece yükseklik verisi içeren uydu tabanlı konumlar ölçüme dahil edilir. Açık alanlarda hassasiyeti artırır.": "When enabled, only satellite-based positions with altitude data are included in measurements. Increases accuracy in open areas.",
   "Birim ve Duyarlılık": "Unit and Precision",
   "Konum (Virgülden sonraki duyarlılık)": "Location (Decimal precision)",

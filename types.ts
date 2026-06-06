@@ -12,6 +12,7 @@ export type CalculationMethod =
   | 'ARITHMETIC_MEAN'
   | 'WEIGHTED_LSE' 
   | 'MIDRANGE_KMEANS_BAARDA' 
+  | 'KMEANS_BAARDA'
   | 'KMEANS_4' 
   | 'BAARDA'
   | 'MIDRANGE';

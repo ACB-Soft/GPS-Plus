@@ -43,6 +43,7 @@ const METHOD_COLORS: Record<string, string> = {
   ARITHMETIC_MEAN: '#ec4899',
   WEIGHTED_LSE: '#8b5cf6',
   MIDRANGE_KMEANS_BAARDA: '#3b82f6',
+  KMEANS_BAARDA: '#4f46e5',
   KMEANS_4: '#06b6d4',
   BAARDA: '#f59e0b',
   MIDRANGE: '#14b8a6'
@@ -197,7 +198,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     'MIDRANGE',
     'KMEANS_4',
     'BAARDA',
-    'MIDRANGE_KMEANS_BAARDA'
+    'MIDRANGE_KMEANS_BAARDA',
+    'KMEANS_BAARDA'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
@@ -206,7 +208,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       'MIDRANGE': t("MidRange"),
       'KMEANS_4': t("K-Means (4 Küme)"),
       'BAARDA': t("Baarda Eleme"),
-      'MIDRANGE_KMEANS_BAARDA': "MidRange + K-Means + Baarda"
+      'MIDRANGE_KMEANS_BAARDA': "MidRange + K-Means + Baarda",
+      'KMEANS_BAARDA': "K-Means + Baarda Hybrid"
     };
     return labels[m] || m;
   };
@@ -273,7 +276,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       // 1. Calculate point for this method
       const { result, clusters } = calculateResult(location.samples!, method, accuracyLimit);
       
-      if ((method === 'MIDRANGE_KMEANS_BAARDA' || method === 'KMEANS_4') && clusters) {
+      if ((method === 'MIDRANGE_KMEANS_BAARDA' || method === 'KMEANS_BAARDA' || method === 'KMEANS_4') && clusters) {
         clusterResults = clusters;
       }
       
@@ -667,7 +670,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
     const results = methods.map(method => {
       const { result, clusters } = calculateResult(location.samples!, method, accuracyLimit);
-      if (method === 'MIDRANGE_KMEANS_BAARDA' && clusters) {
+      if ((method === 'MIDRANGE_KMEANS_BAARDA' || method === 'KMEANS_BAARDA') && clusters) {
         clusterResults = clusters;
       }
       const conv = convertCoordinate(result.lat, result.lng, sys);
@@ -1265,6 +1268,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   'ARITHMETIC_MEAN': 'Arithmetic Mean',
                                   'WEIGHTED_LSE': 'Weighted LSE',
                                   'MIDRANGE_KMEANS_BAARDA': 'Hybrid',
+                                  'KMEANS_BAARDA': 'KMeans + Baarda',
                                   'KMEANS_4': 'KMeans',
                                   'BAARDA': 'Baarda',
                                   'MIDRANGE': 'MidRange'
@@ -1331,6 +1335,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               'ARITHMETIC_MEAN': 'Arithmetic Mean',
                               'WEIGHTED_LSE': 'Weighted LSE',
                               'MIDRANGE_KMEANS_BAARDA': 'Hybrid',
+                              'KMEANS_BAARDA': 'KMeans + Baarda',
                               'KMEANS_4': 'KMeans',
                               'BAARDA': 'Baarda',
                               'MIDRANGE': 'MidRange'
@@ -1366,6 +1371,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             'ARITHMETIC_MEAN': 'Arithmetic Mean',
                             'WEIGHTED_LSE': 'Weighted LSE',
                             'MIDRANGE_KMEANS_BAARDA': 'Hybrid',
+                            'KMEANS_BAARDA': 'KMeans + Baarda',
                             'KMEANS_4': 'KMeans',
                             'BAARDA': 'Baarda',
                             'MIDRANGE': 'MidRange'
