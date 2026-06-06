@@ -606,7 +606,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     if (total === 0) return [];
     
     const ticks: string[] = [];
-    for (let i = 1; i <= total; i++) {
+    for (let i = 5; i <= total; i += 5) {
       ticks.push(`${i}.sec`);
     }
     return ticks;
@@ -1536,10 +1536,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           axisLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                           tickLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                           tickFormatter={(value) => {
-                            const total = timeSeriesChartData.length;
                             const sec = parseInt(value, 10);
                             if (isNaN(sec)) return value;
-                            if (sec % 10 === 0 || sec === total) {
+                            if (sec % 10 === 0) {
                               const unit = t("saniye") === "seconds" ? "s" : "sn";
                               return `${sec}.${unit}`;
                             }
