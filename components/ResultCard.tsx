@@ -50,11 +50,8 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
 
   const avgHardwareAccuracy = React.useMemo(() => {
     if (!location.samples || location.samples.length === 0) return location.accuracy;
-    const limit = location.accuracyLimit || 5.0;
-    const reliableSamples = location.samples.filter(s => s.accuracy <= limit);
-    if (reliableSamples.length === 0) return location.accuracy;
-    return reliableSamples.reduce((sum, s) => sum + s.accuracy, 0) / reliableSamples.length;
-  }, [location.samples, location.accuracy, location.accuracyLimit]);
+    return location.samples.reduce((sum, s) => sum + s.accuracy, 0) / location.samples.length;
+  }, [location.samples, location.accuracy]);
 
   // Re-calculate accuracy based on spread if samples are present
   // This ensures old data also reflects the "Max(Statistical, MaxDistance)" logic

@@ -51,11 +51,8 @@ const SavedLocationItem: React.FC<{
   // Average Hardware reported sensor accuracy
   const avgHardwareAccuracy = React.useMemo(() => {
     if (!l.samples || l.samples.length === 0) return l.accuracy;
-    const limit = l.accuracyLimit || 5.0;
-    const reliableSamples = l.samples.filter(s => s.accuracy <= limit);
-    if (reliableSamples.length === 0) return l.accuracy;
-    return reliableSamples.reduce((sum, s) => sum + s.accuracy, 0) / reliableSamples.length;
-  }, [l.samples, l.accuracy, l.accuracyLimit]);
+    return l.samples.reduce((sum, s) => sum + s.accuracy, 0) / l.samples.length;
+  }, [l.samples, l.accuracy]);
 
   // Re-calculate accuracy based on spread if samples are present
   const dynamicAccuracy = React.useMemo(() => {
