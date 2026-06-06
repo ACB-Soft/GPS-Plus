@@ -606,35 +606,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     if (total === 0) return [];
     
     const ticks: string[] = [];
-    ticks.push("1.sec");
-    
-    let step = 5;
-    if (total <= 12) {
-      step = 1;
-    } else if (total <= 24) {
-      step = 2;
-    } else if (total <= 60) {
-      step = 5;
-    } else {
-      step = Math.ceil(total / 12);
+    for (let i = 1; i <= total; i++) {
+      ticks.push(`${i}.sec`);
     }
-    
-    if (step === 1) {
-      for (let i = 2; i <= total; i++) {
-        ticks.push(`${i}.sec`);
-      }
-    } else {
-      for (let i = step; i <= total; i += step) {
-        if (i > 1 && !ticks.includes(`${i}.sec`)) {
-          ticks.push(`${i}.sec`);
-        }
-      }
-      const lastLabel = `${total}.sec`;
-      if (!ticks.includes(lastLabel) && total > 1) {
-        ticks.push(lastLabel);
-      }
-    }
-    
     return ticks;
   }, [timeSeriesChartData]);
 
@@ -1561,6 +1535,16 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           tick={{ fontSize: parseFloat(customTimeSeriesFontSize), fontWeight: 800, fill: '#000000', dy: 2.5, dx: -3 }}
                           axisLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                           tickLine={{ stroke: '#000000', strokeWidth: 1.5 }}
+                          tickFormatter={(value) => {
+                            const total = timeSeriesChartData.length;
+                            const sec = parseInt(value, 10);
+                            if (isNaN(sec)) return value;
+                            if (sec % 10 === 0 || sec === total) {
+                              const unit = t("saniye") === "seconds" ? "s" : "sn";
+                              return `${sec}.${unit}`;
+                            }
+                            return "";
+                          }}
                         />
                         <YAxis 
                           domain={[0, timeSeriesMaxLimit]} 
