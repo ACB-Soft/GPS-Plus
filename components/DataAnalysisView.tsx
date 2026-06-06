@@ -1411,7 +1411,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 {getMethodLabelEn(m.method)}
                               </p>
                               <p className="font-bold text-blue-600 font-mono tracking-tight leading-none mt-0.5" style={{ fontSize: subFontSize }}>
-                                {m.errors?.dhz ? `d_2D = ${m.errors.dhz.toFixed(2)}m` : 'BARYCENTER'}
+                                {m.errors?.dhz ? `Δ(2D) = ${m.errors.dhz.toFixed(2)}m` : 'BARYCENTER'}
                               </p>
                             </div>
                           </div>
