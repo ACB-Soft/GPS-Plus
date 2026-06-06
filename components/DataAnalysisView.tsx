@@ -133,6 +133,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [preciseN, setPreciseN] = useState<string>(''); // Northing (X)
   const [preciseE, setPreciseE] = useState<string>(''); // Easting (Y)
   const [preciseZ, setPreciseZ] = useState<string>('');
+  const [isMemoryLoaded, setIsMemoryLoaded] = useState<boolean>(false);
   const [appliedPreciseN, setAppliedPreciseN] = useState<string>('');
   const [appliedPreciseE, setAppliedPreciseE] = useState<string>('');
   const [appliedPreciseZ, setAppliedPreciseZ] = useState<string>('');
@@ -162,6 +163,35 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     return location.coordinateSystem !== 'WGS84';
   }, [location]);
 
+  React.useEffect(() => {
+    if (analysisType === 'precise' && selectedPointId) {
+      const saved = localStorage.getItem(`acb_labs_coords_${selectedPointId}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setPreciseN(parsed.n || '');
+          setPreciseE(parsed.e || '');
+          setPreciseZ(parsed.z || '');
+          setAppliedPreciseN('');
+          setAppliedPreciseE('');
+          setAppliedPreciseZ('');
+          setIsMemoryLoaded(true);
+        } catch (err) {
+          setPreciseN('');
+          setPreciseE('');
+          setPreciseZ('');
+          setIsMemoryLoaded(false);
+        }
+      } else {
+        setPreciseN('');
+        setPreciseE('');
+        setPreciseZ('');
+        setIsMemoryLoaded(false);
+      }
+      setPreciseWgs(null);
+    }
+  }, [selectedPointId, analysisType]);
+
   const methods = useMemo<CalculationMethod[]>(() => [
     'WEIGHTED_LSE',
     'MIDRANGE',
@@ -190,6 +220,18 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     if (isNaN(pn) || isNaN(pe) || isNaN(pz)) {
       alert("Lütfen kesin koordinatları eksiksiz giriniz.");
       return;
+    }
+
+    // Save coordinates to localStorage for recollection
+    try {
+      localStorage.setItem(`acb_labs_coords_${selectedPointId}`, JSON.stringify({
+        n: preciseN,
+        e: preciseE,
+        z: preciseZ
+      }));
+      setIsMemoryLoaded(true);
+    } catch (err) {
+      console.error("Error saving coords to localStorage", err);
     }
 
     // Set applied values to trigger charts and metrics calculation
@@ -682,20 +724,20 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
           {/* STEP 1: Method Selection */}
           <div className="bg-white rounded-3xl p-5 border border-slate-150/80 shadow-sm space-y-4">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">{t("1. Analiz Yöntemini Seçin")}</label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-3">
               <button 
                 onClick={() => { setAnalysisType('precise'); setAnalysisResults(null); }}
-                className={`flex-1 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all border-2 ${analysisType === 'precise' ? 'bg-blue-600 text-white border-blue-600 shadow-xl shadow-blue-100' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
+                className={`w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all border-2 ${analysisType === 'precise' ? 'bg-blue-600 text-white border-blue-600 shadow-xl shadow-blue-100' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
               >
                 <i className="fas fa-bullseye mr-2"></i>
-                {t("Kesin Koordinatlı Hata Analizleri")}
+                {t("Kesin Koordinatlı Analiz")}
               </button>
               <button 
                 onClick={() => { setAnalysisType('normal'); setAnalysisResults(null); }}
-                className={`flex-1 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all border-2 ${analysisType === 'normal' ? 'bg-blue-600 text-white border-blue-600 shadow-xl shadow-blue-100' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
+                className={`w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all border-2 ${analysisType === 'normal' ? 'bg-blue-600 text-white border-blue-600 shadow-xl shadow-blue-100' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
               >
                 <i className="fas fa-chart-line mr-2"></i>
-                {t("Koordinatsız Yöntem Analizleri")}
+                {t("Koordinat Analiz")}
               </button>
             </div>
             
@@ -805,13 +847,42 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 </label>
               </div>
 
+              {isMemoryLoaded && (
+                <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100/60 px-3.5 py-2.5 rounded-2xl animate-in fade-in duration-300">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-emerald-500 text-xs shrink-0">
+                      <i className="fas fa-sd-card"></i>
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wide truncate">
+                      {t("Kayıtlı koordinat bulundu ve yüklendi!")}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem(`acb_labs_coords_${selectedPointId}`);
+                      setPreciseN('');
+                      setPreciseE('');
+                      setPreciseZ('');
+                      setIsMemoryLoaded(false);
+                    }}
+                    className="text-rose-500 hover:text-rose-700 active:scale-95 transition-all text-[8px] font-black uppercase shrink-0 px-2.5 py-1 bg-white border border-rose-100 rounded-lg shadow-xs"
+                    title={t("Hafızayı Temizle")}
+                  >
+                    {t("TEMİZLE")}
+                  </button>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1">
                   <label className="text-[9px] font-bold text-slate-500 uppercase ml-2">{useLocal ? 'Sağa (Y)' : 'Enlem (Lat)'}</label>
                   <input 
                     type="number" 
                     value={preciseE} 
-                    onChange={e => setPreciseE(e.target.value)} 
+                    onChange={e => {
+                      setPreciseE(e.target.value);
+                      setIsMemoryLoaded(false);
+                    }} 
                     placeholder={useLocal ? "500000.000" : "39.9"}
                     className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-900 border-2 border-slate-100 focus:border-blue-500 outline-none transition-all text-sm"
                   />
@@ -821,7 +892,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   <input 
                     type="number" 
                     value={preciseN} 
-                    onChange={e => setPreciseN(e.target.value)} 
+                    onChange={e => {
+                      setPreciseN(e.target.value);
+                      setIsMemoryLoaded(false);
+                    }} 
                     placeholder={useLocal ? "4400000.000" : "32.8"}
                     className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-900 border-2 border-slate-100 focus:border-blue-500 outline-none transition-all text-sm"
                   />
@@ -831,7 +905,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   <input 
                     type="number" 
                     value={preciseZ} 
-                    onChange={e => setPreciseZ(e.target.value)} 
+                    onChange={e => {
+                      setPreciseZ(e.target.value);
+                      setIsMemoryLoaded(false);
+                    }} 
                     placeholder="100.000"
                     className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-900 border-2 border-slate-100 focus:border-blue-500 outline-none transition-all text-sm"
                   />
@@ -1355,11 +1432,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             <span className="text-[6px] font-black -rotate-45 block transform">REF</span>
                           </div>
                           <div className="min-w-0 font-sans">
-                            <p className="font-extrabold text-slate-800 uppercase tracking-tight truncate leading-none" style={{ fontSize: `${parseFloat(customScatterFontSize) - 1}px` }}>
-                              {t("Kesin Koordinat")}
+                            <p className="font-extrabold text-slate-800 uppercase tracking-wider truncate leading-none" style={{ fontSize: `${parseFloat(customScatterFontSize) - 0.5}px` }}>
+                              PRECISE
                             </p>
-                            <p className="font-bold text-emerald-600 font-mono tracking-tight leading-none mt-0.5 truncate" style={{ fontSize: `${parseFloat(customScatterFontSize) - 2}px` }}>
-                              Precise Coordinates
+                            <p className="font-bold text-emerald-600 tracking-wider leading-none mt-0.5 truncate" style={{ fontSize: `${parseFloat(customScatterFontSize) - 1.5}px` }}>
+                              COORDINATE
                             </p>
                           </div>
                         </div>
