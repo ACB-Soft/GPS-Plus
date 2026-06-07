@@ -462,16 +462,14 @@ export const downloadCombinedAnalysisReport = (
   XLSX.utils.book_append_sheet(workbook, wsAnalysis, "İstatistik ve Analiz");
 
   // --- SAYFA 3: ZAMAN BAZLI PERFORMANS ANALİZİ (SÜRE ETKİSİ) ---
-  const timeSteps = [5, 10, 15, 30, 45, 60].filter(t => t <= (location.measurementDuration || 0));
+  const timeSteps = [5, 10, 15, 30, 45, 60, 120].filter(t => t <= (location.measurementDuration || 0));
   const timeSeriesData: any[][] = [
     ["ZAMAN BAZLI KONUMLANMA PERFORMANS ANALİZİ"],
-    ["(En başarılı algoritma üzerinden zamana bağlı iyileşme)"],
+    ["(Farklı algoritmaların gözlem süresine bağlı doğrusal hata değişimi)"],
     [],
-    ["Gözlem Süresi (sn)", "Hesaplanan X/Lat", "Hesaplanan Y/Lng", "Hesaplanan Z/H", "Yatay Hata (m)", "Örnek Sayısı"],
+    ["Gözlem Süresi", "Hesaplama Yöntemi", "Hesaplanan X/Lat", "Hesaplanan Y/Lng", "Hesaplanan Z/H", "Yatay Hata (m)", "Örnek Sayısı"],
   ];
 
-  const targetMethod = bestMethod.method;
-  
   // Reference values in meters for comparison
   let refNorth = 0;
   let refEast = 0;
@@ -487,29 +485,42 @@ export const downloadCombinedAnalysisReport = (
     refEast = preciseCoords.y;  // Easting (Sağa)
   }
 
+  const allMethods: CalculationMethod[] = [
+    'WEIGHTED_LSE', 
+    'MIDRANGE',
+    'KMEANS_4',
+    'BAARDA',
+    'MIDRANGE_KMEANS_BAARDA'
+  ];
+
   timeSteps.forEach(t => {
     const startTime = location.samples![0].timestamp;
     const slice = location.samples!.filter(s => s.timestamp <= startTime + t * 1000 + 500);
     if (slice.length < 2) return;
 
-    const { result } = calculateResult(slice, targetMethod, accuracyLimit);
-    const convResult = convertCoordinate(result.lat, result.lng, testSys);
-    
-    // convResult.y is Northing, convResult.x is Easting
-    const dn = refNorth - convResult.y;
-    const de = refEast - convResult.x;
-    const dhz = Math.sqrt(dn*dn + de*de);
+    allMethods.forEach(mId => {
+      const { result } = calculateResult(slice, mId, accuracyLimit);
+      const convResult = convertCoordinate(result.lat, result.lng, testSys);
+      
+      // convResult.y is Northing, convResult.x is Easting
+      const dn = refNorth - convResult.y;
+      const de = refEast - convResult.x;
+      const dhz = Math.sqrt(dn*dn + de*de);
 
-    const dispConv = convertCoordinate(result.lat, result.lng, sys);
+      const dispConv = convertCoordinate(result.lat, result.lng, sys);
 
-    timeSeriesData.push([
-      `${t} sn`,
-      (sys === "WGS84" ? result.lat : dispConv.x).toFixed(2),
-      (sys === "WGS84" ? result.lng : dispConv.y).toFixed(2),
-      (result.altitude || 0).toFixed(2),
-      dhz.toFixed(2),
-      slice.length
-    ]);
+      timeSeriesData.push([
+        `${t} sn`,
+        getMethodName(mId),
+        (sys === "WGS84" ? result.lat : dispConv.x).toFixed(2),
+        (sys === "WGS84" ? result.lng : dispConv.y).toFixed(2),
+        (result.altitude || 0).toFixed(2),
+        dhz.toFixed(2),
+        slice.length
+      ]);
+    });
+    // Add an empty row for separation between time steps
+    timeSeriesData.push([]);
   });
 
   const wsTimeSeries = XLSX.utils.aoa_to_sheet(timeSeriesData);
