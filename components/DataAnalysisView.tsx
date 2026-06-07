@@ -711,7 +711,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 className={`w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all border-2 ${analysisType === 'normal' ? 'bg-blue-600 text-white border-blue-600 shadow-xl shadow-blue-100' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
               >
                 <i className="fas fa-chart-line mr-2"></i>
-                {t("Koordinat Analiz")}
+                {t("Koordinatsız Analiz")}
               </button>
             </div>
             

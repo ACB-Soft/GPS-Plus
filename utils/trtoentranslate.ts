@@ -346,7 +346,7 @@ export const trToEnMap: Record<string, string> = {
   "Ölçülen veriler sensörün bildirdiği hassasiyete göre daha geniş bir alana yayılmış durumda (Muhtemel Multipath).": "Measured data is spread wider than the sensor-reported accuracy (Likely Multipath).",
   "1. Analiz Yöntemini Seçin": "1. Select Analysis Method",
   "Kesin Koordinatlı Analiz": "Precise Coordinate Analysis",
-  "Koordinat Analiz": "Coordinate Analysis",
+  "Koordinatsız Analiz": "Standard Analysis",
   "Veri Saçılımı Grafiği": "Data Scatter Plot",
   "Zamana Bağlı Hata Grafiği": "Time-Dependent Error Graph",
   "Model Açıklamaları": "Model Explanations",
