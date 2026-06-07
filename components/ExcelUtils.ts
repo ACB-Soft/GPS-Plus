@@ -462,7 +462,7 @@ export const downloadCombinedAnalysisReport = (
   XLSX.utils.book_append_sheet(workbook, wsAnalysis, "İstatistik ve Analiz");
 
   // --- SAYFA 3: ZAMAN BAZLI PERFORMANS ANALİZİ (SÜRE ETKİSİ) ---
-  const timeSteps = [5, 10, 15, 30, 45, 60, 120].filter(t => t <= (location.measurementDuration || 0));
+  const timeSteps = [5, 10, 15, 30, 60, 120].filter(t => t <= (location.measurementDuration || 0));
   const timeSeriesData: any[][] = [
     ["ZAMAN BAZLI KONUMLANMA PERFORMANS ANALİZİ"],
     ["(Farklı algoritmaların gözlem süresine bağlı doğrusal hata değişimi)"],
