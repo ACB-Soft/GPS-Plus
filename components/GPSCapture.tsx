@@ -487,28 +487,21 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
 
   return (
     <div className="w-full flex flex-col bg-slate-200 h-full animate-in overflow-hidden">
+      <Header 
+        title={folderName} 
+        onBack={() => {
+          if (step === 'COUNTDOWN' || step === 'READY' || step === 'FORM') {
+            window.history.back();
+          } else if (isContinuing) {
+            onCancel();
+          } else {
+            window.history.back();
+          }
+        }}
+      />
       <div className="flex-1 flex flex-col overflow-y-auto no-scrollbar">
-        <div className="flex-1 flex flex-col items-center justify-around p-6 text-center relative">
-          <button 
-            onClick={() => {
-              if (step === 'COUNTDOWN' || step === 'READY' || step === 'FORM') {
-                window.history.back();
-              } else if (isContinuing) {
-                onCancel();
-              } else {
-                window.history.back();
-              }
-            }} 
-            className="absolute left-6 md:left-8 top-6 w-11 h-11 flex items-center justify-center rounded-2xl bg-slate-200 shadow-lg border border-slate-100 text-slate-800 active:scale-90 transition-all z-20"
-          >
-            <i className="fas fa-chevron-left text-sm"></i>
-          </button>
-          
-          <div className="absolute top-6 left-0 right-0 flex items-center justify-center px-20 z-10 h-11">
-            <h3 className="text-xl md:text-2xl font-black text-slate-900 truncate max-w-[280px] leading-tight">{folderName}</h3>
-          </div>
-
-          <div className="relative flex items-center justify-center flex-1 w-full max-h-[300px] mt-8">
+        <div className="flex-1 flex flex-col items-center justify-around p-6 text-center relative pt-2">
+          <div className="relative flex items-center justify-center flex-1 w-full max-h-[300px] mt-2">
             <div className="w-44 h-44 sm:w-56 sm:h-56 md:w-72 md:h-72 rounded-[3.5rem] md:rounded-[4.5rem] border-8 border-slate-50 shadow-2xl flex items-center justify-center relative bg-slate-200">
               <div className={`absolute inset-4 md:inset-6 border-2 rounded-[2.8rem] md:rounded-[3.8rem] ${instantAccuracy && instantAccuracy <= 10 ? 'border-emerald-100' : 'border-slate-50'}`}></div>
               {step === 'COUNTDOWN' && !waitingForSignal && <div className="scanner-line"></div>}
