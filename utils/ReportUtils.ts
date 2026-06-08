@@ -381,7 +381,74 @@ export function calculateMidRange(samples: Coordinate[]): { result: Coordinate; 
 }
     </pre>
 
-    <p>Filtrelemelerin yanı sıra, yatay konumsal belirsizliği (Yatay Hassasiyet) güvene almak için Maksimum Saçılım ve Ortalama Donanım Hatası karşılaştırma modeli geliştirilmiştir. Burada d_max, ölçüm havuzundaki en uzak iki koordinat arasındaki fiziksel mesafeyi (maksimum saçılım) temsil ederken; o_avg ise cihazın GNSS çipinden gelen saniyelik ham donanımsal hassasiyetlerin ortalamasıdır. Bu sayede, cihaz yapay olarak çok yüksek bir hassasiyet bildirse bile (Örn: 2m), veriler arazide çevre parazitlerinden dolayı 6 metrelik bir alana saçılıyorsa, sistem güvenli tarafta kalmak üzere kullanıcıya gerçekçi hassasiyet yarıçapını 6 metre olarak ilan eder.</p>
+    <h3>2.4.6. Sinyal Güvenilirlik Analizi ve Veri Saçılım Metodolojisi</h3>
+    <p>Mobil donanımların ürettiği konumsal doğruluk kestirimleri (sensör hata yarıçapı), her zaman sahada karşılaşılan fiziki çoklu yansıma (multipath) ve atmosferik gecikme etkilerini bütünüyle yansıtamaz. ${FULL_BRAND}, bu tip yetersiz bildirimlerden kaynaklı riskleri bertaraf etmek amacıyla <b>Konumsal Veri Saçılımı ve Sinyal Güvenilirlik Analiz Motorunu</b> çalıştırır. Bu motor, toplanan örneklem havuzunun uzaysal dağılımını matematiksel kriterlere göre denetleyerek sinyal kalitesini derecelendirir.</p>
+
+    <h4>A. Matematiksel Göstergeler ve Eşitlikler</h4>
+    <p>Sistem, toplanan $N$ adet statik koordinat örneği üzerinden şu 4 ana istatistiksel parametreyi gerçek zamanlı hesaplar:</p>
+    <ul>
+      <li><span class="bold">Ortalama Donanımsal Sensör Hassasiyeti ($o_{avg}$):</span> Alıcı cihazın her bir saniye bazında bağımsız olarak bildirdiği geometrik hata yarıçap değerlerinin aritmetik ortalamasıdır:
+          <br/><span class="bold" style="display: block; text-align: center; margin: 10px 0;">$$o_{avg} = \frac{1}{N} \sum_{i=1}^{N} \text{accuracy}_i$$</span>
+      </li>
+      <li><span class="bold">Maksimum Konumsal Saçılım ($d_{max}$):</span> Statik ölçüm havuzunda yer alan herhangi iki koordinat ikilisi ($P_i, P_j$) arasında hesaplanan en uzak fiziksel mesafedir. Jeodezi motorunda bu mesafe büyük çember (Great-Circle) veya yerel TM düzlem izdüşümü üzerinden milimetrik hesaplanır:
+          <br/><span class="bold" style="display: block; text-align: center; margin: 10px 0;">$$d_{max} = \max_{i, j} \sqrt{(x_i - x_j)^2 + (y_i - y_j)^2}$$</span>
+      </li>
+      <li><span class="bold">Hatalı Bildirim Saçılım Oranı ($R$):</span> Fiziksel koordinat yayılımı ile donanımın iddia ettiği hassasiyet arasındaki uyumsuzluğu gösteren boyutsuz bir katsayıdır:
+          <br/><span class="bold" style="display: block; text-align: center; margin: 10px 0;">$$R = \frac{d_{max}}{o_{avg}}$$</span>
+          Eğer $R > 1.0$ ise, donanım kendi fiziki hatalarını azımsıyor ve çevre yansımalarından dolayı koordinatlar donanımın bildirdiği sınırın ötesine saçılıyor demektir (Sinyal yansıması - Multipath).
+      </li>
+      <li><span class="bold">Yatay Konumsal Varyans ve Standart Sapma ($\sigma_{spatial}$):</span> koordinatların tüm statik merkeze ($\bar{P}$) olan mesafesel sapmalarının kareler ortalamasıdır:
+          <br/><span class="bold" style="display: block; text-align: center; margin: 10px 0;">$$\text{Residual}_i = \text{Distance}(P_i, \bar{P}) \quad \Rightarrow \quad \sigma_{spatial} = \sqrt{\frac{1}{N-1} \sum_{i=1}^{N} \text{Residual}_i^2}$$</span>
+      </li>
+    </ul>
+
+    <h4>B. Koşullu Karar Matrisi ve Sinyal Işıkları</h4>
+    <p>Hesaplanan bu veriler ışığında, sistem anlık ve genel saha durumunu üç ana kategori altında sınıflayarak kullanıcıya raporlar:</p>
+    <ol>
+      <li><span class="bold">GÜVENSİZ VERİ (KIRMIZI SİNYAL):</span> Donanımsal ortalama hassasiyetin 20m'den büyük olması ($o_{avg} > 20\text{m}$), maksimum fiziksel saçılımın 20m'den büyük olması ($d_{max} > 20\text{m}$) ya da donanım hata iddiasının 3 katından fazla koordinat saçılması yaşanması ($R > 3.0$) durumunda tetiklenir. Sahada ciddi engelciler olduğunu gösterir.</li>
+      <li><span class="bold">GÜVENİLİR VERİ (YEŞİL SİNYAL):</span> Hiçbir kırmızı sinyal kriteri oluşmadığı gibi, donanımsal ortalamanın $5\text{m}$ ve altında olması ($o_{avg} \le 5\text{m}$), maksimum saçılımın $5\text{m}$ ve altında kalması ($d_{max} \le 5\text{m}$), toplanan statik epok sayısının en az 15 olması ($N \ge 15$) ve koordinat saçılımının donanımsal iddia sınırlarında kalması ($R \le 1.0$) koşuluyla verilir. Kadastral hassasiyete en yakın nitelikteki temiz sinyali temsil eder.</li>
+      <li><span class="bold">ORTA GÜVENLİ / YETERSİZ VERİ (TURUNCU SİNYAL):</span> Yeşil ve Kırmızı kriterlerin dışındaki ara durumlara (örn. epok sayısı yeterli olmayan ya da donanım hassasiyeti ideal olsa da $R$ oranının hafif yüksek çıktığı ölçümler) tahsis edilir.</li>
+    </ol>
+
+    <p class="no-indent">Bu akıllı sinyal durum analizini, uyuşmazlık testlerini ve nihai birleştirilmiş doğruluk yarıçapını hesaplayan kaynak kod yapısı aşağıda döküm haline getirilmiştir:</p>
+    <pre class="code-block">
+// Calculates the dynamic spatial multipath indicators and returns the rating
+export function analyzeSignalReliability(samples: Coordinate[]): SignalAnalysis {
+  if (samples.length === 0) return { signalQuality: 'low', maxSpread: 0, avgSensorAcc: 99 };
+  
+  const maxSpread = calculateMaxDistance(samples);
+  const avgSensorAcc = samples.reduce((sum, s) => sum + s.accuracy, 0) / samples.length;
+  const ratio = maxSpread / (avgSensorAcc || 0.1);
+  const samplesCount = samples.length;
+
+  // Spatial Variance and Standard Deviation
+  const meanLat = samples.reduce((sum, s) => sum + s.lat, 0) / samples.length;
+  const meanLng = samples.reduce((sum, s) => sum + s.lng, 0) / samples.length;
+  const residuals = samples.map(s => {
+    const dLat = (s.lat - meanLat) * 111132;
+    const dLng = (s.lng - meanLng) * 111132 * Math.cos(meanLat * Math.PI / 180);
+    return dLat * dLat + dLng * dLng;
+  });
+  const variance = residuals.reduce((sum, val) => sum + val, 0) / Math.max(1, samples.length - 1);
+  const stdDev = Math.sqrt(variance);
+
+  // Evaluation of Decision Matrix
+  const isRed = avgSensorAcc > 20 || maxSpread > 20 || ratio > 3.0;
+  const isGreen = !isRed && avgSensorAcc <= 5 && maxSpread <= 5 && samplesCount >= 15 && ratio <= 1.0;
+  const signalQuality: 'safe' | 'medium' | 'low' = isRed ? 'low' : isGreen ? 'safe' : 'medium';
+
+  return {
+    maxSpread,
+    avgSensorAcc,
+    stdDev,
+    ratio,
+    signalQuality,
+    samplesCount
+  };
+}
+    </pre>
+
+    <p>Bu karar matrisinin en kritik çıktısı, nihai filtrelenmiş verinin koordinat özniteliğindeki doğruluk (accuracy) değerinin belirlenmesidir: <b>Doğruluk = Maksimum (Maksimum Saçılım Genişliği, Ortalama Donanım Hatası)</b>. Bu formülasyon sayesinde, cihaz yapay olarak çok yüksek bir hassasiyet bildirse bile (Örn: 2m), veriler arazide çevre parazitlerinden dolayı 6 metrelik bir alana saçılıyorsa, sistem güvenli tarafta kalmak üzere kullanıcıya gerçekçi yatay hassasiyet yarıçapını 6 metre olarak ilan eder.</p>
 
     <h2>2.5. Yapay Zeka Tabanlı Yazılım Geliştirme Metodolojisi</h2>
     <p>Ağır jeodezi denklemlerinin (3-parametreli Molodensky dönüşümü, Gauss-Krüger / UTM izdüşüm dönüşümleri, jeoit dalgalanma serileri vb.) sıfır mantıksal ve derleme hatasıyla doğrudan TypeScript diline kazandırılmasında ve geliştirilme süreçlerinde <span class="bold">Google AI Studio</span> geliştirme platformu kullanılmıştır. Alan uzmanı ve mühendis ortaklığındaki "Expert-in-the-Loop" geliştirme modeli çerçevesinde, yapay zekanın jeodezik modelleme sınırlarını test eden vaka analizleri (Otokritik süreçler) ve bu süreçte başarımızı güvence altına alan alan uzmanının doğru yönlendirici istemleri (Optimized Expert Prompts) aşağıda belgelenmiştir:</p>
