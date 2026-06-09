@@ -558,28 +558,7 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
 }
     </pre>
 
-    <h3>2.4.5. MidRange (Maksimum-Minimum Sınır Ortalama Süzgeci)</h3>
-    <p>MidRange süzgeci, veri setindeki en büyük koordinat değerleri ile en küçük koordinat değerlerinin aritmetik ortalamasını alarak uç sınırların tam ortasını temsil eden bir referans merkez noktası üretir. Özellikle simetrik dağılımlarda ve dış gürültünün veri kümesini her iki uçtan da dengeli etkilediği senaryolarda hızlı ve kararlı bir referans tespiti sağlar. Bu geometrik uç süzgecini yürüten fonksiyonun tam TS kod dizilimi şu şekildedir:</p>
-    <pre class="code-block">
-export function calculateMidRange(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  if (samples.length === 0) { return { result: samples[0], usedIndices: [0] }; }
-  const lats = samples.map(s => s.lat);
-  const lngs = samples.map(s => s.lng);
-  const minLat = Math.min(...lats);
-  const maxLat = Math.max(...lats);
-  const minLng = Math.min(...lngs);
-  const maxLng = Math.max(...lngs);
-  const midLat = (minLat + maxLat) / 2;
-  const midLng = (minLng + maxLng) / 2;
-  const avgAcc = samples.reduce((a, b) => a + b.accuracy, 0) / samples.length;
-  return {
-    result: { lat: midLat, lng: midLng, accuracy: avgAcc, altitude: null, altitudeAccuracy: null, timestamp: Date.now() },
-    usedIndices: samples.map((_, i) => i)
-  };
-}
-    </pre>
-
-    <h3>2.4.6. Sinyal Güvenilirlik Analizi ve Veri Saçılım Metodolojisi</h3>
+    <h3>2.4.5. Sinyal Güvenilirlik Analizi ve Veri Saçılım Metodolojisi</h3>
     <p>Mobil donanımların ve akıllı telefonların entegre konum sensörleri doğrudan ham GNSS gözlemleri (taşıyıcı fazı vb.) yerine tarayıcı düzlemine filtrelenmiş tahminler sunar. Bu sebeple donanımın ürettiği konumsal doğruluk kestirimleri (UERE - User Equivalent Range Error tabanlı tahmini konum hatası veya Geolocation API Hassasiyet Çemberi / Accuracy Radius), her zaman sahada karşılaşılan fiziki çoklu yansıma (multipath) ve atmosferik gecikme etkilerini bütünüyle yansıtamaz. ${FULL_BRAND}, bu tip yetersiz veya iyimser bildirimlerden kaynaklı riskleri bertaraf etmek amacıyla <b>Konumsal Veri Saçılımı ve Sinyal Güvenilirlik Analiz Motorunu</b> çalıştırır. Bu motor, toplanan örneklem havuzunun uzaysal dağılımını matematiksel kriterlere göre denetleyerek sinyal kalitesini derecelendirir.</p>
 
     <p><span class="bold">Zaman Serisi ve Epok Aralığı (1 Hz Frekans Modeli):</span> Akıllı konumlandırma motoru, statik ölçüm sırasında Geolocation API'nin standart saniyelik güncelleme hızı olan 1 Hz varsayılan frekansı ile veri toplar. Güvenli bir istatistiksel çıkarım için en az 15 epok (yaklaşık 15 saniyelik kesintisiz zaman serisi dizisi) toplanması zorunluluğu getirilmiştir. Bu 15 saniyelik statik oturum, GNSS uydularının saatler içinde gerçekleşen yörünge/geometri değişimlerini (bölgesel DOP değişimini) modellemek yerine; yerel çevresel engeller, bina yansımaları ve ağaç örtüsünden kaynaklanan anlık çoklu yol (multipath) sapmalarını, sinyal saçılmalarını ve yüksek frekanslı beyaz gürültüyü sönümleyerek verilerin kararlılığını güvene almayı hedefler.</p>

@@ -41,12 +41,11 @@ export function calculateResult(
   let clusters: number[][] | undefined = undefined;
 
   // Let's implement the 30-epoch constraint check for professional mathematical models:
-  // KMEANS_4, BAARDA, MIDRANGE_KMEANS_BAARDA, HYBRID_V2
+  // KMEANS_4, BAARDA, MIDRANGE_KMEANS_BAARDA
   const isProfessional = 
     method === 'KMEANS_4' || 
     method === 'BAARDA' || 
-    method === 'MIDRANGE_KMEANS_BAARDA' ||
-    method === 'HYBRID_V2';
+    method === 'MIDRANGE_KMEANS_BAARDA';
   
   let finalMethod = method;
   let fallbackApplied = false;
@@ -72,12 +71,6 @@ export function calculateResult(
       finalCalculatedUsedIndices = kmeansRes.usedIndices;
       clusters = kmeansRes.clusters;
       break;
-    case 'HYBRID_V2':
-      const hybridV2Res = calculateKMeansBaardaV2(sourceData);
-      resultData = hybridV2Res.result;
-      finalCalculatedUsedIndices = hybridV2Res.usedIndices;
-      clusters = hybridV2Res.clusters;
-      break;
     case 'KMEANS_4':
       const kmeans4Res = calculateKMeans4(sourceData);
       resultData = kmeans4Res.result;
@@ -88,11 +81,6 @@ export function calculateResult(
       const pureBaardaRes = calculateBaardaPure(sourceData);
       resultData = pureBaardaRes.result;
       finalCalculatedUsedIndices = pureBaardaRes.usedIndices;
-      break;
-    case 'MIDRANGE':
-      const midRangeRes = calculateMidRange(sourceData);
-      resultData = midRangeRes.result;
-      finalCalculatedUsedIndices = midRangeRes.usedIndices;
       break;
     default:
       const defaultLse = calculateWeightedLSE(sourceData);
@@ -269,117 +257,6 @@ function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; use
     k = 4; // Moderate/Heavy obstructions (Maximum 4 Clusters)
   }
 
-  // 3. K-Means clustering using determined dynamic k
-  const clusterAssignments = runKMeans(samples, k);
-  
-  // Group index allocations into clusters
-  const clusters: number[][] = Array.from({ length: k }, () => []);
-  clusterAssignments.forEach((cIdx, i) => {
-    clusters[cIdx].push(i);
-  });
-
-  // 4. Critical Limit Control (Directly delete clusters with < 4 items)
-  const activeClusters = clusters.filter(c => c.length >= 4);
-
-  // 5. Intra-Cluster Baarda Test (Runs secure outlier test inside each dynamic cluster)
-  const cleanClustersIndices: number[][] = [];
-  const cleanClustersPoints: Coordinate[][] = [];
-
-  for (let c = 0; c < activeClusters.length; c++) {
-    const origIndices = activeClusters[c];
-    const clusterPoints = origIndices.map(idx => samples[idx]);
-
-    // Use Baarda's outlier detection inside each individual cluster
-    const baardaInput = clusterPoints.map((p, localIdx) => ({
-      ...p,
-      _originalIdx: localIdx
-    }));
-
-    const baardaRes = calculateBaardaInternal(baardaInput as any);
-    
-    // Map clean points back to original indices
-    const cleanOrigIndices = baardaRes.usedIndices.map(localIdx => origIndices[localIdx]);
-    const cleanPoints = cleanOrigIndices.map(idx => samples[idx]);
-
-    cleanClustersIndices.push(cleanOrigIndices);
-    cleanClustersPoints.push(cleanPoints);
-  }
-
-  // 6. Cluster Density Analysis (Champion Cluster Selection)
-  let bestClusterIdx = 0;
-  let maxCount = -1;
-  for (let c = 0; c < activeClusters.length; c++) {
-    const count = cleanClustersIndices[c] ? cleanClustersIndices[c].length : 0;
-    if (count > maxCount) {
-      maxCount = count;
-      bestClusterIdx = c;
-    }
-  }
-
-  const championIndices = cleanClustersIndices[bestClusterIdx] || [];
-  const championPoints = cleanClustersPoints[bestClusterIdx] || [];
-
-  if (championIndices.length === 0) {
-    return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
-  }
-
-  // 7. Final Weighted Least Squares (WLS) Solution
-  const lseResult = calculateWeightedLSE(championPoints);
-  const finalResult = { ...lseResult.result };
-
-  // Calculate altitude and altitudeAccuracy on champion points
-  const validAlts = championPoints.filter(s => s.altitude !== null);
-  finalResult.altitude = validAlts.length > 0
-    ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length
-    : null;
-
-  const validAltAccs = championPoints.filter(s => s.altitudeAccuracy !== null);
-  finalResult.altitudeAccuracy = validAltAccs.length > 0
-    ? validAltAccs.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length
-    : null;
-
-  return { 
-    result: finalResult, 
-    usedIndices: championIndices, 
-    clusters: activeClusters
-  };
-}
-
-/**
- * K-Means + Baarda Algorithm with Adaptive Dynamic Scaling - Version 2
- * 
- * 1. Kol (Uzaysal Kol): K-Means ile "Doğru Bölge" Tespiti
- * - K-Means veriyi parçalamadan, doğrudan belirlenen dinamik k değeriyle (max 4) ham veri üzerinde çalışır.
- * - En yüksek eleman sayısına sahip "Şampiyon Küme" belirlenir ve bu küme "Güvenli Geometrik Bölge" olarak tescillenir.
- * - Bu kümenin merkezi (Aritmetik ortalaması) referans merkezimiz (X_ref, Y_ref) olur.
- * - Şampiyon küme içindeki elemanların bu merkeze olan maksimum uzaklığı "Güvenli Geometrik Bölge" yarıçapı (çeper) olarak belirlenir.
- * 
- * 2. Kol (Jeodezik Kol): Tüm Veri Setinde Baarda Testi
- * - Ham verinin tamamı bölünmeden tek bir büyük grup olarak Baarda kalın hata testine sokulur (serbestlik derecesi maksimumdur).
- * - "Makro düzeyde temizlenmiş" geniş bir puan havuzu elde edilir.
- * 
- * 3. Kesişim ve Nihai Karar: Geometrik Filtreleme & WLS Çözümü
- * - Baarda testi sonucunda temiz çıkan noktalardan, sadece K-Means Şampiyon Kümesi'nin uzaysal etki alanı (çeperi) içinde kalanlar nihai potaya alınır.
- * - Seçilen nihai noktalar üzerinde Final Weighted Least Squares (WLS) çözümü çalıştırılır.
- */
-function calculateKMeansBaardaV2(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
-  if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
-
-  // 1. Calculate metric Standard Deviation
-  const average = calculateAverage(samples);
-  const variance = calculateVariance(samples, average);
-  const sigma = Math.sqrt(variance);
-
-  // 2. Decide Adaptive Number of Clusters (k) - Max 4 Clusters
-  let k = 4;
-  if (sigma < 1.0) {
-    k = 2; // Clean signal, only micro noise needs separation
-  } else if (sigma < 1.5) {
-    k = 3;
-  } else {
-    k = 4; // Moderate/Heavy obstructions (Maximum 4 Clusters)
-  }
-
   // 3. K-Means clustering on the whole raw dataset
   const clusterAssignments = runKMeans(samples, k);
   
@@ -389,7 +266,7 @@ function calculateKMeansBaardaV2(samples: Coordinate[]): { result: Coordinate; u
     clusters[cIdx].push(i);
   });
 
-  // 1. Kol: Find the "Champion Cluster" (largest cluster by element count)
+  // 1. Kol (Uzaysal Kol): Find the "Champion Cluster" (largest cluster by element count)
   let bestClusterIdx = 0;
   let maxCount = -1;
   for (let i = 0; i < k; i++) {
@@ -402,7 +279,7 @@ function calculateKMeansBaardaV2(samples: Coordinate[]): { result: Coordinate; u
   const championIndices = clusters[bestClusterIdx];
   const championPoints = championIndices.map(idx => samples[idx]);
 
-  // 2. Kol: Run Baarda Test on the entire raw dataset without partitioning
+  // 2. Kol (Jeodezik Kol): Run Baarda Test on the entire raw dataset without partitioning
   const baardaPureRes = calculateBaardaPure(samples);
   const baardaCleanIndices = baardaPureRes.usedIndices;
 
@@ -605,47 +482,7 @@ function calculateBaardaPure(samples: Coordinate[]): { result: Coordinate; usedI
   };
 }
 
-export function calculateMidRange(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  if (samples.length === 0) {
-    return { result: samples[0], usedIndices: [0] };
-  }
-  const lats = samples.map(s => s.lat);
-  const lngs = samples.map(s => s.lng);
-  
-  const minLat = Math.min(...lats);
-  const maxLat = Math.max(...lats);
-  const minLng = Math.min(...lngs);
-  const maxLng = Math.max(...lngs);
-  
-  const midLat = (minLat + maxLat) / 2;
-  const midLng = (minLng + maxLng) / 2;
-  
-  const validAlts = samples.map(s => s.altitude).filter((alt): alt is number => alt !== null && alt !== undefined);
-  let midAlt: number | null = null;
-  if (validAlts.length > 0) {
-    midAlt = (Math.min(...validAlts) + Math.max(...validAlts)) / 2;
-  }
-  
-  const validAltAccs = samples.map(s => s.altitudeAccuracy).filter((acc): acc is number => acc !== null && acc !== undefined);
-  let midAltAcc: number | null = null;
-  if (validAltAccs.length > 0) {
-    midAltAcc = (Math.min(...validAltAccs) + Math.max(...validAltAccs)) / 2;
-  }
 
-  const avgAcc = samples.reduce((a, b) => a + b.accuracy, 0) / samples.length;
-
-  return {
-    result: {
-      lat: midLat,
-      lng: midLng,
-      accuracy: avgAcc,
-      altitude: midAlt,
-      altitudeAccuracy: midAltAcc,
-      timestamp: Date.now()
-    },
-    usedIndices: samples.map((_, i) => i)
-  };
-}
 
 
 

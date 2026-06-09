@@ -529,10 +529,9 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
                   <option value="WEIGHTED_LSE">{t("1. Ağırlıklı En Küçük Kareler")}</option>
-                  <option value="MIDRANGE">{t("2. MidRange")}</option>
-                  <option value="KMEANS_4">{t("3. KMeans")}</option>
-                  <option value="BAARDA">{t("4. Baarda")}</option>
-                  <option value="MIDRANGE_KMEANS_BAARDA">{t("5. K-Means + Baarda + WLS")}</option>
+                  <option value="KMEANS_4">{t("2. KMeans (4 Küme)")}</option>
+                  <option value="BAARDA">{t("3. Baarda Eleme")}</option>
+                  <option value="MIDRANGE_KMEANS_BAARDA">{t("4. K-Means + Baarda + WLS")}</option>
                 </select>
               </div>
 

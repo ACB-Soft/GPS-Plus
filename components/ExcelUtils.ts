@@ -9,7 +9,6 @@ import { geoidService } from '../services/GeoidService';
 const getMethodName = (m: CalculationMethod) => {
   switch(m) {
     case 'WEIGHTED_LSE': return "Ağırlıklı En Küçük Kareler";
-    case 'MIDRANGE': return "MidRange";
     case 'KMEANS_4': return "K-Means (4 Küme)";
     case 'BAARDA': return "Baarda Eleme";
     case 'MIDRANGE_KMEANS_BAARDA': return "K-Means + Baarda + WLS";
@@ -149,7 +148,6 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   
   const methods: CalculationMethod[] = [
     'WEIGHTED_LSE', 
-    'MIDRANGE',
     'KMEANS_4',
     'BAARDA',
     'MIDRANGE_KMEANS_BAARDA'
@@ -487,7 +485,6 @@ export const downloadCombinedAnalysisReport = (
 
   const allMethods: CalculationMethod[] = [
     'WEIGHTED_LSE', 
-    'MIDRANGE',
     'KMEANS_4',
     'BAARDA',
     'MIDRANGE_KMEANS_BAARDA'

@@ -44,9 +44,7 @@ const METHOD_COLORS: Record<string, string> = {
   WEIGHTED_LSE: '#8b5cf6',
   MIDRANGE_KMEANS_BAARDA: '#3b82f6',
   KMEANS_4: '#06b6d4',
-  BAARDA: '#f59e0b',
-  MIDRANGE: '#14b8a6',
-  HYBRID_V2: '#f43f5e'
+  BAARDA: '#f59e0b'
 };
 
 const CLUSTER_COLORS = [
@@ -156,7 +154,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const bestMethod = useMemo(() => {
     if (!analysisResults || analysisResults.length === 0) return null;
     const sorted = [...analysisResults]
-      .filter(r => r.method !== 'HYBRID_V2')
       .sort((a,b) => (a.errors?.dhz || 0) - (b.errors?.dhz || 0));
     return sorted.length > 0 ? sorted[0].method : null;
   }, [analysisResults]);
@@ -197,21 +194,17 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
   const methods = useMemo<CalculationMethod[]>(() => [
     'WEIGHTED_LSE',
-    'MIDRANGE',
     'KMEANS_4',
     'BAARDA',
-    'MIDRANGE_KMEANS_BAARDA',
-    'HYBRID_V2'
+    'MIDRANGE_KMEANS_BAARDA'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
     const labels: Record<string, string> = {
       'WEIGHTED_LSE': t("Ağırlıklı En Küçük Kareler"),
-      'MIDRANGE': t("MidRange"),
       'KMEANS_4': t("K-Means (4 Küme)"),
       'BAARDA': t("Baarda Eleme"),
-      'MIDRANGE_KMEANS_BAARDA': "K-Means + Baarda + WLS",
-      'HYBRID_V2': "Hibrit v.2"
+      'MIDRANGE_KMEANS_BAARDA': "K-Means + Baarda + WLS"
     };
     return labels[m] || m;
   };
@@ -476,7 +469,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     });
 
     const methodPoints = (analysisResults || [])
-      .filter(res => res.method !== 'HYBRID_V2')
       .map((res, index) => {
         const dE = res.calculated.x - centerX;
         const dN = res.calculated.y - centerY;
@@ -729,12 +721,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     <p className="text-[9px] font-black text-violet-600 uppercase">{t("Ağırlıklı En Küçük Kareler (Varsayılan)")}</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
                       {t("Ölçüm hassasiyetine (accuracy) göre ters ağırlıklı modelleme yaparak güvensiz verilerin etkisini azaltır.")}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[9px] font-black text-teal-600 uppercase">MidRange</p>
-                    <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      {t("Ölçüm serisindeki en büyük ve en küçük sınırsal enlemlerin/boylamların ortalamasını alarak geometrik uç merkezini süzgeçten geçirir.")}
                     </p>
                   </div>
                   <div className="space-y-1">
@@ -1273,8 +1259,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   'WEIGHTED_LSE': 'Weighted LSE',
                                   'MIDRANGE_KMEANS_BAARDA': 'Hybrid',
                                   'KMEANS_4': 'KMeans',
-                                  'BAARDA': 'Baarda',
-                                  'MIDRANGE': 'MidRange'
+                                  'BAARDA': 'Baarda'
                                 };
                                 return labels[m] || m;
                               };
@@ -1339,8 +1324,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               'WEIGHTED_LSE': 'Weighted LSE',
                               'MIDRANGE_KMEANS_BAARDA': 'Hybrid',
                               'KMEANS_4': 'KMeans',
-                              'BAARDA': 'Baarda',
-                              'MIDRANGE': 'MidRange'
+                              'BAARDA': 'Baarda'
                             };
                             return labels[m] || m;
                           };
@@ -1374,8 +1358,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             'WEIGHTED_LSE': 'Weighted LSE',
                             'MIDRANGE_KMEANS_BAARDA': 'Hybrid',
                             'KMEANS_4': 'KMeans',
-                            'BAARDA': 'Baarda',
-                            'MIDRANGE': 'MidRange'
+                            'BAARDA': 'Baarda'
                           };
                           return labels[m] || m;
                         };
@@ -1740,7 +1723,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               )}
 
               {/* Algorithm Results */}
-              {analysisResults.filter(res => res.method !== 'HYBRID_V2').map((res, index) => {
+              {analysisResults.map((res, index) => {
                 return (
                   <Marker 
                     key={res.method}
@@ -1774,7 +1757,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
               <MapSetBounds points={[
                 ...location.samples!.filter(s => s.accuracy <= (location.accuracyLimit || 5.0)).map(s => [s.lat, s.lng] as [number, number]),
-                ...analysisResults.filter(r => r.method !== 'HYBRID_V2').map(r => [r.lat, r.lng] as [number, number]),
+                ...analysisResults.map(r => [r.lat, r.lng] as [number, number]),
                 ...(analysisType === 'precise' && preciseWgs ? [preciseWgs] : [])
               ]} />
               <MapResizer />
@@ -1791,7 +1774,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       <span className="text-[8px] font-black text-emerald-600 uppercase">REF.</span>
                     </div>
                   )}
-                  {analysisResults.filter(res => res.method !== 'HYBRID_V2').map((res, idx) => (
+                  {analysisResults.map((res, idx) => (
                     <div key={res.method} className="flex items-center gap-2">
                       <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-bold text-white shrink-0" style={{ backgroundColor: METHOD_COLORS[res.method] }}>
                         {idx + 1}

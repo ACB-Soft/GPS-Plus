@@ -13,9 +13,7 @@ export type CalculationMethod =
   | 'WEIGHTED_LSE' 
   | 'MIDRANGE_KMEANS_BAARDA' 
   | 'KMEANS_4' 
-  | 'BAARDA'
-  | 'MIDRANGE'
-  | 'HYBRID_V2';
+  | 'BAARDA';
 
 export interface SavedLocation extends Coordinate {
   id: string;
