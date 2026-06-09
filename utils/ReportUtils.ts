@@ -237,12 +237,12 @@ function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; used
     <div class="case-container" style="background-color: #f8fafc; border-left: 4px solid #1e3a8a; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
       <p class="bold" style="color: #1e3a8a; margin-bottom: 6px;">Hibrit İş Akışı Detaylı Adımları (Bütünleşik Jeodezik Çözüm)</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 1: Konumsal Standart Sapma Hesaplaması:</span> Tüm veri setinin metre cinsinden Konumsal Standart Sapması (&sigma;<sub>metrik</sub>) hesaplanır. Bu değer sahadaki toplam gürültünün ve sapmanın büyüklüğünü temsil eder.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 2: Adaptif Küme Sayaç Kararı:</span> &sigma;<sub>metrik</sub> değerine göre K-Means algoritmasının kaç gruba ayrılacağı dinamik olarak belirlenir: &sigma; &lt; 1.0m ise k=2; 1.0m &le; &sigma; &lt; 1.5m ise k=3; 1.5m &le; &sigma; &lt; 2.0m ise k=4; 2.0m &le; &sigma; &lt; 2.5m ise k=5; ve &sigma; &ge; 2.5m ise k=6 (Çok katı kentsel kanyon, çoklu yansıma odakları).</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 3: K-Means Uzaysal Bölütleme:</span> Dinamik belirlenen k sayısı kullanılarak ham veriler uzaysal olarak k adet alt kümeye ayrıştırılır. Sinyal yansıma tipleri (LOS, NLOS, multipath) geometrik olarak kümelenir.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 4: Kritik Limit Kontrolü ve Küme Birleştirme (Cluster Merging):</span> Baarda uyuşmazlık testinin çalışabilmesi için her kümede en az 4 nokta şartı aranır. Eleman sayısı 4'ten az olan "zayıf" bir küme tespit edilirse listeden çıkarılır. Bu kümenin merkezi hesaplanarak, kalan güçlü kümelerden merkezine en yakın olan gruba tüm elemanları aktarılıp birleştirilir. Bu kontrol 4'ten küçük küme kalmayana kadar döngüsel tekrarlanır.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 5: Küme İçi Baarda Uyuşmazlığı Testi:</span> Her bir küme bağımsız birer örneklem grubu olarak ele alınır ve kendi içinde Baarda Kalın Hata Testine tabi tutulur. Böylece küme içi uyumsuz kalın gürültüler temizlenir.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 6: Küme Yoğunluk Analizi:</span> Temizlenmiş küme listeleri içerisinden üye sayısı (yoğunluğu) en yüksek olan küme "Şampiyon Küme" ilan edilir ve diğer binalardan yansıyan kalıntılar elenir.</p>
-      <p class="no-indent"><span class="bold">Adım 7: Nihai WLS Dengelemesi:</span> Geriye kalan pürüzsüz şampiyon küme elemanları, kendi hassasiyet ağırlıkları gözetilerek Stokastik Ağırlıklı En Küçük Kareler (Weighted Least Squares) algoritmasından geçirilerek nihai koordinat çözümü üretilir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 2: Adaptif Küme Sayaç Kararı:</span> &sigma;<sub>metrik</sub> değerine göre K-Means algoritmasının kaç gruba ayrılacağı dinamik olarak belirlenir: &sigma; &lt; 1.0m ise k=2; 1.0m &le; &sigma; &lt; 1.5m ise k=3; ve &sigma; &ge; 1.5m ise k=4 (Maksimum 4 küme sınırı ile aşırı bölünme önlenir).</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 3: K-Means Uzaysal Bölütleme ve Şampiyon Küme Tespiti (Uzaysal Kol):</span> Dinamik belirlenen k sayısı kullanılarak veri seti uzaysal olarak k adet alt kümeye bölütlenir. En çok eleman (örneklem) barındıran alt küme "Şampiyon Küme" seçilerek "Güvenli Geometrik Bölge" olarak tescillenir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 4: Küresel Baarda Uyuşmazlığı Testi (Jeodezik Kol):</span> Verilerin tamamı bölünmeden tek bir büyük grup halinde Baarda kalın hata testine sokulur. Böylece makro düzeyde ve en yüksek serbestlik derecesiyle kalın hatalı noktalar elenir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 5: İndeks Kesişim Filtresi (Kesişim Kolu):</span> Baarda testinden temiz çıkan küresel nokta havuzu ile K-Means Şampiyon Kümesindeki noktaların doğrudan indeks kesişimi alınarak çifte denetim gerçekleştirilir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 6: Seçenek C Yerel Baarda Fallback Süzgeci:</span> Eğer yapılan indeks kesişimi sonucunda hiç ortak nokta bulunamazsa (kesişim kümesi boş kalırsa), sistem otomatik olarak şampiyon kümenin kendi içinde yerel Baarda denetimi çalıştırarak lokal outliers eler ve kararlılığı kesintisiz korur.</p>
+      <p class="no-indent"><span class="bold">Adım 7: Nihai WLS Dengelemesi:</span> Kesinleşen filtrelenmiş noktalar üzerinde, donanımsal hassasiyet ağırlıkları (1/accuracy²) gözetilerek Stokastik Ağırlıklı En Küçük Kareler (Weighted Least Squares) dengelemesi uygulanır ve üstün jeodezik kesinlikte koordinat çözümü üretilir.</p>
     </div>
 
     <div class="case-container" style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
@@ -268,147 +268,79 @@ function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; use
   const variance = calculateVariance(samples, average);
   const sigma = Math.sqrt(variance);
 
-  // 2. Decide Adaptive Number of Clusters (k)
+  // 2. Decide Adaptive Number of Clusters (k) - Max 4 Clusters
   let k = 4;
   if (sigma &lt; 1.0) {
-    k = 2;
+    k = 2; // Clean signal, only micro noise needs separation
   } else if (sigma &lt; 1.5) {
     k = 3;
-  } else if (sigma &lt; 2.0) {
-    k = 4;
-  } else if (sigma &lt; 2.5) {
-    k = 5;
   } else {
-    k = 6;
+    k = 4; // Moderate/Heavy obstructions (Maximum 4 Clusters)
   }
 
-  // 3. K-Means clustering using determined dynamic k
+  // 3. K-Means clustering on the whole raw dataset
   const clusterAssignments = runKMeans(samples, k);
+  
+  // Group index allocations into clusters
   const clusters: number[][] = Array.from({ length: k }, () =&gt; []);
   clusterAssignments.forEach((cIdx, i) =&gt; {
     clusters[cIdx].push(i);
   });
 
-  // 4. Critical Limit Control and Cluster Merging
-  let activeClusters = clusters.filter(c =&gt; c.length &gt; 0);
-
-  while (true) {
-    const weakIdx = activeClusters.findIndex(c =&gt; c.length &lt; 4);
-    if (weakIdx === -1) {
-      break;
-    }
-
-    const weakCluster = activeClusters[weakIdx];
-    let candidates = activeClusters.filter((_, idx) =&gt; idx !== weakIdx && activeClusters[idx].length &gt;= 4);
-    if (candidates.length === 0) {
-      candidates = activeClusters.filter((_, idx) =&gt; idx !== weakIdx);
-    }
-
-    if (candidates.length === 0) {
-      break;
-    }
-
-    const weakPoints = weakCluster.map(idx =&gt; samples[idx]);
-    const weakCenter = {
-      lat: weakPoints.reduce((sum, p) =&gt; sum + p.lat, 0) / weakPoints.length,
-      lng: weakPoints.reduce((sum, p) =&gt; sum + p.lng, 0) / weakPoints.length,
-    };
-
-    let closestCandidateIdx = -1;
-    let minDistSq = Infinity;
-
-    for (let cIdx = 0; cIdx &lt; candidates.length; cIdx++) {
-      const cand = candidates[cIdx];
-      const candPoints = cand.map(idx =&gt; samples[idx]);
-      const candCenter = {
-        lat: candPoints.reduce((sum, p) =&gt; sum + p.lat, 0) / candPoints.length,
-        lng: candPoints.reduce((sum, p) =&gt; sum + p.lng, 0) / candPoints.length,
-      };
-
-      const dLat = (candCenter.lat - weakCenter.lat) * 111320;
-      const dLng = (candCenter.lng - weakCenter.lng) * 111320 * Math.cos(weakCenter.lat * Math.PI / 180);
-      const distSq = dLat * dLat + dLng * dLng;
-
-      if (distSq &lt; minDistSq) {
-        minDistSq = distSq;
-        closestCandidateIdx = cIdx;
-      }
-    }
-
-    if (closestCandidateIdx !== -1) {
-      const closestCandidate = candidates[closestCandidateIdx];
-      const targetIdxInActive = activeClusters.findIndex(c =&gt; c === closestCandidate);
-      if (targetIdxInActive !== -1) {
-        activeClusters[targetIdxInActive] = activeClusters[targetIdxInActive].concat(weakCluster);
-      }
-    }
-
-    activeClusters.splice(weakIdx, 1);
-  }
-
-  // 5. Intra-Cluster Baarda Test (Runs secure outlier test inside each dynamic cluster)
-  const cleanClustersIndices: number[][] = [];
-  const cleanClustersPoints: Coordinate[][] = [];
-
-  for (let c = 0; c &lt; activeClusters.length; c++) {
-    const origIndices = activeClusters[c];
-    if (origIndices.length === 0) {
-      cleanClustersIndices.push([]);
-      cleanClustersPoints.push([]);
-      continue;
-    }
-
-    const clusterPoints = origIndices.map(idx =&gt; samples[idx]);
-    const baardaInput = clusterPoints.map((p, localIdx) =&gt; ({
-      ...p,
-      _originalIdx: localIdx
-    }));
-
-    const baardaRes = calculateBaardaInternal(baardaInput as any);
-    const cleanOrigIndices = baardaRes.usedIndices.map(localIdx =&gt; origIndices[localIdx]);
-    const cleanPoints = cleanOrigIndices.map(idx =&gt; samples[idx]);
-
-    cleanClustersIndices.push(cleanOrigIndices);
-    cleanClustersPoints.push(cleanPoints);
-  }
-
-  // 6. Cluster Density Analysis (Champion Cluster Selection)
+  // 1. Kol (Uzaysal Kol): Find the "Champion Cluster" (largest cluster by element count)
   let bestClusterIdx = 0;
   let maxCount = -1;
-  for (let c = 0; c &lt; activeClusters.length; c++) {
-    const count = cleanClustersIndices[c].length;
-    if (count &gt; maxCount) {
-      maxCount = count;
-      bestClusterIdx = c;
+  for (let i = 0; i &lt; k; i++) {
+    if (clusters[i].length &gt; maxCount) {
+      maxCount = clusters[i].length;
+      bestClusterIdx = i;
     }
   }
 
-  const championIndices = cleanClustersIndices[bestClusterIdx];
-  const championPoints = cleanClustersPoints[bestClusterIdx];
+  const championIndices = clusters[bestClusterIdx];
+  const championPoints = championIndices.map(idx =&gt; samples[idx]);
 
-  if (championIndices.length === 0) {
+  // 2. Kol (Jeodezik Kol): Run Baarda Test on the entire raw dataset without partitioning
+  const baardaPureRes = calculateBaardaPure(samples);
+  const baardaCleanIndices = baardaPureRes.usedIndices;
+
+  // 3. Intersection &amp; Final Selection:
+  const finalCleanIndices = baardaCleanIndices.filter(idx =&gt; championIndices.includes(idx));
+  const finalCleanPoints = finalCleanIndices.map(idx =&gt; samples[idx]);
+
+  // Graceful fallback if strict intersection is empty (Option C: local Baarda)
+  let finalPointsToUse = finalCleanPoints;
+  let finalIndicesToUse = finalCleanIndices;
+
+  if (finalPointsToUse.length === 0) {
+    const localBaardaRes = calculateBaardaPure(championPoints);
+    finalIndicesToUse = localBaardaRes.usedIndices.map(localIdx =&gt; championIndices[localIdx]);
+    finalPointsToUse = finalIndicesToUse.map(idx =&gt; samples[idx]);
+  }
+
+  if (finalPointsToUse.length === 0) {
     return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
   }
 
-  // 7. Final Weighted Least Squares (WLS) Solution
-  const lseResult = calculateWeightedLSE(championPoints);
+  // Final Weighted Least Squares (WLS) Solution on selected intersection points
+  const lseResult = calculateWeightedLSE(finalPointsToUse);
   const finalResult = { ...lseResult.result };
 
-  // Calculate altitude and altitudeAccuracy on champion points
-  const validAlts = championPoints.filter(s =&gt; s.altitude !== null);
+  // Calculate altitude and altitudeAccuracy on selected points
+  const validAlts = finalPointsToUse.filter(s =&gt; s.altitude !== null);
   finalResult.altitude = validAlts.length &gt; 0
     ? validAlts.reduce((a, b) =&gt; a + (b.altitude || 0), 0) / validAlts.length
     : null;
 
-  const validAltAccs = championPoints.filter(s =&gt; s.altitudeAccuracy !== null);
+  const validAltAccs = finalPointsToUse.filter(s =&gt; s.altitudeAccuracy !== null);
   finalResult.altitudeAccuracy = validAltAccs.length &gt; 0
     ? validAltAccs.reduce((a, b) =&gt; a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length
     : null;
 
   return { 
     result: finalResult, 
-    usedIndices: championIndices, 
-    clusters: activeClusters
+    usedIndices: finalIndicesToUse, 
+    clusters: clusters.filter(c =&gt; c.length &gt; 0)
   };
 }
     </pre>

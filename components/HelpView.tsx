@@ -291,16 +291,16 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                      <p className="text-sm font-black text-blue-800 uppercase tracking-widest">{t("İşlem Adımları:")}</p>
                      <ul className="space-y-1.5">
                       <li className="text-sm text-slate-700 leading-tight">
-                        1-<b>K-Means Sınıflandırma:</b> {t("Toplanan ham konum verileri mekansal yakınlıklarına göre 4 bağımsız küme grubuna (k = 4) bölünür. Sinyal yansıma yolları geometrik olarak modellenir.")}
+                        1-<b>{t("Uzaysal Kol (K-Means Bölge Tespiti)")}:</b> {t("Ham veriler mekansal yakınlıklarına göre kümelenerek en çok örneklem barındıran 'Şampiyon Küme' seçilir. Bu küme, çoklu yol yansımalarından arındırılmış 'Güvenli Geometrik Bölge' olarak tescillenir.")}
                       </li>
                       <li className="text-sm text-slate-700 leading-tight">
-                        2-<b>{t("Küme İçi Baarda")}:</b> {t("Her küme kendi içinde Baarda testi çalıştırarak mikro hatalı uç gürültülerini eler. Donanımsal saçılma ve çevre gürültüleri filtreye kurban edilmeden lokal olarak ayıklanır.")}
+                        2-<b>{t("Jeodezik Kol (Küresel Baarda Testi)")}:</b> {t("Veri setinin tamamı bölünmeden tek bir büyük grup olarak bütünsel Baarda kalın hata testine sokulur. Makro düzeyde temizlenmiş, gürültülerden arınmış bir puan havuzu elde edilir.")}
                       </li>
                       <li className="text-sm text-slate-700 leading-tight">
-                        3-<b>{t("Yoğunluk Analizi")}:</b> {t("Temizlenmiş alt kümeler arasında en yoğun (maksimum üye barındıran) küme şampiyon seçilir, diğer zayıf kümeler (multipath/yansıma) bütünüyle elenir.")}
+                        3-<b>{t("Kesişim Filtresi ve Lokal Gelişmiş Ayıklama (Seçenek C)")}:</b> {t("Baarda testinden temiz çıkan noktalar ile K-Means Şampiyon Kümesindeki noktaların doğrudan indeks kesişimi alınarak çifte denetim sağlanır. Eğer kesişim kümesi boş kalırsa, şampiyon kümenin kendi iç varyansına yerel Baarda (Option C) uygulanarak lokal aykırı değerler elenir.")}
                       </li>
                       <li className="text-sm text-slate-700 leading-tight">
-                        4-<b>{t("Nihai WLS Dengelemesi")}:</b> {t("Şampiyon kümedeki temiz noktalar, hassasiyet ağırlıkları (1/accuracy²) gözetilerek Stokastik En Küçük Kareler (WLS) formülü ile dengelenerek nihai konuma ulaştırılır.")}
+                        4-<b>{t("Hassas Ağırlıklı Dengeleme (WLS)")}:</b> {t("Elde edilen nihai süzülmüş noktalar, donanımsal hassasiyet ağırlıkları (1/accuracy²) gözetilerek Stokastik En Küçük Kareler (WLS) dengelemesine sokulur ve üstün stabilitede bir koordinat çözümü üretilir.")}
                       </li>
                     </ul>
                   </div>
