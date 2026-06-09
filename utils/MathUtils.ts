@@ -382,8 +382,11 @@ function runKMeans(samples: Coordinate[], k: number): number[] {
 function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndices: number[] } {
   if (samples.length < 4) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
 
-  let currentSamples = [...samples];
-  const criticalValue = 3.29; 
+  let currentSamples = samples.map((s, idx) => ({
+    ...s,
+    _originalIdx: s._originalIdx !== undefined ? s._originalIdx : idx
+  }));
+  const criticalValue = 3.29; // Critical limit for 99.9% confidence interval
 
   while (currentSamples.length > 4) {
     const weights = currentSamples.map(s => 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
@@ -398,7 +401,9 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
     });
 
     const vTPv = residuals.reduce((a, v, i) => a + v * v * weights[i], 0);
-    const sigma0 = Math.sqrt(vTPv / (currentSamples.length - 1));
+    
+    // Corrected degree of freedom: f = n - u, where u = 2 (lat, lng) unknowns in 2D adjustments.
+    const sigma0 = Math.sqrt(vTPv / (currentSamples.length - 2));
 
     const standardizedResiduals = currentSamples.map((s, i) => {
       const p_i = weights[i];
@@ -422,7 +427,9 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
     }
   }
 
-  return { result: calculateAverage(currentSamples), usedIndices: currentSamples.map(s => s._originalIdx) };
+  // Geodetically sound: use weighted least squares (CalculateWeightedLSE) for final estimate of clean samples instead of arithmetic mean
+  const lseResult = calculateWeightedLSE(currentSamples);
+  return { result: lseResult.result, usedIndices: currentSamples.map(s => s._originalIdx) };
 }
 
 

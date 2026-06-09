@@ -364,29 +364,51 @@ function runKMeans(samples: Coordinate[], k: number): number[] {
     </pre>
 
     <h3>2.4.4. Baarda Kalın Hata Elemesi (Baarda's Reliability Test / Snooping)</h3>
-    <p>Jeodezik ölçü standartlarının temeli olan Baarda'nın veri gözetleme yöntemi (data snooping), normalize edilmiş ve standardize edilmiş ölçü uyuşmazlığı hatalarının istatistiksel test büyüklüğünü denetler. Kritik sınır değerleri aşan uyuşmazlık hataları ardışık olarak tespit edilerek en büyük kalın hatadan başlanarak döngüsel düzende sistemden temizlenir. Baarda kalın hata test büyüklüğünü ve standartlaştırılmış uyuşmazlık denetimini koşturan kritik fonksiyon aşağıda yer almaktadır:</p>
+    <p>Jeodezik ölçü standartlarının temeli olan Baarda'nın veri gözetleme yöntemi (data snooping), normalize edilmiş ve standardize edilmiş ölçü uyuşmazlığı hatalarının istatistiksel test büyüklüğünü denetler. Kritik sınır değerleri aşan uyuşmazlık hataları ardışık olarak tespit edilerek en büyük kalın hatadan başlanarak döngüsel düzende sistemden temizlenir.</p>
+    
+    <div class="case-container" style="background-color: #f8fafc; border-left: 4px solid #d97706; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
+      <p class="bold" style="color: #b45309; margin-bottom: 6px;">Uyuşmazlık Testi ve Dengeleme İyileştirmeleri (Akademik Jeodezi Standartları)</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Serbestlik Derecesi Düzenlemesi ($f = n - 2$):</span> Birim ölçü hatasının ($\sigma_0$) hesabı sırasında serbestlik derecesi hesabı $f = n - u$ formülüne bağlıdır. 2D düzlemde ($X, Y$ / $Enlem, Boylam$) koordinat kestirimi yaptığımız için bilinmeyen parametre sayısı $u = 2$'dir. Bu nedenle formül paydasındaki serbestlik derecesi $n - 2$ olarak güncellenerek akademik kesinlik sağlanmıştır.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Kritik Sınır Değeri ($3.29$):</span> Seçilen $w_{test} = 3.29$ kritik sınırı, standart normal dağılımda ($N(0,1)$) çift taraflı $\%99.9$ güven düzeyine ($\alpha = 0.001$) tekabül eder. Bu muhafazakar tercih, kaba hata içermeyen temiz epokların yanlışlıkla reddedilmesini (I. Tip Hata) jeodezik toleranslar dahilinde minimize etmek amacıyla Baarda'nın orijinal güven kriteriyle uyumludur.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. İndeks Kırılma Koruması:</span> Üst katmandan gelen örneklem grubunda '_originalIdx' özniteliğinin eksik veya tanımsız olması durumuna karşı, metodun girişinde dinamik indeks haritalaması uygulanarak çalışma zamanı bozulma (runtime crash/breakage) riskleri tamamen sönümlenmiştir.</p>
+      <p class="no-indent"><span class="bold">4. Kaba Hata Sonrası Dengeleme:</span> İstatistiki uyuşmazlık testleri tamamlanarak gürültülü veriler elendikten sonra, kalan temiz koordinatlar düz aritmetik ortalamaya tabi tutulmaz. Bunun yerine kalan veriler kendi güncel hassasiyetleri ($p_i = 1/\text{accuracy}_i^2$) ile tekrar ağırlıklandırılarak <b>Stokastik Ağırlıklı En Küçük Kareler (Weighted Centroid)</b> motorumuzla çözümlenir ve nihai denge koordinatı jeodezik açıdan en kararlı şekilde elde edilir.</p>
+    </div>
+
+    <p class="no-indent">Baarda kalın hata test büyüklüğünü, $n-2$ serbestlik derecesini ve temizlenmiş verilerin ağırlıklı dengelenmesini koşturan kritik fonksiyon aşağıda yer almaktadır:</p>
     <pre class="code-block">
 function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndices: number[] } {
   if (samples.length < 4) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
-  let currentSamples = [...samples];
-  const criticalValue = 3.29; // Critical limit for 99.9% confidence interval
+
+  // Safe mapping of the original sequence indices
+  let currentSamples = samples.map((s, idx) => ({
+    ...s,
+    _originalIdx: s._originalIdx !== undefined ? s._originalIdx : idx
+  }));
+  const criticalValue = 3.29; // Critical limit for 99.9% confidence interval (alpha = 0.001)
+
   while (currentSamples.length > 4) {
     const weights = currentSamples.map(s => 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
     const sumW = weights.reduce((a, b) => a + b, 0);
     const meanLat = currentSamples.reduce((a, b, i) => a + b.lat * weights[i], 0) / sumW;
     const meanLng = currentSamples.reduce((a, b, i) => a + b.lng * weights[i], 0) / sumW;
+
     const residuals = currentSamples.map(s => {
       const dLat = (s.lat - meanLat) * 111320;
       const dLng = (s.lng - meanLng) * 111320 * Math.cos(meanLat * Math.PI / 180);
       return Math.sqrt(dLat * dLat + dLng * dLng);
     });
+
     const vTPv = residuals.reduce((a, v, i) => a + v * v * weights[i], 0);
-    const sigma0 = Math.sqrt(vTPv / (currentSamples.length - 1));
+    
+    // Geodetically correct degrees of freedom: f = n - u, where u = 2 (Lat, Lng)
+    const sigma0 = Math.sqrt(vTPv / (currentSamples.length - 2));
+
     const standardizedResiduals = currentSamples.map((s, i) => {
       const p_i = weights[i];
       const q_ii = (1 - p_i / sumW); 
       return residuals[i] / (sigma0 * Math.sqrt(q_ii) || 1e-9);
     });
+
     let maxW = -1;
     let worstIdx = -1;
     for (let i = 0; i < standardizedResiduals.length; i++) {
@@ -395,13 +417,17 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
             worstIdx = i;
         }
     }
+
     if (maxW > criticalValue) {
         currentSamples.splice(worstIdx, 1); // Reject coordinate containing outlier error
     } else {
         break; // Exit loop if the critical limit is satisfied (system resolved)
     }
   }
-  return { result: calculateAverage(currentSamples), usedIndices: currentSamples.map(s => s._originalIdx) };
+
+  // Geodetically sound: use calculateWeightedLSE on clean remaining samples
+  const lseResult = calculateWeightedLSE(currentSamples);
+  return { result: lseResult.result, usedIndices: currentSamples.map(s => s._originalIdx) };
 }
     </pre>
 
