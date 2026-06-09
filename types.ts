@@ -14,7 +14,8 @@ export type CalculationMethod =
   | 'MIDRANGE_KMEANS_BAARDA' 
   | 'KMEANS_4' 
   | 'BAARDA'
-  | 'MIDRANGE';
+  | 'MIDRANGE'
+  | 'HYBRID_V2';
 
 export interface SavedLocation extends Coordinate {
   id: string;

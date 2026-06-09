@@ -45,7 +45,8 @@ const METHOD_COLORS: Record<string, string> = {
   MIDRANGE_KMEANS_BAARDA: '#3b82f6',
   KMEANS_4: '#06b6d4',
   BAARDA: '#f59e0b',
-  MIDRANGE: '#14b8a6'
+  MIDRANGE: '#14b8a6',
+  HYBRID_V2: '#f43f5e'
 };
 
 const CLUSTER_COLORS = [
@@ -154,8 +155,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
   const bestMethod = useMemo(() => {
     if (!analysisResults || analysisResults.length === 0) return null;
-    const sorted = [...analysisResults].sort((a,b) => (a.errors?.dhz || 0) - (b.errors?.dhz || 0));
-    return sorted[0].method;
+    const sorted = [...analysisResults]
+      .filter(r => r.method !== 'HYBRID_V2')
+      .sort((a,b) => (a.errors?.dhz || 0) - (b.errors?.dhz || 0));
+    return sorted.length > 0 ? sorted[0].method : null;
   }, [analysisResults]);
 
   const useLocal = useMemo(() => {
@@ -197,7 +200,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     'MIDRANGE',
     'KMEANS_4',
     'BAARDA',
-    'MIDRANGE_KMEANS_BAARDA'
+    'MIDRANGE_KMEANS_BAARDA',
+    'HYBRID_V2'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
@@ -206,7 +210,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       'MIDRANGE': t("MidRange"),
       'KMEANS_4': t("K-Means (4 Küme)"),
       'BAARDA': t("Baarda Eleme"),
-      'MIDRANGE_KMEANS_BAARDA': "K-Means + Baarda + WLS"
+      'MIDRANGE_KMEANS_BAARDA': "K-Means + Baarda + WLS",
+      'HYBRID_V2': "Hibrit v.2"
     };
     return labels[m] || m;
   };
@@ -470,18 +475,20 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       return { ...d, dE, dN };
     });
 
-    const methodPoints = (analysisResults || []).map((res, index) => {
-      const dE = res.calculated.x - centerX;
-      const dN = res.calculated.y - centerY;
-      maxDelta = Math.max(maxDelta, Math.abs(dE), Math.abs(dN));
-      return {
-        ...res,
-        id: index + 1,
-        dE,
-        dN,
-        color: METHOD_COLORS[res.method] || '#94a3b8'
-      };
-    });
+    const methodPoints = (analysisResults || [])
+      .filter(res => res.method !== 'HYBRID_V2')
+      .map((res, index) => {
+        const dE = res.calculated.x - centerX;
+        const dN = res.calculated.y - centerY;
+        maxDelta = Math.max(maxDelta, Math.abs(dE), Math.abs(dN));
+        return {
+          ...res,
+          id: index + 1,
+          dE,
+          dN,
+          color: METHOD_COLORS[res.method] || '#94a3b8'
+        };
+      });
 
     // Square range with symmetric bounds
     const range = Math.ceil(maxDelta * 10) / 10 + 0.05;
@@ -1733,7 +1740,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               )}
 
               {/* Algorithm Results */}
-              {analysisResults.map((res, index) => {
+              {analysisResults.filter(res => res.method !== 'HYBRID_V2').map((res, index) => {
                 return (
                   <Marker 
                     key={res.method}
@@ -1767,7 +1774,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
               <MapSetBounds points={[
                 ...location.samples!.filter(s => s.accuracy <= (location.accuracyLimit || 5.0)).map(s => [s.lat, s.lng] as [number, number]),
-                ...analysisResults.map(r => [r.lat, r.lng] as [number, number]),
+                ...analysisResults.filter(r => r.method !== 'HYBRID_V2').map(r => [r.lat, r.lng] as [number, number]),
                 ...(analysisType === 'precise' && preciseWgs ? [preciseWgs] : [])
               ]} />
               <MapResizer />
@@ -1784,7 +1791,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       <span className="text-[8px] font-black text-emerald-600 uppercase">REF.</span>
                     </div>
                   )}
-                  {analysisResults.map((res, idx) => (
+                  {analysisResults.filter(res => res.method !== 'HYBRID_V2').map((res, idx) => (
                     <div key={res.method} className="flex items-center gap-2">
                       <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-bold text-white shrink-0" style={{ backgroundColor: METHOD_COLORS[res.method] }}>
                         {idx + 1}
