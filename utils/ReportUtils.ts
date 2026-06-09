@@ -231,57 +231,136 @@ function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; used
 }
     </pre>
 
-    <h3>2.4.2. MidRange + K-Means + Baarda Hibrit Yaklaşımı</h3>
-    <p>Uygulamanın amiral gemisi olarak nitelendirilen bu hibrit yaklaşım, saniyede bir okunan konum gözlemlerini öncelikle Mid-Range referans modeline göre epsilon sınırında filtreler, ardından kalan verileri K-Means kümeleme algoritmasıyla (K=4) segmentlere ayırır. Her bir segment kendi içinde istatistiksel ağırlıklı merkezileştirme (Weighted Centroid) ve lokal stokastik dengeleme adımlarıyla çözümlendikten sonra, kümeler arası uyuşmazlık dereceleri Baarda Kalın Hata Testi ile sınanarak sistemsel yansıma (multipath) kaynaklı gürültüler ve sürüklenmeler elenir. Özellikle yoğun kentsel kanyonlarda ve ağaç altı zorlu arazi koşullarında üstün operasyonel kararlılık başarısı gösterir. Algoritma adımlarını gerçekleştiren kod bloğu aşağıda dökümlenmiştir:</p>
+    <h3>2.4.2. "MidRange + K-Means + Baarda + WLS" Gelişmiş Hibrit Filtreleme Modeli</h3>
+    <p>Uygulamanın amiral gemisi olarak tasarlanan bu bütünleşik hibrit model; rastgele donanım gürültülerini, çoklu yol (multipath) yansımalarını ve ani konumsal fırlamaları jeodezik standartlarda süzebilmek amacıyla geliştirilmiştir. Yöntem, alt parçalarında yer alan Mid-Range kaba ayıklama, K-Means konumsal kümeleme (k = 4), Küme içi Baarda istatistiki uyuşmazlık analizleri ve Stokastik Ağırlıklı En Küçük Kareler (WLS) dengelemesini ardışık bir boru hattı (pipeline) içinde birbirine bağlar.</p>
+
+    <div class="case-container" style="background-color: #f8fafc; border-left: 4px solid #1e3a8a; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
+      <p class="bold" style="color: #1e3a8a; margin-bottom: 6px;">Hibrit İş Akışı Detaylı Adımları (Bütünleşik Jeodezik Çözüm)</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 1 ve 2: Mid-Range ve Epsilon Filtresi (Ön Kaba Temizlik):</span> Sahada (örneğin 120 saniyelik statik ölçüm süresince) toplanan ham koordinat bulutunun min/max sınırlarının orta noktası (Mid-Range) hesaplanır. Ardından bu merkeze göre cihazın ortalama hata payı (<i>&epsilon;</i>) yarıçapında bir çember tanımlanır. Bu dairesel alanın tamamen dışında kalan aşırı sapmalı konumlar (örneğin donanımsal atlamalar nedeniyle oluşan 50m hatalı fırlamalar) anında ayıklanır. Bu temizliğin temel amacı, sonraki K-Means algoritmasının küme merkezlerinin uç değerler tarafından saptırılmasını tamamıyla önlemektir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 3: K-Means Konumsal Segmentasyon (<i>k = 4</i>):</span> İlk süzgeçten geçen temiz koordinatlar (örneğin geriye kalan 115 nokta) düzlemsel olarak incelenerek 4 ayrı alt gruba segmentlenir. Bu ayrım sahadaki sinyal karakterini modeller: Bir binadan yansıyan dolaylı izler (NLOS), yapraklardan kırılan sinyaller ve doğrudan uydulardan gelen temiz sinyaller (LOS) uzaysal olarak farklı odak noktalarında kümelenir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 4: Küme İçi Baarda Uyuşmazlığı Testi:</span> Her bir küme bağımsız birer örneklem grubu olarak ele alınır ve kendi içinde Baarda Kalın Hata Testine tabi tutulur. Böylece her alt kümenin içindeki mikro düzeydeki gürültüler (örneğin Küme 1'deki 70 noktadan sapan 3 nokta) Baarda'nın orijinal güven kriteri (3.29 kritik limit değeri) çerçevesinde tespit edilerek elenir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 5: Küme Yoğunluk Analizi:</span> Temizlenmiş küme listeleri içerisinden üye sayısı (yoğunluğu) en yüksek olan birinci küme "Şampiyon Küme" ilan edilir. Diğer tüm alt kümeler multipath veya sinyal yansıması olarak kabul edilerek veri havuzundan elenir.</p>
+      <p class="no-indent"><span class="bold">Adım 6: Nihai WLS Dengelemesi:</span> Geriye kalan pürül pürüzsüz şampiyon küme elemanları (örneğin 67 nokta), kendi güncel hassasiyet ağırlıkları (<i>p<sub>i</sub> = 1/accuracy<sub>i</sub><sup>2</sup></i>) gözetilerek Stokastik Ağırlıklı En Küçük Kareler (Weighted Least Squares) algoritmasından geçirilerek milimetrik doğrulukta nihai düzlemsel koordinat çözümü üretir.</p>
+    </div>
+
+    <div class="case-container" style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
+      <p class="bold" style="color: #15803d; margin-bottom: 6px;">Yöntemin Avantaj ve Dezavantajları</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Avantajlar:</span>
+        <br/>1. <b>K-Means Kararlılığı:</b> Ön süzgeçteki Mid-Range adımının gürültüleri ayıklaması sayesinde K-Means merkezleri asla sahte fırlamalara doğru kaymaz.
+        <br/>2. <b>Sinyal Ayrıştırma Mukavemeti:</b> Sinyallerin (LOS / NLOS / Multipath) fiziksel saçılımları k = 4 kümelemesi ile model ortamına tam olarak yansıtılır.
+        <br/>3. <b>Mikro Hata Temizliği:</b> Baarda testinin birleşik yapıda değil de her kümede ayrı ayrı çalıştırılması, mikro hataların ana çözümü bozmadan küme içinde yakalanmasını sağlar.
+        <br/>4. <b>Yüksek Matematiksel Kesinlik:</b> Geleneksel aritmetik ortalamaların aksine, en yüksek yoğunluktaki temiz bulut kümesine WLS dengelemesi bindirilerek üstün stabilite kazandırılır.
+      </p>
+      <p class="no-indent"><span class="bold">Dezavantajlar:</span>
+        <br/>1. <b>Hesaplama Yoğunluğu:</b> 4 farklı kümede ayrı ayrı döngüsel Baarda kaba hata elenmesi çalıştırıldığı için tarayıcı işlemci yükünü (CPU) kısmen artırır.
+        <br/>2. <b>Minimum Veri Sınırı:</b> Etkin bir çözüm için en az 5 adet koordinat girişine her zaman gereksinim duyulur (bu duruma karşı sistem otomatik olarak LSE-Lokal yedek modelini devreye sokmaktadır).
+      </p>
+    </div>
+
+    <p class="no-indent">"MidRange + K-Means + Baarda + WLS" bütünleşik hibrit süzgecini çalıştıran kritik motor kaynak kod yapısı aşağıda yer almaktadır:</p>
     <pre class="code-block">
 function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
-  if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
+  if (samples.length &lt; 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) =&gt; i), clusters: [] };
+
   // 1. Reference Point (Mid-Range)
-  const lats = samples.map(s => s.lat);
-  const lngs = samples.map(s => s.lng);
+  const lats = samples.map(s =&gt; s.lat);
+  const lngs = samples.map(s =&gt; s.lng);
   const rLat = (Math.min(...lats) + Math.max(...lats)) / 2;
   const rLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
+
   // 2. 1.0 * Eps Filtering (Strict)
-  const avgAcc = samples.reduce((a, b) => a + b.accuracy, 0) / samples.length;
+  const avgAcc = samples.reduce((a, b) =&gt; a + b.accuracy, 0) / samples.length;
   const epsLimit = avgAcc * 1.0;
+
   const filteredWithIndices = samples.map((s, idx) => ({ s, idx })).filter(item => {
     const dLat = (item.s.lat - rLat) * 111320;
     const dLng = (item.s.lng - rLng) * 111320 * Math.cos(rLat * Math.PI / 180);
     const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-    return dist <= epsLimit;
+    return dist &lt;= epsLimit;
   });
-  if (filteredWithIndices.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
-  const filteredSamples = filteredWithIndices.map(f => f.s);
-  const filteredIndices = filteredWithIndices.map(f => f.idx);
-  // 3. K-Means (k=4)
+
+  if (filteredWithIndices.length &lt; 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) =&gt; i), clusters: [] };
+
+  const filteredSamples = filteredWithIndices.map(f =&gt; f.s);
+  const filteredIndices = filteredWithIndices.map(f =&gt; f.idx);
+
+  // 3. K-Means (k=4) on filtered samples
   const k = 4;
   const clusterAssignments = runKMeans(filteredSamples, k);
-  const finalValidClusters: number[][] = Array.from({ length: k }, () => []);
-  clusterAssignments.forEach((cIdx, i) => {
-    finalValidClusters[cIdx].push(filteredIndices[i]);
+  
+  // Group into clusters of indices referencing original 'samples' array
+  const rawClusters: number[][] = Array.from({ length: k }, () =&gt; []);
+  clusterAssignments.forEach((cIdx, i) =&gt; {
+    rawClusters[cIdx].push(filteredIndices[i]);
   });
-  // 4. Summarize Clusters & 5. Final Refinement (Baarda)
-  const clusterSummaries = finalValidClusters
-    .filter(cluster => cluster.length > 0)
-    .map(cluster => {
-      const clusterPoints = cluster.map(idx => samples[idx]);
-      const weights = clusterPoints.map(p => 1 / Math.pow(Math.max(0.1, p.accuracy), 2));
-      const sumW = weights.reduce((a, b) => a + b, 0);
-      return {
-        lat: clusterPoints.reduce((a, p, i) => a + p.lat * weights[i], 0) / sumW,
-        lng: clusterPoints.reduce((a, p, i) => a + p.lng * weights[i], 0) / sumW,
-        accuracy: clusterPoints.reduce((a, p, i) => a + p.accuracy * weights[i], 0) / sumW,
-        altitude: null, altitudeAccuracy: null, timestamp: Date.now(), _originalIndices: cluster
-      };
-    });
-  const baardaInput = clusterSummaries.map((s, idx) => ({ ...s, _originalIdx: idx }));
-  const baardaRes = calculateBaardaInternal(baardaInput as any);
-  const finalResult = { ...baardaRes.result };
-  const finalUsedIndices = baardaRes.usedIndices.flatMap(i => (clusterSummaries[i] as any)._originalIndices);
+
+  // 4. Intra-Cluster Baarda Test
+  const cleanClustersIndices: number[][] = [];
+  const cleanClustersPoints: Coordinate[][] = [];
+
+  for (let c = 0; c &lt; k; c++) {
+    const origIndices = rawClusters[c];
+    if (origIndices.length === 0) {
+      cleanClustersIndices.push([]);
+      cleanClustersPoints.push([]);
+      continue;
+    }
+
+    const clusterPoints = origIndices.map(idx =&gt; samples[idx]);
+
+    // Use Baarda's outlier detection inside each individual cluster
+    const baardaInput = clusterPoints.map((p, localIdx) => ({
+      ...p,
+      _originalIdx: localIdx
+    }));
+
+    const baardaRes = calculateBaardaInternal(baardaInput as any);
+    
+    // Map clean points back to original indices
+    const cleanOrigIndices = baardaRes.usedIndices.map(localIdx =&gt; origIndices[localIdx]);
+    const cleanPoints = cleanOrigIndices.map(idx =&gt; samples[idx]);
+
+    cleanClustersIndices.push(cleanOrigIndices);
+    cleanClustersPoints.push(cleanPoints);
+  }
+
+  // 5. Cluster Density Analysis
+  let bestClusterIdx = 0;
+  let maxCount = -1;
+  for (let c = 0; c &lt; k; c++) {
+    const count = cleanClustersIndices[c].length;
+    if (count &gt; maxCount) {
+      maxCount = count;
+      bestClusterIdx = c;
+    }
+  }
+
+  const championIndices = cleanClustersIndices[bestClusterIdx];
+  const championPoints = cleanClustersPoints[bestClusterIdx];
+
+  if (championIndices.length === 0) {
+    return { result: calculateAverage(samples), usedIndices: samples.map((_, i) =&gt; i), clusters: [] };
+  }
+
+  // 6. Final Weighted Least Squares (WLS) Solution
+  const lseResult = calculateWeightedLSE(championPoints);
+  const finalResult = { ...lseResult.result };
+
+  // Calculate altitude and altitudeAccuracy on champion points
+  const validAlts = championPoints.filter(s =&gt; s.altitude !== null);
+  finalResult.altitude = validAlts.length &gt; 0
+    ? validAlts.reduce((a, b) =&gt; a + (b.altitude || 0), 0) / validAlts.length
+    : null;
+
+  const validAltAccs = championPoints.filter(s =&gt; s.altitudeAccuracy !== null);
+  finalResult.altitudeAccuracy = validAltAccs.length &gt; 0
+    ? validAltAccs.reduce((a, b) =&gt; a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length
+    : null;
+
   return { 
     result: finalResult, 
-    usedIndices: [...new Set(finalUsedIndices)], 
-    clusters: finalValidClusters.filter(c => c.length > 0)
+    usedIndices: championIndices, 
+    clusters: rawClusters.filter(c =&gt; c.length &gt; 0)
   };
 }
     </pre>

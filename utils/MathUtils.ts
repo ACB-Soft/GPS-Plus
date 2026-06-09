@@ -267,56 +267,84 @@ function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; use
   const filteredSamples = filteredWithIndices.map(f => f.s);
   const filteredIndices = filteredWithIndices.map(f => f.idx);
 
-  // 3. K-Means (k=4)
+  // 3. K-Means (k=4) on filtered samples
   const k = 4;
   const clusterAssignments = runKMeans(filteredSamples, k);
   
-  const finalValidClusters: number[][] = Array.from({ length: k }, () => []);
+  // Group into clusters of indices referencing original 'samples' array
+  const rawClusters: number[][] = Array.from({ length: k }, () => []);
   clusterAssignments.forEach((cIdx, i) => {
-    finalValidClusters[cIdx].push(filteredIndices[i]);
+    rawClusters[cIdx].push(filteredIndices[i]);
   });
 
-  // 4. Summarize Clusters
-  const clusterSummaries = finalValidClusters
-    .filter(cluster => cluster.length > 0)
-    .map(cluster => {
-      const clusterPoints = cluster.map(idx => samples[idx]);
-      const weights = clusterPoints.map(p => 1 / Math.pow(Math.max(0.1, p.accuracy), 2));
-      const sumW = weights.reduce((a, b) => a + b, 0);
-      
-      const cLat = clusterPoints.reduce((a, p, i) => a + p.lat * weights[i], 0) / sumW;
-      const cLng = clusterPoints.reduce((a, p, i) => a + p.lng * weights[i], 0) / sumW;
-      const cAcc = clusterPoints.reduce((a, p, i) => a + p.accuracy * weights[i], 0) / sumW;
-      
-      return {
-        lat: cLat,
-        lng: cLng,
-        accuracy: cAcc,
-        altitude: null,
-        altitudeAccuracy: null,
-        timestamp: Date.now(),
-        _originalIndices: cluster
-      };
-    });
+  // 4. Intra-Cluster Baarda Test
+  const cleanClustersIndices: number[][] = [];
+  const cleanClustersPoints: Coordinate[][] = [];
 
-  // 5. Final Refinement (Baarda)
-  const baardaInput = clusterSummaries.map((s, idx) => ({ ...s, _originalIdx: idx }));
-  const baardaRes = calculateBaardaInternal(baardaInput as any);
-  
-  const finalResult = { ...baardaRes.result };
-  
-  // Z calculation
-  const validAlts = samples.filter(s => s.altitude !== null);
+  for (let c = 0; c < k; c++) {
+    const origIndices = rawClusters[c];
+    if (origIndices.length === 0) {
+      cleanClustersIndices.push([]);
+      cleanClustersPoints.push([]);
+      continue;
+    }
+
+    const clusterPoints = origIndices.map(idx => samples[idx]);
+
+    // Use Baarda's outlier detection inside each individual cluster
+    const baardaInput = clusterPoints.map((p, localIdx) => ({
+      ...p,
+      _originalIdx: localIdx
+    }));
+
+    const baardaRes = calculateBaardaInternal(baardaInput as any);
+    
+    // Map clean points back to original indices
+    const cleanOrigIndices = baardaRes.usedIndices.map(localIdx => origIndices[localIdx]);
+    const cleanPoints = cleanOrigIndices.map(idx => samples[idx]);
+
+    cleanClustersIndices.push(cleanOrigIndices);
+    cleanClustersPoints.push(cleanPoints);
+  }
+
+  // 5. Cluster Density Analysis
+  let bestClusterIdx = 0;
+  let maxCount = -1;
+  for (let c = 0; c < k; c++) {
+    const count = cleanClustersIndices[c].length;
+    if (count > maxCount) {
+      maxCount = count;
+      bestClusterIdx = c;
+    }
+  }
+
+  const championIndices = cleanClustersIndices[bestClusterIdx];
+  const championPoints = cleanClustersPoints[bestClusterIdx];
+
+  // Fallback if champion is empty (which should be rare with our checks)
+  if (championIndices.length === 0) {
+    return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
+  }
+
+  // 6. Final Weighted Least Squares (WLS) Solution
+  const lseResult = calculateWeightedLSE(championPoints);
+  const finalResult = { ...lseResult.result };
+
+  // Calculate altitude and altitudeAccuracy on champion points
+  const validAlts = championPoints.filter(s => s.altitude !== null);
   finalResult.altitude = validAlts.length > 0
     ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length
     : null;
 
-  const finalUsedIndices = baardaRes.usedIndices.flatMap(i => (clusterSummaries[i] as any)._originalIndices);
-  
+  const validAltAccs = championPoints.filter(s => s.altitudeAccuracy !== null);
+  finalResult.altitudeAccuracy = validAltAccs.length > 0
+    ? validAltAccs.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length
+    : null;
+
   return { 
     result: finalResult, 
-    usedIndices: [...new Set(finalUsedIndices)], 
-    clusters: finalValidClusters.filter(c => c.length > 0)
+    usedIndices: championIndices, 
+    clusters: rawClusters.filter(c => c.length > 0)
   };
 }
 

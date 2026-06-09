@@ -206,7 +206,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       'MIDRANGE': t("MidRange"),
       'KMEANS_4': t("K-Means (4 Küme)"),
       'BAARDA': t("Baarda Eleme"),
-      'MIDRANGE_KMEANS_BAARDA': "MidRange + K-Means + Baarda"
+      'MIDRANGE_KMEANS_BAARDA': "MidRange + K-Means + Baarda + WLS"
     };
     return labels[m] || m;
   };
@@ -743,9 +743,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[9px] font-black text-blue-600 uppercase">MidRange + K-Means + Baarda</p>
+                    <p className="text-[9px] font-black text-blue-600 uppercase">MidRange + K-Means + Baarda + WLS</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      {t("Mid-range üzerinde 1.0 kat payı ile sıkı filtreleme yapar, K-Means ile 4 kümeye böler ve Baarda testi ile final uyuşmazlık denetimi sağlar.")}
+                      {t("Mid-range ve epsilon süzgecinden sonra veriyi K-Means (k = 4) ile gruplar. Her kümede iç Baarda testi yapıp en yoğun grubu seçer ve nihai konumu ağırlıklı en küçük kareler (WLS) ile dengeler.")}
                     </p>
                   </div>
                </div>
