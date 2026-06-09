@@ -158,7 +158,7 @@ export const trToEnMap: Record<string, string> = {
   "Ağırlıklı Dengeleme": "Weighted Least Squares",
   "Ağırlıklı En Küçük Kareler": "Weighted Least Squares",
   "K-Means+Baarda": "K-Means+Baarda",
-  "MidRange + K-Means + Baarda + WLS": "MidRange + K-Means + Baarda + WLS",
+  "MidRange + K-Means + Baarda + WLS": "Robust Spatial + K-Means + Baarda + WLS",
   "MidRange": "MidRange",
   "Yatay Hata": "Horizontal Error",
   "KESİN KOORDİNAT (REFERANS)": "PRECISE COORDINATE (REFERENCE)",
@@ -357,7 +357,7 @@ export const trToEnMap: Record<string, string> = {
   "Ham konum verilerini mekansal yakınlıklarına göre 4 temel kümeye segmentler, en kararlı ve yoğun kümenin ağırlıklı merkezini alır.": "Segments raw location data into 4 core clusters based on spatial proximity, then computes the weighted mean of the most stable and dense cluster.",
   "Baarda Eleme": "Baarda Selection",
   "Jeodezik Baarda kalın hata testi ile uyuşumsuz ve kaba hatalı uç koordinat verilerini sistemden döngüsel olarak temizler.": "Iteratively cleans outlier and coarse errors from the system using geodetic Baarda gross error testing.",
-  "Mid-range ve epsilon süzgecinden sonra veriyi K-Means (k = 4) ile gruplar. Her kümede iç Baarda testi yapıp en yoğun grubu seçer ve nihai konumu ağırlıklı en küçük kareler (WLS) ile dengeler.": "Groups data via K-Means (k=4) after mid-range and epsilon filter. Performs internal Baarda test within each cluster to pick the most dense group, and optimizes the final location via Weighted Least Squares (WLS).",
+  "Robust Spatial Median ve 3-MAD süzgecinden sonra veriyi K-Means (k = 4) ile gruplar. Her kümede iç Baarda testi yapıp en yoğun grubu seçer ve nihai konumu ağırlıklı en küçük kareler (WLS) ile dengeler.": "Groups data via K-Means (k=4) after Robust Spatial Median and 3-MAD filter. Performs internal Baarda test within each cluster to pick the most dense group, and optimizes the final location via Weighted Least Squares (WLS).",
   "2. Proje ve Nokta Seçimi": "2. Project and Point Selection",
   "2. Proje Seçin": "2. Select Project",
   "Proje Seçiniz...": "Select Project...",
@@ -441,7 +441,7 @@ export const trToEnMap: Record<string, string> = {
   "2. MidRange": "2. MidRange",
   "3. KMeans": "3. KMeans",
   "4. Baarda": "4. Baarda",
-  "5. MidRange + K-Means + Baarda + WLS": "5. MidRange + K-Means + Baarda + WLS",
+  "5. Robust Spatial + K-Means + Baarda + WLS": "5. Robust Spatial + K-Means + Baarda + WLS",
   "Aktif edildiğinde, sadece yükseklik verisi içeren uydu tabanlı konumlar ölçüme dahil edilir. Açık alanlarda hassasiyeti artırır.": "When enabled, only satellite-based positions with altitude data are included in measurements. Increases accuracy in open areas.",
   "Birim ve Duyarlılık": "Unit and Precision",
   "Konum (Virgülden sonraki duyarlılık)": "Location (Decimal precision)",
@@ -649,7 +649,7 @@ export const trToEnMap: Record<string, string> = {
   "Gözlemleri mekansal yakınlıklarına göre 4 bağımsız yoğunluk grubuna ayırarak küme merkezini belirler.": "Clusters observation points into 4 independent density groups based on geospatial distance to establish a cluster centroid.",
   "Baarda kalın hata eleme teorisini kullanarak uyuşumsuz ve kaba hatalı koordinatları sistemden temizler.": "Iteratively purges outliers and gross coordinate errors from the dataset using geodetic Baarda gross error testing.",
   "En az 30 epok veri gerektirir.": "Requires at least 30 epochs of data.",
-  "KMeans, Baarda ve MidRange + K-Means + Baarda + WLS yöntemleri için en az 30 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.": "A minimum of 30 epochs is strictly required for KMeans, Baarda, and MidRange + K-Means + Baarda + WLS hybrid models. If less than 30 samples are collected, the system automatically and securely resolves the coordinates using the Weighted Least Squares (LSE) method."
+  "KMeans, Baarda ve Robust Spatial + K-Means + Baarda + WLS yöntemleri için en az 30 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.": "A minimum of 30 epochs is strictly required for KMeans, Baarda, and Robust Spatial + K-Means + Baarda + WLS hybrid models. If less than 30 samples are collected, the system automatically and securely resolves the coordinates using the Weighted Least Squares (LSE) method."
 };
 
 /**

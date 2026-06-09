@@ -235,31 +235,45 @@ export function calculateVariance(samples: Coordinate[], mean: Coordinate): numb
 }
 
 /**
- * MidRange + K-Means + Baarda Algorithm
- * 1. Mid-Range Reference
- * 2. 1.0 * Eps Filtering (Strict)
+ * Robust Spatial + K-Means + Baarda Algorithm
+ * 1. Robust Spatial Median Reference
+ * 2. 3-MAD Spatial Filtering (Adaptive to actual spread)
  * 3. K-Means (k=4)
- * 4. Cluster Summaries (Weighted)
- * 5. Baarda Final Refinement
  */
+function getMedian(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const half = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 !== 0) {
+    return sorted[half];
+  }
+  return (sorted[half - 1] + sorted[half]) / 2;
+}
+
 function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
   if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
 
-  // 1. Reference Point (Mid-Range)
-  const lats = samples.map(s => s.lat);
-  const lngs = samples.map(s => s.lng);
-  const rLat = (Math.min(...lats) + Math.max(...lats)) / 2;
-  const rLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
+  // 1. Reference Point (Robust Spatial Median)
+  const medianLat = getMedian(samples.map(s => s.lat));
+  const medianLng = getMedian(samples.map(s => s.lng));
 
-  // 2. 1.0 * Eps Filtering (Strict)
-  const avgAcc = samples.reduce((a, b) => a + b.accuracy, 0) / samples.length;
-  const epsLimit = avgAcc * 1.0;
+  // 2. 3-MAD Filtering (Robust against true geolocation leaps, adaptive to environmental scatter)
+  const distances = samples.map(s => {
+    const dLat = (s.lat - medianLat) * 111320;
+    const dLng = (s.lng - medianLng) * 111320 * Math.cos(medianLat * Math.PI / 180);
+    return Math.sqrt(dLat * dLat + dLng * dLng);
+  });
 
-  const filteredWithIndices = samples.map((s, idx) => ({ s, idx })).filter(item => {
-    const dLat = (item.s.lat - rLat) * 111320;
-    const dLng = (item.s.lng - rLng) * 111320 * Math.cos(rLat * Math.PI / 180);
-    const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-    return dist <= epsLimit;
+  const medianDistance = getMedian(distances);
+  const absoluteDeviations = distances.map(d => Math.abs(d - medianDistance));
+  const mad = getMedian(absoluteDeviations);
+
+  // Robust outlier limit: 3 * MAD with a safe physical floor of 20.0 meters.
+  // This keeps valid medium-confidence spreads intact (e.g. 7m) while purging massive jumps.
+  const robustLimit = Math.max(3.0 * mad, medianDistance + 3.0 * mad, 20.0);
+
+  const filteredWithIndices = samples.map((s, idx) => ({ s, idx })).filter((item, i) => {
+    return distances[i] <= robustLimit;
   });
 
   if (filteredWithIndices.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };

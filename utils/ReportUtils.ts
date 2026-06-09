@@ -231,22 +231,22 @@ function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; used
 }
     </pre>
 
-    <h3>2.4.2. "MidRange + K-Means + Baarda + WLS" Gelişmiş Hibrit Filtreleme Modeli</h3>
-    <p>Uygulamanın amiral gemisi olarak tasarlanan bu bütünleşik hibrit model; rastgele donanım gürültülerini, çoklu yol (multipath) yansımalarını ve ani konumsal fırlamaları jeodezik standartlarda süzebilmek amacıyla geliştirilmiştir. Yöntem, alt parçalarında yer alan Mid-Range kaba ayıklama, K-Means konumsal kümeleme (k = 4), Küme içi Baarda istatistiki uyuşmazlık analizleri ve Stokastik Ağırlıklı En Küçük Kareler (WLS) dengelemesini ardışık bir boru hattı (pipeline) içinde birbirine bağlar.</p>
+    <h3>2.4.2. "Robust Spatial + K-Means + Baarda + WLS" Gelişmiş Hibrit Filtreleme Modeli</h3>
+    <p>Uygulamanın amiral gemisi olarak tasarlanan bu bütünleşik hibrit model; rastgele donanım gürültülerini, çoklu yol (multipath) yansımalarını ve ani konumsal fırlamaları jeodezik standartlarda süzebilmek amacıyla geliştirilmiştir. Yöntem, alt parçalarında yer alan Robust Spatial Median kaba ayıklama ve adaptif 3-MAD süzgeci, K-Means konumsal kümeleme (k = 4), Küme içi Baarda istatistiki uyuşmazlık analizleri ve Stokastik Ağırlıklı En Küçük Kareler (WLS) dengelemesini ardışık bir boru hattı (pipeline) içinde birbirine bağlar.</p>
 
     <div class="case-container" style="background-color: #f8fafc; border-left: 4px solid #1e3a8a; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
       <p class="bold" style="color: #1e3a8a; margin-bottom: 6px;">Hibrit İş Akışı Detaylı Adımları (Bütünleşik Jeodezik Çözüm)</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 1 ve 2: Mid-Range ve Epsilon Filtresi (Ön Kaba Temizlik):</span> Sahada (örneğin 120 saniyelik statik ölçüm süresince) toplanan ham koordinat bulutunun min/max sınırlarının orta noktası (Mid-Range) hesaplanır. Ardından bu merkeze göre cihazın ortalama hata payı (<i>&epsilon;</i>) yarıçapında bir çember tanımlanır. Bu dairesel alanın tamamen dışında kalan aşırı sapmalı konumlar (örneğin donanımsal atlamalar nedeniyle oluşan 50m hatalı fırlamalar) anında ayıklanır. Bu temizliğin temel amacı, sonraki K-Means algoritmasının küme merkezlerinin uç değerler tarafından saptırılmasını tamamıyla önlemektir.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 3: K-Means Konumsal Segmentasyon (<i>k = 4</i>):</span> İlk süzgeçten geçen temiz koordinatlar (örneğin geriye kalan 115 nokta) düzlemsel olarak incelenerek 4 ayrı alt gruba segmentlenir. Bu ayrım sahadaki sinyal karakterini modeller: Bir binadan yansıyan dolaylı izler (NLOS), yapraklardan kırılan sinyaller ve doğrudan uydulardan gelen temiz sinyaller (LOS) uzaysal olarak farklı odak noktalarında kümelenir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 1 ve 2: Robust Spatial Median ve Adaptive 3-MAD Filtresi:</span> Sahada toplanan ham konum verilerinin önce mekansal medyanı (Spatial Median) hesaplanır. Medyan, uç değerlerden etkilenmeyen son derece kararlı bir referans merkez sağlar. Ardından her bir konumun bu merkeze olan düzlemsel mesafelerinin Median Absolute Deviation (MAD) değeri hesaplanarak 3-MAD (robust 3-sigma eşdeğeri) düzeyinde dinamik bir saçılım tolerans sınırı belirlenir (20.0 metrelik güvenli fiziksel taban koruması ile). Bu sayede, cihazın raporladığı teorik donanım hassasiyeti (örneğin 3.0m) ile gerçek arazi saçılımı (örneğin 7.0m) uyuşmadığında dahi, gerçek çevre koşullarından kaynaklanan geçerli saçılımlar korunurken sadece donanımsal koordinat fırlamaları (atlamalar) elenir. Bu temizlik, K-Means küme merkezlerinin sahte fırlamalar doğrultusunda saptırılmasını tamamen önler.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 3: K-Means Konumsal Segmentasyon (<i>k = 4</i>):</span> İlk süzgeçten geçen temiz koordinatlar düzlemsel olarak incelenerek 4 ayrı alt gruba segmentlenir. Bu ayrım sahadaki sinyal karakterini modeller: Bir binadan yansıyan dolaylı izler (NLOS), yapraklardan kırılan sinyaller ve doğrudan uydulardan gelen temiz sinyaller (LOS) uzaysal olarak farklı odak noktalarında kümelenir.</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 4: Küme İçi Baarda Uyuşmazlığı Testi:</span> Her bir küme bağımsız birer örneklem grubu olarak ele alınır ve kendi içinde Baarda Kalın Hata Testine tabi tutulur. Böylece her alt kümenin içindeki mikro düzeydeki gürültüler (örneğin Küme 1'deki 70 noktadan sapan 3 nokta) Baarda'nın orijinal güven kriteri (3.29 kritik limit değeri) çerçevesinde tespit edilerek elenir.</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 5: Küme Yoğunluk Analizi:</span> Temizlenmiş küme listeleri içerisinden üye sayısı (yoğunluğu) en yüksek olan birinci küme "Şampiyon Küme" ilan edilir. Diğer tüm alt kümeler multipath veya sinyal yansıması olarak kabul edilerek veri havuzundan elenir.</p>
-      <p class="no-indent"><span class="bold">Adım 6: Nihai WLS Dengelemesi:</span> Geriye kalan pürül pürüzsüz şampiyon küme elemanları (örneğin 67 nokta), kendi güncel hassasiyet ağırlıkları (<i>p<sub>i</sub> = 1/accuracy<sub>i</sub><sup>2</sup></i>) gözetilerek Stokastik Ağırlıklı En Küçük Kareler (Weighted Least Squares) algoritmasından geçirilerek milimetrik doğrulukta nihai düzlemsel koordinat çözümü üretir.</p>
+      <p class="no-indent"><span class="bold">Adım 6: Nihai WLS Dengelemesi:</span> Geriye kalan pürül pürüzsüz şampiyon küme elemanları, kendi güncel hassasiyet ağırlıkları (<i>p<sub>i</sub> = 1/accuracy<sub>i</sub><sup>2</sup></i>) gözetilerek Stokastik Ağırlıklı En Küçük Kareler (Weighted Least Squares) algoritmasından geçirilerek milimetrik doğrulukta nihai düzlemsel koordinat çözümü üretir.</p>
     </div>
 
     <div class="case-container" style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
       <p class="bold" style="color: #15803d; margin-bottom: 6px;">Yöntemin Avantaj ve Dezavantajları</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Avantajlar:</span>
-        <br/>1. <b>K-Means Kararlılığı:</b> Ön süzgeçteki Mid-Range adımının gürültüleri ayıklaması sayesinde K-Means merkezleri asla sahte fırlamalara doğru kaymaz.
+        <br/>1. <b>Adaptif Hata Mukavemeti:</b> Statik donanımsal epsilon çemberleri yerine veri saçılımının istatistiksel genliği (3-MAD) temel alınarak süzme yapıldığı için, zorlu ormanlık, kanyon ve ağaçlık sahalardaki gerçek gözlemler süzgece takılmadan muhafaza edilir.
         <br/>2. <b>Sinyal Ayrıştırma Mukavemeti:</b> Sinyallerin (LOS / NLOS / Multipath) fiziksel saçılımları k = 4 kümelemesi ile model ortamına tam olarak yansıtılır.
         <br/>3. <b>Mikro Hata Temizliği:</b> Baarda testinin birleşik yapıda değil de her kümede ayrı ayrı çalıştırılması, mikro hataların ana çözümü bozmadan küme içinde yakalanmasını sağlar.
         <br/>4. <b>Yüksek Matematiksel Kesinlik:</b> Geleneksel aritmetik ortalamaların aksine, en yüksek yoğunluktaki temiz bulut kümesine WLS dengelemesi bindirilerek üstün stabilite kazandırılır.
@@ -257,26 +257,41 @@ function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; used
       </p>
     </div>
 
-    <p class="no-indent">"MidRange + K-Means + Baarda + WLS" bütünleşik hibrit süzgecini çalıştıran kritik motor kaynak kod yapısı aşağıda yer almaktadır:</p>
+    <p class="no-indent">"Robust Spatial + K-Means + Baarda + WLS" bütünleşik hibrit süzgecini çalıştıran kritik motor kaynak kod yapısı aşağıda yer almaktadır:</p>
     <pre class="code-block">
+function getMedian(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) =&gt; a - b);
+  const half = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 !== 0) {
+    return sorted[half];
+  }
+  return (sorted[half - 1] + sorted[half]) / 2;
+}
+
 function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
   if (samples.length &lt; 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) =&gt; i), clusters: [] };
 
-  // 1. Reference Point (Mid-Range)
-  const lats = samples.map(s =&gt; s.lat);
-  const lngs = samples.map(s =&gt; s.lng);
-  const rLat = (Math.min(...lats) + Math.max(...lats)) / 2;
-  const rLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
+  // 1. Reference Point (Robust Spatial Median)
+  const medianLat = getMedian(samples.map(s =&gt; s.lat));
+  const medianLng = getMedian(samples.map(s =&gt; s.lng));
 
-  // 2. 1.0 * Eps Filtering (Strict)
-  const avgAcc = samples.reduce((a, b) =&gt; a + b.accuracy, 0) / samples.length;
-  const epsLimit = avgAcc * 1.0;
+  // 2. 3-MAD Filtering (Robust &amp; Adaptive to environmental scatter)
+  const distances = samples.map(s =&gt; {
+    const dLat = (s.lat - medianLat) * 111320;
+    const dLng = (s.lng - medianLng) * 111320 * Math.cos(medianLat * Math.PI / 180);
+    return Math.sqrt(dLat * dLat + dLng * dLng);
+  });
 
-  const filteredWithIndices = samples.map((s, idx) => ({ s, idx })).filter(item => {
-    const dLat = (item.s.lat - rLat) * 111320;
-    const dLng = (item.s.lng - rLng) * 111320 * Math.cos(rLat * Math.PI / 180);
-    const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-    return dist &lt;= epsLimit;
+  const medianDistance = getMedian(distances);
+  const absoluteDeviations = distances.map(d =&gt; Math.abs(d - medianDistance));
+  const mad = getMedian(absoluteDeviations);
+
+  // Robust outlier limit: 3 * MAD with a safe physical floor of 20.0 meters.
+  const robustLimit = Math.max(3.0 * mad, medianDistance + 3.0 * mad, 20.0);
+
+  const filteredWithIndices = samples.map((s, idx) =&gt; ({ s, idx })).filter((item, i) =&gt; {
+    return distances[i] &lt;= robustLimit;
   });
 
   if (filteredWithIndices.length &lt; 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) =&gt; i), clusters: [] };
