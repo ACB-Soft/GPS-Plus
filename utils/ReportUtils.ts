@@ -199,45 +199,21 @@ const N = (1 - u) * (1 - v) * n00
     </pre>
 
     <h2>2.4. Gerçek Zamanlı İstatistiksel Süzme Çerçevesi (5 Farklı Süzme Modülü)</h2>
-    <p>Sahada toplanan her bir saniyelik GNSS verisi, çevresel yansımalar ve uydu konfigürasyonlarındaki anlık değişimler nedeniyle rastgele ve sistemsel hatalar barındırır. ${FULL_BRAND}, bu hataları ayıklamak ve kararlı sonuçlar elde etmek amacıyla arazide ve ACB - Labs modülünde toplamda 5 farklı ileri düzey istatistiksel filtreleme kütüphanesini doğrudan kaynak kod yapısında barındırır:</p>
-
-    <div class="case-container" style="background-color: #f8fafc; border-left: 4px solid #0284c7; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
-      <p class="bold" style="color: #0369a1; margin-bottom: 6px;">İleri Düzey Süzgeçlerin Çalışma Prensipleri ve Boyutsal Karakteristiği</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">15 Epok Sınırı ve Kararlılık:</span> İleri düzey süzme algoritmalarının tamamı (Huber Robust, RANSAC, Kalman, KDE, K-Means ve Baarda), istatistiksel güvenirlik ve örneklem büyüklüğü gereksinimleri sebebiyle <b>en az 15 statik epok (1 Hz frekansta yaklaşık 15 saniyelik sürekli gözlem serisi)</b> toplandıktan sonra aktifleşir. Bu limit altındaki kısa oturumlarda, rastgele gürültüleri filtrelemek için basit aritmetik ortalama yöntemine başvurulmaktadır.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2D Yatay Odaklı Hesaplama:</span> Geliştirilen ileri süzme mimarileri (dışarıda kalanların elenmesi, kümeleme ve yoğunluk süzgeçleri) <b>yalnızca 2 boyutlu yatay konum bileşenleri (Enlem, Boylam / Sağa, Yukarı Koordinatlar)</b> üzerinde koşturulur. Düşey yöndeki yükseklik (elipsoidal ve jeodezik ortometrik yükseklik) değerleri bu yönlü süzme işlemlerine dahil edilmez.</p>
+    <p>Sahada toplanan her bir saniyelik GNSS verisi, çevresel yansımalar ve uydu konfigürasyonlarındaki anlık değişimler nedeniyle rastgele ve sistemsel hatalar barındırır. ${FULL_BRAND}, bu hataları ayıklamak ve kararlı sonuç      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2D Yatay Odaklı Hesaplama:</span> Geliştirilen ileri süzme mimarileri (dışarıda kalanların elenmesi, kümeleme ve yoğunluk süzgeçleri) <b>yalnızca 2 boyutlu yatay konum bileşenleri (Enlem, Boylam / Sağa, Yukarı Koordinatlar)</b> üzerinde koşturulur. Düşey yöndeki yükseklik (elipsoidal ve jeodezik ortometrik yükseklik) değerleri bu yönlü süzme işlemlerine dahil edilmez.</p>
       <p class="no-indent"><span class="bold">Düşey Yükseklik İçin Aritmetik Ortalama Tercihi:</span> Jeodezik konumlandırmada düşey bileşenin doğruluğu, uydu geometrisi sınırları (tüm uyduların ufuk çizgisinin üzerinde yer almasından kaynaklı zayıf düşey baz katsayısı - <i>Vertical Dilution of Precision / VDOP</i>) sebebiyle yatay konum doğruluğuna kıyasla 2 ila 3 kat daha zayıftır. Mobil tarayıcı düzeyindeki Geolocation API tarafından sağlanan yükseklik verileri yüksek gürültülü ve kesintili olmasının yanı sıra, ayrıca her epok için güvenilir bir hata yarıçapı barındırmaz. Bu duruma 2D yatay süzgeçler (RANSAC, KDE vb.) doğrudan tatbik edilirse, düşeydeki ani sıçramalar ve yansıma gürültüleri süzgeci yanıltarak tekil ve yanlı (biased) yükseklik değerlerine yol açar. Bu akademik gerçeğe dayanarak, düşey yüksekliklerin belirlenmesinde <b>tüm aktif dönemdeki epokların doğrudan aritmetik ortalaması</b> tercih edilmiştir. Bu sayede, yapay matematiksel bozulmalar veya tekillikler oluşturulmaksızın yüksek frekanslı düşey gürültüler kararlı ve tarafsız bir biçimde sönümlenmiş olur.</p>
     </div>
 
     <h3>2.4.1. Stokastik Tek Nokta Dengelemesi ve Ölçülerin Ağırlıklı Merkezileştirilmesi (Weighted Centroid)</h3>
     <p>En Küçük Kareler (LSE) prensibine göre, jeodezik bir ölçünün ağırlığı (p), o ölçünün karesel ortalama hatasının (veya standart sapmasının) karesiyle ters orantılıdır (p = 1 / &sigma;<sup>2</sup>). Akıllı konum sensörlerinde tarayıcı düzeyinde elde edilen Geolocation API hassasiyet dairesi yarıçapı (<i>accuracy</i>), doğrudan ham standart sapmayı (&sigma;) değil; pratik kestirim dünyasında %95 güven aralığına karşılık gelen bir dairesel hata olasılığını (Circular Error Probable - CEP veya yaklaşık 2-sigma) temsil eder. CEP değeri standart sapma ile doğrusal bağıntılı olduğundan, bu dairesel hata yarıçaplarının karesiyle ters orantılı ağırlıkların atanması (p<sub>i</sub> = 1 / accuracy<sub>i</sub><sup>2</sup>), teorik jeodezik ağırlıklandırma modeliyle tam bir stokastik uyum sergiler.</p>
-    <p>Sistem, tam bir 3B ağ dengelemesinin getireceği matris çözümü ve hesaplama yükü yerine; tek boyut düzeylerinde bağımsız en küçük kareler çözümü sunan <b>"Ölçülerin Ağırlıklı Merkezileştirilmesi (Weighted Centroid)"</b> yaklaşımını işletir. Bu model, uydulardan gelen anlık donanımsal tahmin farklarını sönümleyerek pratik, kararlı ve sarsıntısız tek nokta süzülmesi gerçekleştirir. İlgili ağırlıklı merkezleme işlemini yürüten kaynak kod yapısı aşağıda sunulmuştur:</p>
-    <pre class="code-block">
-function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  if (samples.length === 0) return { result: samples[0], usedIndices: [0] };
-  const weights = samples.map(s => 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
-  const sumW = weights.reduce((a, b) => a + b, 0);
-  const meanLat = samples.reduce((a, s, i) => a + s.lat * weights[i], 0) / sumW;
-  const meanLng = samples.reduce((a, s, i) => a + s.lng * weights[i], 0) / sumW;
-  const validAltitudes = samples.filter(s => s.altitude !== null);
-  const meanAlt = validAltitudes.length > 0 ? validAltitudes.reduce((a, s) => a + (s.altitude || 0), 0) / validAltitudes.length : null;
-  const result: Coordinate = {
-    ...samples[0],
-    lat: meanLat,
-    lng: meanLng,
-    altitude: meanAlt,
-    timestamp: Date.now()
-  };
-  return { result, usedIndices: samples.map((_, i) => i) };
-}
-    </pre>
+    <p>Sistem, tam bir 3B ağ dengelemesinin getireceği aşırı matris çözümü ve hesaplama yükü yerine; yatay enlem ve boylam boyut düzeylerinde bağımsız Stokastik En Küçük Kareler dengelemesini (calculateWeightedLSE) koşturur.</p>
 
     <h3>2.4.2. "K-Means + Baarda + WLS" Gelişmiş Hibrit Filtreleme Modeli</h3>
-    <p>Uygulamanın amiral gemisi olarak tasarlanan bu bütünleşik hibrit model; rastgele donanım gürültülerini, çoklu yol (multipath) yansımalarını ve ani konumsal fırlamaları jeodezik standartlarda süzebilmek amacıyla geliştirilmiştir. Yöntem, alt parçalarında yer alan K-Means konumsal kümeleme (k = 4), Küme içi Baarda istatistiki uyuşmazlık analizleri ve Stokastik Ağırlıklı En Küçük Kareler (WLS) dengelemesini ardışık bir boru hattı (pipeline) içinde birbirine bağlar.</p>
+    <p>Uygulamanın amiral gemisi olarak tasarlanan bu bütünleşik hibrit model; rastgele donanım gürültülerini, çoklu yol (multipath) yansımalarını ve ani konumsal fırlamaları jeodezik standartlarda süzebilmek amacıyla geliştirilmiştir. Yöntem, alt parçalarında yer alan ve epok sayısına göre dinamik ölçeklenen ($k = 2$ ila $k = 8$) K-Means konumsal segmentasyonunu, Küme içi Baarda istatistiki uyuşmazlık analizleri ve Stokastik Ağırlıklı En Küçük Kareler (WLS) dengelemesini ardışık bir boru hattı (pipeline) içinde birbirine bağlar.</p>
 
     <div class="case-container" style="background-color: #f8fafc; border-left: 4px solid #1e3a8a; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
       <p class="bold" style="color: #1e3a8a; margin-bottom: 6px;">Hibrit İş Akışı Detaylı Adımları (Bütünleşik Jeodezik Çözüm)</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 1: K-Means Konumsal Segmentasyon (<i>k = 4</i>):</span> Sahada toplanan ham konum verileri düzlemsel olarak incelenerek doğrudan 4 ayrı alt gruba segmentlenir. Sinyal saçılımları ve multipath yansıma yolları geometrik olarak modellenir: Bir binadan yansıyan dolaylı izler (NLOS), yapraklardan kırılan sinyaller ve doğrudan uydulardan gelen temiz sinyaller (LOS) uzaysal olarak farklı odak noktalarında kümelenir.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 2: Küme İçi Baarda Uyuşmazlığı Testi:</span> Her bir küme bağımsız birer örneklem grubu olarak ele alınır ve kendi içinde Baarda Kalın Hata Testine tabi tutulur. Böylece her alt kümenin içindeki mikro düzeydeki gürültüler (örneğin Küme 1'deki noktalardan sapan 3 nokta) Baarda'nın orijinal güven kriteri (3.29 kritik limit değeri) çerçevesinde tespit edilerek elenir. Bu sayede, kaba ön filtrelerde kurban edilebilecek gerçek ve geçerli arazi saçılımları (örneğin 3.0m donanımsal hassasiyete karşılık 7.0m gerçek saçılım) güvenle korunurken, sadece küme içi uyumsuz kalın gürültüler temizlenir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 1: Dinamik K-Means Konumsal Segmentasyon:</span> Sahada toplanan ham konum verilerinin önce toplam epok sayısı analiz edilerek, <i>k = Math.max(2, Math.min(8, Math.floor(epochCount / 15)))</i> formülü uyarınca dinamik küme sayısı (<i>k</i>) belirlenir. Bu sayede veriler doğrudan <i>k</i> sayıda alt gruba segmentlenir. Sinyal saçılımları ve yansıma gürültüleri (multipath/NLOS) geometrik olarak modellenerek farklı odak noktalarında kümelenir. k=2'den k=8'e dinamik ölçekleme, az veri varken aşırı mikro-bölünmeyi önler ve çok veri varken karmaşık saçılımları en iyi hassasiyette yakalar.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 2: Küme İçi Baarda Uyuşmazlığı Testi:</span> Her bir küme bağımsız birer örneklem grubu olarak ele alınır ve kendi içinde Baarda Kalın Hata Testine tabi tutulur. Böylece her alt kümenin içindeki mikro düzeydeki gürültüler Baarda'nın orijinal güven kriteri (3.29 kritik limit değeri) çerçevesinde tespit edilerek elenir. Bu sayede, kaba ön filtrelerde kurban edilebilecek gerçek ve geçerli arazi saçılımları güvenle korunurken, sadece küme içi uyumsuz kalın gürültüler temizlenir.</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 3: Küme Yoğunluk Analizi:</span> Temizlenmiş küme listeleri içerisinden üye sayısı (yoğunluğu) en yüksek olan birinci küme "Şampiyon Küme" ilan edilir. Diğer tüm alt kümeler multipath veya sinyal yansıması olarak kabul edilerek elenir.</p>
       <p class="no-indent"><span class="bold">Adım 4: Nihai WLS Dengelemesi:</span> Geriye kalan pürül pürüzsüz şampiyon küme elemanları, kendi güncel hassasiyet ağırlıkları (<i>p<sub>i</sub> = 1/accuracy<sub>i</sub><sup>2</sup></i>) gözetilerek Stokastik Ağırlıklı En Küçük Kareler (Weighted Least Squares) algoritmasından geçirilerek milimetrik doğrulukta nihai düzlemsel koordinat çözümü üretir.</p>
     </div>
@@ -246,12 +222,12 @@ function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; used
       <p class="bold" style="color: #15803d; margin-bottom: 6px;">Yöntemin Avantaj ve Dezavantajları</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Avantajlar:</span>
         <br/>1. <b>Filtreden Korunmuş Gerçek Saçılım:</b> Ön filtrelerde suni limitler (Median, MAD, Epsilon) kullanılmadığından, zorlu ormanlık, kanyon ve engelli sahalardaki gerçek arazi saçılımları makaslanarak filtrelere kurban edilmez; verinin bütünlüğü azami düzeyde korunur.
-        <br/>2. <b>Sinyal Ayrıştırma Mukavemeti:</b> Sinyallerin (LOS / NLOS / Multipath) fiziksel saçılımları k = 4 kümelemesi ile model ortamına tam olarak yansıtılır.
+        <br/>2. <b>Dinamik Sinyal Ayrıştırma Mukavemeti:</b> Sinyallerin (LOS / NLOS / Multipath) fiziksel saçılımları dinamik <i>k</i> ölçeklemeli sınıflandırma ile model ortamına tam olarak yansıtılır.
         <br/>3. <b>Mikro Hata Temizliği:</b> Baarda testinin her kümede ayrı ayrı çalıştırılması, mikro gürültülerin ana çözümü bozmadan küme içinde yakalanmasını ve uç değerlerin temizlenmesini sağlar.
         <br/>4. <b>Yüksek Matematiksel Kesinlik:</b> Geleneksel aritmetik ortalamaların aksine, en yüksek yoğunluktaki temiz bulut kümesine WLS dengelemesi bindirilerek üstün stabilite kazandırılır.
       </p>
       <p class="no-indent"><span class="bold">Dezavantajlar:</span>
-        <br/>1. <b>Hesaplama Yoğunluğu:</b> 4 farklı kümede ayrı ayrı döngüsel Baarda kaba hata elenmesi çalıştırıldığı için tarayıcı işlemci yükünü (CPU) kısmen artırır.
+        <br/>1. <b>Hesaplama Yoğunluğu:</b> Dinamik sayıda kümede ayrı ayrı Baarda kaba hata elenmesi çalıştırıldığı için tarayıcı işlemci yükünü (CPU) kısmen artırır.
         <br/>2. <b>Minimum Veri Sınırı:</b> Etkin bir çözüm için en az 5 adet koordinat girişine her zaman gereksinim duyulur (bu duruma karşı sistem otomatik olarak LSE-Lokal yedek modelini devreye sokmaktadır).
       </p>
     </div>
@@ -261,8 +237,8 @@ function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; used
 function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
   if (samples.length &lt; 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
 
-  // 1. K-Means (k=4) directly on raw samples
-  const k = 4;
+  // 1. Determine dynamic cluster size (k) based on sample/epoch count (scaled between 2 and 8)
+  const k = Math.max(2, Math.min(8, Math.floor(samples.length / 15)));
   const clusterAssignments = runKMeans(samples, k);
   
   // Group into clusters of indices referencing original 'samples' array

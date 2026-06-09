@@ -244,8 +244,8 @@ export function calculateVariance(samples: Coordinate[], mean: Coordinate): numb
 function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
   if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
 
-  // 1. K-Means (k=4) directly on raw samples
-  const k = 4;
+  // 1. Determine dynamic cluster size (k) based on sample/epoch count (scaled between 2 and 8)
+  const k = Math.max(2, Math.min(8, Math.floor(samples.length / 15)));
   const clusterAssignments = runKMeans(samples, k);
   
   // Group into clusters of indices referencing original 'samples' array
