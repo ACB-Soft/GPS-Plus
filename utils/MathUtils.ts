@@ -402,53 +402,22 @@ function calculateKMeansBaardaV2(samples: Coordinate[]): { result: Coordinate; u
   const championIndices = clusters[bestClusterIdx];
   const championPoints = championIndices.map(idx => samples[idx]);
 
-  // Centroid of the Champion Cluster (X_ref, Y_ref)
-  const refCenter = {
-    lat: championPoints.reduce((sum, p) => sum + p.lat, 0) / championPoints.length,
-    lng: championPoints.reduce((sum, p) => sum + p.lng, 0) / championPoints.length,
-  };
-
-  // Determine Safe Geometric Region (envelope boundary) = max distance of any champion point to centroid
-  let maxRadius = 0;
-  for (const p of championPoints) {
-    const dLat = (p.lat - refCenter.lat) * 111320;
-    const dLng = (p.lng - refCenter.lng) * 111320 * Math.cos(refCenter.lat * Math.PI / 180);
-    const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-    if (dist > maxRadius) {
-      maxRadius = dist;
-    }
-  }
-  // Enforce a robust minimum floor radius (e.g. 1.0 meter) to prevent zero or too-strict boundaries
-  const safeRadius = Math.max(1.0, maxRadius);
-
   // 2. Kol: Run Baarda Test on the entire raw dataset without partitioning
   const baardaPureRes = calculateBaardaPure(samples);
   const baardaCleanIndices = baardaPureRes.usedIndices;
 
   // 3. Intersection & Final Selection:
-  // Clean points from Baarda that fall inside the champion cluster's spatial envelope (safeRadius distance to refCenter)
-  const finalCleanIndices: number[] = [];
-  const finalCleanPoints: Coordinate[] = [];
+  // K-Means Şampiyon Kümedeki noktalar ile Baarda testinden temiz çıkan noktaların doğrudan kesin indeks kesişimi
+  const finalCleanIndices = baardaCleanIndices.filter(idx => championIndices.includes(idx));
+  const finalCleanPoints = finalCleanIndices.map(idx => samples[idx]);
 
-  for (const idx of baardaCleanIndices) {
-    const p = samples[idx];
-    const dLat = (p.lat - refCenter.lat) * 111320;
-    const dLng = (p.lng - refCenter.lng) * 111320 * Math.cos(refCenter.lat * Math.PI / 180);
-    const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-
-    if (dist <= safeRadius) {
-      finalCleanIndices.push(idx);
-      finalCleanPoints.push(p);
-    }
-  }
-
-  // Graceful fallback if collision filtering results in empty array (use Baarda clean points)
+  // Graceful fallback if strict intersection is empty (use Champion Cluster indices & points)
   let finalPointsToUse = finalCleanPoints;
   let finalIndicesToUse = finalCleanIndices;
 
   if (finalPointsToUse.length === 0) {
-    finalIndicesToUse = baardaCleanIndices;
-    finalPointsToUse = baardaCleanIndices.map(idx => samples[idx]);
+    finalIndicesToUse = championIndices;
+    finalPointsToUse = championPoints;
   }
 
   if (finalPointsToUse.length === 0) {
