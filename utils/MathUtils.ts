@@ -235,31 +235,115 @@ export function calculateVariance(samples: Coordinate[], mean: Coordinate): numb
 }
 
 /**
- * K-Means + Baarda Algorithm
- * 1. K-Means (k=4) on raw samples
- * 2. Intra-Cluster Baarda Test
- * 3. Cluster Density Analysis (Champion Cluster)
- * 4. Final WLS Dengelemesi
+ * K-Means + Baarda Algorithm with Adaptive Dynamic Scaling
+ * 1. Calculate metric standard deviation (sigma_metrik) of the entire dataset
+ * 2. Dynamically decide the number of clusters (k) based on sigma_metrik
+ * 3. Segment raw dataset with K-Means (k)
+ * 4. Critical Limit Control & Cluster Merging (Merge clusters with < 4 elements into their nearest strong cluster)
+ * 5. Intra-cluster Baarda outlier detection
+ * 6. Cluster Density Analysis (Champion Cluster Selection)
+ * 7. Final Weighted Least Squares (WLS) Solution
  */
 function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
   if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
 
-  // 1. K-Means (k=4) directly on raw samples
-  const k = 4;
+  // 1. Calculate metric Standard Deviation
+  const average = calculateAverage(samples);
+  const variance = calculateVariance(samples, average);
+  const sigma = Math.sqrt(variance);
+
+  // 2. Decide Adaptive Number of Clusters (k)
+  let k = 4;
+  if (sigma < 1.0) {
+    k = 2; // Clean signal, only micro noise needs separation
+  } else if (sigma < 1.5) {
+    k = 3;
+  } else if (sigma < 2.0) {
+    k = 4; // Moderate obstructions / open-to-cluttered transition
+  } else if (sigma < 2.5) {
+    k = 5;
+  } else {
+    k = 6; // Heavy urban canyon with multiple multipath centroids
+  }
+
+  // 3. K-Means clustering using determined dynamic k
   const clusterAssignments = runKMeans(samples, k);
   
-  // Group into clusters of indices referencing original 'samples' array
-  const rawClusters: number[][] = Array.from({ length: k }, () => []);
+  // Group index allocations into clusters
+  const clusters: number[][] = Array.from({ length: k }, () => []);
   clusterAssignments.forEach((cIdx, i) => {
-    rawClusters[cIdx].push(i);
+    clusters[cIdx].push(i);
   });
 
-  // 2. Intra-Cluster Baarda Test
+  // 4. Critical Limit Control and Cluster Merging
+  let activeClusters = clusters.filter(c => c.length > 0);
+
+  while (true) {
+    const weakIdx = activeClusters.findIndex(c => c.length < 4);
+    if (weakIdx === -1) {
+      break;
+    }
+
+    const weakCluster = activeClusters[weakIdx];
+
+    // Priority 1: Candidates that are strong (size >= 4)
+    let candidates = activeClusters.filter((_, idx) => idx !== weakIdx && activeClusters[idx].length >= 4);
+    // Priority 2: If none, fallback to any other active cluster
+    if (candidates.length === 0) {
+      candidates = activeClusters.filter((_, idx) => idx !== weakIdx);
+    }
+
+    if (candidates.length === 0) {
+      break; // Only 1 cluster left and it's weak
+    }
+
+    // Centroid of weak cluster
+    const weakPoints = weakCluster.map(idx => samples[idx]);
+    const weakCenter = {
+      lat: weakPoints.reduce((sum, p) => sum + p.lat, 0) / weakPoints.length,
+      lng: weakPoints.reduce((sum, p) => sum + p.lng, 0) / weakPoints.length,
+    };
+
+    // Find the closest candidate cluster
+    let closestCandidateIdx = -1;
+    let minDistSq = Infinity;
+
+    for (let cIdx = 0; cIdx < candidates.length; cIdx++) {
+      const cand = candidates[cIdx];
+      const candPoints = cand.map(idx => samples[idx]);
+      const candCenter = {
+        lat: candPoints.reduce((sum, p) => sum + p.lat, 0) / candPoints.length,
+        lng: candPoints.reduce((sum, p) => sum + p.lng, 0) / candPoints.length,
+      };
+
+      const dLat = (candCenter.lat - weakCenter.lat) * 111320;
+      const dLng = (candCenter.lng - weakCenter.lng) * 111320 * Math.cos(weakCenter.lat * Math.PI / 180);
+      const distSq = dLat * dLat + dLng * dLng;
+
+      if (distSq < minDistSq) {
+        minDistSq = distSq;
+        closestCandidateIdx = cIdx;
+      }
+    }
+
+    if (closestCandidateIdx !== -1) {
+      const closestCandidate = candidates[closestCandidateIdx];
+      const targetIdxInActive = activeClusters.findIndex(c => c === closestCandidate);
+      if (targetIdxInActive !== -1) {
+        activeClusters[targetIdxInActive] = activeClusters[targetIdxInActive].concat(weakCluster);
+      }
+    }
+
+    // Remove weak cluster from the list
+    activeClusters.splice(weakIdx, 1);
+  }
+
+  // 5. Intra-Cluster Baarda Test (Runs secure outlier test inside each dynamic cluster)
   const cleanClustersIndices: number[][] = [];
   const cleanClustersPoints: Coordinate[][] = [];
 
-  for (let c = 0; c < k; c++) {
-    const origIndices = rawClusters[c];
+  for (let c = 0; c < activeClusters.length; c++) {
+    const origIndices = activeClusters[c];
     if (origIndices.length === 0) {
       cleanClustersIndices.push([]);
       cleanClustersPoints.push([]);
@@ -284,38 +368,43 @@ function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; use
     cleanClustersPoints.push(cleanPoints);
   }
 
-  // 3. Combine all clean points from all clusters
-  const allCleanIndices: number[] = [];
-  const allCleanPoints: Coordinate[] = [];
-  for (let c = 0; c < k; c++) {
-    allCleanIndices.push(...cleanClustersIndices[c]);
-    allCleanPoints.push(...cleanClustersPoints[c]);
+  // 6. Cluster Density Analysis (Champion Cluster Selection)
+  let bestClusterIdx = 0;
+  let maxCount = -1;
+  for (let c = 0; c < activeClusters.length; c++) {
+    const count = cleanClustersIndices[c].length;
+    if (count > maxCount) {
+      maxCount = count;
+      bestClusterIdx = c;
+    }
   }
 
-  // Fallback if all clean points are empty
-  if (allCleanPoints.length === 0) {
+  const championIndices = cleanClustersIndices[bestClusterIdx];
+  const championPoints = cleanClustersPoints[bestClusterIdx];
+
+  if (championIndices.length === 0) {
     return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
   }
 
-  // 4. Final Weighted Least Squares (WLS) Solution
-  const lseResult = calculateWeightedLSE(allCleanPoints);
+  // 7. Final Weighted Least Squares (WLS) Solution
+  const lseResult = calculateWeightedLSE(championPoints);
   const finalResult = { ...lseResult.result };
 
-  // Calculate altitude and altitudeAccuracy on clean points
-  const validAlts = allCleanPoints.filter(s => s.altitude !== null);
+  // Calculate altitude and altitudeAccuracy on champion points
+  const validAlts = championPoints.filter(s => s.altitude !== null);
   finalResult.altitude = validAlts.length > 0
     ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length
     : null;
 
-  const validAltAccs = allCleanPoints.filter(s => s.altitudeAccuracy !== null);
+  const validAltAccs = championPoints.filter(s => s.altitudeAccuracy !== null);
   finalResult.altitudeAccuracy = validAltAccs.length > 0
     ? validAltAccs.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length
     : null;
 
   return { 
     result: finalResult, 
-    usedIndices: allCleanIndices, 
-    clusters: rawClusters.filter(c => c.length > 0)
+    usedIndices: championIndices, 
+    clusters: activeClusters
   };
 }
 
