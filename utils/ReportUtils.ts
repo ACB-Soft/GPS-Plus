@@ -286,38 +286,75 @@ function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; use
 }
     </pre>
 
-    <h3>2.4.3. K-Means (4-Way Segmentasyon) Süzgeci</h3>
-    <p>Bu filtreleme modeli, küme içi varyans ve kareler toplamının minimum edilmesi kriterine göre 2 boyutlu konumsal koordinat verilerini 4 ayrı gruba segmentler. İstatistiksel olarak en kararlı, saçılım genişliği en dar ve yoğunluğu en yüksek olan küme seçilerek, sadece bu küme içerisindeki gözlemlerin ağırlıklı konumsal merkezi (Weighted Centroid) genel sonuç kabul edilir. K-Means mekanizmasının iterative mesafe ve küme güncelleme döngüleri aşağıda sunulmuştur:</p>
+    <h3>2.4.3. K-Means (4-Way Segmentasyon) Süzgeci ve En Yoğun Küme Seçim Çekirdeği</h3>
+    <p>Bu filtreleme modeli, küme içi varyans ve kareler toplamının minimum edilmesi kriterine göre 2 boyutlu konumsal koordinat verilerini 4 ayrı gruba segmentler. İstatistiksel olarak en kararlı, saçılım genişliği en dar ve yoğunluğu (örneklem adedi) en yüksek olan küme seçilerek, sadece bu küme içerisindeki gözlemlerin ağırlıklı konumsal merkezi (Weighted Centroid) genel sonuç kabul edilir.</p>
+    
+    <p><span class="bold">$k=4$ Parametresinin Deneysel Gerekçesi:</span> Deneysel ve ampirik ön çalışmalarımızda, statik oturumlarda saniyelik bazda toplanan gürültülü konum verilerinin yeğin çevre yansımaları (multipath) ve engelli kentsel kanyonlarda ortaya çıkan 2 ila 3 temel dolaylı yansıma (Non-Line-of-Sight - NLOS) dalgası ile doğrudan görüş (Line-of-Sight - LOS) izleri dahilinde en fazla 4 temel uzaysal odak noktasında kümelendiği görülmüştür. Bu sebeple $k=4$ parametresi, alıcı üzerindeki hesaplama yükünü artırmadan engebeli sinyal yansıma örüntülerini bütünüyle yakalamak üzere ampirik olarak tayin edilmiştir.</p>
+    
+    <p class="no-indent">Sistemde yürütülen, K-Means kümelemesi sonrasında en yoğun (maksimum örneklemli) kümeyi tespit eden ve bu küme elemanlarını Stokastik Tek Nokta Dengeleme motoruna (calculateWeightedLSE) gönderen bütünleşik TS kodu aşağıda sunulmuştur:</p>
     <pre class="code-block">
+function calculateKMeans4(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
+  if (samples.length &lt; 4) {
+    return { result: calculateAverage(samples), usedIndices: samples.map((_, i) =&gt; i), clusters: [] };
+  }
+  const k = 4;
+  const assignments = runKMeans(samples, k);
+  
+  const clusters: number[][] = Array.from({ length: k }, () =&gt; []);
+  assignments.forEach((cIdx, i) =&gt; {
+    clusters[cIdx].push(i);
+  });
+  
+  // Find the cluster with the highest number of points (maximum density)
+  let bestClusterIdx = 0;
+  let maxCount = -1;
+  for (let i = 0; i &lt; k; i++) {
+    if (clusters[i].length &gt; maxCount) {
+      maxCount = clusters[i].length;
+      bestClusterIdx = i;
+    }
+  }
+  
+  const bestClusterPoints = clusters[bestClusterIdx].map(idx =&gt; samples[idx]);
+  const lseRes = calculateWeightedLSE(bestClusterPoints);
+  const originalUsedIndices = lseRes.usedIndices.map(i =&gt; clusters[bestClusterIdx][i]);
+  
+  return {
+    result: lseRes.result,
+    usedIndices: originalUsedIndices,
+    clusters: clusters.filter(c =&gt; c.length &gt; 0)
+  };
+}
+
 function runKMeans(samples: Coordinate[], k: number): number[] {
-  let centroids = samples.slice(0, k).map(s => ({ lat: s.lat, lng: s.lng }));
-  if (samples.length > k) {
+  let centroids = samples.slice(0, k).map(s =&gt; ({ lat: s.lat, lng: s.lng }));
+  if (samples.length &gt; k) {
     const step = Math.floor(samples.length / k);
-    centroids = Array.from({ length: k }, (_, i) => ({ lat: samples[i * step].lat, lng: samples[i * step].lng }));
+    centroids = Array.from({ length: k }, (_, i) =&gt; ({ lat: samples[i * step].lat, lng: samples[i * step].lng }));
   }
   let assignments = new Array(samples.length).fill(-1);
   let changed = true;
   let iterations = 0;
-  while (changed && iterations < 20) {
+  while (changed && iterations &lt; 20) {
     changed = false;
     iterations++;
-    for (let i = 0; i < samples.length; i++) {
+    for (let i = 0; i &lt; samples.length; i++) {
         let minDist = Infinity;
         let bestK = 0;
-        for (let j = 0; j < k; j++) {
+        for (let j = 0; j &lt; k; j++) {
             const dLat = (samples[i].lat - centroids[j].lat) * 111320;
             const dLng = (samples[i].lng - centroids[j].lng) * 111320 * Math.cos(samples[i].lat * Math.PI / 180);
             const dist = dLat * dLat + dLng * dLng;
-            if (dist < minDist) { minDist = dist; bestK = j; }
+            if (dist &lt; minDist) { minDist = dist; bestK = j; }
         }
         if (assignments[i] !== bestK) { assignments[i] = bestK; changed = true; }
     }
-    for (let j = 0; j < k; j++) {
+    for (let j = 0; j &lt; k; j++) {
         const clusterPoints = samples.filter((_, i) => assignments[i] === j);
-        if (clusterPoints.length > 0) {
+        if (clusterPoints.length &gt; 0) {
             centroids[j] = {
-                lat: clusterPoints.reduce((a, b) => a + b.lat, 0) / clusterPoints.length,
-                lng: clusterPoints.reduce((a, b) => a + b.lng, 0) / clusterPoints.length
+                lat: clusterPoints.reduce((a, b) =&gt; a + b.lat, 0) / clusterPoints.length,
+                lng: clusterPoints.reduce((a, b) =&gt; a + b.lng, 0) / clusterPoints.length
             };
         }
     }
