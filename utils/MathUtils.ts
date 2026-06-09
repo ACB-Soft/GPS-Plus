@@ -259,18 +259,14 @@ function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; use
   const variance = calculateVariance(samples, average);
   const sigma = Math.sqrt(variance);
 
-  // 2. Decide Adaptive Number of Clusters (k)
+  // 2. Decide Adaptive Number of Clusters (k) - Max 4 Clusters
   let k = 4;
   if (sigma < 1.0) {
     k = 2; // Clean signal, only micro noise needs separation
   } else if (sigma < 1.5) {
     k = 3;
-  } else if (sigma < 2.0) {
-    k = 4; // Moderate obstructions / open-to-cluttered transition
-  } else if (sigma < 2.5) {
-    k = 5;
   } else {
-    k = 6; // Heavy urban canyon with multiple multipath centroids
+    k = 4; // Moderate/Heavy obstructions (Maximum 4 Clusters)
   }
 
   // 3. K-Means clustering using determined dynamic k
@@ -282,68 +278,8 @@ function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; use
     clusters[cIdx].push(i);
   });
 
-  // 4. Critical Limit Control and Cluster Merging
-  let activeClusters = clusters.filter(c => c.length > 0);
-
-  while (true) {
-    const weakIdx = activeClusters.findIndex(c => c.length < 4);
-    if (weakIdx === -1) {
-      break;
-    }
-
-    const weakCluster = activeClusters[weakIdx];
-
-    // Priority 1: Candidates that are strong (size >= 4)
-    let candidates = activeClusters.filter((_, idx) => idx !== weakIdx && activeClusters[idx].length >= 4);
-    // Priority 2: If none, fallback to any other active cluster
-    if (candidates.length === 0) {
-      candidates = activeClusters.filter((_, idx) => idx !== weakIdx);
-    }
-
-    if (candidates.length === 0) {
-      break; // Only 1 cluster left and it's weak
-    }
-
-    // Centroid of weak cluster
-    const weakPoints = weakCluster.map(idx => samples[idx]);
-    const weakCenter = {
-      lat: weakPoints.reduce((sum, p) => sum + p.lat, 0) / weakPoints.length,
-      lng: weakPoints.reduce((sum, p) => sum + p.lng, 0) / weakPoints.length,
-    };
-
-    // Find the closest candidate cluster
-    let closestCandidateIdx = -1;
-    let minDistSq = Infinity;
-
-    for (let cIdx = 0; cIdx < candidates.length; cIdx++) {
-      const cand = candidates[cIdx];
-      const candPoints = cand.map(idx => samples[idx]);
-      const candCenter = {
-        lat: candPoints.reduce((sum, p) => sum + p.lat, 0) / candPoints.length,
-        lng: candPoints.reduce((sum, p) => sum + p.lng, 0) / candPoints.length,
-      };
-
-      const dLat = (candCenter.lat - weakCenter.lat) * 111320;
-      const dLng = (candCenter.lng - weakCenter.lng) * 111320 * Math.cos(weakCenter.lat * Math.PI / 180);
-      const distSq = dLat * dLat + dLng * dLng;
-
-      if (distSq < minDistSq) {
-        minDistSq = distSq;
-        closestCandidateIdx = cIdx;
-      }
-    }
-
-    if (closestCandidateIdx !== -1) {
-      const closestCandidate = candidates[closestCandidateIdx];
-      const targetIdxInActive = activeClusters.findIndex(c => c === closestCandidate);
-      if (targetIdxInActive !== -1) {
-        activeClusters[targetIdxInActive] = activeClusters[targetIdxInActive].concat(weakCluster);
-      }
-    }
-
-    // Remove weak cluster from the list
-    activeClusters.splice(weakIdx, 1);
-  }
+  // 4. Critical Limit Control (Directly delete clusters with < 4 items)
+  const activeClusters = clusters.filter(c => c.length >= 4);
 
   // 5. Intra-Cluster Baarda Test (Runs secure outlier test inside each dynamic cluster)
   const cleanClustersIndices: number[][] = [];
@@ -351,12 +287,6 @@ function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; use
 
   for (let c = 0; c < activeClusters.length; c++) {
     const origIndices = activeClusters[c];
-    if (origIndices.length === 0) {
-      cleanClustersIndices.push([]);
-      cleanClustersPoints.push([]);
-      continue;
-    }
-
     const clusterPoints = origIndices.map(idx => samples[idx]);
 
     // Use Baarda's outlier detection inside each individual cluster
@@ -379,15 +309,15 @@ function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; use
   let bestClusterIdx = 0;
   let maxCount = -1;
   for (let c = 0; c < activeClusters.length; c++) {
-    const count = cleanClustersIndices[c].length;
+    const count = cleanClustersIndices[c] ? cleanClustersIndices[c].length : 0;
     if (count > maxCount) {
       maxCount = count;
       bestClusterIdx = c;
     }
   }
 
-  const championIndices = cleanClustersIndices[bestClusterIdx];
-  const championPoints = cleanClustersPoints[bestClusterIdx];
+  const championIndices = cleanClustersIndices[bestClusterIdx] || [];
+  const championPoints = cleanClustersPoints[bestClusterIdx] || [];
 
   if (championIndices.length === 0) {
     return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
@@ -433,18 +363,14 @@ function calculateKMeansBaardaV2(samples: Coordinate[]): { result: Coordinate; u
   const variance = calculateVariance(samples, average);
   const sigma = Math.sqrt(variance);
 
-  // 2. Decide Adaptive Number of Clusters (k)
+  // 2. Decide Adaptive Number of Clusters (k) - Max 4 Clusters
   let k = 4;
   if (sigma < 1.0) {
     k = 2; // Clean signal, only micro noise needs separation
   } else if (sigma < 1.5) {
     k = 3;
-  } else if (sigma < 2.0) {
-    k = 4; // Moderate obstructions / open-to-cluttered transition
-  } else if (sigma < 2.5) {
-    k = 5;
   } else {
-    k = 6; // Heavy urban canyon with multiple multipath centroids
+    k = 4; // Moderate/Heavy obstructions (Maximum 4 Clusters)
   }
 
   // 3. K-Means clustering using determined dynamic k
@@ -456,68 +382,8 @@ function calculateKMeansBaardaV2(samples: Coordinate[]): { result: Coordinate; u
     clusters[cIdx].push(i);
   });
 
-  // 4. Critical Limit Control and Cluster Merging
-  let activeClusters = clusters.filter(c => c.length > 0);
-
-  while (true) {
-    const weakIdx = activeClusters.findIndex(c => c.length < 4);
-    if (weakIdx === -1) {
-      break;
-    }
-
-    const weakCluster = activeClusters[weakIdx];
-
-    // Priority 1: Candidates that are strong (size >= 4)
-    let candidates = activeClusters.filter((_, idx) => idx !== weakIdx && activeClusters[idx].length >= 4);
-    // Priority 2: If none, fallback to any other active cluster
-    if (candidates.length === 0) {
-      candidates = activeClusters.filter((_, idx) => idx !== weakIdx);
-    }
-
-    if (candidates.length === 0) {
-      break; // Only 1 cluster left and it's weak
-    }
-
-    // Centroid of weak cluster
-    const weakPoints = weakCluster.map(idx => samples[idx]);
-    const weakCenter = {
-      lat: weakPoints.reduce((sum, p) => sum + p.lat, 0) / weakPoints.length,
-      lng: weakPoints.reduce((sum, p) => sum + p.lng, 0) / weakPoints.length,
-    };
-
-    // Find the closest candidate cluster
-    let closestCandidateIdx = -1;
-    let minDistSq = Infinity;
-
-    for (let cIdx = 0; cIdx < candidates.length; cIdx++) {
-      const cand = candidates[cIdx];
-      const candPoints = cand.map(idx => samples[idx]);
-      const candCenter = {
-        lat: candPoints.reduce((sum, p) => sum + p.lat, 0) / candPoints.length,
-        lng: candPoints.reduce((sum, p) => sum + p.lng, 0) / candPoints.length,
-      };
-
-      const dLat = (candCenter.lat - weakCenter.lat) * 111320;
-      const dLng = (candCenter.lng - weakCenter.lng) * 111320 * Math.cos(weakCenter.lat * Math.PI / 180);
-      const distSq = dLat * dLat + dLng * dLng;
-
-      if (distSq < minDistSq) {
-        minDistSq = distSq;
-        closestCandidateIdx = cIdx;
-      }
-    }
-
-    if (closestCandidateIdx !== -1) {
-      const closestCandidate = candidates[closestCandidateIdx];
-      const targetIdxInActive = activeClusters.findIndex(c => c === closestCandidate);
-      if (targetIdxInActive !== -1) {
-        activeClusters[targetIdxInActive] = activeClusters[targetIdxInActive].concat(weakCluster);
-      }
-    }
-
-    // Remove weak cluster from the list
-    activeClusters.splice(weakIdx, 1);
-  }
+  // 4. Critical Limit Control (Directly delete clusters with < 4 items)
+  const activeClusters = clusters.filter(c => c.length >= 4);
 
   // 5. Intra-Cluster Baarda Test (Runs secure outlier test inside each dynamic cluster)
   const cleanClustersIndices: number[][] = [];
@@ -525,12 +391,6 @@ function calculateKMeansBaardaV2(samples: Coordinate[]): { result: Coordinate; u
 
   for (let c = 0; c < activeClusters.length; c++) {
     const origIndices = activeClusters[c];
-    if (origIndices.length === 0) {
-      cleanClustersIndices.push([]);
-      cleanClustersPoints.push([]);
-      continue;
-    }
-
     const clusterPoints = origIndices.map(idx => samples[idx]);
 
     // Use Baarda's outlier detection inside each individual cluster
@@ -553,8 +413,12 @@ function calculateKMeansBaardaV2(samples: Coordinate[]): { result: Coordinate; u
   const allCleanIndices: number[] = [];
   const allCleanPoints: Coordinate[] = [];
   for (let c = 0; c < activeClusters.length; c++) {
-    allCleanIndices.push(...cleanClustersIndices[c]);
-    allCleanPoints.push(...cleanClustersPoints[c]);
+    if (cleanClustersIndices[c]) {
+      allCleanIndices.push(...cleanClustersIndices[c]);
+    }
+    if (cleanClustersPoints[c]) {
+      allCleanPoints.push(...cleanClustersPoints[c]);
+    }
   }
 
   if (allCleanIndices.length === 0) {
