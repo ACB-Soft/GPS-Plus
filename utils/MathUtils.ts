@@ -411,13 +411,14 @@ function calculateKMeansBaardaV2(samples: Coordinate[]): { result: Coordinate; u
   const finalCleanIndices = baardaCleanIndices.filter(idx => championIndices.includes(idx));
   const finalCleanPoints = finalCleanIndices.map(idx => samples[idx]);
 
-  // Graceful fallback if strict intersection is empty (use Champion Cluster indices & points)
+  // Graceful fallback if strict intersection is empty (Option C: local Baarda on Champion Cluster points to filter outliers)
   let finalPointsToUse = finalCleanPoints;
   let finalIndicesToUse = finalCleanIndices;
 
   if (finalPointsToUse.length === 0) {
-    finalIndicesToUse = championIndices;
-    finalPointsToUse = championPoints;
+    const localBaardaRes = calculateBaardaPure(championPoints);
+    finalIndicesToUse = localBaardaRes.usedIndices.map(localIdx => championIndices[localIdx]);
+    finalPointsToUse = finalIndicesToUse.map(idx => samples[idx]);
   }
 
   if (finalPointsToUse.length === 0) {
