@@ -347,13 +347,20 @@ function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; use
 
 /**
  * K-Means + Baarda Algorithm with Adaptive Dynamic Scaling - Version 2
- * 1. Calculate metric standard deviation (sigma_metrik) of the entire dataset
- * 2. Dynamically decide the number of clusters (k) based on sigma_metrik
- * 3. Segment raw dataset with K-Means (k)
- * 4. Critical Limit Control & Cluster Merging (Merge clusters with < 4 elements into their nearest strong cluster)
- * 5. Intra-cluster Baarda outlier detection
- * 6. Combine all cleaned points from all active clusters (removing champion logic)
- * 7. Final Weighted Least Squares (WLS) Solution
+ * 
+ * 1. Kol (Uzaysal Kol): K-Means ile "Doğru Bölge" Tespiti
+ * - K-Means veriyi parçalamadan, doğrudan belirlenen dinamik k değeriyle (max 4) ham veri üzerinde çalışır.
+ * - En yüksek eleman sayısına sahip "Şampiyon Küme" belirlenir ve bu küme "Güvenli Geometrik Bölge" olarak tescillenir.
+ * - Bu kümenin merkezi (Aritmetik ortalaması) referans merkezimiz (X_ref, Y_ref) olur.
+ * - Şampiyon küme içindeki elemanların bu merkeze olan maksimum uzaklığı "Güvenli Geometrik Bölge" yarıçapı (çeper) olarak belirlenir.
+ * 
+ * 2. Kol (Jeodezik Kol): Tüm Veri Setinde Baarda Testi
+ * - Ham verinin tamamı bölünmeden tek bir büyük grup olarak Baarda kalın hata testine sokulur (serbestlik derecesi maksimumdur).
+ * - "Makro düzeyde temizlenmiş" geniş bir puan havuzu elde edilir.
+ * 
+ * 3. Kesişim ve Nihai Karar: Geometrik Filtreleme & WLS Çözümü
+ * - Baarda testi sonucunda temiz çıkan noktalardan, sadece K-Means Şampiyon Kümesi'nin uzaysal etki alanı (çeperi) içinde kalanlar nihai potaya alınır.
+ * - Seçilen nihai noktalar üzerinde Final Weighted Least Squares (WLS) çözümü çalıştırılır.
  */
 function calculateKMeansBaardaV2(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
   if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
@@ -373,7 +380,7 @@ function calculateKMeansBaardaV2(samples: Coordinate[]): { result: Coordinate; u
     k = 4; // Moderate/Heavy obstructions (Maximum 4 Clusters)
   }
 
-  // 3. K-Means clustering using determined dynamic k
+  // 3. K-Means clustering on the whole raw dataset
   const clusterAssignments = runKMeans(samples, k);
   
   // Group index allocations into clusters
@@ -382,68 +389,91 @@ function calculateKMeansBaardaV2(samples: Coordinate[]): { result: Coordinate; u
     clusters[cIdx].push(i);
   });
 
-  // 4. Critical Limit Control (Directly delete clusters with < 4 items)
-  const activeClusters = clusters.filter(c => c.length >= 4);
-
-  // 5. Intra-Cluster Baarda Test (Runs secure outlier test inside each dynamic cluster)
-  const cleanClustersIndices: number[][] = [];
-  const cleanClustersPoints: Coordinate[][] = [];
-
-  for (let c = 0; c < activeClusters.length; c++) {
-    const origIndices = activeClusters[c];
-    const clusterPoints = origIndices.map(idx => samples[idx]);
-
-    // Use Baarda's outlier detection inside each individual cluster
-    const baardaInput = clusterPoints.map((p, localIdx) => ({
-      ...p,
-      _originalIdx: localIdx
-    }));
-
-    const baardaRes = calculateBaardaInternal(baardaInput as any);
-    
-    // Map clean points back to original indices
-    const cleanOrigIndices = baardaRes.usedIndices.map(localIdx => origIndices[localIdx]);
-    const cleanPoints = cleanOrigIndices.map(idx => samples[idx]);
-
-    cleanClustersIndices.push(cleanOrigIndices);
-    cleanClustersPoints.push(cleanPoints);
-  }
-
-  // 6. Combine all cleaned points and indices from all active clusters (removes champion cluster selection)
-  const allCleanIndices: number[] = [];
-  const allCleanPoints: Coordinate[] = [];
-  for (let c = 0; c < activeClusters.length; c++) {
-    if (cleanClustersIndices[c]) {
-      allCleanIndices.push(...cleanClustersIndices[c]);
-    }
-    if (cleanClustersPoints[c]) {
-      allCleanPoints.push(...cleanClustersPoints[c]);
+  // 1. Kol: Find the "Champion Cluster" (largest cluster by element count)
+  let bestClusterIdx = 0;
+  let maxCount = -1;
+  for (let i = 0; i < k; i++) {
+    if (clusters[i].length > maxCount) {
+      maxCount = clusters[i].length;
+      bestClusterIdx = i;
     }
   }
 
-  if (allCleanIndices.length === 0) {
+  const championIndices = clusters[bestClusterIdx];
+  const championPoints = championIndices.map(idx => samples[idx]);
+
+  // Centroid of the Champion Cluster (X_ref, Y_ref)
+  const refCenter = {
+    lat: championPoints.reduce((sum, p) => sum + p.lat, 0) / championPoints.length,
+    lng: championPoints.reduce((sum, p) => sum + p.lng, 0) / championPoints.length,
+  };
+
+  // Determine Safe Geometric Region (envelope boundary) = max distance of any champion point to centroid
+  let maxRadius = 0;
+  for (const p of championPoints) {
+    const dLat = (p.lat - refCenter.lat) * 111320;
+    const dLng = (p.lng - refCenter.lng) * 111320 * Math.cos(refCenter.lat * Math.PI / 180);
+    const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+    if (dist > maxRadius) {
+      maxRadius = dist;
+    }
+  }
+  // Enforce a robust minimum floor radius (e.g. 1.0 meter) to prevent zero or too-strict boundaries
+  const safeRadius = Math.max(1.0, maxRadius);
+
+  // 2. Kol: Run Baarda Test on the entire raw dataset without partitioning
+  const baardaPureRes = calculateBaardaPure(samples);
+  const baardaCleanIndices = baardaPureRes.usedIndices;
+
+  // 3. Intersection & Final Selection:
+  // Clean points from Baarda that fall inside the champion cluster's spatial envelope (safeRadius distance to refCenter)
+  const finalCleanIndices: number[] = [];
+  const finalCleanPoints: Coordinate[] = [];
+
+  for (const idx of baardaCleanIndices) {
+    const p = samples[idx];
+    const dLat = (p.lat - refCenter.lat) * 111320;
+    const dLng = (p.lng - refCenter.lng) * 111320 * Math.cos(refCenter.lat * Math.PI / 180);
+    const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+
+    if (dist <= safeRadius) {
+      finalCleanIndices.push(idx);
+      finalCleanPoints.push(p);
+    }
+  }
+
+  // Graceful fallback if collision filtering results in empty array (use Baarda clean points)
+  let finalPointsToUse = finalCleanPoints;
+  let finalIndicesToUse = finalCleanIndices;
+
+  if (finalPointsToUse.length === 0) {
+    finalIndicesToUse = baardaCleanIndices;
+    finalPointsToUse = baardaCleanIndices.map(idx => samples[idx]);
+  }
+
+  if (finalPointsToUse.length === 0) {
     return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
   }
 
-  // 7. Final Weighted Least Squares (WLS) Solution
-  const lseResult = calculateWeightedLSE(allCleanPoints);
+  // Final Weighted Least Squares (WLS) Solution on selected intersection points
+  const lseResult = calculateWeightedLSE(finalPointsToUse);
   const finalResult = { ...lseResult.result };
 
-  // Calculate altitude and altitudeAccuracy on allCleanPoints
-  const validAlts = allCleanPoints.filter(s => s.altitude !== null);
+  // Calculate altitude and altitudeAccuracy on selected points
+  const validAlts = finalPointsToUse.filter(s => s.altitude !== null);
   finalResult.altitude = validAlts.length > 0
     ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length
     : null;
 
-  const validAltAccs = allCleanPoints.filter(s => s.altitudeAccuracy !== null);
+  const validAltAccs = finalPointsToUse.filter(s => s.altitudeAccuracy !== null);
   finalResult.altitudeAccuracy = validAltAccs.length > 0
     ? validAltAccs.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length
     : null;
 
   return { 
     result: finalResult, 
-    usedIndices: allCleanIndices, 
-    clusters: activeClusters
+    usedIndices: finalIndicesToUse, 
+    clusters: clusters.filter(c => c.length > 0)
   };
 }
 
