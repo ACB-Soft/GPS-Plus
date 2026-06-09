@@ -745,7 +745,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   <div className="space-y-1">
                     <p className="text-[9px] font-black text-blue-600 uppercase">K-Means + Baarda + WLS</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      {t("Veriyi doğrudan K-Means (k = 4) ile gruplar. Her kümede bağımsız iç Baarda testi yapıp en yoğun grubu seçer ve nihai konumu ağırlıklı en küçük kareler (WLS) ile dengeler.")}
+                      {t("Veriyi doğrudan K-Means (k = 4) ile gruplar. Her kümede bağımsız iç Baarda testi yapıp temizlenen tüm verileri birleştirir ve nihai konumu ağırlıklı en küçük kareler (WLS) ile dengeler.")}
                     </p>
                   </div>
                </div>

@@ -307,10 +307,10 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                         2-<b>{t("Küme İçi Baarda")}:</b> {t("Her küme kendi içinde Baarda testi çalıştırarak mikro hatalı uç gürültülerini eler. Donanımsal saçılma ve çevre gürültüleri filtreye kurban edilmeden lokal olarak ayıklanır.")}
                       </li>
                       <li className="text-sm text-slate-700 leading-tight">
-                        3-<b>{t("Yoğunluk Analizi")}:</b> {t("Temizlenmiş alt kümeler arasında en yoğun (maksimum üye barındıran) küme şampiyon seçilir, diğer zayıf kümeler (multipath/yansıma) bütünüyle elenir.")}
+                        3-<b>{t("Temiz Gözlemlerin Birleştirilmesi")}:</b> {t("Filtrelemeden başarıyla geçen tüm temiz gözlemler (outlier olmayan veriler) tek bir havuzda birleştirilir. Böylelikle hiçbir geçerli veri süzgece kurban edilmemiş olur.")}
                       </li>
                       <li className="text-sm text-slate-700 leading-tight">
-                        4-<b>{t("Nihai WLS Dengelemesi")}:</b> {t("Şampiyon kümedeki temiz noktalar, hassasiyet ağırlıkları (1/accuracy²) gözetilerek Stokastik En Küçük Kareler (WLS) formülü ile dengelenerek nihai konuma ulaştırılır.")}
+                        4-<b>{t("Nihai WLS Dengelemesi")}:</b> {t("Birleştirilen tüm temiz noktalar, hassasiyet ağırlıkları (1/accuracy²) gözetilerek Stokastik En Küçük Kareler (WLS) formülü ile dengelenerek nihai konuma ulaştırılır.")}
                       </li>
                     </ul>
                   </div>

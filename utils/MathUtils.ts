@@ -244,8 +244,8 @@ export function calculateVariance(samples: Coordinate[], mean: Coordinate): numb
 function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
   if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
 
-  // 1. Determine dynamic cluster size (k) based on sample/epoch count (scaled between 2 and 8)
-  const k = Math.max(2, Math.min(8, Math.floor(samples.length / 15)));
+  // 1. K-Means (k=4) directly on raw samples
+  const k = 4;
   const clusterAssignments = runKMeans(samples, k);
   
   // Group into clusters of indices referencing original 'samples' array
@@ -284,43 +284,37 @@ function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; use
     cleanClustersPoints.push(cleanPoints);
   }
 
-  // 3. Cluster Density Analysis
-  let bestClusterIdx = 0;
-  let maxCount = -1;
+  // 3. Combine all clean points from all clusters
+  const allCleanIndices: number[] = [];
+  const allCleanPoints: Coordinate[] = [];
   for (let c = 0; c < k; c++) {
-    const count = cleanClustersIndices[c].length;
-    if (count > maxCount) {
-      maxCount = count;
-      bestClusterIdx = c;
-    }
+    allCleanIndices.push(...cleanClustersIndices[c]);
+    allCleanPoints.push(...cleanClustersPoints[c]);
   }
 
-  const championIndices = cleanClustersIndices[bestClusterIdx];
-  const championPoints = cleanClustersPoints[bestClusterIdx];
-
-  // Fallback if champion is empty (which should be rare with our checks)
-  if (championIndices.length === 0) {
+  // Fallback if all clean points are empty
+  if (allCleanPoints.length === 0) {
     return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
   }
 
   // 4. Final Weighted Least Squares (WLS) Solution
-  const lseResult = calculateWeightedLSE(championPoints);
+  const lseResult = calculateWeightedLSE(allCleanPoints);
   const finalResult = { ...lseResult.result };
 
-  // Calculate altitude and altitudeAccuracy on champion points
-  const validAlts = championPoints.filter(s => s.altitude !== null);
+  // Calculate altitude and altitudeAccuracy on clean points
+  const validAlts = allCleanPoints.filter(s => s.altitude !== null);
   finalResult.altitude = validAlts.length > 0
     ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length
     : null;
 
-  const validAltAccs = championPoints.filter(s => s.altitudeAccuracy !== null);
+  const validAltAccs = allCleanPoints.filter(s => s.altitudeAccuracy !== null);
   finalResult.altitudeAccuracy = validAltAccs.length > 0
     ? validAltAccs.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length
     : null;
 
   return { 
     result: finalResult, 
-    usedIndices: championIndices, 
+    usedIndices: allCleanIndices, 
     clusters: rawClusters.filter(c => c.length > 0)
   };
 }
