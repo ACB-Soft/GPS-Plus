@@ -291,7 +291,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
 
                 <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm ring-1 ring-blue-50">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight">{t("5. Robust Spatial + K-Means + Baarda + WLS")}</h4>
+                    <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight">{t("5. K-Means + Baarda + WLS")}</h4>
                     <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">{t("HİBRİT")}</span>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed mb-3">
@@ -301,22 +301,16 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                      <p className="text-sm font-black text-blue-800 uppercase tracking-widest">{t("İşlem Adımları:")}</p>
                      <ul className="space-y-1.5">
                       <li className="text-sm text-slate-700 leading-tight">
-                        1-<b>Robust Spatial Median:</b> {t("Veri sınırlarından bağımsız, aşırı donanımlı uç değerlerden etkilenmeyen kararlı bir referans merkez belirlenir.")}
+                        1-<b>K-Means Sınıflandırma:</b> {t("Toplanan ham konum verileri mekansal yakınlıklarına göre 4 bağımsız küme grubuna (k = 4) bölünür. Sinyal yansıma yolları geometrik olarak modellenir.")}
                       </li>
                       <li className="text-sm text-slate-700 leading-tight">
-                        2-<b>{t("Adaptive 3-MAD Filtre")}:</b> {t("Gerçek konum saçılımına (MAD) göre dinamik 3-sigma benzeri sınır çizilerek sadece donanım atlama hataları temizlenir, geçerli ormanlık/kanyon saçılımları korunur.")}
+                        2-<b>{t("Küme İçi Baarda")}:</b> {t("Her küme kendi içinde Baarda testi çalıştırarak mikro hatalı uç gürültülerini eler. Donanımsal saçılma ve çevre gürültüleri filtreye kurban edilmeden lokal olarak ayıklanır.")}
                       </li>
                       <li className="text-sm text-slate-700 leading-tight">
-                        3-<b>K-Means:</b> {t("Kalan noktalar uzaysal gürültü analizi için 4 bağımsız küme grubuna (k = 4) bölünür.")}
+                        3-<b>{t("Yoğunluk Analizi")}:</b> {t("Temizlenmiş alt kümeler arasında en yoğun (maksimum üye barındıran) küme şampiyon seçilir, diğer zayıf kümeler (multipath/yansıma) bütünüyle elenir.")}
                       </li>
                       <li className="text-sm text-slate-700 leading-tight">
-                        4-<b>{t("Küme İçi Baarda")}:</b> {t("Her küme kendi içinde Baarda testi çalıştırarak mikro hatalı uç verileri eler.")}
-                      </li>
-                      <li className="text-sm text-slate-700 leading-tight">
-                        5-<b>{t("Yoğunluk Analizi")}:</b> {t("Temizlenmiş alt kümeler arasında en yoğun (maksimum üye barındıran) küme ana grup seçilir, diğerleri multipath olarak elenir.")}
-                      </li>
-                      <li className="text-sm text-slate-700 leading-tight">
-                        6-<b>{t("Nihai WLS Dengelemesi")}:</b> {t("Seçilen şampiyon kümedeki temiz noktalar ağırlıklarıyla Stokastik En Küçük Kareler (WLS) formülü ile dengelenerek nihai konuma ulaştırılır.")}
+                        4-<b>{t("Nihai WLS Dengelemesi")}:</b> {t("Şampiyon kümedeki temiz noktalar, hassasiyet ağırlıkları (1/accuracy²) gözetilerek Stokastik En Küçük Kareler (WLS) formülü ile dengelenerek nihai konuma ulaştırılır.")}
                       </li>
                     </ul>
                   </div>
@@ -324,7 +318,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
 
                 <div className="bg-amber-50/70 rounded-2xl p-4 border border-amber-200/50 text-amber-900 leading-relaxed text-xs font-semibold text-justify">
                   <span className="font-extrabold uppercase text-amber-700 block mb-1">⚠️ {t("UYARI / ÖNEMLİ KOŞUL:")}</span>
-                  {t("KMeans, Baarda ve Robust Spatial + K-Means + Baarda + WLS yöntemleri için en az 30 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.")}
+                  {t("KMeans, Baarda ve K-Means + Baarda + WLS yöntemleri için en az 30 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.")}
                 </div>
               </div>
             </div>

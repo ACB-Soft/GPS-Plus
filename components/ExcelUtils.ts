@@ -12,7 +12,7 @@ const getMethodName = (m: CalculationMethod) => {
     case 'MIDRANGE': return "MidRange";
     case 'KMEANS_4': return "K-Means (4 Küme)";
     case 'BAARDA': return "Baarda Eleme";
-    case 'MIDRANGE_KMEANS_BAARDA': return "Robust Spatial + K-Means + Baarda + WLS";
+    case 'MIDRANGE_KMEANS_BAARDA': return "K-Means + Baarda + WLS";
     default: return m;
   }
 };

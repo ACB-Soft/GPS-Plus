@@ -235,63 +235,26 @@ export function calculateVariance(samples: Coordinate[], mean: Coordinate): numb
 }
 
 /**
- * Robust Spatial + K-Means + Baarda Algorithm
- * 1. Robust Spatial Median Reference
- * 2. 3-MAD Spatial Filtering (Adaptive to actual spread)
- * 3. K-Means (k=4)
+ * K-Means + Baarda Algorithm
+ * 1. K-Means (k=4) on raw samples
+ * 2. Intra-Cluster Baarda Test
+ * 3. Cluster Density Analysis (Champion Cluster)
+ * 4. Final WLS Dengelemesi
  */
-function getMedian(values: number[]): number {
-  if (values.length === 0) return 0;
-  const sorted = [...values].sort((a, b) => a - b);
-  const half = Math.floor(sorted.length / 2);
-  if (sorted.length % 2 !== 0) {
-    return sorted[half];
-  }
-  return (sorted[half - 1] + sorted[half]) / 2;
-}
-
 function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
   if (samples.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
 
-  // 1. Reference Point (Robust Spatial Median)
-  const medianLat = getMedian(samples.map(s => s.lat));
-  const medianLng = getMedian(samples.map(s => s.lng));
-
-  // 2. 3-MAD Filtering (Robust against true geolocation leaps, adaptive to environmental scatter)
-  const distances = samples.map(s => {
-    const dLat = (s.lat - medianLat) * 111320;
-    const dLng = (s.lng - medianLng) * 111320 * Math.cos(medianLat * Math.PI / 180);
-    return Math.sqrt(dLat * dLat + dLng * dLng);
-  });
-
-  const medianDistance = getMedian(distances);
-  const absoluteDeviations = distances.map(d => Math.abs(d - medianDistance));
-  const mad = getMedian(absoluteDeviations);
-
-  // Robust outlier limit: 3 * MAD with a safe physical floor of 20.0 meters.
-  // This keeps valid medium-confidence spreads intact (e.g. 7m) while purging massive jumps.
-  const robustLimit = Math.max(3.0 * mad, medianDistance + 3.0 * mad, 20.0);
-
-  const filteredWithIndices = samples.map((s, idx) => ({ s, idx })).filter((item, i) => {
-    return distances[i] <= robustLimit;
-  });
-
-  if (filteredWithIndices.length < 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
-
-  const filteredSamples = filteredWithIndices.map(f => f.s);
-  const filteredIndices = filteredWithIndices.map(f => f.idx);
-
-  // 3. K-Means (k=4) on filtered samples
+  // 1. K-Means (k=4) directly on raw samples
   const k = 4;
-  const clusterAssignments = runKMeans(filteredSamples, k);
+  const clusterAssignments = runKMeans(samples, k);
   
   // Group into clusters of indices referencing original 'samples' array
   const rawClusters: number[][] = Array.from({ length: k }, () => []);
   clusterAssignments.forEach((cIdx, i) => {
-    rawClusters[cIdx].push(filteredIndices[i]);
+    rawClusters[cIdx].push(i);
   });
 
-  // 4. Intra-Cluster Baarda Test
+  // 2. Intra-Cluster Baarda Test
   const cleanClustersIndices: number[][] = [];
   const cleanClustersPoints: Coordinate[][] = [];
 
@@ -321,7 +284,7 @@ function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; use
     cleanClustersPoints.push(cleanPoints);
   }
 
-  // 5. Cluster Density Analysis
+  // 3. Cluster Density Analysis
   let bestClusterIdx = 0;
   let maxCount = -1;
   for (let c = 0; c < k; c++) {
@@ -340,7 +303,7 @@ function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; use
     return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
   }
 
-  // 6. Final Weighted Least Squares (WLS) Solution
+  // 4. Final Weighted Least Squares (WLS) Solution
   const lseResult = calculateWeightedLSE(championPoints);
   const finalResult = { ...lseResult.result };
 
