@@ -532,6 +532,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
                   <option value="KMEANS_4">{t("2. KMeans (4 Küme)")}</option>
                   <option value="BAARDA">{t("3. Baarda Eleme")}</option>
                   <option value="MIDRANGE_KMEANS_BAARDA">{t("4. K-Means + Baarda + WLS")}</option>
+                  <option value="KMEANS_BAARDA_HUBER">{t("5. K-Means + Baarda + Huber + WLS")}</option>
                 </select>
               </div>
 

@@ -41,11 +41,12 @@ export function calculateResult(
   let clusters: number[][] | undefined = undefined;
 
   // Let's implement the 30-epoch constraint check for professional mathematical models:
-  // KMEANS_4, BAARDA, MIDRANGE_KMEANS_BAARDA
+  // KMEANS_4, BAARDA, MIDRANGE_KMEANS_BAARDA, KMEANS_BAARDA_HUBER
   const isProfessional = 
     method === 'KMEANS_4' || 
     method === 'BAARDA' || 
-    method === 'MIDRANGE_KMEANS_BAARDA';
+    method === 'MIDRANGE_KMEANS_BAARDA' ||
+    method === 'KMEANS_BAARDA_HUBER';
   
   let finalMethod = method;
   let fallbackApplied = false;
@@ -70,6 +71,17 @@ export function calculateResult(
       resultData = kmeansRes.result;
       finalCalculatedUsedIndices = kmeansRes.usedIndices;
       clusters = kmeansRes.clusters;
+      break;
+    case 'KMEANS_BAARDA_HUBER':
+      const huberRes = calculateKMeansBaardaHuber(sourceData);
+      resultData = huberRes.result;
+      finalCalculatedUsedIndices = huberRes.usedIndices;
+      clusters = huberRes.clusters;
+      if (huberRes.fallbackApplied) {
+        fallbackApplied = true;
+        // Mark that we fell back to the other hybrid model
+        finalMethod = 'MIDRANGE_KMEANS_BAARDA';
+      }
       break;
     case 'KMEANS_4':
       const kmeans4Res = calculateKMeans4(sourceData);
@@ -480,6 +492,119 @@ function calculateBaardaPure(samples: Coordinate[]): { result: Coordinate; usedI
     result: baardaRes.result,
     usedIndices: baardaRes.usedIndices
   };
+}
+
+/**
+ * KMeans + Baarda + Huber + WLS Hybrid Model
+ * Processes raw coordinates concurrently through 3 analytical branches:
+ * 1. Global Baarda Test (Geodetic Branch)
+ * 2. Adaptive KMeans (Spatial Density Branch, k=2..6)
+ * 3. Huber M-Estimation (Robust Scoring Branch)
+ * Intersects all three branches. If >= 4 points remain, runs WLS Adjustment.
+ * Otherwise, falls back to standard K-Means + Baarda + WLS (calculateKMeansBaarda) method.
+ */
+function calculateKMeansBaardaHuber(samples: Coordinate[]): { 
+  result: Coordinate; 
+  usedIndices: number[]; 
+  clusters?: number[][]; 
+  fallbackApplied?: boolean; 
+  actualMethodUsed?: CalculationMethod 
+} {
+  if (samples.length < 5) {
+    return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
+  }
+
+  // Calculate standard deviation of whole raw dataset
+  const average = calculateAverage(samples);
+  const variance = calculateVariance(samples, average);
+  const sigma = Math.sqrt(variance);
+
+  // 1. Column A (Geodetic Branch): General Baarda Outlier Elimination
+  const baardaRes = calculateBaardaPure(samples);
+  const baardaIndices = baardaRes.usedIndices;
+
+  // 2. Column B (Spatial Branch): Adaptive K-Means Clustering inside dynamic limits (k = 2..6)
+  let k = 4;
+  if (sigma < 1.0) {
+    k = 2;
+  } else if (sigma < 1.5) {
+    k = 3;
+  } else if (sigma < 2.0) {
+    k = 4;
+  } else if (sigma < 2.5) {
+    k = 5;
+  } else {
+    k = 6;
+  }
+
+  const clusterAssignments = runKMeans(samples, k);
+  const clusters: number[][] = Array.from({ length: k }, () => []);
+  clusterAssignments.forEach((cIdx, i) => {
+    clusters[cIdx].push(i);
+  });
+
+  // Champion Cluster Discovery (Largest cluster by member count)
+  let bestClusterIdx = 0;
+  let maxCount = -1;
+  for (let i = 0; i < k; i++) {
+    if (clusters[i].length > maxCount) {
+      maxCount = clusters[i].length;
+      bestClusterIdx = i;
+    }
+  }
+  const championIndices = clusters[bestClusterIdx];
+
+  // 3. Column C (Robust Estimator Branch): Huber scoring filter sifting outliers beyond 1.345 * sigma from the mean centroid
+  const huberLimit = 1.345 * Math.max(0.1, sigma);
+  const huberIndices: number[] = [];
+  for (let i = 0; i < samples.length; i++) {
+    const dLat = (samples[i].lat - average.lat) * 111320;
+    const dLng = (samples[i].lng - average.lng) * 111320 * Math.cos(average.lat * Math.PI / 180);
+    const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+    if (dist <= huberLimit) {
+      huberIndices.push(i);
+    }
+  }
+
+  // Perform 3-way Intersection: (K-Means ∩ Baarda ∩ Huber)
+  const intersectionIndices = baardaIndices.filter(
+    idx => championIndices.includes(idx) && huberIndices.includes(idx)
+  );
+  const intersectionPoints = intersectionIndices.map(idx => samples[idx]);
+
+  // If we have at least 4 viable points, calculate Weighted Least Squares (WLS) adjustment
+  if (intersectionPoints.length >= 4) {
+    const lseResult = calculateWeightedLSE(intersectionPoints);
+    const finalResult = { ...lseResult.result };
+
+    const validAlts = intersectionPoints.filter(s => s.altitude !== null);
+    finalResult.altitude = validAlts.length > 0
+      ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length
+      : null;
+
+    const validAltAccs = intersectionPoints.filter(s => s.altitudeAccuracy !== null);
+    finalResult.altitudeAccuracy = validAltAccs.length > 0
+      ? validAltAccs.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length
+      : null;
+
+    return {
+      result: finalResult,
+      usedIndices: intersectionIndices,
+      clusters: clusters.filter(c => c.length > 0),
+      fallbackApplied: false,
+      actualMethodUsed: 'KMEANS_BAARDA_HUBER'
+    };
+  } else {
+    // Graceful Fallback Strategy: Fall back to default K-Means + Baarda + WLS Hybrid Method
+    const fallbackRes = calculateKMeansBaarda(samples);
+    return {
+      result: fallbackRes.result,
+      usedIndices: fallbackRes.usedIndices,
+      clusters: fallbackRes.clusters,
+      fallbackApplied: true,
+      actualMethodUsed: 'MIDRANGE_KMEANS_BAARDA'
+    };
+  }
 }
 
 

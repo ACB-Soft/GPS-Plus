@@ -12,6 +12,7 @@ const getMethodName = (m: CalculationMethod) => {
     case 'KMEANS_4': return "K-Means (4 Küme)";
     case 'BAARDA': return "Baarda Eleme";
     case 'MIDRANGE_KMEANS_BAARDA': return "K-Means + Baarda + WLS";
+    case 'KMEANS_BAARDA_HUBER': return "K-Means + Baarda + Huber + WLS";
     default: return m;
   }
 };
@@ -150,7 +151,8 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     'WEIGHTED_LSE', 
     'KMEANS_4',
     'BAARDA',
-    'MIDRANGE_KMEANS_BAARDA'
+    'MIDRANGE_KMEANS_BAARDA',
+    'KMEANS_BAARDA_HUBER'
   ];
   const methodResults = methods.map(method => {
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
@@ -487,7 +489,8 @@ export const downloadCombinedAnalysisReport = (
     'WEIGHTED_LSE', 
     'KMEANS_4',
     'BAARDA',
-    'MIDRANGE_KMEANS_BAARDA'
+    'MIDRANGE_KMEANS_BAARDA',
+    'KMEANS_BAARDA_HUBER'
   ];
 
   timeSteps.forEach(t => {

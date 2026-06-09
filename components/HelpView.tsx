@@ -245,7 +245,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             <div className="soft-card p-6 space-y-4">
               <p 
                 className="text-sm text-slate-700 font-medium leading-relaxed text-justify"
-                dangerouslySetInnerHTML={{ __html: t("Uygulama, toplanan ham GPS verilerini nihai bir koordinata dönüştürmek için 4 farklı matematiksel model sunar. Bu yöntemleri <b>Ayarlar</b> menüsünden değiştirebilirsiniz:") }}
+                dangerouslySetInnerHTML={{ __html: t("Uygulama, toplanan ham GPS verilerini nihai bir koordinata dönüştürmek için 5 farklı matematiksel model sunar. Bu yöntemleri <b>Ayarlar</b> menüsünden değiştirebilirsiniz:") }}
               />
               
               <div className="space-y-4">
@@ -306,9 +306,39 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                   </div>
                 </div>
 
+                <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm ring-1 ring-emerald-50">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-black text-emerald-700 uppercase tracking-tight">{t("5. K-Means + Baarda + Huber + WLS")}</h4>
+                    <span className="text-[11px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">{t("İLERİ HİBRİT")}</span>
+                  </div>
+                  <p className="text-sm text-slate-600 font-medium leading-relaxed mb-3">
+                    {t("KMeans, Baarda ve Huber M-Tahmini yöntemlerini paralel üçlü sacayağı süzgeci olarak çalıştıran ve 3'lü kesişim matrisiyle uyuşmazlıkları filtreleyen en üstün matematiksel modelimizdir.")} <span className="text-amber-600 font-black">{t("En az 30 epok veri gerektirir.")}</span>
+                  </p>
+                  <div className="bg-emerald-50/50 rounded-lg p-3 space-y-2 border border-emerald-100/50">
+                     <p className="text-sm font-black text-emerald-800 uppercase tracking-widest">{t("İşlem Adımları:")}</p>
+                     <ul className="space-y-1.5">
+                      <li className="text-sm text-slate-700 leading-tight">
+                        1-<b>{t("Jeodezik Kol (Küresel Baarda)")}:</b> {t("120 epokluk ham havuzun tamamında global uyuşmazlık araması yaparak sistemsel ve anlık sıçramaları varyans analiziyle ayıklar.")}
+                      </li>
+                      <li className="text-sm text-slate-700 leading-tight">
+                        2-<b>{t("Uzaysal Kol (Adaptif KMeans)")}:</b> {t("Mekansal saçılıma göre k=2..6 kümesini dinamik hesaplar ve yansımalı sinyal öbeklerini ayrıştırıp en yoğun 'Şampiyon Küme'yi belirler.")}
+                      </li>
+                      <li className="text-sm text-slate-700 leading-tight">
+                        3-<b>{t("Gürbüz Kol (Huber M-Tahmini)")}:</b> {t("Merkezsel uzaklık varyansına gürbüz ağırlıklandırma (1.345σ) uygulayarak gri alandaki gürültüleri filtreler.")}
+                      </li>
+                      <li className="text-sm text-slate-700 leading-tight">
+                        4-<b>{t("Üçlü Kesişim Matrisi (Baarda ∩ KMeans ∩ Huber)")}:</b> {t("Her üç koldan da onay alan noktalar (en az 4 tane) seçilir. Koşul sağlanamazsa sistem otomatik olarak diğer K-Means + Baarda + WLS hibrit modeline geri çekilir (Fallback).")}
+                      </li>
+                      <li className="text-sm text-slate-700 leading-tight">
+                        5-<b>{t("Hassas Dengeleme (WLS)")}:</b> {t("Matristen başarıyla çıkan seçilmiş temiz noktalara 1/accuracy² ağırlıklı dengeleme uygulanarak kusursuz koordinat çözülür.")}
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
                 <div className="bg-amber-50/70 rounded-2xl p-4 border border-amber-200/50 text-amber-900 leading-relaxed text-xs font-semibold text-justify">
                   <span className="font-extrabold uppercase text-amber-700 block mb-1">⚠️ {t("UYARI / ÖNEMLİ KOŞUL:")}</span>
-                  {t("KMeans, Baarda ve K-Means + Baarda + WLS yöntemleri için en az 30 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.")}
+                  {t("KMeans, Baarda, K-Means + Baarda + WLS ve K-Means + Baarda + Huber + WLS yöntemleri için en az 30 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.")}
                 </div>
               </div>
             </div>

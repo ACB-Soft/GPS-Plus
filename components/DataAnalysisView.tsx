@@ -44,7 +44,8 @@ const METHOD_COLORS: Record<string, string> = {
   WEIGHTED_LSE: '#8b5cf6',
   MIDRANGE_KMEANS_BAARDA: '#3b82f6',
   KMEANS_4: '#06b6d4',
-  BAARDA: '#f59e0b'
+  BAARDA: '#f59e0b',
+  KMEANS_BAARDA_HUBER: '#10b981'
 };
 
 const CLUSTER_COLORS = [
@@ -196,7 +197,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     'WEIGHTED_LSE',
     'KMEANS_4',
     'BAARDA',
-    'MIDRANGE_KMEANS_BAARDA'
+    'MIDRANGE_KMEANS_BAARDA',
+    'KMEANS_BAARDA_HUBER'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
@@ -204,7 +206,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       'WEIGHTED_LSE': t("Ağırlıklı En Küçük Kareler"),
       'KMEANS_4': t("K-Means (4 Küme)"),
       'BAARDA': t("Baarda Eleme"),
-      'MIDRANGE_KMEANS_BAARDA': "K-Means + Baarda + WLS"
+      'MIDRANGE_KMEANS_BAARDA': "K-Means + Baarda + WLS",
+      'KMEANS_BAARDA_HUBER': "K-Means + Baarda + Huber + WLS"
     };
     return labels[m] || m;
   };
@@ -271,7 +274,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       // 1. Calculate point for this method
       const { result, clusters } = calculateResult(location.samples!, method, accuracyLimit);
       
-      if ((method === 'MIDRANGE_KMEANS_BAARDA' || method === 'KMEANS_4') && clusters) {
+      if ((method === 'MIDRANGE_KMEANS_BAARDA' || method === 'KMEANS_4' || method === 'KMEANS_BAARDA_HUBER') && clusters) {
         clusterResults = clusters;
       }
       
@@ -666,7 +669,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
     const results = methods.map(method => {
       const { result, clusters } = calculateResult(location.samples!, method, accuracyLimit);
-      if (method === 'MIDRANGE_KMEANS_BAARDA' && clusters) {
+      if ((method === 'MIDRANGE_KMEANS_BAARDA' || method === 'KMEANS_BAARDA_HUBER') && clusters) {
         clusterResults = clusters;
       }
       const conv = convertCoordinate(result.lat, result.lng, sys);
@@ -1259,7 +1262,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   'WEIGHTED_LSE': 'Weighted LSE',
                                   'MIDRANGE_KMEANS_BAARDA': 'Hybrid',
                                   'KMEANS_4': 'KMeans',
-                                  'BAARDA': 'Baarda'
+                                  'BAARDA': 'Baarda',
+                                  'KMEANS_BAARDA_HUBER': 'Huber Hybrid'
                                 };
                                 return labels[m] || m;
                               };
@@ -1324,7 +1328,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               'WEIGHTED_LSE': 'Weighted LSE',
                               'MIDRANGE_KMEANS_BAARDA': 'Hybrid',
                               'KMEANS_4': 'KMeans',
-                              'BAARDA': 'Baarda'
+                              'BAARDA': 'Baarda',
+                              'KMEANS_BAARDA_HUBER': 'Huber Hybrid'
                             };
                             return labels[m] || m;
                           };
@@ -1358,7 +1363,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             'WEIGHTED_LSE': 'Weighted LSE',
                             'MIDRANGE_KMEANS_BAARDA': 'Hybrid',
                             'KMEANS_4': 'KMeans',
-                            'BAARDA': 'Baarda'
+                            'BAARDA': 'Baarda',
+                            'KMEANS_BAARDA_HUBER': 'Huber Hybrid'
                           };
                           return labels[m] || m;
                         };
