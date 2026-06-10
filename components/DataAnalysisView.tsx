@@ -205,7 +205,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     const labels: Record<string, string> = {
       'WEIGHTED_LSE': t("1. Ağırlıklı En Küçük Kareler"),
       'HUBER': t("2. Huber M-Tahmini"),
-      'KMEANS_4': t("3. KMeans (4 Küme)"),
+      'KMEANS_4': t("3. Dinamik KMeans Kümeleme"),
       'BAARDA': t("4. Baarda Eleme"),
       'KMEANS_BAARDA_HUBER': t("5. Hibrit Yöntem (KMeans + Baarda + Huber)")
     };

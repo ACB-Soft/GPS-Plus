@@ -459,7 +459,26 @@ function calculateKMeans4(samples: Coordinate[]): { result: Coordinate; usedIndi
   if (samples.length < 4) {
     return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
   }
-  const k = 4;
+  
+  // Calculate standard deviation of whole raw dataset
+  const average = calculateAverage(samples);
+  const variance = calculateVariance(samples, average);
+  const sigma = Math.sqrt(variance);
+
+  // Determine k dynamically like in the hybrid method (k = 2..6)
+  let k = 4;
+  if (sigma < 1.0) {
+    k = 2;
+  } else if (sigma < 1.5) {
+    k = 3;
+  } else if (sigma < 2.0) {
+    k = 4;
+  } else if (sigma < 2.5) {
+    k = 5;
+  } else {
+    k = 6;
+  }
+
   const assignments = runKMeans(samples, k);
   
   const clusters: number[][] = Array.from({ length: k }, () => []);

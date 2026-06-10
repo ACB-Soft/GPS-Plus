@@ -271,11 +271,11 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
 
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("3. KMeans (4 Küme)")}</h4>
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("3. Dinamik KMeans Kümeleme")}</h4>
                     <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">{t("KÜMELEME")}</span>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                    {t("Gözlemleri mekansal yakınlıklarına göre 4 bağımsız yoğunluk grubuna ayırarak küme merkezini belirler.")} <span className="text-amber-600 font-black">{t("En az 30 epok veri gerektirir.")}</span>
+                    {t("Gözlemleri mekansal yakınlıklarına göre dinamik sayıda yoğunluk grubuna ayırarak küme merkezini belirler.")} <span className="text-amber-600 font-black">{t("En az 30 epok veri gerektirir.")}</span>
                   </p>
                 </div>
 
