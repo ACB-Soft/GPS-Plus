@@ -258,15 +258,8 @@ function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; use
   const variance = calculateVariance(samples, average);
   const sigma = Math.sqrt(variance);
 
-  // 2. Decide Adaptive Number of Clusters (k) - Max 4 Clusters
-  let k = 4;
-  if (sigma < 1.0) {
-    k = 2; // Clean signal, only micro noise needs separation
-  } else if (sigma < 1.5) {
-    k = 3;
-  } else {
-    k = 4; // Moderate/Heavy obstructions (Maximum 4 Clusters)
-  }
+  // 2. Fixed Number of Clusters (k) = 4 as requested
+  const k = 4;
 
   // 3. K-Means clustering on the whole raw dataset
   const clusterAssignments = runKMeans(samples, k);
@@ -465,19 +458,8 @@ function calculateKMeans4(samples: Coordinate[]): { result: Coordinate; usedIndi
   const variance = calculateVariance(samples, average);
   const sigma = Math.sqrt(variance);
 
-  // Determine k dynamically like in the hybrid method (k = 2..6)
-  let k = 4;
-  if (sigma < 1.0) {
-    k = 2;
-  } else if (sigma < 1.5) {
-    k = 3;
-  } else if (sigma < 2.0) {
-    k = 4;
-  } else if (sigma < 2.5) {
-    k = 5;
-  } else {
-    k = 6;
-  }
+  // Fixed Number of Clusters (k) = 4 as requested
+  const k = 4;
 
   const assignments = runKMeans(samples, k);
   
@@ -547,19 +529,8 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
   const baardaRes = calculateBaardaPure(samples);
   const baardaIndices = baardaRes.usedIndices;
 
-  // 2. Column B (Spatial Branch): Adaptive K-Means Clustering inside dynamic limits (k = 2..6)
-  let k = 4;
-  if (sigma < 1.0) {
-    k = 2;
-  } else if (sigma < 1.5) {
-    k = 3;
-  } else if (sigma < 2.0) {
-    k = 4;
-  } else if (sigma < 2.5) {
-    k = 5;
-  } else {
-    k = 6;
-  }
+  // 2. Column B (Spatial Branch): Fixed K-Means Clustering for 4 clusters as requested
+  const k = 4;
 
   const clusterAssignments = runKMeans(samples, k);
   const clusters: number[][] = Array.from({ length: k }, () => []);
