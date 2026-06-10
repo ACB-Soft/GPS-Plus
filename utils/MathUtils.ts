@@ -744,9 +744,50 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
     return { result: currentCentroid, usedIndices: samples.map((_, i) => i) };
   }
 
-  const finalLSE = calculateWeightedLSE(finalSamplesToUse);
+  // Calculate Huber + Hardware weighted centroids just like in the hybrid method
+  const subAverage = calculateAverage(finalSamplesToUse);
+  const subVariance = calculateVariance(finalSamplesToUse, subAverage);
+  const subSigma = Math.sqrt(subVariance);
+  const huberLimit = 1.345 * Math.max(0.05, subSigma);
+
+  const accuracyLimit = Math.min(...finalSamplesToUse.map(s => s.accuracy));
+
+  const finalWeights = finalSamplesToUse.map(s => {
+    const dLat = (s.lat - subAverage.lat) * 111320;
+    const dLng = (s.lng - subAverage.lng) * 111320 * Math.cos(subAverage.lat * Math.PI / 180);
+    const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+    const huberWeight = dist <= huberLimit ? 1.0 : huberLimit / Math.max(0.01, dist);
+
+    const hardwareWeight = accuracyLimit / Math.max(0.1, s.accuracy);
+    return hardwareWeight * huberWeight;
+  });
+
+  const sumW = finalWeights.reduce((a, b) => a + b, 0) || 1.0;
+  const finalLat = finalSamplesToUse.reduce((sum, p, i) => sum + p.lat * finalWeights[i], 0) / sumW;
+  const finalLng = finalSamplesToUse.reduce((sum, p, i) => sum + p.lng * finalWeights[i], 0) / sumW;
+
+  const avgCoords = calculateAverage(finalSamplesToUse);
+
+  const finalResult: Coordinate = {
+    ...finalSamplesToUse[0],
+    lat: finalLat,
+    lng: finalLng,
+    accuracy: avgCoords.accuracy,
+    timestamp: Date.now()
+  };
+
+  const validAlts = finalSamplesToUse.filter(s => s.altitude !== null);
+  finalResult.altitude = validAlts.length > 0
+    ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length
+    : null;
+
+  const validAltAccs = finalSamplesToUse.filter(s => s.altitudeAccuracy !== null);
+  finalResult.altitudeAccuracy = validAltAccs.length > 0
+    ? validAltAccs.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length
+    : null;
+
   return {
-    result: finalLSE.result,
+    result: finalResult,
     usedIndices: usedIndices
   };
 }
