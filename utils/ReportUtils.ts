@@ -202,24 +202,26 @@ const N = (1 - u) * (1 - v) * n00
     <p>Sahada toplanan her bir saniyelik GNSS verisi, çevresel yansımalar ve uydu konfigürasyonlarındaki anlık değişimler nedeniyle rastgele ve sistemsel hatalar barındırır. ${FULL_BRAND}, bu hataları ayıklamak ve kararlı sonuçlar elde etmek amacıyla arazide ve ACB - Labs modülünde toplamda 5 farklı ileri düzey istatistiksel filtreleme kütüphanesini doğrudan kaynak kod yapısında barındırır:</p>
 
     <div class="case-container" style="background-color: #f8fafc; border-left: 4px solid #0284c7; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
-      <p class="bold" style="color: #0369a1; margin-bottom: 6px;">İleri Düzey Süzgeçlerin Çalışma Prensipleri ve Boyutsal Karakteristiği</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">15 Epok Sınırı ve Kararlılık:</span> İleri düzey süzme algoritmalarının tamamı (Huber Robust, RANSAC, Kalman, KDE, K-Means ve Baarda), istatistiksel güvenirlik ve örneklem büyüklüğü gereksinimleri sebebiyle <b>en az 15 statik epok (1 Hz frekansta yaklaşık 15 saniyelik sürekli gözlem serisi)</b> toplandıktan sonra aktifleşir. Bu limit altındaki kısa oturumlarda, rastgele gürültüleri filtrelemek için basit aritmetik ortalama yöntemine başvurulmaktadır.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2D Yatay Odaklı Hesaplama:</span> Geliştirilen ileri süzme mimarileri (dışarıda kalanların elenmesi, kümeleme ve yoğunluk süzgeçleri) <b>yalnızca 2 boyutlu yatay konum bileşenleri (Enlem, Boylam / Sağa, Yukarı Koordinatlar)</b> üzerinde koşturulur. Düşey yöndeki yükseklik (elipsoidal ve jeodezik ortometrik yükseklik) değerleri bu yönlü süzme işlemlerine dahil edilmez.</p>
-      <p class="no-indent"><span class="bold">Düşey Yükseklik İçin Aritmetik Ortalama Tercihi:</span> Jeodezik konumlandırmada düşey bileşenin doğruluğu, uydu geometrisi sınırları (tüm uyduların ufuk çizgisinin üzerinde yer almasından kaynaklı zayıf düşey baz katsayısı - <i>Vertical Dilution of Precision / VDOP</i>) sebebiyle yatay konum doğruluğuna kıyasla 2 ila 3 kat daha zayıftır. Mobil tarayıcı düzeyindeki Geolocation API tarafından sağlanan yükseklik verileri yüksek gürültülü ve kesintili olmasının yanı sıra, ayrıca her epok için güvenilir bir hata yarıçapı barındırmaz. Bu duruma 2D yatay süzgeçler (RANSAC, KDE vb.) doğrudan tatbik edilirse, düşeydeki ani sıçramalar ve yansıma gürültüleri süzgeci yanıltarak tekil ve yanlı (biased) yükseklik değerlerine yol açar. Bu akademik gerçeğe dayanarak, düşey yüksekliklerin belirlenmesinde <b>tüm aktif dönemdeki epokların doğrudan aritmetik ortalaması</b> tercih edilmiştir. Bu sayede, yapay matematiksel bozulmalar veya tekillikler oluşturulmaksızın yüksek frekanslı düşey gürültüler kararlı ve tarafsız bir biçimde sönümlenmiş olur.</p>
-    </div>
-
-    <h3>2.4.1. Stokastik Tek Nokta Dengelemesi ve Ölçülerin Ağırlıklı Merkezileştirilmesi (Weighted Centroid)</h3>
+      <p class="bold" style="color: #0369a1; margin-bottom: 6px;">İleri Düzey Süzgeçlerin Çalışma Prensi    <h3>2.4.1. Stokastik Tek Nokta Dengelemesi ve Ölçülerin Ağırlıklı Merkezileştirilmesi (Weighted Centroid)</h3>
     <p>En Küçük Kareler (LSE) prensibine göre, jeodezik bir ölçünün ağırlığı (p), o ölçünün karesel ortalama hatasının (veya standart sapmasının) karesiyle ters orantılıdır (p = 1 / &sigma;<sup>2</sup>). Akıllı konum sensörlerinde tarayıcı düzeyinde elde edilen Geolocation API hassasiyet dairesi yarıçapı (<i>accuracy</i>), doğrudan ham standart sapmayı (&sigma;) değil; pratik kestirim dünyasında %95 güven aralığına karşılık gelen bir dairesel hata olasılığını (Circular Error Probable - CEP veya yaklaşık 2-sigma) temsil eder. CEP değeri standart sapma ile doğrusal bağıntılı olduğundan, bu dairesel hata yarıçaplarının karesiyle ters orantılı ağırlıkların atanması (p<sub>i</sub> = 1 / accuracy<sub>i</sub><sup>2</sup>), teorik jeodezik ağırlıklandırma modeliyle tam bir stokastik uyum sergiler.</p>
-    <p>Sistem, tam bir 3B ağ dengelemesinin getireceği matris çözümü ve hesaplama yükü yerine; tek boyut düzeylerinde bağımsız en küçük kareler çözümü sunan <b>"Ölçülerin Ağırlıklı Merkezileştirilmesi (Weighted Centroid)"</b> yaklaşımını işletir. Bu model, uydulardan gelen anlık donanımsal tahmin farklarını sönümleyerek pratik, kararlı ve sarsıntısız tek nokta süzülmesi gerçekleştirir. İlgili ağırlıklı merkezleme işlemini yürüten kaynak kod yapısı aşağıda sunulmuştur:</p>
+    <p>Sistem, tam bir 3B ağ dengelemesinin getireceği matris çözümü ve hesaplama yükü yerine; tek boyut düzeylerinde bağımsız ağırlıklı ortalama denklemini çözen ve "Weighted Centroid" olarak da adlandırılan Ağırlıklı En Küçük Kareler (WLS / Weighted LSE) motorunu doğrudan çalıştırır. Yatay konumlar donanımsal doğruluk değerlerinin ters karesiyle ağırlıklandırılarak dengeli tek nokta konumu elde edilir. Dikey yüksekliklerde ise sistem, yüksek gürültülü düşey verileri sönümlemek amacıyla doğrudan aritmetik ortalamaya başvurur.</p>
+
+    <p class="no-indent">Ağırlıklı En Küçük Kareler (WLS) yönteminin TypeScript programlama dili kaynak kod tasarımı aşağıda sunulmuştur:</p>
     <pre class="code-block">
 function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
   if (samples.length === 0) return { result: samples[0], usedIndices: [0] };
-  const weights = samples.map(s => 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
-  const sumW = weights.reduce((a, b) => a + b, 0);
-  const meanLat = samples.reduce((a, s, i) => a + s.lat * weights[i], 0) / sumW;
-  const meanLng = samples.reduce((a, s, i) => a + s.lng * weights[i], 0) / sumW;
-  const validAltitudes = samples.filter(s => s.altitude !== null);
-  const meanAlt = validAltitudes.length > 0 ? validAltitudes.reduce((a, s) => a + (s.altitude || 0), 0) / validAltitudes.length : null;
+  
+  const weights = samples.map(s =&gt; 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
+  const sumW = weights.reduce((a, b) =&gt; a + b, 0);
+  
+  const meanLat = samples.reduce((a, s, i) =&gt; a + s.lat * weights[i], 0) / sumW;
+  const meanLng = samples.reduce((a, s, i) =&gt; a + s.lng * weights[i], 0) / sumW;
+  
+  const validAltitudes = samples.filter(s =&gt; s.altitude !== null);
+  const meanAlt = validAltitudes.length &gt; 0
+    ? validAltitudes.reduce((a, s) =&gt; a + (s.altitude || 0), 0) / validAltitudes.length
+    : null;
+    
   const result: Coordinate = {
     ...samples[0],
     lat: meanLat,
@@ -227,144 +229,176 @@ function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; used
     altitude: meanAlt,
     timestamp: Date.now()
   };
-  return { result, usedIndices: samples.map((_, i) => i) };
+  return { result, usedIndices: samples.map((_, i) =&gt; i) };
 }
     </pre>
 
-    <h3>2.4.2. "K-Means + Baarda + WLS" Gelişmiş Hibrit Filtreleme Modeli</h3>
-    <p>Uygulamanın amiral gemisi olarak tasarlanan bu bütünleşik hibrit model; rastgele donanım gürültülerini, çoklu yol (multipath) yansımalarını ve ani konumsal fırlamaları jeodezik standartlarda süzebilmek amacıyla geliştirilmiştir. Yöntem, alt parçalarında yer alan Adaptif K-Means segmentasyonu, Küme içi Baarda istatistiki uyuşmazlık analizleri, Kritik sınır kontrolü & Küme Birleştirme (Cluster Merging) ve Stokastik Ağırlıklı En Küçük Kareler (WLS) dengelemesini ardışık bir boru hattı (pipeline) içinde birbirine bağlar.</p>
+    <h3>2.4.2. Gürbüz Adımlı Huber M-Tahmini Süzgeci (Robust Huber M-Estimation)</h3>
+    <p>Huber M-tahmini yöntemi, veri havuzundaki konumsal sıçramaları ve gürültüleri hassasiyete göre yumuşatan gürbüz (robust) bir istatistiksel yaklaşımı temsil eder. Geliştirilen bu saf Huber süzgeci, klasik Huber sönümlemesini donanımsal alıcı doğruluk ağırlıkları ile birleştirerek iteratif bir dengeleme yürütür. 3-sigma eşiğini aşan aşırı sapanlar elendikten sonra, hibrit modelimizdeki gibi <b>Donanım Duyarlılığı × Huber Robust Ağırlığı</b> ortak çarpımı kullanılarak nihai ağırlıklı koordinat çözümü üretilir.</p>
 
-    <div class="case-container" style="background-color: #f8fafc; border-left: 4px solid #1e3a8a; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
-      <p class="bold" style="color: #1e3a8a; margin-bottom: 6px;">Hibrit İş Akışı Detaylı Adımları (Bütünleşik Jeodezik Çözüm)</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 1: Konumsal Standart Sapma Hesaplaması:</span> Tüm veri setinin metre cinsinden Konumsal Standart Sapması (&sigma;<sub>metrik</sub>) hesaplanır. Bu değer sahadaki toplam gürültünün ve sapmanın büyüklüğünü temsil eder.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 2: Adaptif Küme Sayaç Kararı:</span> &sigma;<sub>metrik</sub> değerine göre K-Means algoritmasının kaç gruba ayrılacağı dinamik olarak belirlenir: &sigma; &lt; 1.0m ise k=2; 1.0m &le; &sigma; &lt; 1.5m ise k=3; ve &sigma; &ge; 1.5m ise k=4 (Maksimum 4 küme sınırı ile aşırı bölünme önlenir).</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 3: K-Means Uzaysal Bölütleme ve Şampiyon Küme Tespiti (Uzaysal Kol):</span> Dinamik belirlenen k sayısı kullanılarak veri seti uzaysal olarak k adet alt kümeye bölütlenir. En çok eleman (örneklem) barındıran alt küme "Şampiyon Küme" seçilerek "Güvenli Geometrik Bölge" olarak tescillenir.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 4: Küresel Baarda Uyuşmazlığı Testi (Jeodezik Kol):</span> Verilerin tamamı bölünmeden tek bir büyük grup halinde Baarda kalın hata testine sokulur. Böylece makro düzeyde ve en yüksek serbestlik derecesiyle kalın hatalı noktalar elenir.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 5: İndeks Kesişim Filtresi (Kesişim Kolu):</span> Baarda testinden temiz çıkan küresel nokta havuzu ile K-Means Şampiyon Kümesindeki noktaların doğrudan indeks kesişimi alınarak çifte denetim gerçekleştirilir.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Adım 6: Seçenek C Yerel Baarda Fallback Süzgeci:</span> Eğer yapılan indeks kesişimi sonucunda hiç ortak nokta bulunamazsa (kesişim kümesi boş kalırsa), sistem otomatik olarak şampiyon kümenin kendi içinde yerel Baarda denetimi çalıştırarak lokal outliers eler ve kararlılığı kesintisiz korur.</p>
-      <p class="no-indent"><span class="bold">Adım 7: Nihai WLS Dengelemesi:</span> Kesinleşen filtrelenmiş noktalar üzerinde, donanımsal hassasiyet ağırlıkları (1/accuracy²) gözetilerek Stokastik Ağırlıklı En Küçük Kareler (Weighted Least Squares) dengelemesi uygulanır ve üstün jeodezik kesinlikte koordinat çözümü üretilir.</p>
+    <div class="case-container" style="background-color: #f8fafc; border-left: 4px solid #4f46e5; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
+      <p class="bold" style="color: #4338ca; margin-bottom: 6px;">Huber Robust + Donanımsal Ağırlık Birleşim Mantığı</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. İteratif Yakınsama:</span> İlk etapta tüm gözlemlerin ağırlıklı ortalaması referans alınarak standart sapma hesaplanır. Huber eşiği (1.345σ) belirlenerek anlık ağırlıklar iteratif biçimde güncellenir ve merkez kayması tolerans değerinin altına inene kadar (max 10 adım) pivot yenilenir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Kalın Hata Temizliği (3-sigma):</span> İterasyon sonunda nihai koordinat merkezinden en fazla 3-sigma (3 * σ) kadar uzaktaki gözlemler sisteme dahil edilir, bu sınırın dışındaki yansımalı kaba hatalar bütünüyle elenir.</p>
+      <p class="no-indent"><span class="bold">3. Ortak Ağırlıklandırma Formülasyonu:</span> Süzgeçten geçen temiz gözlemlerin nihai ağırlıkları tayin edilirken hem donanımsal hassasiyet (<i>accuracy<sub>min</sub> / accuracy<sub>i</sub></i>) hem de konumsal uzaklığa dayalı Huber sönümlemesi çarpan olarak yansıtılarak tam gürbüzlük (robustness) ve fiziksel kararlılık elde edilir.</p>
     </div>
 
-    <div class="case-container" style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
-      <p class="bold" style="color: #15803d; margin-bottom: 6px;">Yöntemin Avantaj ve Dezavantajları</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">Avantajlar:</span>
-        <br/>1. <b>Adaptif Filtreleme Konforu:</b> Sahadaki gerçek koordinat saçılımına (&sigma;) göre küme sayısının dinamik değişmesi, temiz veriyi az basamakla süzerken gürültülü veriyi çok boyutlu analiz eder.
-        <br/>2. <b>Düşük Hata Oranı (Güçlendirilmiş Yapı):</b> Zayıf kümelerin elenmek yerine en yakın güçlü kümeye güvenle birleştirilmesi, hiçbir kıymetli konum bilgisinin gereksiz yere filtrelere kurban edilmemesini sağlar.
-        <br/>3. <b>Sinyal Ayrıştırma Mukavemeti:</b> Sinyallerin (LOS / NLOS / Multipath) ortam özellikleri dinamik k ile tam uyumlu modellenir.
-        <br/>4. <b>Yüksek Matematiksel Kesinlik:</b> En yoğun temiz bulut kümesine WLS dengelemesi bindirilerek üstün stabilite kazandırılır.
-      </p>
-      <p class="no-indent"><span class="bold">Dezavantajlar:</span>
-        <br/>1. <b>Hesaplama Yoğunluğu:</b> Dinamik küme hesabı, mesafe tabanlı dinamik küme birleştirme ve döngüsel Baarda kaba hata elenmesi tarayıcı işlemci yükünü (CPU) kısmen artırır.
-      </p>
-    </div>
-
-    <p class="no-indent">"KMeans + Baarda" bütünleşik hibrit süzgecini çalıştıran kritik motor kaynak kod yapısı aşağıda yer almaktadır:</p>
+    <p class="no-indent">İteratif Huber M-Tahmini gürbüz süzgecini çalıştıran kritik fonksiyon yapısı aşağıda sunulmuştur:</p>
     <pre class="code-block">
-function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
-  if (samples.length &lt; 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
+export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length &lt; 4) {
+    return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
+  }
 
-  // 1. Calculate metric Standard Deviation
+  let currentCentroid = calculateAverage(samples);
+  const maxIterations = 10;
+  const tolerance = 1e-6;
+  let weights = samples.map(() => 1.0);
+  let usedIndices = samples.map((_, i) => i);
+
+  for (let iter = 0; iter &lt; maxIterations; iter++) {
+    const currentSigma = Math.sqrt(calculateVariance(samples, currentCentroid));
+    const huberLimit = 1.345 * Math.max(0.05, currentSigma);
+
+    let sumW = 0, sumLat = 0, sumLng = 0, sumAlt = 0, sumAltW = 0, hasAlt = false;
+
+    for (let i = 0; i &lt; samples.length; i++) {
+      const p = samples[i];
+      const dLat = (p.lat - currentCentroid.lat) * 111320;
+      const dLng = (p.lng - currentCentroid.lng) * 111320 * Math.cos(currentCentroid.lat * Math.PI / 180);
+      const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+
+      const hwWeight = 1 / Math.pow(Math.max(0.1, p.accuracy), 2);
+      const huberWeight = dist &lt;= huberLimit ? 1.0 : huberLimit / Math.max(0.01, dist);
+      const combinedWeight = hwWeight * huberWeight;
+      weights[i] = combinedWeight;
+
+      sumW += combinedWeight;
+      sumLat += p.lat * combinedWeight;
+      sumLng += p.lng * combinedWeight;
+
+      if (p.altitude !== null) {
+        hasAlt = true;
+        sumAlt += p.altitude * combinedWeight;
+        sumAltW += combinedWeight;
+      }
+    }
+
+    if (sumW === 0) break;
+
+    const nextCentroid = {
+      lat: sumLat / sumW,
+      lng: sumLng / sumW,
+      accuracy: currentCentroid.accuracy,
+      altitude: hasAlt ? sumAlt / sumAltW : null,
+      altitudeAccuracy: currentCentroid.altitudeAccuracy,
+      timestamp: currentCentroid.timestamp
+    };
+
+    const dLat = (nextCentroid.lat - currentCentroid.lat) * 111320;
+    const dLng = (nextCentroid.lng - currentCentroid.lng) * 111320 * Math.cos(currentCentroid.lat * Math.PI / 180);
+    const change = Math.sqrt(dLat * dLat + dLng * dLng);
+
+    currentCentroid = nextCentroid;
+    if (change &lt; tolerance) break;
+  }
+
+  const finalSigma = Math.sqrt(calculateVariance(samples, currentCentroid));
+  const outlierThreshold = 3.0 * Math.max(0.1, finalSigma);
+  
+  usedIndices = [];
+  const finalSamplesToUse = [];
+  for (let i = 0; i &lt; samples.length; i++) {
+    const p = samples[i];
+    const dLat = (p.lat - currentCentroid.lat) * 111320;
+    const dLng = (p.lng - currentCentroid.lng) * 111320 * Math.cos(currentCentroid.lat * Math.PI / 180);
+    const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+    
+    if (dist &lt;= outlierThreshold) {
+      usedIndices.push(i);
+      finalSamplesToUse.push(p);
+    }
+  }
+
+  if (finalSamplesToUse.length === 0) {
+    return { result: currentCentroid, usedIndices: samples.map((_, i) => i) };
+  }
+
+  // Calculate Huber + Hardware weighted centroids just like in the hybrid method
+  const subAverage = calculateAverage(finalSamplesToUse);
+  const subVariance = calculateVariance(finalSamplesToUse, subAverage);
+  const subSigma = Math.sqrt(subVariance);
+  const huberLimit = 1.345 * Math.max(0.05, subSigma);
+  const accuracyLimit = Math.min(...finalSamplesToUse.map(s =&gt; s.accuracy));
+
+  const finalWeights = finalSamplesToUse.map(s =&gt; {
+    const dLat = (s.lat - subAverage.lat) * 111320;
+    const dLng = (s.lng - subAverage.lng) * 111320 * Math.cos(subAverage.lat * Math.PI / 180);
+    const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+    const huberWeight = dist &lt;= huberLimit ? 1.0 : huberLimit / Math.max(0.01, dist);
+    const hardwareWeight = accuracyLimit / Math.max(0.1, s.accuracy);
+    return hardwareWeight * huberWeight;
+  });
+
+  const sumW = finalWeights.reduce((a, b) =&gt; a + b, 0) || 1.0;
+  const finalLat = finalSamplesToUse.reduce((sum, p, i) =&gt; sum + p.lat * finalWeights[i], 0) / sumW;
+  const finalLng = finalSamplesToUse.reduce((sum, p, i) =&gt; sum + p.lng * finalWeights[i], 0) / sumW;
+
+  const avgCoords = calculateAverage(finalSamplesToUse);
+  const finalResult = {
+    ...finalSamplesToUse[0],
+    lat: finalLat,
+    lng: finalLng,
+    accuracy: avgCoords.accuracy,
+    timestamp: Date.now()
+  };
+
+  const validAlts = finalSamplesToUse.filter(s =&gt; s.altitude !== null);
+  finalResult.altitude = validAlts.length &gt; 0 ? validAlts.reduce((a, b) =&gt; a + (b.altitude || 0), 0) / validAlts.length : null;
+
+  const validAltAccs = finalSamplesToUse.filter(s =&gt; s.altitudeAccuracy !== null);
+  finalResult.altitudeAccuracy = validAltAccs.length &gt; 0 ? validAltAccs.reduce((a, b) =&gt; a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length : null;
+
+  return { result: finalResult, usedIndices };
+}
+    </pre>
+
+    <h3>2.4.3. Dinamik KMeans Kümeleme Süzgeci (Dynamic KMeans Clustering)</h3>
+    <p>Bu filtreleme modeli, harici yansıma ve saçılma miktarına bağlı olarak 2D konum verilerini dinamik sayıda bağımsız alt küme grubuna ayırır. Klasik k=4 sabit küme kısıtı yerine, ham verilerin metrik standart sapması (&sigma;) göz önüne alınarak k sayısı 2 ile 6 arasında uyarlanır. Kümeleme bittikten sonra örneklem yoğunluğunun maksimum olduğu şampiyon küme seçilir ve bu küme üzerine Ağırlıklı En Küçük Kareler dengelemesi tatbik edilir.</p>
+    
+    <p><span class="bold">Dinamik k Belirleme Kriterleri:</span> Sinyal varyansının düşük olduğu temiz arazilerde k=2 veya k=3 seçilerek aşırı parçalanma ve gereksiz nokta kaybı önlenirken; yansımanın yüksek olduğu kent kanyonlarında k katsayısı 4, 5 veya 6'ya tırmandırılarak parazitik (NLOS) saçılmaları bağımsız ufak kümelere dağıtır ve ana veri öbeğini saflaştırır.</p>
+    
+    <p class="no-indent">Sistemde yürütülen, dinamik k katsayısını belirleyen ve şampiyon küme üzerinde LSE dengelemesini tetikleyen TypeScript kaynak kod yapısı şu şekildedir:</p>
+    <pre class="code-block">
+function calculateKMeans4(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
+  if (samples.length &lt; 4) {
+    return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
+  }
+
   const average = calculateAverage(samples);
   const variance = calculateVariance(samples, average);
   const sigma = Math.sqrt(variance);
 
-  // 2. Decide Adaptive Number of Clusters (k) - Max 4 Clusters
+  // Determine k dynamically like in the hybrid method (k = 2..6)
   let k = 4;
   if (sigma &lt; 1.0) {
-    k = 2; // Clean signal, only micro noise needs separation
+    k = 2;
   } else if (sigma &lt; 1.5) {
     k = 3;
+  } else if (sigma &lt; 2.0) {
+    k = 4;
+  } else if (sigma &lt; 2.5) {
+    k = 5;
   } else {
-    k = 4; // Moderate/Heavy obstructions (Maximum 4 Clusters)
+    k = 6;
   }
 
-  // 3. K-Means clustering on the whole raw dataset
-  const clusterAssignments = runKMeans(samples, k);
-  
-  // Group index allocations into clusters
-  const clusters: number[][] = Array.from({ length: k }, () =&gt; []);
-  clusterAssignments.forEach((cIdx, i) =&gt; {
-    clusters[cIdx].push(i);
-  });
-
-  // 1. Kol (Uzaysal Kol): Find the "Champion Cluster" (largest cluster by element count)
-  let bestClusterIdx = 0;
-  let maxCount = -1;
-  for (let i = 0; i &lt; k; i++) {
-    if (clusters[i].length &gt; maxCount) {
-      maxCount = clusters[i].length;
-      bestClusterIdx = i;
-    }
-  }
-
-  const championIndices = clusters[bestClusterIdx];
-  const championPoints = championIndices.map(idx =&gt; samples[idx]);
-
-  // 2. Kol (Jeodezik Kol): Run Baarda Test on the entire raw dataset without partitioning
-  const baardaPureRes = calculateBaardaPure(samples);
-  const baardaCleanIndices = baardaPureRes.usedIndices;
-
-  // 3. Intersection &amp; Final Selection:
-  const finalCleanIndices = baardaCleanIndices.filter(idx =&gt; championIndices.includes(idx));
-  const finalCleanPoints = finalCleanIndices.map(idx =&gt; samples[idx]);
-
-  // Graceful fallback if strict intersection is empty (Option C: local Baarda)
-  let finalPointsToUse = finalCleanPoints;
-  let finalIndicesToUse = finalCleanIndices;
-
-  if (finalPointsToUse.length === 0) {
-    const localBaardaRes = calculateBaardaPure(championPoints);
-    finalIndicesToUse = localBaardaRes.usedIndices.map(localIdx =&gt; championIndices[localIdx]);
-    finalPointsToUse = finalIndicesToUse.map(idx =&gt; samples[idx]);
-  }
-
-  if (finalPointsToUse.length === 0) {
-    return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
-  }
-
-  // Final Weighted Least Squares (WLS) Solution on selected intersection points
-  const lseResult = calculateWeightedLSE(finalPointsToUse);
-  const finalResult = { ...lseResult.result };
-
-  // Calculate altitude and altitudeAccuracy on selected points
-  const validAlts = finalPointsToUse.filter(s =&gt; s.altitude !== null);
-  finalResult.altitude = validAlts.length &gt; 0
-    ? validAlts.reduce((a, b) =&gt; a + (b.altitude || 0), 0) / validAlts.length
-    : null;
-
-  const validAltAccs = finalPointsToUse.filter(s =&gt; s.altitudeAccuracy !== null);
-  finalResult.altitudeAccuracy = validAltAccs.length &gt; 0
-    ? validAltAccs.reduce((a, b) =&gt; a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length
-    : null;
-
-  return { 
-    result: finalResult, 
-    usedIndices: finalIndicesToUse, 
-    clusters: clusters.filter(c =&gt; c.length &gt; 0)
-  };
-}
-    </pre>
-
-    <h3>2.4.3. K-Means (4-Way Segmentasyon) Süzgeci ve En Yoğun Küme Seçim Çekirdeği</h3>
-    <p>Bu filtreleme modeli, küme içi varyans ve kareler toplamının minimum edilmesi kriterine göre 2 boyutlu konumsal koordinat verilerini 4 ayrı gruba segmentler. İstatistiksel olarak en kararlı, saçılım genişliği en dar ve yoğunluğu (örneklem adedi) en yüksek olan küme seçilerek, sadece bu küme içerisindeki gözlemlerin ağırlıklı konumsal merkezi (Weighted Centroid) genel sonuç kabul edilir.</p>
-    
-    <p><span class="bold">k = 4 Parametresinin Deneysel Gerekçesi:</span> Deneysel ve ampirik ön çalışmalarımızda, statik oturumlarda saniyelik bazda toplanan gürültülü konum verilerinin yeğin çevre yansımaları (multipath) ve engelli kentsel kanyonlarda ortaya çıkan 2 ila 3 temel dolaylı yansıma (Non-Line-of-Sight - NLOS) dalgası ile doğrudan görüş (Line-of-Sight - LOS) izleri dahilinde en fazla 4 temel uzaysal odak noktasında kümelendiği görülmüştür. Bu sebeple <b>k = 4</b> parametresi, alıcı üzerindeki hesaplama yükünü artırmadan engebeli sinyal yansıma örüntülerini bütünüyle yakalamak üzere ampirik olarak tayin edilmiştir.</p>
-    
-    <p class="no-indent">Sistemde yürütülen, K-Means kümelemesi sonrasında en yoğun (maksimum örneklemli) kümeyi tespit eden ve bu küme elemanlarını Stokastik Tek Nokta Dengeleme motoruna (calculateWeightedLSE) gönderen bütünleşik TS kodu aşağıda sunulmuştur:</p>
-    <pre class="code-block">
-function calculateKMeans4(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
-  if (samples.length &lt; 4) {
-    return { result: calculateAverage(samples), usedIndices: samples.map((_, i) =&gt; i), clusters: [] };
-  }
-  const k = 4;
   const assignments = runKMeans(samples, k);
-  
   const clusters: number[][] = Array.from({ length: k }, () =&gt; []);
   assignments.forEach((cIdx, i) =&gt; {
     clusters[cIdx].push(i);
   });
   
-  // Find the cluster with the highest number of points (maximum density)
   let bestClusterIdx = 0;
   let maxCount = -1;
   for (let i = 0; i &lt; k; i++) {
@@ -384,6 +418,7 @@ function calculateKMeans4(samples: Coordinate[]): { result: Coordinate; usedIndi
     clusters: clusters.filter(c =&gt; c.length &gt; 0)
   };
 }
+    </pre>
 
 function runKMeans(samples: Coordinate[], k: number): number[] {
   let centroids = samples.slice(0, k).map(s =&gt; ({ lat: s.lat, lng: s.lng }));
