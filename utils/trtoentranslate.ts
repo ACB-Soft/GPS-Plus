@@ -375,6 +375,7 @@ export const trToEnMap: Record<string, string> = {
   "5. Analiz Sonuçları": "5. Analysis Results",
   "Analiz Sonuçlarını Haritada Gör": "View Analysis Results on Map",
   "Yöntem": "Method",
+  "Katılan Veri": "Used Points",
   "ΔDüşey (m)": "ΔVertical (m)",
   "EN İYİ": "BEST",
   "Hesaplanan Y (Sağa)": "Calculated Y (Easting)",
