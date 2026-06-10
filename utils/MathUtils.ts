@@ -554,22 +554,32 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
   }
   const championIndices = clusters[bestClusterIdx];
 
-  // 3. Column C (Robust Estimator Branch): Huber scoring filter sifting outliers beyond 1.345 * sigma from the mean centroid
-  const huberLimit = 1.345 * Math.max(0.1, sigma);
+  // Perform 2-way Intersection of (K-Means ∩ Baarda) first
+  const twoWayIndices = baardaIndices.filter(idx => championIndices.includes(idx));
+
+  // 3. Huber Robust M-Estimation Filter: Apply specifically to the two-way intersection set
   const huberIndices: number[] = [];
-  for (let i = 0; i < samples.length; i++) {
-    const dLat = (samples[i].lat - average.lat) * 111320;
-    const dLng = (samples[i].lng - average.lng) * 111320 * Math.cos(average.lat * Math.PI / 180);
-    const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-    if (dist <= huberLimit) {
-      huberIndices.push(i);
+  if (twoWayIndices.length > 0) {
+    const subsetPoints = twoWayIndices.map(idx => samples[idx]);
+    const subAverage = calculateAverage(subsetPoints);
+    const subVariance = calculateVariance(subsetPoints, subAverage);
+    const subSigma = Math.sqrt(subVariance);
+
+    const huberLimit = 1.345 * Math.max(0.05, subSigma);
+    for (const idx of twoWayIndices) {
+      const p = samples[idx];
+      const dLat = (p.lat - subAverage.lat) * 111320;
+      const dLng = (p.lng - subAverage.lng) * 111320 * Math.cos(subAverage.lat * Math.PI / 180);
+      const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+      // Keep only points that are close enough to the subset's own centroid
+      if (dist <= huberLimit) {
+        huberIndices.push(idx);
+      }
     }
   }
 
-  // Perform 3-way Intersection: (K-Means ∩ Baarda ∩ Huber)
-  const intersectionIndices = baardaIndices.filter(
-    idx => championIndices.includes(idx) && huberIndices.includes(idx)
-  );
+  // The final intersected indices are the ones that survive the Huber filter
+  const intersectionIndices = huberIndices;
   const intersectionPoints = intersectionIndices.map(idx => samples[idx]);
 
   // If we have at least 4 viable points, calculate Weighted Least Squares (WLS) adjustment

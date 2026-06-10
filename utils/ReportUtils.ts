@@ -491,16 +491,15 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
     </pre>
 
     <h3>2.4.5. "K-Means + Baarda + Huber + WLS" İleri-Hibrit Filtreleme Modeli (Üçlü Sacayağı)</h3>
-    <p>Uygulamada yer alan en gelişmiş ve akademik seviyedeki konum hesaplama yöntemidir. Bu metot, uydulardan gelen sinyal hatalarını ve çoklu yol yansımalarını (multipath) ayıklamak amacıyla 3 bağımsız matematiksel süzgeci <b>paralel analiz kolları (üçlü sacayağı)</b> halinde çalıştırır. Her kol, verinin farklı bir zayıflığını veya kaba hata tipini yakalamak üzere tasarlanmıştır.</p>
+    <p>Uygulamada yer alan en gelişmiş ve akademik seviyedeki konum hesaplama yöntemidir. Bu metot, uydulardan gelen sinyal hatalarını ve çoklu yol yansımalarını (multipath) en üstün hassasiyetle ayıklamak amacıyla geliştirilmiştir. Yöntem, küresel Baarda testi ve adaptif K-Means sonuçlarını kesiştirerek elde edilen temiz küme üzerinde <b>lokal Huber M-Estimation süzgecini</b> koşturur. Bu sayede local gürültü öbekleri de elimine edilir.</p>
 
     <div class="case-container" style="background-color: #f0fdf4; border-left: 4px solid #10b981; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
       <p class="bold" style="color: #065f46; margin-bottom: 6px;">İleri Hibrit Algoritması Paralel Kolları ve Kesişim Kuralları</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Kol - Genel Baarda Testi (İç Güvenilirlik Süzgeci):</span> 120 epokluk ham havuzun tamamını tek bir grup olarak inceler. Gıda ve tarım uydularından gelen donanımsal ani fırlamaları ve varyans sarsıntılarını küresel Baarda testiyle eler.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Kol - Adaptif K-Means (Geometrik Süzgeç):</span> Verinin metrik standart sapmasına göre küme sayısı k = 2..6 arasında dinamik olarak tayin edilir. Mekansal olarak en yoğun olan "Şampiyon Küme" seçilerek çoklu yansımaya kapılmış gürültülü öbekler dışlanır.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. Kol - Huber M-Tahmini (Gürbüz Dengeleme Filtresi):</span> Gözlemlerin ortanca merkezden (spatial median) uzaklıklarına göre gürbüz varyans katsayısı (MAD - Median Absolute Deviation) hesaplanır. Huber sınır değeri (1.345σ) ile sınır varyans dışındaki gri alanda kalan sapmalı gözlemler elenir.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">4. Üçlü Kesişim Matrisi (Karar Mekanizması):</span> Her üç filtre kolunun da onayından geçen noktalar (Baarda ∩ KMeans ∩ Huber) nihai veri seti olarak seçilir.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">5. Geri Çekilme Mekanizması (Fallback):</span> Eğer üçlü kesişim matrisinden geçen nokta sayısı istatistiksel açıdan yetersiz kalırsa (nokta sayısı &lt; 4), sistem otomatik olarak stabil bir şekilde çalışan diğer "K-Means + Baarda + WLS" modeline geri döner (Fallback).</p>
-      <p class="no-indent"><span class="bold">6. Stokastik WLS Dengelemesi:</span> Seçilen nihai temiz küme noktaları üzerinde, 1/accuracy² hassasiyet ağırlıkları kullanılarak En Küçük Kareler dengelemesi icra edilerek nihai koordinat çözülür.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Kol - Genel Baarda Testi (İç Güvenilirlik Süzgeci):</span> 120 epokluk ham havuzun tamamını tek bir grup olarak inceleyerek, ani konumsal sıçramaları ve kalın donanımsal hataları varyans test büyüklüklerine göre ayıklar.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Kol - Adaptif K-Means (Geometrik Süzgeç):</span> Verinin metrik standart sapmasına göre küme sayısı k = 2..6 arasında dinamik olarak belirlenir. En yoğun "Şampiyon Küme" seçilerek çoklu yansımanın binalardan oluşturduğu uydurma ömürsüz öbekler dışlanır.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. Kesişim Kümesi ve Huber Robust Süzgeci:</span> Baarda'dan temiz çıkan küresel noktalar ile K-Means'in yoğun şampiyon kümesinin doğrudan indeks kesişimi (2-Way Intersection) alınır. Bu kesişen temiz alt grupta, gürbüz varyans temel alınarak <b>Lokal Huber M-Estimation</b> (1.345σ) filtresi çalıştırılır; böylece grup içine sızmış mikro gürültüler de filtrelenir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">4. Geri Çekilme Mekanizması (Fallback):</span> Eğer nihai Huber filtresinden geçen nokta sayısı sönümlenmiş alt limitin (nokta sayısı &lt; 4) altına inerse, sistem otomatik olarak stabil çalışan diğer "K-Means + Baarda + WLS" modeline geri döner (Fallback).</p>
+      <p class="no-indent"><span class="bold">5. Stokastik WLS Dengelemesi:</span> Süzülen nihai üst-temiz gözlemler, 1/accuracy² ağırlıklarıyla Ağırlıklı En Küçük Kareler (WLS) dengelemesine sokularak milimetrik kararlılıkta nihai çözüm üretilir.</p>
     </div>
 
     <p class="no-indent">"K-Means + Baarda + Huber + WLS" yönteminin TypeScript programlama dilli motor kaynak kod tasarımı aşağıda sunulmuştur:</p>
@@ -516,11 +515,12 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): { result: Coordinate
   const sigma = Math.sqrt(variance);
 
   // 2. Adaptive K-Means k setting (k values range from 2 to 6)
-  let k = 6;
+  let k = 4;
   if (sigma &lt; 1.0) k = 2;
   else if (sigma &lt; 1.5) k = 3;
   else if (sigma &lt; 2.5) k = 4;
   else if (sigma &lt; 3.5) k = 5;
+  else k = 6;
 
   const assignments = runKMeans(samples, k);
   const clusters: number[][] = Array.from({ length: k }, () =&gt; []);
@@ -528,6 +528,58 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): { result: Coordinate
 
   let bestClusterIdx = 0;
   let maxCount = -1;
+  for (let i = 0; i &lt; k; i++) {
+    if (clusters[i].length &gt; maxCount) {
+      maxCount = clusters[i].length;
+      bestClusterIdx = i;
+    }
+  }
+  const championIndices = clusters[bestClusterIdx];
+
+  // 1. Branch: Baarda Snooping
+  const baardaPureRes = calculateBaardaPure(samples);
+  const baardaIndices = baardaPureRes.usedIndices;
+
+  // Perform 2-way Intersection first
+  const twoWayIndices = baardaIndices.filter(idx =&gt; championIndices.includes(idx));
+
+  // 3. Branch: Huber Robust M-Estimation Filter on Two-Way Intersection
+  const huberIndices: number[] = [];
+  if (twoWayIndices.length &gt; 0) {
+    const subsetPoints = twoWayIndices.map(idx =&gt; samples[idx]);
+    const subAverage = calculateAverage(subsetPoints);
+    const subVariance = calculateVariance(subsetPoints, subAverage);
+    const subSigma = Math.sqrt(subVariance);
+
+    const huberLimit = 1.345 * Math.max(0.05, subSigma);
+    for (const idx of twoWayIndices) {
+      const p = samples[idx];
+      const dLat = (p.lat - subAverage.lat) * 111320;
+      const dLng = (p.lng - subAverage.lng) * 111320 * Math.cos(subAverage.lat * Math.PI / 180);
+      const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+      if (dist &lt;= huberLimit) {
+        huberIndices.push(idx);
+      }
+    }
+  }
+
+  const intersectedIndices = huberIndices;
+
+  // Fallback to calculateKMeansBaarda if intersection is insufficient
+  if (intersectedIndices.length &lt; 4) {
+    return calculateKMeansBaarda(samples);
+  }
+
+  const selectedPoints = intersectedIndices.map(idx =&gt; samples[idx]);
+  const lseResult = calculateWeightedLSE(selectedPoints);
+
+  return {
+    result: lseResult.result,
+    usedIndices: intersectedIndices,
+    clusters: clusters.filter(c =&gt; c.length &gt; 0)
+  };
+}
+    </pre>t = -1;
   for (let i = 0; i &lt; k; i++) {
     if (clusters[i].length &gt; maxCount) {
       maxCount = clusters[i].length;
