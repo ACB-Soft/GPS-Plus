@@ -405,6 +405,12 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
   const criticalValue = 3.29; // Critical limit for 99.9% confidence interval
 
   while (currentSamples.length > 4) {
+    // Kalan verinin saçılım genişliği 0.50m'nin altına düştüğünde veri elemesini durdur
+    const currentSpread = calculateMaxDistance(currentSamples);
+    if (currentSpread < 0.50) {
+      break;
+    }
+
     const weights = currentSamples.map(s => 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
     const sumW = weights.reduce((a, b) => a + b, 0);
     const meanLat = currentSamples.reduce((a, b, i) => a + b.lat * weights[i], 0) / sumW;
