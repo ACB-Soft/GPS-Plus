@@ -145,6 +145,28 @@ export function calculateMaxDistance(samples: Coordinate[]): number {
   return maxDist;
 }
 
+export function calculateMedian(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const half = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 !== 0) {
+    return sorted[half];
+  }
+  return (sorted[half - 1] + sorted[half]) / 2.0;
+}
+
+export function calculateMAD(samples: Coordinate[], center: { lat: number; lng: number }): number {
+  if (samples.length === 0) return 0;
+  const distances = samples.map(s => {
+    const dLat = (s.lat - center.lat) * 111320;
+    const dLng = (s.lng - center.lng) * 111320 * Math.cos(center.lat * Math.PI / 180);
+    return Math.sqrt(dLat * dLat + dLng * dLng);
+  });
+  const medianDist = calculateMedian(distances);
+  // 1.4826 is the scaling factor for consistency with standard deviation
+  return 1.4826 * medianDist;
+}
+
 export function calculateAverage(samples: Coordinate[]): Coordinate {
   const validAltitudes = samples.filter(s => s.altitude !== null);
   const validAltAccuracies = samples.filter(s => s.altitudeAccuracy !== null);
@@ -556,15 +578,19 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
   const huberIndices: number[] = [];
   if (twoWayIndices.length > 0) {
     const subsetPoints = twoWayIndices.map(idx => samples[idx]);
-    const subAverage = calculateAverage(subsetPoints);
-    const subVariance = calculateVariance(subsetPoints, subAverage);
-    const subSigma = Math.sqrt(subVariance);
-
+    const subLats = subsetPoints.map(p => p.lat);
+    const subLngs = subsetPoints.map(p => p.lng);
+    const subMedianCenter = {
+      lat: calculateMedian(subLats),
+      lng: calculateMedian(subLngs)
+    };
+    const subSigma = calculateMAD(subsetPoints, subMedianCenter);
     const huberLimit = 1.345 * Math.max(0.05, subSigma);
+
     for (const idx of twoWayIndices) {
       const p = samples[idx];
-      const dLat = (p.lat - subAverage.lat) * 111320;
-      const dLng = (p.lng - subAverage.lng) * 111320 * Math.cos(subAverage.lat * Math.PI / 180);
+      const dLat = (p.lat - subMedianCenter.lat) * 111320;
+      const dLng = (p.lng - subMedianCenter.lng) * 111320 * Math.cos(subMedianCenter.lat * Math.PI / 180);
       const dist = Math.sqrt(dLat * dLat + dLng * dLng);
       // Keep only points that are close enough to the subset's own centroid
       if (dist <= huberLimit) {
@@ -581,16 +607,20 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
   // P_final = w_hardware * w_huber = (accuracy_min / accuracy_i) * w_huber,i
   if (intersectionPoints.length >= 4) {
     const subsetPoints = intersectionPoints;
-    const subAverage = calculateAverage(subsetPoints);
-    const subVariance = calculateVariance(subsetPoints, subAverage);
-    const subSigma = Math.sqrt(subVariance);
+    const subLats = subsetPoints.map(p => p.lat);
+    const subLngs = subsetPoints.map(p => p.lng);
+    const subMedianCenter = {
+      lat: calculateMedian(subLats),
+      lng: calculateMedian(subLngs)
+    };
+    const subSigma = calculateMAD(subsetPoints, subMedianCenter);
     const huberLimit = 1.345 * Math.max(0.05, subSigma);
 
     const accuracyLimit = Math.min(...intersectionPoints.map(s => s.accuracy));
 
     const finalWeights = intersectionPoints.map(s => {
-      const dLat = (s.lat - subAverage.lat) * 111320;
-      const dLng = (s.lng - subAverage.lng) * 111320 * Math.cos(subAverage.lat * Math.PI / 180);
+      const dLat = (s.lat - subMedianCenter.lat) * 111320;
+      const dLng = (s.lng - subMedianCenter.lng) * 111320 * Math.cos(subMedianCenter.lat * Math.PI / 180);
       const dist = Math.sqrt(dLat * dLat + dLng * dLng);
       const huberWeight = dist <= huberLimit ? 1.0 : huberLimit / Math.max(0.01, dist);
 
@@ -647,15 +677,35 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
     return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
   }
 
-  // Iterative Huber M-estimation
-  let currentCentroid = calculateAverage(samples);
+  // Iterative Huber M-estimation starting with robust Median
+  const candidateLats = samples.map(s => s.lat);
+  const candidateLngs = samples.map(s => s.lng);
+  const medianLat = calculateMedian(candidateLats);
+  const medianLng = calculateMedian(candidateLngs);
+  
+  const validAlts = samples.filter(s => s.altitude !== null);
+  const medianAlt = validAlts.length > 0 ? calculateMedian(validAlts.map(s => s.altitude as number)) : null;
+  
+  const validAltAccs = samples.filter(s => s.altitudeAccuracy !== null);
+  const medianAltAcc = validAltAccs.length > 0 ? calculateMedian(validAltAccs.map(s => s.altitudeAccuracy as number)) : null;
+
+  let currentCentroid: Coordinate = {
+    ...samples[0],
+    lat: medianLat,
+    lng: medianLng,
+    accuracy: calculateMedian(samples.map(s => s.accuracy)),
+    altitude: medianAlt,
+    altitudeAccuracy: medianAltAcc,
+    timestamp: Date.now()
+  };
+
   const maxIterations = 10;
   const tolerance = 1e-6;
   let weights = samples.map(() => 1.0);
   let usedIndices = samples.map((_, i) => i);
 
   for (let iter = 0; iter < maxIterations; iter++) {
-    const currentSigma = Math.sqrt(calculateVariance(samples, currentCentroid));
+    const currentSigma = calculateMAD(samples, currentCentroid);
     const huberLimit = 1.345 * Math.max(0.05, currentSigma);
 
     let sumW = 0;
@@ -711,8 +761,8 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
     }
   }
 
-  // Filter extreme outliers (beyond 3-sigma) for usedIndices
-  const finalSigma = Math.sqrt(calculateVariance(samples, currentCentroid));
+  // Filter extreme outliers (beyond 3-sigma robustness estimate) for usedIndices
+  const finalSigma = calculateMAD(samples, currentCentroid);
   const outlierThreshold = 3.0 * Math.max(0.1, finalSigma);
   
   usedIndices = [];
@@ -735,16 +785,20 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
   }
 
   // Calculate Huber + Hardware weighted centroids just like in the hybrid method
-  const subAverage = calculateAverage(finalSamplesToUse);
-  const subVariance = calculateVariance(finalSamplesToUse, subAverage);
-  const subSigma = Math.sqrt(subVariance);
+  const subLats = finalSamplesToUse.map(p => p.lat);
+  const subLngs = finalSamplesToUse.map(p => p.lng);
+  const subMedianCenter = {
+    lat: calculateMedian(subLats),
+    lng: calculateMedian(subLngs)
+  };
+  const subSigma = calculateMAD(finalSamplesToUse, subMedianCenter);
   const huberLimit = 1.345 * Math.max(0.05, subSigma);
 
   const accuracyLimit = Math.min(...finalSamplesToUse.map(s => s.accuracy));
 
   const finalWeights = finalSamplesToUse.map(s => {
-    const dLat = (s.lat - subAverage.lat) * 111320;
-    const dLng = (s.lng - subAverage.lng) * 111320 * Math.cos(subAverage.lat * Math.PI / 180);
+    const dLat = (s.lat - subMedianCenter.lat) * 111320;
+    const dLng = (s.lng - subMedianCenter.lng) * 111320 * Math.cos(subMedianCenter.lat * Math.PI / 180);
     const dist = Math.sqrt(dLat * dLat + dLng * dLng);
     const huberWeight = dist <= huberLimit ? 1.0 : huberLimit / Math.max(0.01, dist);
 
@@ -766,14 +820,14 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
     timestamp: Date.now()
   };
 
-  const validAlts = finalSamplesToUse.filter(s => s.altitude !== null);
-  finalResult.altitude = validAlts.length > 0
-    ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length
+  const finalValidAlts = finalSamplesToUse.filter(s => s.altitude !== null);
+  finalResult.altitude = finalValidAlts.length > 0
+    ? finalValidAlts.reduce((a, b) => a + (b.altitude || 0), 0) / finalValidAlts.length
     : null;
 
-  const validAltAccs = finalSamplesToUse.filter(s => s.altitudeAccuracy !== null);
-  finalResult.altitudeAccuracy = validAltAccs.length > 0
-    ? validAltAccs.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length
+  const finalValidAltAccs = finalSamplesToUse.filter(s => s.altitudeAccuracy !== null);
+  finalResult.altitudeAccuracy = finalValidAltAccs.length > 0
+    ? finalValidAltAccs.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / finalValidAltAccs.length
     : null;
 
   return {
