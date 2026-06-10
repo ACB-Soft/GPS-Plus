@@ -258,7 +258,7 @@ function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; used
       </p>
     </div>
 
-    <p class="no-indent">"K-Means + Baarda + WLS" bütünleşik hibrit süzgecini çalıştıran kritik motor kaynak kod yapısı aşağıda yer almaktadır:</p>
+    <p class="no-indent">"KMeans + Baarda" bütünleşik hibrit süzgecini çalıştıran kritik motor kaynak kod yapısı aşağıda yer almaktadır:</p>
     <pre class="code-block">
 function calculateKMeansBaarda(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
   if (samples.length &lt; 5) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
@@ -490,7 +490,7 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
 }
     </pre>
 
-    <h3>2.4.5. "K-Means + Baarda + Huber + WLS" İleri-Hibrit Filtreleme Modeli (Üçlü Sacayağı)</h3>
+    <h3>2.4.5. "KMeans + Baarda + Huber" İleri-Hibrit Filtreleme Modeli</h3>
     <p>Uygulamada yer alan en gelişmiş ve akademik seviyedeki konum hesaplama yöntemidir. Bu metot, uydulardan gelen sinyal hatalarını ve çoklu yol yansımalarını (multipath) en üstün hassasiyetle ayıklamak amacıyla geliştirilmiştir. Yöntem, küresel Baarda testi ve adaptif K-Means sonuçlarını kesiştirerek elde edilen temiz küme üzerinde <b>lokal Huber M-Estimation süzgecini</b> koşturur. Bu sayede local gürültü öbekleri de elimine edilir.</p>
 
     <div class="case-container" style="background-color: #f0fdf4; border-left: 4px solid #10b981; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
@@ -498,34 +498,53 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Kol - Genel Baarda Testi (İç Güvenilirlik Süzgeci):</span> 120 epokluk ham havuzun tamamını tek bir grup olarak inceleyerek, ani konumsal sıçramaları ve kalın donanımsal hataları varyans test büyüklüklerine göre ayıklar.</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Kol - Adaptif K-Means (Geometrik Süzgeç):</span> Verinin metrik standart sapmasına göre küme sayısı k = 2..6 arasında dinamik olarak belirlenir. En yoğun "Şampiyon Küme" seçilerek çoklu yansımanın binalardan oluşturduğu uydurma ömürsüz öbekler dışlanır.</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. Kesişim Kümesi ve Huber Robust Süzgeci:</span> Baarda'dan temiz çıkan küresel noktalar ile K-Means'in yoğun şampiyon kümesinin doğrudan indeks kesişimi (2-Way Intersection) alınır. Bu kesişen temiz alt grupta, gürbüz varyans temel alınarak <b>Lokal Huber M-Estimation</b> (1.345σ) filtresi çalıştırılır; böylece grup içine sızmış mikro gürültüler de filtrelenir.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">4. Geri Çekilme Mekanizması (Fallback):</span> Eğer nihai Huber filtresinden geçen nokta sayısı sönümlenmiş alt limitin (nokta sayısı &lt; 4) altına inerse, sistem otomatik olarak stabil çalışan diğer "K-Means + Baarda + WLS" modeline geri döner (Fallback).</p>
-      <p class="no-indent"><span class="bold">5. Stokastik WLS Dengelemesi:</span> Süzülen nihai üst-temiz gözlemler, 1/accuracy² ağırlıklarıyla Ağırlıklı En Küçük Kareler (WLS) dengelemesine sokularak milimetrik kararlılıkta nihai çözüm üretilir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">4. Geri Çekilme Mekanizması (Fallback):</span> Eğer nihai Huber filtresinden geçen nokta sayısı sönümlenmiş alt limitin (nokta sayısı &lt; 4) altına inerse, sistem otomatik olarak stabil çalışan diğer "KMeans + Baarda" modeline geri döner (Fallback).</p>
+      <p class="no-indent"><span class="bold">5. Stokastik WLS Dengelemesi (Joint Weighting):</span> Süzülen nihai üst-temiz gözlemler, donanımsal doğruluk değeri ile Huber robust ağırlığının ortak çarpımından üretilen joint ağırlıklar (P_nihai = w_donanım * w_Huber) kullanılarak dikey ve yatay koordinatların milimetrik hassasiyette dengelenmesini sağlar.</p>
     </div>
 
-    <p class="no-indent">"K-Means + Baarda + Huber + WLS" yönteminin TypeScript programlama dilli motor kaynak kod tasarımı aşağıda sunulmuştur:</p>
+    <p class="no-indent">"KMeans + Baarda + Huber" yönteminin TypeScript programlama dilli motor kaynak kod tasarımı aşağıda sunulmuştur:</p>
     <pre class="code-block">
-function calculateKMeansBaardaHuber(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
-  if (samples.length &lt; 30) {
-    return calculateWeightedLSE(samples);
+function calculateKMeansBaardaHuber(samples: Coordinate[]): { 
+  result: Coordinate; 
+  usedIndices: number[]; 
+  clusters?: number[][]; 
+  fallbackApplied?: boolean; 
+  actualMethodUsed?: CalculationMethod 
+} {
+  if (samples.length &lt; 5) {
+    return { result: calculateAverage(samples), usedIndices: samples.map((_, i) =&gt; i), clusters: [] };
   }
 
-  // 1. Calculate Standard Deviation for k selection
-  const avg = calculateAverage(samples);
-  const variance = calculateVariance(samples, avg);
+  // Calculate standard deviation of whole raw dataset
+  const average = calculateAverage(samples);
+  const variance = calculateVariance(samples, average);
   const sigma = Math.sqrt(variance);
 
-  // 2. Adaptive K-Means k setting (k values range from 2 to 6)
+  // 1. Column A (Geodetic Branch): General Baarda Outlier Elimination
+  const baardaRes = calculateBaardaPure(samples);
+  const baardaIndices = baardaRes.usedIndices;
+
+  // 2. Column B (Spatial Branch): Adaptive K-Means Clustering inside dynamic limits (k = 2..6)
   let k = 4;
-  if (sigma &lt; 1.0) k = 2;
-  else if (sigma &lt; 1.5) k = 3;
-  else if (sigma &lt; 2.5) k = 4;
-  else if (sigma &lt; 3.5) k = 5;
-  else k = 6;
+  if (sigma &lt; 1.0) {
+    k = 2;
+  } else if (sigma &lt; 1.5) {
+    k = 3;
+  } else if (sigma &lt; 2.0) {
+    k = 4;
+  } else if (sigma &lt; 2.5) {
+    k = 5;
+  } else {
+    k = 6;
+  }
 
-  const assignments = runKMeans(samples, k);
+  const clusterAssignments = runKMeans(samples, k);
   const clusters: number[][] = Array.from({ length: k }, () =&gt; []);
-  assignments.forEach((cIdx, i) =&gt; { clusters[cIdx].push(i); });
+  clusterAssignments.forEach((cIdx, i) =&gt; {
+    clusters[cIdx].push(i);
+  });
 
+  // Champion Cluster Discovery (Largest cluster by member count)
   let bestClusterIdx = 0;
   let maxCount = -1;
   for (let i = 0; i &lt; k; i++) {
@@ -536,14 +555,10 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): { result: Coordinate
   }
   const championIndices = clusters[bestClusterIdx];
 
-  // 1. Branch: Baarda Snooping
-  const baardaPureRes = calculateBaardaPure(samples);
-  const baardaIndices = baardaPureRes.usedIndices;
-
-  // Perform 2-way Intersection first
+  // Perform 2-way Intersection of (K-Means ∩ Baarda) first
   const twoWayIndices = baardaIndices.filter(idx =&gt; championIndices.includes(idx));
 
-  // 3. Branch: Huber Robust M-Estimation Filter on Two-Way Intersection
+  // 3. Huber Robust M-Estimation Filter: Apply specifically to the two-way intersection set
   const huberIndices: number[] = [];
   if (twoWayIndices.length &gt; 0) {
     const subsetPoints = twoWayIndices.map(idx =&gt; samples[idx]);
@@ -563,80 +578,73 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): { result: Coordinate
     }
   }
 
-  const intersectedIndices = huberIndices;
+  // The final intersected indices are the ones that survive the Huber filter
+  const intersectionIndices = huberIndices;
+  const intersectionPoints = intersectionIndices.map(idx =&gt; samples[idx]);
 
-  // Fallback to calculateKMeansBaarda if intersection is insufficient
-  if (intersectedIndices.length &lt; 4) {
-    return calculateKMeansBaarda(samples);
+  // If we have at least 4 viable points, calculate Weighted Least Squares (WLS) adjustment using combined weights:
+  // P_final = w_hardware * w_huber = (accuracy_min / accuracy_i) * w_huber,i
+  if (intersectionPoints.length &gt;= 4) {
+    const subsetPoints = intersectionPoints;
+    const subAverage = calculateAverage(subsetPoints);
+    const subVariance = calculateVariance(subsetPoints, subAverage);
+    const subSigma = Math.sqrt(subVariance);
+    const huberLimit = 1.345 * Math.max(0.05, subSigma);
+
+    const accuracyLimit = Math.min(...intersectionPoints.map(s =&gt; s.accuracy));
+
+    const finalWeights = intersectionPoints.map(s =&gt; {
+      const dLat = (s.lat - subAverage.lat) * 111320;
+      const dLng = (s.lng - subAverage.lng) * 111320 * Math.cos(subAverage.lat * Math.PI / 180);
+      const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+      const huberWeight = dist &lt;= huberLimit ? 1.0 : huberLimit / Math.max(0.01, dist);
+
+      const hardwareWeight = accuracyLimit / Math.max(0.1, s.accuracy);
+      return hardwareWeight * huberWeight;
+    });
+
+    const sumW = finalWeights.reduce((a, b) =&gt; a + b, 0) || 1.0;
+    const finalLat = intersectionPoints.reduce((sum, p, i) =&gt; sum + p.lat * finalWeights[i], 0) / sumW;
+    const finalLng = intersectionPoints.reduce((sum, p, i) =&gt; sum + p.lng * finalWeights[i], 0) / sumW;
+
+    const avgCoords = calculateAverage(intersectionPoints);
+
+    const finalResult: Coordinate = {
+      ...intersectionPoints[0],
+      lat: finalLat,
+      lng: finalLng,
+      accuracy: avgCoords.accuracy,
+      timestamp: Date.now()
+    };
+
+    const validAlts = intersectionPoints.filter(s =&gt; s.altitude !== null);
+    finalResult.altitude = validAlts.length &gt; 0
+      ? validAlts.reduce((a, b) =&gt; a + (b.altitude || 0), 0) / validAlts.length
+      : null;
+
+    const validAltAccs = intersectionPoints.filter(s => s.altitudeAccuracy !== null);
+    finalResult.altitudeAccuracy = validAltAccs.length &gt; 0
+      ? validAltAccs.reduce((a, b) =&gt; a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length
+      : null;
+
+    return {
+      result: finalResult,
+      usedIndices: intersectionIndices,
+      clusters: clusters.filter(c =&gt; c.length &gt; 0),
+      fallbackApplied: false,
+      actualMethodUsed: 'KMEANS_BAARDA_HUBER'
+    };
+  } else {
+    // Graceful Fallback Strategy: Fall back to default K-Means + Baarda + WLS Hybrid Method
+    const fallbackRes = calculateKMeansBaarda(samples);
+    return {
+      result: fallbackRes.result,
+      usedIndices: fallbackRes.usedIndices,
+      clusters: fallbackRes.clusters,
+      fallbackApplied: true,
+      actualMethodUsed: 'MIDRANGE_KMEANS_BAARDA'
+    };
   }
-
-  const selectedPoints = intersectedIndices.map(idx =&gt; samples[idx]);
-  const lseResult = calculateWeightedLSE(selectedPoints);
-
-  return {
-    result: lseResult.result,
-    usedIndices: intersectedIndices,
-    clusters: clusters.filter(c =&gt; c.length &gt; 0)
-  };
-}
-    </pre>t = -1;
-  for (let i = 0; i &lt; k; i++) {
-    if (clusters[i].length &gt; maxCount) {
-      maxCount = clusters[i].length;
-      bestClusterIdx = i;
-    }
-  }
-  const championIndices = clusters[bestClusterIdx];
-
-  // 1. Branch: Baarda Snooping
-  const baardaPureRes = calculateBaardaPure(samples);
-  const baardaIndices = baardaPureRes.usedIndices;
-
-  // 3. Branch: Huber Robust M-Estimation Filter
-  const latSorted = [...samples].map(s =&gt; s.lat).sort((a, b) =&gt; a - b);
-  const lngSorted = [...samples].map(s =&gt; s.lng).sort((a, b) =&gt; a - b);
-  const medianLat = latSorted[Math.floor(latSorted.length / 2)];
-  const medianLng = lngSorted[Math.floor(lngSorted.length / 2)];
-
-  const residuals = samples.map(s =&gt; {
-    const dy = (s.lat - medianLat) * 111132;
-    const dx = (s.lng - medianLng) * 111132 * Math.cos(medianLat * Math.PI / 180);
-    return Math.sqrt(dx * dx + dy * dy);
-  });
-
-  const sortedResiduals = [...residuals].sort((a, b) =&gt; a - b);
-  const mad = sortedResiduals[Math.floor(sortedResiduals.length / 2)] || 0.1;
-  const scale = 1.4826 * mad;
-
-  const huberIndices: number[] = [];
-  samples.forEach((_, idx) =&gt; {
-    const res = residuals[idx];
-    const huberWeight = res &lt;= 1.345 * scale ? 1.0 : (1.345 * scale) / (res || 0.1);
-    if (huberWeight &gt;= 0.6) {
-      huberIndices.push(idx);
-    }
-  });
-
-  // 3-Way Intersection: Baarda ∩ KMeans ∩ Huber
-  const intersectedIndices = samples.map((_, i) =&gt; i).filter(idx =&gt; 
-    baardaIndices.includes(idx) &amp;&amp; 
-    championIndices.includes(idx) &amp;&amp; 
-    huberIndices.includes(idx)
-  );
-
-  // Fallback to calculateKMeansBaarda if intersection is insufficient
-  if (intersectedIndices.length &lt; 4) {
-    return calculateKMeansBaarda(samples);
-  }
-
-  const selectedPoints = intersectedIndices.map(idx =&gt; samples[idx]);
-  const lseResult = calculateWeightedLSE(selectedPoints);
-
-  return {
-    result: lseResult.result,
-    usedIndices: intersectedIndices,
-    clusters: clusters.filter(c =&gt; c.length &gt; 0)
-  };
 }
     </pre>
 

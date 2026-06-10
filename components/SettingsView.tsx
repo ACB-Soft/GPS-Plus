@@ -531,8 +531,8 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
                   <option value="WEIGHTED_LSE">{t("1. Ağırlıklı En Küçük Kareler")}</option>
                   <option value="KMEANS_4">{t("2. KMeans (4 Küme)")}</option>
                   <option value="BAARDA">{t("3. Baarda Eleme")}</option>
-                  <option value="MIDRANGE_KMEANS_BAARDA">{t("4. K-Means + Baarda + WLS")}</option>
-                  <option value="KMEANS_BAARDA_HUBER">{t("5. K-Means + Baarda + Huber + WLS")}</option>
+                  <option value="MIDRANGE_KMEANS_BAARDA">{t("4. KMeans + Baarda")}</option>
+                  <option value="KMEANS_BAARDA_HUBER">{t("5. KMeans + Baarda + Huber")}</option>
                 </select>
               </div>
 

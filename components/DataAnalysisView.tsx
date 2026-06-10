@@ -206,8 +206,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       'WEIGHTED_LSE': t("Ağırlıklı En Küçük Kareler"),
       'KMEANS_4': t("K-Means (4 Küme)"),
       'BAARDA': t("Baarda Eleme"),
-      'MIDRANGE_KMEANS_BAARDA': "K-Means + Baarda + WLS",
-      'KMEANS_BAARDA_HUBER': "K-Means + Baarda + Huber + WLS"
+      'MIDRANGE_KMEANS_BAARDA': "KMeans + Baarda",
+      'KMEANS_BAARDA_HUBER': "KMeans + Baarda + Huber"
     };
     return labels[m] || m;
   };
@@ -1260,10 +1260,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 const labels: Record<string, string> = {
                                   'ARITHMETIC_MEAN': 'Arithmetic Mean',
                                   'WEIGHTED_LSE': 'Weighted LSE',
-                                  'MIDRANGE_KMEANS_BAARDA': 'Hybrid',
+                                  'MIDRANGE_KMEANS_BAARDA': 'KMeans + Baarda',
                                   'KMEANS_4': 'KMeans',
                                   'BAARDA': 'Baarda',
-                                  'KMEANS_BAARDA_HUBER': 'Huber Hybrid'
+                                  'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber'
                                 };
                                 return labels[m] || m;
                               };
@@ -1326,10 +1326,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             const labels: Record<string, string> = {
                               'ARITHMETIC_MEAN': 'Arithmetic Mean',
                               'WEIGHTED_LSE': 'Weighted LSE',
-                              'MIDRANGE_KMEANS_BAARDA': 'Hybrid',
+                              'MIDRANGE_KMEANS_BAARDA': 'KMeans + Baarda',
                               'KMEANS_4': 'KMeans',
                               'BAARDA': 'Baarda',
-                              'KMEANS_BAARDA_HUBER': 'Huber Hybrid'
+                              'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber'
                             };
                             return labels[m] || m;
                           };
@@ -1361,10 +1361,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           const labels: Record<string, string> = {
                             'ARITHMETIC_MEAN': 'Arithmetic Mean',
                             'WEIGHTED_LSE': 'Weighted LSE',
-                            'MIDRANGE_KMEANS_BAARDA': 'Hybrid',
+                            'MIDRANGE_KMEANS_BAARDA': 'KMeans + Baarda',
                             'KMEANS_4': 'KMeans',
                             'BAARDA': 'Baarda',
-                            'KMEANS_BAARDA_HUBER': 'Huber Hybrid'
+                            'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber'
                           };
                           return labels[m] || m;
                         };

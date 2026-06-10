@@ -11,8 +11,8 @@ const getMethodName = (m: CalculationMethod) => {
     case 'WEIGHTED_LSE': return "Ağırlıklı En Küçük Kareler";
     case 'KMEANS_4': return "K-Means (4 Küme)";
     case 'BAARDA': return "Baarda Eleme";
-    case 'MIDRANGE_KMEANS_BAARDA': return "K-Means + Baarda + WLS";
-    case 'KMEANS_BAARDA_HUBER': return "K-Means + Baarda + Huber + WLS";
+    case 'MIDRANGE_KMEANS_BAARDA': return "KMeans + Baarda";
+    case 'KMEANS_BAARDA_HUBER': return "KMeans + Baarda + Huber";
     default: return m;
   }
 };

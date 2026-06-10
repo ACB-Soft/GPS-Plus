@@ -582,10 +582,40 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
   const intersectionIndices = huberIndices;
   const intersectionPoints = intersectionIndices.map(idx => samples[idx]);
 
-  // If we have at least 4 viable points, calculate Weighted Least Squares (WLS) adjustment
+  // If we have at least 4 viable points, calculate Weighted Least Squares (WLS) adjustment using combined weights:
+  // P_final = w_hardware * w_huber = (accuracy_min / accuracy_i) * w_huber,i
   if (intersectionPoints.length >= 4) {
-    const lseResult = calculateWeightedLSE(intersectionPoints);
-    const finalResult = { ...lseResult.result };
+    const subsetPoints = intersectionPoints;
+    const subAverage = calculateAverage(subsetPoints);
+    const subVariance = calculateVariance(subsetPoints, subAverage);
+    const subSigma = Math.sqrt(subVariance);
+    const huberLimit = 1.345 * Math.max(0.05, subSigma);
+
+    const accuracyLimit = Math.min(...intersectionPoints.map(s => s.accuracy));
+
+    const finalWeights = intersectionPoints.map(s => {
+      const dLat = (s.lat - subAverage.lat) * 111320;
+      const dLng = (s.lng - subAverage.lng) * 111320 * Math.cos(subAverage.lat * Math.PI / 180);
+      const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+      const huberWeight = dist <= huberLimit ? 1.0 : huberLimit / Math.max(0.01, dist);
+
+      const hardwareWeight = accuracyLimit / Math.max(0.1, s.accuracy);
+      return hardwareWeight * huberWeight;
+    });
+
+    const sumW = finalWeights.reduce((a, b) => a + b, 0) || 1.0;
+    const finalLat = intersectionPoints.reduce((sum, p, i) => sum + p.lat * finalWeights[i], 0) / sumW;
+    const finalLng = intersectionPoints.reduce((sum, p, i) => sum + p.lng * finalWeights[i], 0) / sumW;
+
+    const avgCoords = calculateAverage(intersectionPoints);
+
+    const finalResult: Coordinate = {
+      ...intersectionPoints[0],
+      lat: finalLat,
+      lng: finalLng,
+      accuracy: avgCoords.accuracy,
+      timestamp: Date.now()
+    };
 
     const validAlts = intersectionPoints.filter(s => s.altitude !== null);
     finalResult.altitude = validAlts.length > 0

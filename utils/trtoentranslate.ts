@@ -158,6 +158,8 @@ export const trToEnMap: Record<string, string> = {
   "Ağırlıklı Dengeleme": "Weighted Least Squares",
   "Ağırlıklı En Küçük Kareler": "Weighted Least Squares",
   "K-Means+Baarda": "K-Means+Baarda",
+  "KMeans + Baarda": "KMeans + Baarda",
+  "KMeans + Baarda + Huber": "KMeans + Baarda + Huber",
   "K-Means + Baarda + WLS": "K-Means + Baarda + WLS",
   "Yatay Hata": "Horizontal Error",
   "KESİN KOORDİNAT (REFERANS)": "PRECISE COORDINATE (REFERENCE)",
@@ -440,6 +442,8 @@ export const trToEnMap: Record<string, string> = {
   "2. KMeans (4 Küme)": "2. KMeans (4 Clusters)",
   "3. Baarda Eleme": "3. Baarda Outlier Elimination",
   "4. K-Means + Baarda + WLS": "4. K-Means + Baarda + WLS",
+  "4. KMeans + Baarda": "4. KMeans + Baarda",
+  "5. KMeans + Baarda + Huber": "5. KMeans + Baarda + Huber",
   "Aktif edildiğinde, sadece yükseklik verisi içeren uydu tabanlı konumlar ölçüme dahil edilir. Açık alanlarda hassasiyeti artırır.": "When enabled, only satellite-based positions with altitude data are included in measurements. Increases accuracy in open areas.",
   "Birim ve Duyarlılık": "Unit and Precision",
   "Konum (Virgülden sonraki duyarlılık)": "Location (Decimal precision)",
@@ -650,7 +654,8 @@ export const trToEnMap: Record<string, string> = {
   "Gözlemleri mekansal yakınlıklarına göre 4 bağımsız yoğunluk grubuna ayırarak küme merkezini belirler.": "Clusters observation points into 4 independent density groups based on geospatial distance to establish a cluster centroid.",
   "Baarda kalın hata eleme teorisini kullanarak uyuşumsuz ve kaba hatalı koordinatları sistemden temizler.": "Iteratively purges outliers and gross coordinate errors from the dataset using geodetic Baarda gross error testing.",
   "En az 30 epok veri gerektirir.": "Requires at least 30 epochs of data.",
-  "KMeans, Baarda ve K-Means + Baarda + WLS yöntemleri için en az 30 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.": "A minimum of 30 epochs is strictly required for KMeans, Baarda, and K-Means + Baarda + WLS hybrid models. If less than 30 samples are collected, the system automatically and securely resolves the coordinates using the Weighted Least Squares (LSE) method."
+  "KMeans, Baarda ve K-Means + Baarda + WLS yöntemleri için en az 30 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.": "A minimum of 30 epochs is strictly required for KMeans, Baarda, and K-Means + Baarda + WLS hybrid models. If less than 30 samples are collected, the system automatically and securely resolves the coordinates using the Weighted Least Squares (LSE) method.",
+  "KMeans, Baarda, KMeans + Baarda ve KMeans + Baarda + Huber yöntemleri için en az 30 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.": "A minimum of 30 epochs is strictly required for KMeans, Baarda, KMeans + Baarda, and KMeans + Baarda + Huber hybrid models. If less than 30 samples are collected, the system automatically and securely resolves the coordinates using the Weighted Least Squares (LSE) method."
 };
 
 /**
