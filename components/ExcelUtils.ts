@@ -9,10 +9,10 @@ import { geoidService } from '../services/GeoidService';
 const getMethodName = (m: CalculationMethod) => {
   switch(m) {
     case 'WEIGHTED_LSE': return "Ağırlıklı En Küçük Kareler";
+    case 'HUBER': return "Huber M-Tahmini";
+    case 'KMEANS_BAARDA_HUBER': return "KMeans + Baarda + Huber";
     case 'KMEANS_4': return "K-Means (4 Küme)";
     case 'BAARDA': return "Baarda Eleme";
-    case 'MIDRANGE_KMEANS_BAARDA': return "KMeans + Baarda";
-    case 'KMEANS_BAARDA_HUBER': return "KMeans + Baarda + Huber";
     default: return m;
   }
 };
@@ -149,9 +149,9 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   
   const methods: CalculationMethod[] = [
     'WEIGHTED_LSE', 
+    'HUBER',
     'KMEANS_4',
     'BAARDA',
-    'MIDRANGE_KMEANS_BAARDA',
     'KMEANS_BAARDA_HUBER'
   ];
   const methodResults = methods.map(method => {
@@ -487,9 +487,9 @@ export const downloadCombinedAnalysisReport = (
 
   const allMethods: CalculationMethod[] = [
     'WEIGHTED_LSE', 
+    'HUBER',
     'KMEANS_4',
     'BAARDA',
-    'MIDRANGE_KMEANS_BAARDA',
     'KMEANS_BAARDA_HUBER'
   ];
 

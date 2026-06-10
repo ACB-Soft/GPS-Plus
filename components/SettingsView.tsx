@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { CalculationMethod } from '../types';
 import { APP_VERSION, FULL_BRAND } from '../version';
 import GlobalFooter from './GlobalFooter';
 import Modal from './Modal';
@@ -525,14 +526,14 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t("Hesaplama Yöntemi")}</label>
                 <select 
                   value={calculationMethod}
-                  onChange={(e) => setCalculationMethod(e.target.value)}
+                  onChange={(e) => setCalculationMethod(e.target.value as CalculationMethod)}
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
                   <option value="WEIGHTED_LSE">{t("1. Ağırlıklı En Küçük Kareler")}</option>
-                  <option value="KMEANS_4">{t("2. KMeans (4 Küme)")}</option>
-                  <option value="BAARDA">{t("3. Baarda Eleme")}</option>
-                  <option value="MIDRANGE_KMEANS_BAARDA">{t("4. KMeans + Baarda")}</option>
-                  <option value="KMEANS_BAARDA_HUBER">{t("5. KMeans + Baarda + Huber")}</option>
+                  <option value="HUBER">{t("2. Huber M-Tahmini")}</option>
+                  <option value="KMEANS_4">{t("3. KMeans (4 Küme)")}</option>
+                  <option value="BAARDA">{t("4. Baarda Eleme")}</option>
+                  <option value="KMEANS_BAARDA_HUBER">{t("5. Hibrit Yöntem (KMeans + Baarda + Huber)")}</option>
                 </select>
               </div>
 

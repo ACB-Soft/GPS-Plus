@@ -261,7 +261,17 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
 
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("2. KMeans (4 Küme)")}</h4>
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("2. Huber M-Tahmini")}</h4>
+                    <span className="text-[11px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">{t("GÜRBÜZ / ROBUST")}</span>
+                  </div>
+                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                    {t("İteratif gürbüz (robust) Huber M-tahmini kullanarak veri havuzundaki konumsal sıçramaları ve gürültüleri hassasiyete göre yumuşatıp dengeler.")} <span className="text-amber-600 font-black">{t("En az 30 epok veri gerektirir.")}</span>
+                  </p>
+                </div>
+
+                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("3. KMeans (4 Küme)")}</h4>
                     <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">{t("KÜMELEME")}</span>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed">
@@ -271,7 +281,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
 
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("3. Baarda Eleme")}</h4>
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("4. Baarda Eleme")}</h4>
                     <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">{t("İSTATİSTİK")}</span>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed">
@@ -279,36 +289,9 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                   </p>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm ring-1 ring-blue-50">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight">{t("4. KMeans + Baarda")}</h4>
-                    <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">{t("HİBRİT")}</span>
-                  </div>
-                  <p className="text-sm text-slate-600 font-medium leading-relaxed mb-3">
-                    {t("İleri düzey istatistiksel ve jeodezik yöntemler kullanılarak en üstün doğruluk için özel olarak tasarlanmış olan KMeans ve Baarda tabanlı ilk hibrit modelimizdir.")} <span className="text-amber-600 font-black">{t("En az 30 epok veri gerektirir.")}</span>
-                  </p>
-                  <div className="bg-blue-50/50 rounded-lg p-3 space-y-2 border border-blue-100/50">
-                     <p className="text-sm font-black text-blue-800 uppercase tracking-widest">{t("İşlem Adımları:")}</p>
-                     <ul className="space-y-1.5">
-                      <li className="text-sm text-slate-700 leading-tight">
-                        1-<b>{t("Uzaysal Kol (K-Means Bölge Tespiti)")}:</b> {t("Ham veriler mekansal yakınlıklarına göre kümelenerek en çok örneklem barındıran 'Şampiyon Küme' seçilir. Bu küme, çoklu yol yansımalarından arındırılmış 'Güvenli Geometrik Bölge' olarak tescillenir.")}
-                      </li>
-                      <li className="text-sm text-slate-700 leading-tight">
-                        2-<b>{t("Jeodezik Kol (Küresel Baarda Testi)")}:</b> {t("Veri setinin tamamı bölünmeden tek bir büyük grup olarak bütünsel Baarda kalın hata testine sokulur. Makro düzeyde temizlenmiş, gürültülerden arınmış bir puan havuzu elde edilir.")}
-                      </li>
-                      <li className="text-sm text-slate-700 leading-tight">
-                        3-<b>{t("Kesişim Filtresi ve Lokal Gelişmiş Ayıklama (Seçenek C)")}:</b> {t("Baarda testinden temiz çıkan noktalar ile K-Means Şampiyon Kümesindeki noktaların doğrudan indeks kesişimi alınarak çifte denetim sağlanır. Eğer kesişim kümesi boş kalırsa, şampiyon kümenin kendi iç varyansına yerel Baarda (Option C) uygulanarak lokal aykırı değerler elenir.")}
-                      </li>
-                      <li className="text-sm text-slate-700 leading-tight">
-                        4-<b>{t("Hassas Ağırlıklı Dengeleme (WLS)")}:</b> {t("Elde edilen süzülmüş nihai süzülmüş noktalar, donanımsal hassasiyet ağırlıkları (1/accuracy²) gözetilerek Stokastik En Küçük Kareler (WLS) dengelemesine sokulur ve üstün stabilitede bir koordinat çözümü üretilir.")}
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-
                 <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm ring-1 ring-emerald-50">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-emerald-700 uppercase tracking-tight">{t("5. KMeans + Baarda + Huber")}</h4>
+                    <h4 className="text-sm font-black text-emerald-700 uppercase tracking-tight">{t("5. Hibrit Yöntem (KMeans + Baarda + Huber)")}</h4>
                     <span className="text-[11px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">{t("İLERİ HİBRİT")}</span>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed mb-3">
@@ -327,7 +310,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                         3-<b>{t("Gürbüz Kol (Lokal Huber M-Tahmini)")}:</b> {t("KMeans ve Baarda kesişiminden elde edilen temiz alt grupta, gürbüz varyans temel alınarak Lokal Huber M-Estimation (1.345σ) filtresi çalıştırılarak mikro gürültülü gözlemler de hassasça süzülür.")}
                       </li>
                       <li className="text-sm text-slate-700 leading-tight">
-                        4-<b>{t("Geri Çekilme Mekanizması (Fallback)")}:</b> {t("Filtreden başarıyla geçen nokta sayısı 4'ten az olursa, sistem otomatik olarak stabil çalışan diğer 'KMeans + Baarda' hibrit modeline geri çekilir.")}
+                        4-<b>{t("Geri Çekilme Mekanizması (Fallback)")}:</b> {t("Filtreden başarıyla geçen nokta sayısı 4'ten az olursa, sistem otomatik olarak Ağırlıklı En Küçük Kareler (Weighted LSE) yöntemine geri çekilir.")}
                       </li>
                       <li className="text-sm text-slate-700 leading-tight">
                         5-<b>{t("Ortak Ağırlıklı Dengeleme (Joint-WLS)")}:</b> {t("Ayıklanan nihai temiz noktalara donanım hassasiyeti ve Huber dıram ağırlıklarının ortak çarpımı (P_nihai = w_donanım * w_Huber) uygulanarak kusursuz milimetrik koordinat çözülür.")}
@@ -338,7 +321,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
 
                 <div className="bg-amber-50/70 rounded-2xl p-4 border border-amber-200/50 text-amber-900 leading-relaxed text-xs font-semibold text-justify">
                   <span className="font-extrabold uppercase text-amber-700 block mb-1">⚠️ {t("UYARI / ÖNEMLİ KOŞUL:")}</span>
-                  {t("KMeans, Baarda, KMeans + Baarda ve KMeans + Baarda + Huber yöntemleri için en az 30 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.")}
+                  {t("KMeans, Baarda ve KMeans + Baarda + Huber yöntemleri için en az 30 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.")}
                 </div>
               </div>
             </div>

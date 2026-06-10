@@ -42,7 +42,7 @@ const MapSetBounds = ({ points }: { points: [number, number][] }) => {
 const METHOD_COLORS: Record<string, string> = {
   ARITHMETIC_MEAN: '#ec4899',
   WEIGHTED_LSE: '#8b5cf6',
-  MIDRANGE_KMEANS_BAARDA: '#3b82f6',
+  HUBER: '#3b82f6',
   KMEANS_4: '#06b6d4',
   BAARDA: '#f59e0b',
   KMEANS_BAARDA_HUBER: '#10b981'
@@ -195,19 +195,19 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
   const methods = useMemo<CalculationMethod[]>(() => [
     'WEIGHTED_LSE',
+    'HUBER',
     'KMEANS_4',
     'BAARDA',
-    'MIDRANGE_KMEANS_BAARDA',
     'KMEANS_BAARDA_HUBER'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
     const labels: Record<string, string> = {
-      'WEIGHTED_LSE': t("Ağırlıklı En Küçük Kareler"),
-      'KMEANS_4': t("K-Means (4 Küme)"),
-      'BAARDA': t("Baarda Eleme"),
-      'MIDRANGE_KMEANS_BAARDA': "KMeans + Baarda",
-      'KMEANS_BAARDA_HUBER': "KMeans + Baarda + Huber"
+      'WEIGHTED_LSE': t("1. Ağırlıklı En Küçük Kareler"),
+      'HUBER': t("2. Huber M-Tahmini"),
+      'KMEANS_4': t("3. KMeans (4 Küme)"),
+      'BAARDA': t("4. Baarda Eleme"),
+      'KMEANS_BAARDA_HUBER': t("5. Hibrit Yöntem (KMeans + Baarda + Huber)")
     };
     return labels[m] || m;
   };
@@ -274,7 +274,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       // 1. Calculate point for this method
       const { result, clusters, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
       
-      if ((method === 'MIDRANGE_KMEANS_BAARDA' || method === 'KMEANS_4' || method === 'KMEANS_BAARDA_HUBER') && clusters) {
+      if ((method === 'KMEANS_4' || method === 'KMEANS_BAARDA_HUBER') && clusters) {
         clusterResults = clusters;
       }
       
@@ -670,7 +670,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
     const results = methods.map(method => {
       const { result, clusters, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
-      if ((method === 'MIDRANGE_KMEANS_BAARDA' || method === 'KMEANS_BAARDA_HUBER') && clusters) {
+      if (method === 'KMEANS_BAARDA_HUBER' && clusters) {
         clusterResults = clusters;
       }
       const conv = convertCoordinate(result.lat, result.lng, sys);
@@ -1270,7 +1270,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 const labels: Record<string, string> = {
                                   'ARITHMETIC_MEAN': 'Arithmetic Mean',
                                   'WEIGHTED_LSE': 'Weighted LSE',
-                                  'MIDRANGE_KMEANS_BAARDA': 'KMeans + Baarda',
+                                  'HUBER': 'Huber',
                                   'KMEANS_4': 'KMeans',
                                   'BAARDA': 'Baarda',
                                   'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber'
@@ -1336,7 +1336,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             const labels: Record<string, string> = {
                               'ARITHMETIC_MEAN': 'Arithmetic Mean',
                               'WEIGHTED_LSE': 'Weighted LSE',
-                              'MIDRANGE_KMEANS_BAARDA': 'KMeans + Baarda',
+                              'HUBER': 'Huber',
                               'KMEANS_4': 'KMeans',
                               'BAARDA': 'Baarda',
                               'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber'
@@ -1371,7 +1371,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           const labels: Record<string, string> = {
                             'ARITHMETIC_MEAN': 'Arithmetic Mean',
                             'WEIGHTED_LSE': 'Weighted LSE',
-                            'MIDRANGE_KMEANS_BAARDA': 'KMeans + Baarda',
+                            'HUBER': 'Huber',
                             'KMEANS_4': 'KMeans',
                             'BAARDA': 'Baarda',
                             'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber'

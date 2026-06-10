@@ -642,14 +642,14 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
       actualMethodUsed: 'KMEANS_BAARDA_HUBER'
     };
   } else {
-    // Graceful Fallback Strategy: Fall back to default K-Means + Baarda + WLS Hybrid Method
-    const fallbackRes = calculateKMeansBaarda(samples);
+    // Graceful Fallback Strategy: Fall back to default Weighted Least Squares method
+    const fallbackRes = calculateWeightedLSE(samples);
     return {
       result: fallbackRes.result,
       usedIndices: fallbackRes.usedIndices,
-      clusters: fallbackRes.clusters,
+      clusters: clusters.filter(c => c.length > 0),
       fallbackApplied: true,
-      actualMethodUsed: 'MIDRANGE_KMEANS_BAARDA'
+      actualMethodUsed: 'WEIGHTED_LSE'
     };
   }
 }

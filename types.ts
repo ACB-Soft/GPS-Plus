@@ -11,7 +11,7 @@ export interface Coordinate {
 export type CalculationMethod = 
   | 'ARITHMETIC_MEAN'
   | 'WEIGHTED_LSE' 
-  | 'MIDRANGE_KMEANS_BAARDA' 
+  | 'HUBER'
   | 'KMEANS_4' 
   | 'BAARDA'
   | 'KMEANS_BAARDA_HUBER';

@@ -41,11 +41,11 @@ export function calculateResult(
   let clusters: number[][] | undefined = undefined;
 
   // Let's implement the 30-epoch constraint check for professional mathematical models:
-  // KMEANS_4, BAARDA, MIDRANGE_KMEANS_BAARDA, KMEANS_BAARDA_HUBER
+  // HUBER, KMEANS_4, BAARDA, KMEANS_BAARDA_HUBER
   const isProfessional = 
+    method === 'HUBER' ||
     method === 'KMEANS_4' || 
     method === 'BAARDA' || 
-    method === 'MIDRANGE_KMEANS_BAARDA' ||
     method === 'KMEANS_BAARDA_HUBER';
   
   let finalMethod = method;
@@ -66,11 +66,10 @@ export function calculateResult(
       resultData = lseResult.result;
       finalCalculatedUsedIndices = lseResult.usedIndices;
       break;
-    case 'MIDRANGE_KMEANS_BAARDA':
-      const kmeansRes = calculateKMeansBaarda(sourceData);
-      resultData = kmeansRes.result;
-      finalCalculatedUsedIndices = kmeansRes.usedIndices;
-      clusters = kmeansRes.clusters;
+    case 'HUBER':
+      const pureHuberRes = calculateHuberPure(sourceData);
+      resultData = pureHuberRes.result;
+      finalCalculatedUsedIndices = pureHuberRes.usedIndices;
       break;
     case 'KMEANS_BAARDA_HUBER':
       const huberRes = calculateKMeansBaardaHuber(sourceData);
@@ -79,8 +78,8 @@ export function calculateResult(
       clusters = huberRes.clusters;
       if (huberRes.fallbackApplied) {
         fallbackApplied = true;
-        // Mark that we fell back to the other hybrid model
-        finalMethod = 'MIDRANGE_KMEANS_BAARDA';
+        // Mark that we fell back to the other model
+        finalMethod = 'WEIGHTED_LSE';
       }
       break;
     case 'KMEANS_4':
@@ -641,16 +640,115 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
       actualMethodUsed: 'KMEANS_BAARDA_HUBER'
     };
   } else {
-    // Graceful Fallback Strategy: Fall back to default K-Means + Baarda + WLS Hybrid Method
-    const fallbackRes = calculateKMeansBaarda(samples);
+    // Graceful Fallback Strategy: Fall back to default Weighted Least Squares method
+    const fallbackRes = calculateWeightedLSE(samples);
     return {
       result: fallbackRes.result,
       usedIndices: fallbackRes.usedIndices,
-      clusters: fallbackRes.clusters,
+      clusters: clusters.filter(c => c.length > 0),
       fallbackApplied: true,
-      actualMethodUsed: 'MIDRANGE_KMEANS_BAARDA'
+      actualMethodUsed: 'WEIGHTED_LSE'
     };
   }
+}
+
+export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length < 4) {
+    return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
+  }
+
+  // Iterative Huber M-estimation
+  let currentCentroid = calculateAverage(samples);
+  const maxIterations = 10;
+  const tolerance = 1e-6;
+  let weights = samples.map(() => 1.0);
+  let usedIndices = samples.map((_, i) => i);
+
+  for (let iter = 0; iter < maxIterations; iter++) {
+    const currentSigma = Math.sqrt(calculateVariance(samples, currentCentroid));
+    const huberLimit = 1.345 * Math.max(0.05, currentSigma);
+
+    let sumW = 0;
+    let sumLat = 0;
+    let sumLng = 0;
+    let sumAlt = 0;
+    let sumAltW = 0;
+    let hasAlt = false;
+
+    for (let i = 0; i < samples.length; i++) {
+      const p = samples[i];
+      const dLat = (p.lat - currentCentroid.lat) * 111320;
+      const dLng = (p.lng - currentCentroid.lng) * 111320 * Math.cos(currentCentroid.lat * Math.PI / 180);
+      const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+
+      // Hardware accuracy weight
+      const hwWeight = 1 / Math.pow(Math.max(0.1, p.accuracy), 2);
+      // Huber dampening weight
+      const huberWeight = dist <= huberLimit ? 1.0 : huberLimit / Math.max(0.01, dist);
+      
+      const combinedWeight = hwWeight * huberWeight;
+      weights[i] = combinedWeight;
+
+      sumW += combinedWeight;
+      sumLat += p.lat * combinedWeight;
+      sumLng += p.lng * combinedWeight;
+
+      if (p.altitude !== null) {
+        hasAlt = true;
+        sumAlt += p.altitude * combinedWeight;
+        sumAltW += combinedWeight;
+      }
+    }
+
+    if (sumW === 0) break;
+
+    const nextCentroid: Coordinate = {
+      lat: sumLat / sumW,
+      lng: sumLng / sumW,
+      accuracy: currentCentroid.accuracy,
+      altitude: hasAlt ? sumAlt / sumAltW : null,
+      altitudeAccuracy: currentCentroid.altitudeAccuracy,
+      timestamp: currentCentroid.timestamp
+    };
+
+    const dLat = (nextCentroid.lat - currentCentroid.lat) * 111320;
+    const dLng = (nextCentroid.lng - currentCentroid.lng) * 111320 * Math.cos(currentCentroid.lat * Math.PI / 180);
+    const change = Math.sqrt(dLat * dLat + dLng * dLng);
+
+    currentCentroid = nextCentroid;
+    if (change < tolerance) {
+      break;
+    }
+  }
+
+  // Filter extreme outliers (beyond 3-sigma) for usedIndices
+  const finalSigma = Math.sqrt(calculateVariance(samples, currentCentroid));
+  const outlierThreshold = 3.0 * Math.max(0.1, finalSigma);
+  
+  usedIndices = [];
+  const finalSamplesToUse: Coordinate[] = [];
+  
+  for (let i = 0; i < samples.length; i++) {
+    const p = samples[i];
+    const dLat = (p.lat - currentCentroid.lat) * 111320;
+    const dLng = (p.lng - currentCentroid.lng) * 111320 * Math.cos(currentCentroid.lat * Math.PI / 180);
+    const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+    
+    if (dist <= outlierThreshold) {
+      usedIndices.push(i);
+      finalSamplesToUse.push(p);
+    }
+  }
+
+  if (finalSamplesToUse.length === 0) {
+    return { result: currentCentroid, usedIndices: samples.map((_, i) => i) };
+  }
+
+  const finalLSE = calculateWeightedLSE(finalSamplesToUse);
+  return {
+    result: finalLSE.result,
+    usedIndices: usedIndices
+  };
 }
 
 
