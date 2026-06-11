@@ -388,6 +388,34 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
     usedIndices
   };
 }
+    </pre>nCenter.lng) * 111320 * Math.cos(subMedianCenter.lat * Math.PI / 180);
+    const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+    const huberWeight = dist &lt;= huberLimit ? 1.0 : huberLimit / Math.max(0.01, dist);
+    const hardwareWeight = accuracyLimit / Math.max(0.1, s.accuracy);
+    return hardwareWeight * huberWeight;
+  });
+
+  const sumW = finalWeights.reduce((a, b) =&gt; a + b, 0) || 1.0;
+  const finalLat = finalSamplesToUse.reduce((sum, p, i) =&gt; sum + p.lat * finalWeights[i], 0) / sumW;
+  const finalLng = finalSamplesToUse.reduce((sum, p, i) =&gt; sum + p.lng * finalWeights[i], 0) / sumW;
+
+  const avgCoords = calculateAverage(finalSamplesToUse);
+  const finalResult = {
+    ...finalSamplesToUse[0],
+    lat: finalLat,
+    lng: finalLng,
+    accuracy: avgCoords.accuracy,
+    timestamp: Date.now()
+  };
+
+  const validAlts = finalSamplesToUse.filter(s =&gt; s.altitude !== null);
+  finalResult.altitude = validAlts.length &gt; 0 ? validAlts.reduce((a, b) =&gt; a + (b.altitude || 0), 0) / validAlts.length : null;
+
+  const validAltAccs = finalSamplesToUse.filter(s =&gt; s.altitudeAccuracy !== null);
+  finalResult.altitudeAccuracy = validAltAccs.length &gt; 0 ? validAltAccs.reduce((a, b) =&gt; a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length : null;
+
+  return { result: finalResult, usedIndices };
+}
     </pre>
 
     <h3>2.4.3. Dinamik K-Means Kümeleme ve Yoğunluk Oranlı Ağırlıklandırma Süzgeci (X-Means & WLS)</h3>
@@ -481,6 +509,7 @@ function calculateKMeans(samples: Coordinate[]): { result: Coordinate; usedIndic
     clusters: validClusters
   };
 }
+    </pre>
 
 function runKMeans(samples: Coordinate[], k: number): number[] {
   let centroids = samples.slice(0, k).map(s =&gt; ({ lat: s.lat, lng: s.lng }));
@@ -529,37 +558,48 @@ function runKMeans(samples: Coordinate[], k: number): number[] {
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Kritik Sınır Değeri (3.29):</span> Seçilen w<sub>test</sub> = 3.29 kritik sınırı, standart normal dağılımda (N(0,1)) çift taraflı %99.9 güven düzeyine (&alpha; = 0.001) tekabül eder. Bu muhafazakar tercih, kaba hata içermeyen temiz epokların yanlışlıkla reddedilmesini (I. Tip Hata) jeodezik toleranslar dahilinde minimize etmek amacıyla Baarda'nın orijinal güven kriteriyle uyumludur.</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. İndeks Kırılma Koruması:</span> Üst katmandan gelen örneklem grubunda '_originalIdx' özniteliğinin eksik veya tanımsız olması durumuna karşı, metodun girişinde dinamik indeks haritalaması uygulanarak çalışma zamanı bozulma (runtime crash/breakage) riskleri tamamen sönümlenmiştir.</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">4. Kaba Hata Sonrası Dengeleme:</span> İstatistiki uyuşmazlık testleri tamamlanarak gürültülü veriler elendikten sonra, kalan temiz koordinatlar düz aritmetik ortalamaya tabi tutulmaz. Bunun yerine kalan veriler kendi güncel hassasiyetleri (<i>p<sub>i</sub> = 1/accuracy<sub>i</sub><sup>2</sup></i>) ile tekrar ağırlıklandırılarak <b>Stokastik Ağırlıklı En Küçük Kareler (Weighted Centroid)</b> motorumuzla çözümlenir ve nihai denge koordinatı jeodezik açıdan en kararlı şekilde elde edilir.</p>
-      <p class="no-indent"><span class="bold">5. Erken Durdurma ve Minimum Numune Kriterleri:</span> Bloklar içindeki aşırı veri kaybını engellemek için, kalan verinin maksimum saçılım genişliği 0.50 metrenin altına düştüğü anda veya kalan veri sayısı en az 4 noktaya (n &le; 4) gerilediğinde eleme döngüsü erken sonlandırılır. Bu sayede yeterli sayıda verinin ağırlıklı ortalamaya katılması güvenceye alınır.</p>
+      <p class="no-indent"><span class="bold">5. Erken Durdurma ve Minimum Numune Kriterleri:</span> Bloklar içindeki aşırı veri kaybını engellemek için, kalan verinin maksimum saçılım genişliği 0.25 metrenin altına düştüğü anda veya kalan veri sayısı en az 4 noktaya (n &le; 4) gerilediğinde eleme döngüsü erken sonlandırılır. Bu sayede yeterli sayıda verinin ağırlıklı ortalamaya katılması güvenceye alınır.</p>
     </div>
 
     <p class="no-indent">Baarda kalın hata test büyüklüğünü, n - 2 serbestlik derecesini ve temizlenmiş verilerin ağırlıklı dengelenmesini koşturan kritik fonksiyon aşağıda yer almaktadır:</p>
     <pre class="code-block">
 function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndices: number[] } {
   if (samples.length < 4) return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
+
+  // Safe mapping of the original sequence indices
   let currentSamples = samples.map((s, idx) => ({
     ...s,
     _originalIdx: s._originalIdx !== undefined ? s._originalIdx : idx
   }));
-  const criticalValue = 3.29;
+  const criticalValue = 3.29; // Critical limit for 99.9% confidence interval (alpha = 0.001)
+
   while (currentSamples.length > 4) {
+    // Kalan verilerin maksimum saçılım genişliği 0.25m'nin altına düştüğünde veri elemeyi durdur
     const currentSpread = calculateMaxDistance(currentSamples);
-    if (currentSpread < 0.50) {
+    if (currentSpread < 0.25) {
       break;
     }
+
     const weights = currentSamples.map(s => 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
     const sumW = weights.reduce((a, b) => a + b, 0);
     const meanLat = currentSamples.reduce((a, b, i) => a + b.lat * weights[i], 0) / sumW;
     const meanLng = currentSamples.reduce((a, b, i) => a + b.lng * weights[i], 0) / sumW;
+
     const residuals = currentSamples.map(s => {
       return calculateDistanceMeter(s.lat, s.lng, meanLat, meanLng, meanLat);
     });
+
     const vTPv = residuals.reduce((a, v, i) => a + v * v * weights[i], 0);
+    
+    // Corrected degree of freedom: f = n - u, where u = 2 (lat, lng) unknowns in 2D adjustments.
     const sigma0 = Math.sqrt(vTPv / (currentSamples.length - 2));
+
     const standardizedResiduals = currentSamples.map((s, i) => {
       const p_i = weights[i];
-      const q_ii = (1 - p_i / sumW);
-      return (residuals[i] * Math.sqrt(p_i)) / (sigma0 * Math.sqrt(q_ii) || 1e-9);
+      const q_ii = (1 - p_i / sumW); 
+      return residuals[i] / (sigma0 * Math.sqrt(q_ii) || 1e-9);
     });
+
     let maxW = -1;
     let worstIdx = -1;
     for (let i = 0; i < standardizedResiduals.length; i++) {
@@ -568,12 +608,14 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
             worstIdx = i;
         }
     }
+
     if (maxW > criticalValue) {
         currentSamples.splice(worstIdx, 1);
     } else {
-        break;
+        break; 
     }
   }
+
   const lseResult = calculateWeightedLSE(currentSamples);
   return { result: lseResult.result, usedIndices: currentSamples.map(s => s._originalIdx) };
 }
