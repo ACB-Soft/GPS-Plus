@@ -537,7 +537,7 @@ function calculateKMeans4(samples: Coordinate[]): { result: Coordinate; usedIndi
     }
     
     const varianceR = totalSquaredDist / Math.max(1, samples.length - k);
-    const numParameters = k * 2;
+    const numParameters = k * k;
     const bicScore = samples.length * Math.log(Math.max(1e-9, varianceR)) + numParameters * Math.log(samples.length);
 
     if (bicScore < bestBIC) {
@@ -667,7 +667,7 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
     }
     
     const varianceR = totalSquaredDist / Math.max(1, samples.length - k);
-    const numParameters = k * 2;
+    const numParameters = k * k;
     const bicScore = samples.length * Math.log(Math.max(1e-9, varianceR)) + numParameters * Math.log(samples.length);
 
     if (bicScore < bestBIC) {

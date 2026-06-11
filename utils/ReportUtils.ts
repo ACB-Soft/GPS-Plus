@@ -454,7 +454,7 @@ function calculateKMeans4(samples: Coordinate[]): { result: Coordinate; usedIndi
       totalSquaredDist += calculateSquaredDistance(samples[i].lat, samples[i].lng, centroids[cIdx].lat, centroids[cIdx].lng, samples[i].lat);
     }
     const varianceR = totalSquaredDist / Math.max(1, samples.length - k);
-    const numParameters = k * 2;
+    const numParameters = k * k;
     const bicScore = samples.length * Math.log(Math.max(1e-9, varianceR)) + numParameters * Math.log(samples.length);
 
     if (bicScore &lt; bestBIC) {
@@ -656,7 +656,7 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
       totalSquaredDist += calculateSquaredDistance(samples[i].lat, samples[i].lng, centroids[cIdx].lat, centroids[cIdx].lng, samples[i].lat);
     }
     const varianceR = totalSquaredDist / Math.max(1, samples.length - k);
-    const numParameters = k * 2;
+    const numParameters = k * k;
     const bicScore = samples.length * Math.log(Math.max(1e-9, varianceR)) + numParameters * Math.log(samples.length);
 
     if (bicScore &lt; bestBIC) {
