@@ -502,9 +502,36 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     const meanX = sumX / accuracyFilteredIndices.length;
     const meanY = sumY / accuracyFilteredIndices.length;
 
+    // Determine the Center (Reference)
+    let refCenterX = 0;
+    let refCenterY = 0;
+    let isPrecise = false;
+
+    if (analysisType === 'precise') {
+      const pn = parseFloat(appliedPreciseN); // Yukarı (X)
+      const pe = parseFloat(appliedPreciseE); // Sağa (Y)
+      
+      if (!isNaN(pn) && !isNaN(pe)) {
+        if (useLocal) {
+          refCenterX = pe; // Easting (Sağa/Y)
+          refCenterY = pn; // Northing (Yukarı/X)
+        } else {
+          const conv = convertCoordinate(pn, pe, sys);
+          refCenterX = conv.x; // Easting (Sağa/Y)
+          refCenterY = conv.y; // Northing (Yukarı/X)
+        }
+        isPrecise = true;
+      }
+    }
+
+    if (!isPrecise) {
+      refCenterX = meanX;
+      refCenterY = meanY;
+    }
+
     const relativePoints = convertedPoints.map(p => {
-      const dx = p.x - meanX; // Easting offset in meters
-      const dy = p.y - meanY; // Northing offset in meters
+      const dx = p.x - refCenterX; // Easting offset in meters relative to reference
+      const dy = p.y - refCenterY; // Northing offset in meters relative to reference
       
       const passedBaarda = usedIndices ? usedIndices.includes(p.idx) : true;
       
@@ -536,7 +563,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       clusters: clusters || [],
       usedIndices: usedIndices || []
     };
-  }, [location, t]);
+  }, [location, t, analysisType, appliedPreciseN, appliedPreciseE, useLocal]);
 
   const clusterBounds = useMemo(() => {
     if (!hybridClusterChartData || hybridClusterChartData.points.length === 0) {
