@@ -611,8 +611,8 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
       <p class="bold" style="color: #065f46; margin-bottom: 6px;">İleri Hibrit Algoritması Paralel Kolları ve Yeni Nesil Ağırlık Sentezi</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Kol - Genel Baarda Testi (İç Güvenilirlik Süzgeci):</span> Ham ölçüm havuzunun tamamını inceleyerek, konumsal sıçramaları ve kaba koordinat hatalarını varyans kriterlerine göre tamamen ayıklar.</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Kol - Dinamik K-Means (Yoğunluk Dağılım Modeli):</span> Ham veriler Bayes Bilgi Kriteri (BIC) yardımıyla en uygun <i>K</i> kümesine bölünür (K=2..5). K-Means bu modelde herhangi bir veri elemesi yapmaz, bunun yerine her bir noktanın ait olduğu kümenin eleman yoğunluğunu (<i>w<sub>cluster</sub> = N<sub>c</sub> / N<sub>total</sub></i>) tespit eder.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. Huber Robust Süzgeci:</span> Baarda testini başarıyla geçen temiz gözlemler üzerinde, gürbüz varyans referans alan <b>Lokal Huber M-Estimation süzgeci</b> çalıştırılır. Sınır dışı kalan (huber kutusu dışındaki) mikro gürültüler elenerek gürbüz alt set (<code>huberIndices</code>) elde edilir.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">4. Geri Çekilme Mekanizması (Fallback):</span> Huber kriterinden başarıyla geçen nokta adedi kritik limitin altına düşerse (nokta sayısı &lt; 4), sistem otomatik olarak hata koruması adına standart Ağırlıklı En Küçük Kareler (Weighted LSE) modeline geri çekilir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. Huber Robust Matematiksel Dengelemesi (Yumuşak Ağırlıklandırma):</span> Baarda testini başarıyla geçen temiz gözlemler üzerinde gürbüz varyans referans alınarak her koordinatın Huber ağırlık katsayısı (<i>w<sub>huber</sub></i>) hesaplanır. Sınır dışı kalan mikro gürültülü gözlemler sert şekilde elenmek yerine, etki fonksiyonuyla yumuşak bir şekilde aşağı ağırlıklandırılır (downweight).</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">4. Geri Çekilme Mekanizması (Fallback):</span> Baarda testinden başarıyla geçen nokta adedi kritik limitin altına düşerse (nokta sayısı &lt; 4), sistem otomatik olarak hata koruması adına standart Ağırlıklı En Küçük Kareler (Weighted LSE) modeline geri çekilir.</p>
       <p class="no-indent"><span class="bold">5. Üçlü Hibrit WLS Dengelemesi (Joint Weighting):</span> Temiz gözlemlerin nihai weights matrisi; dinamik küme yoğunluğu katsayısı, donanımsal hassasiyetin karesinin tersi ve Huber robust ağırlık katsayısının doğrudan çarpımıyla elde edilir: <i>P<sub>nihai</sub> = w<sub>cluster</sub> &times; w<sub>hardware</sub> &times; w<sub>huber</sub> = (N<sub>c</sub> / N<sub>total</sub>) &times; (1 / accuracy<sup>2</sup>) &times; w<sub>huber</sub></i>. Bu sayede en güvenilir, yüksek yoğunluklu ve düşük hatalı verilerin ağırlığı katlanırken uç değerlerin etkisi sıfıra yakınsar.</p>
     </div>
 
@@ -672,30 +672,9 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
   });
   const validClusters = clusters.filter(c =&gt; c.length &gt; 0);
 
-  // 3. Huber Robust M-Estimation Filter: Apply specifically to the Baarda outlier-eliminated set
-  const huberIndices: number[] = [];
-  if (baardaIndices.length &gt; 0) {
-    const subsetPoints = baardaIndices.map(idx =&gt; samples[idx]);
-    const subLats = subsetPoints.map(p => p.lat);
-    const subLngs = subsetPoints.map(p => p.lng);
-    const subMedianCenter = {
-      lat: calculateMedian(subLats),
-      lng: calculateMedian(subLngs)
-    };
-    const subSigma = calculateMAD(subsetPoints, subMedianCenter);
-    const huberLimit = 1.345 * Math.max(0.05, subSigma);
-
-    for (const idx of baardaIndices) {
-      const p = samples[idx];
-      const dist = calculateDistanceMeter(p.lat, p.lng, subMedianCenter.lat, subMedianCenter.lng, subMedianCenter.lat);
-      if (dist &lt;= huberLimit) {
-        huberIndices.push(idx);
-      }
-    }
-  }
-
-  // The final indices are the ones that survive Baarda and Huber robust criteria
-  const intersectionIndices = huberIndices;
+  // 3. Huber Robust Weighting Scheme: Applied mathematically in the WLS step rather than hard-truncation
+  // No data points are hard-eliminated beyond the Baarda geodetic filter.
+  const intersectionIndices = baardaIndices;
   const intersectionPoints = intersectionIndices.map(idx =&gt; samples[idx]);
 
   // If we have at least 4 viable points, calculate Weighted Least Squares (WLS) adjustment using combined weights:

@@ -684,31 +684,9 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
 
   const validClusters = clusters.filter(c => c.length > 0);
 
-  // 3. Huber Robust M-Estimation Filter: Apply specifically to the Baarda outlier-eliminated set
-  const huberIndices: number[] = [];
-  if (baardaIndices.length > 0) {
-    const subsetPoints = baardaIndices.map(idx => samples[idx]);
-    const subLats = subsetPoints.map(p => p.lat);
-    const subLngs = subsetPoints.map(p => p.lng);
-    const subMedianCenter = {
-      lat: calculateMedian(subLats),
-      lng: calculateMedian(subLngs)
-    };
-    const subSigma = calculateMAD(subsetPoints, subMedianCenter);
-    const huberLimit = 1.345 * Math.max(0.05, subSigma);
-
-    for (const idx of baardaIndices) {
-      const p = samples[idx];
-      const dist = calculateDistanceMeter(p.lat, p.lng, subMedianCenter.lat, subMedianCenter.lng, subMedianCenter.lat);
-      // Keep only points that are close enough to the subset's own centroid
-      if (dist <= huberLimit) {
-        huberIndices.push(idx);
-      }
-    }
-  }
-
-  // The final indices are the ones that survive Baarda and Huber robust criteria
-  const intersectionIndices = huberIndices;
+  // 3. Huber Robust Weighting Scheme: Applied mathematically in the WLS step rather than hard-truncation
+  // No data points are hard-eliminated beyond the Baarda geodetic filter.
+  const intersectionIndices = baardaIndices;
   const intersectionPoints = intersectionIndices.map(idx => samples[idx]);
 
   // If we have at least 4 viable points, calculate Weighted Least Squares (WLS) adjustment using combined weights:
