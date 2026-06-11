@@ -402,48 +402,95 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
 }
     </pre>
 
-    <h3>2.4.3. Sabit ve Dengeli KMeans Kümeleme Süzgeci (KMeans-4 Clustering)</h3>
-    <p>Bu filtreleme modeli, 2D konum verilerini sabit k=4 küme grubuna ayırır. Ham verilerin saçılım miktarından bağımsız olarak, veri havuzu istatistiksel ve geometrik olarak dengeli 4 alt gruba bölünür. Kümeleme tamamlandıktan sonra, örneklem yoğunluğunun/eleman sayısının maksimum olduğu en yoğun (şampiyon) küme seçilir ve bu küme üzerine Ağırlıklı En Küçük Kareler (WLS) dengelemesi tatbik edilir.</p>
-    
-    <p><span class="bold">Sabit k=4 Kriteri:</span> Klasik ve güvenilir k=4 sabit kümeleme paradigması, her koşulda veri setinin kararlı ve dengeli biçimde 4 ayrı sönümleme grubuna dağıtılmasını sağlar. Bu sayede, dinamik küme değişkenliğinin getireceği aşırı duyarlılık riskleri ve kararsızlıklar engellenir, sinyal yansımaları (multipath) her durumda net bir şekilde bağımsız kümelere ayrıştırılır.</p>
-    
-    <p class="no-indent">Sistemde yürütülen, sabit k=4 katsayısını uygulayan ve şampiyon küme üzerinde LSE dengelemesini tetikleyen TypeScript kaynak kod yapısı şu şekildedir:</p>
+    <h3>2.4.3. Dinamik K-Means Kümeleme ve Yoğunluk Oranlı Ağırlıklandırma Süzgeci (X-Means & WLS)</h3>
+    <p>Bu filtreleme modeli, 2D konum verilerini sabit bir <i>K</i> küme sayısı yerine, <b>Bayes Bilgi Kriteri (Bayesian Information Criterion - BIC)</b> rehberliğinde dinamik olarak bölümler (X-Means yaklaşımı). Uydu sinyallerinin arazi koşullarından (multipath, beyaz gürültü) ötürü sergilediği saçılım örüntüsü analiz edilerek, veri havuzunun geometrik ve istatistiksel gürültü yapısına en uygun küme adedi (<i>K = 2..5</i>) otomatik olarak belirlenir.</p>
+
+    <div class="case-container" style="background-color: #fafaf9; border-left: 4px solid #da5d20; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
+      <p class="bold" style="color: #bc4613; margin-bottom: 6px;">Dinamik Kümeleme ve Yenilikçi Oransal Nokta Ağırlıklandırması</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Bayes Bilgi Kriteri (BIC) ile K Seçimi:</span> Aşırı bölümleme (overfitting) ve yetersiz kümeleme riskleri BIC skoru minimize edilerek sönümlenir. Model, her <i>K</i> seçeneği için iç varyansı ve parametre ceza terimlerini dengeleyerek en anlamlı geometrik grupları saptar.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Merkez Çakışması ve Yerel Minimum Engeli:</span> İlk saniyelerde veya veri setinin başında uydulardan gelen verilerin birbirine çok yakın olması, geleneksel K-Means merkezlerinin üst üste binerek yerel minimumlara takılması riskini doğurur. Bunu sönümlemek amacıyla, ilk merkez atamalarında (~1cm seviyesinde) mikroskobik yatay/düşey düzensizlik (posizyonel jitter) tatbik edilir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. Oransal Küme Filtresi (Yoğunluk Katsayısı):</span> Her kümenin toplam epok adedine oranı, o kümenin ağırlığı (<i>w<sub>cluster</sub> = N<sub>c</sub> / N<sub>total</sub></i>) olarak atanır. Örneğin, 120 epokluk ölçümde birinci kümede 50 veri varsa bu kümenin ağırlık oranı 50/120 = 0.416 bulunur.</p>
+      <p class="no-indent"><span class="bold">4. Hibrit Birleşik Donanım/Konum Dengelemesi (WLS):</span> Kümedeki her bir noktanın nihai ağırlığı, donanımsal hassasiyet ağırlığı ile ait olduğu kümenin yoğunluk oranının doğrudan çarpımıyla elde edilir: <i>P<sub>nihai</sub> = w<sub>hardware</sub> &times; w<sub>cluster</sub> = (1 / accuracy<sup>2</sup>) &times; (N<sub>c</sub> / N<sub>total</sub>)</i>. Bu sayede kalabalık olmayan, çoklu yol yansıması kaynaklı uydurma uç alt grupların nihai koordinata etkisi matematiksel olarak sıfıra yakınsallatılır.</p>
+    </div>
+
+    <p class="no-indent">Sistemde yürütülen, dinamik K seçimini BIC kriteriyle koşturan, merkez çakışmasını sönümleyen ve nihai ağırlıklı ortalamayı oran katsayısına göre hesaplayan TypeScript kütüphane fonksiyonu şu şekildedir:</p>
     <pre class="code-block">
 function calculateKMeans4(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
-  if (samples.length &lt; 4) {
-    return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
+  if (samples.length &lt; 30) {
+    let sumW = 0, sumLat = 0, sumLng = 0, sumAcc = 0;
+    for (const p of samples) {
+      const w = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
+      sumW += w;
+      sumLat += p.lat * w;
+      sumLng += p.lng * w;
+      sumAcc += p.accuracy;
+    }
+    return {
+      result: { lat: sumLat / sumW, lng: sumLng / sumW, accuracy: sumAcc / samples.length, altitude: null, altitudeAccuracy: null, timestamp: Date.now() },
+      usedIndices: samples.map((_, i) => i),
+      clusters: []
+    };
   }
 
-  const average = calculateAverage(samples);
-  const variance = calculateVariance(samples, average);
-  const sigma = Math.sqrt(variance);
+  let bestK = 2;
+  let bestBIC = Infinity;
+  let bestAssignments: number[] = [];
 
-  // Fixed Number of Clusters (k) = 4 as requested
-  const k = 4;
+  for (let k = 2; k &lt;= 5; k++) {
+    if (samples.length &lt; k) continue;
+    const currentAssignments = runKMeans(samples, k);
+    const centroids = Array.from({ length: k }, (_, j) =&gt; {
+      const cPoints = samples.filter((_, i) =&gt; currentAssignments[i] === j);
+      if (cPoints.length === 0) return { lat: samples[j % samples.length].lat, lng: samples[j % samples.length].lng };
+      return {
+        lat: cPoints.reduce((a, b) =&gt; a + b.lat, 0) / cPoints.length,
+        lng: cPoints.reduce((a, b) =&gt; a + b.lng, 0) / cPoints.length
+      };
+    });
 
-  const assignments = runKMeans(samples, k);
-  const clusters: number[][] = Array.from({ length: k }, () =&gt; []);
-  assignments.forEach((cIdx, i) =&gt; {
-    clusters[cIdx].push(i);
-  });
-  
-  let bestClusterIdx = 0;
-  let maxCount = -1;
-  for (let i = 0; i &lt; k; i++) {
-    if (clusters[i].length &gt; maxCount) {
-      maxCount = clusters[i].length;
-      bestClusterIdx = i;
+    let totalSquaredDist = 0;
+    for (let i = 0; i &lt; samples.length; i++) {
+      const cIdx = currentAssignments[i];
+      totalSquaredDist += calculateSquaredDistance(samples[i].lat, samples[i].lng, centroids[cIdx].lat, centroids[cIdx].lng, samples[i].lat);
+    }
+    const varianceR = totalSquaredDist / Math.max(1, samples.length - k);
+    const numParameters = k * 2;
+    const bicScore = samples.length * Math.log(Math.max(1e-9, varianceR)) + numParameters * Math.log(samples.length);
+
+    if (bicScore &lt; bestBIC) {
+      bestBIC = bicScore;
+      bestK = k;
+      bestAssignments = currentAssignments;
     }
   }
-  
-  const bestClusterPoints = clusters[bestClusterIdx].map(idx =&gt; samples[idx]);
-  const lseRes = calculateWeightedLSE(bestClusterPoints);
-  const originalUsedIndices = lseRes.usedIndices.map(i =&gt; clusters[bestClusterIdx][i]);
-  
+
+  const clusters: number[][] = Array.from({ length: bestK }, () =&gt; []);
+  bestAssignments.forEach((cIdx, i) =&gt; { clusters[cIdx].push(i); });
+  const validClusters = clusters.filter(c =&gt; c.length &gt; 0);
+
+  let finalSumW = 0, finalLatW = 0, finalLngW = 0, totalAccuracy = 0;
+  const usedIndices: number[] = [];
+
+  for (let i = 0; i &lt; samples.length; i++) {
+    const p = samples[i];
+    const clusterIdx = validClusters.findIndex(c =&gt; c.includes(i));
+    if (clusterIdx === -1) continue;
+
+    const wCluster = validClusters[clusterIdx].length / samples.length;
+    const wHardware = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
+    const combinedWeight = wCluster * wHardware;
+
+    finalSumW += combinedWeight;
+    finalLatW += p.lat * combinedWeight;
+    finalLngW += p.lng * combinedWeight;
+    totalAccuracy += p.accuracy;
+    usedIndices.push(i);
+  }
+
   return {
-    result: lseRes.result,
-    usedIndices: originalUsedIndices,
-    clusters: clusters.filter(c =&gt; c.length &gt; 0)
+    result: { lat: finalLatW / (finalSumW || 1.0), lng: finalLngW / (finalSumW || 1.0), accuracy: totalAccuracy / (usedIndices.length || 1), altitude: null, altitudeAccuracy: null, timestamp: Date.now() },
+    usedIndices,
+    clusters: validClusters
   };
 }
     </pre>
@@ -561,12 +608,12 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
     </pre>
 
     <h3>2.4.5. "KMeans + Baarda + Huber" İleri-Hibrit Filtreleme Modeli</h3>
-    <p>Uygulamada yer alan en gelişmiş ve akademik seviyedeki konum hesaplama yöntemidir. Bu metot, uydulardan gelen sinyal hatalarını ve çoklu yol yansımalarını (multipath) en üstün hassasiyetle ayıklamak amacıyla geliştirilmiştir. Yöntem, küresel Baarda testi ve sabit K-Means (k=4) sonuçlarını kesiştirerek elde edilen temiz küme üzerinde <b>lokal Huber M-Estimation süzgecini</b> koşturur. Bu sayede local gürültü öbekleri de elimine edilir.</p>
+    <p>Uygulamada yer alan en gelişmiş ve akademik seviyedeki konum hesaplama yöntemidir. Bu metot, uydulardan gelen sinyal hatalarını ve çoklu yol yansımalarını (multipath) en üstün hassasiyetle ayıklamak amacıyla geliştirilmiştir. Yöntem, küresel Baarda testi ve dinamik K-Means (BIC) sonuçlarını kesiştirerek elde edilen temiz küme üzerinde <b>lokal Huber M-Estimation süzgecini</b> koşturur. Bu sayede local gürültü öbekleri de bütünüyle elimine edilir.</p>
 
     <div class="case-container" style="background-color: #f0fdf4; border-left: 4px solid #10b981; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
       <p class="bold" style="color: #065f46; margin-bottom: 6px;">İleri Hibrit Algoritması Paralel Kolları ve Kesişim Kuralları</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Kol - Genel Baarda Testi (İç Güvenilirlik Süzgeci):</span> 120 epokluk ham havuzun tamamını tek bir grup olarak inceleyerek, ani konumsal sıçramaları ve kalın donanımsal hataları varyans test büyüklüklerine göre ayıklar.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Kol - Sabit K-Means (Geometrik Süzgeç):</span> Alınan tüm veriler sabit k=4 sayısında kümeye bölünür. En yoğun "Şampiyon Küme" seçilerek çoklu yansımanın binalardan oluşturduğu uydurma ömürsüz öbekler dışlanır.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Kol - Dinamik K-Means (Geometrik Süzgeç):</span> Alınan tüm veriler en uygun K küme sayısına ayrıştırılır (BIC/X-Means kriteri). En yoğun "Şampiyon Küme" seçilerek çoklu yansımanın binalardan oluşturduğu uydurma ömürsüz öbekler dışlanır.</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. Kesişim Kümesi ve Huber Robust Süzgeci:</span> Baarda'dan temiz çıkan küresel noktalar ile K-Means'in yoğun şampiyon kümesinin doğrudan indeks kesişimi (2-Way Intersection) alınır. Bu kesişen temiz alt grupta, gürbüz varyans temel alınarak <b>Lokal Huber M-Estimation</b> (1.345σ) filtresi çalıştırılır; böylece grup içine sızmış mikro gürültüler de filtrelenir.</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">4. Geri Çekilme Mekanizması (Fallback):</span> Eğer nihai Huber filtresinden geçen nokta sayısı sönümlenmiş alt limitin (nokta sayısı &lt; 4) altına inerse, sistem otomatik olarak stabil çalışan diğer "KMeans + Baarda" modeline geri döner (Fallback).</p>
       <p class="no-indent"><span class="bold">5. Stokastik WLS Dengelemesi (Joint Weighting):</span> Süzülen nihai üst-temiz gözlemler, donanımsal doğruluk değeri ile Huber robust ağırlığının ortak çarpımından üretilen joint ağırlıklar (P_nihai = w_donanım * w_Huber) kullanılarak dikey ve yatay koordinatların milimetrik hassasiyette dengelenmesini sağlar.</p>
@@ -585,34 +632,59 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
     return { result: calculateAverage(samples), usedIndices: samples.map((_, i) =&gt; i), clusters: [] };
   }
 
-  // Calculate standard deviation of whole raw dataset
-  const average = calculateAverage(samples);
-  const variance = calculateVariance(samples, average);
-  const sigma = Math.sqrt(variance);
-
   // 1. Column A (Geodetic Branch): General Baarda Outlier Elimination
   const baardaRes = calculateBaardaPure(samples);
   const baardaIndices = baardaRes.usedIndices;
 
-  // 2. Column B (Spatial Branch): Fixed K-Means Clustering for 4 clusters as requested
-  const k = 4;
+  // 2. Column B (Spatial Branch): Dynamic K-Means Clustering (X-Means / BIC model)
+  let bestK = 2;
+  let bestBIC = Infinity;
+  let bestAssignments: number[] = [];
 
-  const clusterAssignments = runKMeans(samples, k);
-  const clusters: number[][] = Array.from({ length: k }, () =&gt; []);
-  clusterAssignments.forEach((cIdx, i) =&gt; {
+  for (let k = 2; k &lt;= 5; k++) {
+    if (samples.length &lt; k) continue;
+    const currentAssignments = runKMeans(samples, k);
+    const centroids = Array.from({ length: k }, (_, j) =&gt; {
+      const cPoints = samples.filter((_, i) =&gt; currentAssignments[i] === j);
+      if (cPoints.length === 0) return { lat: samples[j % samples.length].lat, lng: samples[j % samples.length].lng };
+      return {
+        lat: cPoints.reduce((a, b) =&gt; a + b.lat, 0) / cPoints.length,
+        lng: cPoints.reduce((a, b) =&gt; a + b.lng, 0) / cPoints.length
+      };
+    });
+
+    let totalSquaredDist = 0;
+    for (let i = 0; i &lt; samples.length; i++) {
+      const cIdx = currentAssignments[i];
+      totalSquaredDist += calculateSquaredDistance(samples[i].lat, samples[i].lng, centroids[cIdx].lat, centroids[cIdx].lng, samples[i].lat);
+    }
+    const varianceR = totalSquaredDist / Math.max(1, samples.length - k);
+    const numParameters = k * 2;
+    const bicScore = samples.length * Math.log(Math.max(1e-9, varianceR)) + numParameters * Math.log(samples.length);
+
+    if (bicScore &lt; bestBIC) {
+      bestBIC = bicScore;
+      bestK = k;
+      bestAssignments = currentAssignments;
+    }
+  }
+
+  const clusters: number[][] = Array.from({ length: bestK }, () =&gt; []);
+  bestAssignments.forEach((cIdx, i) =&gt; {
     clusters[cIdx].push(i);
   });
+  const validClusters = clusters.filter(c =&gt; c.length &gt; 0);
 
   // Champion Cluster Discovery (Largest cluster by member count)
   let bestClusterIdx = 0;
   let maxCount = -1;
-  for (let i = 0; i &lt; k; i++) {
-    if (clusters[i].length &gt; maxCount) {
-      maxCount = clusters[i].length;
+  for (let i = 0; i &lt; validClusters.length; i++) {
+    if (validClusters[i].length &gt; maxCount) {
+      maxCount = validClusters[i].length;
       bestClusterIdx = i;
     }
   }
-  const championIndices = clusters[bestClusterIdx];
+  const championIndices = validClusters[bestClusterIdx] || [];
 
   // Perform 2-way Intersection of (K-Means ∩ Baarda) first
   const twoWayIndices = baardaIndices.filter(idx =&gt; championIndices.includes(idx));
@@ -628,9 +700,7 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
     const huberLimit = 1.345 * Math.max(0.05, subSigma);
     for (const idx of twoWayIndices) {
       const p = samples[idx];
-      const dLat = (p.lat - subAverage.lat) * 111320;
-      const dLng = (p.lng - subAverage.lng) * 111320 * Math.cos(subAverage.lat * Math.PI / 180);
-      const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+      const dist = calculateDistanceMeter(p.lat, p.lng, subAverage.lat, subAverage.lng, subAverage.lat);
       if (dist &lt;= huberLimit) {
         huberIndices.push(idx);
       }
@@ -642,7 +712,7 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
   const intersectionPoints = intersectionIndices.map(idx =&gt; samples[idx]);
 
   // If we have at least 4 viable points, calculate Weighted Least Squares (WLS) adjustment using combined weights:
-  // P_final = w_hardware * w_huber = (accuracy_min / accuracy_i) * w_huber,i
+  // P_final = w_hardware * w_huber * w_cluster
   if (intersectionPoints.length &gt;= 4) {
     const subsetPoints = intersectionPoints;
     const subAverage = calculateAverage(subsetPoints);
@@ -650,16 +720,16 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
     const subSigma = Math.sqrt(subVariance);
     const huberLimit = 1.345 * Math.max(0.05, subSigma);
 
-    const accuracyLimit = Math.min(...intersectionPoints.map(s =&gt; s.accuracy));
+    const finalWeights = intersectionPoints.map((s, index) =&gt; {
+      const globalIndex = intersectionIndices[index];
+      const clusterIdx = validClusters.findIndex(c =&gt; c.includes(globalIndex));
+      const wCluster = clusterIdx !== -1 ? validClusters[clusterIdx].length / samples.length : 1.0 / samples.length;
 
-    const finalWeights = intersectionPoints.map(s =&gt; {
-      const dLat = (s.lat - subAverage.lat) * 111320;
-      const dLng = (s.lng - subAverage.lng) * 111320 * Math.cos(subAverage.lat * Math.PI / 180);
-      const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+      const dist = calculateDistanceMeter(s.lat, s.lng, subAverage.lat, subAverage.lng, subAverage.lat);
       const huberWeight = dist &lt;= huberLimit ? 1.0 : huberLimit / Math.max(0.01, dist);
 
-      const hardwareWeight = accuracyLimit / Math.max(0.1, s.accuracy);
-      return hardwareWeight * huberWeight;
+      const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, s.accuracy), 2);
+      return hardwareWeight * huberWeight * wCluster;
     });
 
     const sumW = finalWeights.reduce((a, b) =&gt; a + b, 0) || 1.0;
@@ -689,7 +759,7 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
     return {
       result: finalResult,
       usedIndices: intersectionIndices,
-      clusters: clusters.filter(c =&gt; c.length &gt; 0),
+      clusters: validClusters,
       fallbackApplied: false,
       actualMethodUsed: 'KMEANS_BAARDA_HUBER'
     };
@@ -699,7 +769,7 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
     return {
       result: fallbackRes.result,
       usedIndices: fallbackRes.usedIndices,
-      clusters: clusters.filter(c => c.length > 0),
+      clusters: validClusters,
       fallbackApplied: true,
       actualMethodUsed: 'WEIGHTED_LSE'
     };

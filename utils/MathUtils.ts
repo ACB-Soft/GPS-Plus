@@ -1,5 +1,19 @@
 import { Coordinate, CalculationMethod } from '../types';
 
+export function calculateDistanceMeter(lat1: number, lng1: number, lat2: number, lng2: number, baseLat: number): number {
+  const cosLat = Math.cos(baseLat * Math.PI / 180);
+  const dLat = (lat1 - lat2) * 111320;
+  const dLng = (lng1 - lng2) * 111320 * cosLat;
+  return Math.sqrt(dLat * dLat + dLng * dLng);
+}
+
+function calculateSquaredDistance(lat1: number, lng1: number, lat2: number, lng2: number, baseLat: number): number {
+  const cosLat = Math.cos(baseLat * Math.PI / 180);
+  const dLat = (lat1 - lat2) * 111320;
+  const dLng = (lng1 - lng2) * 111320 * cosLat;
+  return dLat * dLat + dLng * dLng;
+}
+
 /**
  * Performs statistical analysis on GPS samples based on the selected method.
  */
@@ -127,7 +141,6 @@ export function calculateResult(
     actualMethodUsed: finalMethod 
   };
 }
-
 export function calculateMaxDistance(samples: Coordinate[]): number {
   if (samples.length <= 1) return 0;
   
@@ -136,9 +149,7 @@ export function calculateMaxDistance(samples: Coordinate[]): number {
   
   for (let i = 0; i < samples.length; i++) {
     for (let j = i + 1; j < samples.length; j++) {
-      const dLat = (samples[i].lat - samples[j].lat) * 111320;
-      const dLng = (samples[i].lng - samples[j].lng) * 111320 * Math.cos(meanLat * Math.PI / 180);
-      const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+      const dist = calculateDistanceMeter(samples[i].lat, samples[i].lng, samples[j].lat, samples[j].lng, meanLat);
       if (dist > maxDist) maxDist = dist;
     }
   }
@@ -158,9 +169,7 @@ export function calculateMedian(values: number[]): number {
 export function calculateMAD(samples: Coordinate[], center: { lat: number; lng: number }): number {
   if (samples.length === 0) return 0;
   const distances = samples.map(s => {
-    const dLat = (s.lat - center.lat) * 111320;
-    const dLng = (s.lng - center.lng) * 111320 * Math.cos(center.lat * Math.PI / 180);
-    return Math.sqrt(dLat * dLat + dLng * dLng);
+    return calculateDistanceMeter(s.lat, s.lng, center.lat, center.lng, center.lat);
   });
   const medianDist = calculateMedian(distances);
   // 1.4826 is the scaling factor for consistency with standard deviation
@@ -177,9 +186,8 @@ export function calculateAverage(samples: Coordinate[]): Coordinate {
   // Calculate Yatay Hassasiyet (Horizontal Precision)
   // We use the root-mean-square of residuals plus the standard error of reported accuracies
   const residualsInMeters = samples.map(s => {
-    const dLat = (s.lat - meanLat) * 111320;
-    const dLng = (s.lng - meanLng) * 111320 * Math.cos(meanLat * Math.PI / 180);
-    return dLat * dLat + dLng * dLng;
+    const dist = calculateDistanceMeter(s.lat, s.lng, meanLat, meanLng, meanLat);
+    return dist * dist;
   });
   
   const hVariance = residualsInMeters.reduce((a, b) => a + b, 0) / Math.max(1, samples.length - 1);
@@ -254,9 +262,8 @@ export function calculateVariance(samples: Coordinate[], mean: Coordinate): numb
   
   // Convert degrees to meters roughly (1 deg ~ 111320m)
   const residuals = samples.map(s => {
-    const dLat = (s.lat - mean.lat) * 111320;
-    const dLng = (s.lng - mean.lng) * 111320 * Math.cos(mean.lat * Math.PI / 180);
-    return dLat * dLat + dLng * dLng;
+    const dist = calculateDistanceMeter(s.lat, s.lng, mean.lat, mean.lng, mean.lat);
+    return dist * dist;
   });
   
   return residuals.reduce((a, b) => a + b, 0) / (samples.length - 1);
@@ -364,6 +371,12 @@ function runKMeans(samples: Coordinate[], k: number): number[] {
     }));
   }
 
+  // Add microscopic random jitter (approx 1cm) to prevent starting centroids from collapsing
+  centroids = centroids.map((c, idx) => ({
+    lat: c.lat + (idx - k/2) * 1e-7,
+    lng: c.lng + (idx - k/2) * 1e-7
+  }));
+
   let assignments = new Array(samples.length).fill(-1);
   let changed = true;
   let iterations = 0;
@@ -378,9 +391,7 @@ function runKMeans(samples: Coordinate[], k: number): number[] {
         let minDist = Infinity;
         let bestK = 0;
         for (let j = 0; j < k; j++) {
-            const dLat = (samples[i].lat - centroids[j].lat) * 111320;
-            const dLng = (samples[i].lng - centroids[j].lng) * 111320 * Math.cos(samples[i].lat * Math.PI / 180);
-            const dist = dLat * dLat + dLng * dLng;
+            const dist = calculateSquaredDistance(samples[i].lat, samples[i].lng, centroids[j].lat, centroids[j].lng, samples[i].lat);
             if (dist < minDist) {
                 minDist = dist;
                 bestK = j;
@@ -431,9 +442,7 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
     const meanLng = currentSamples.reduce((a, b, i) => a + b.lng * weights[i], 0) / sumW;
 
     const residuals = currentSamples.map(s => {
-      const dLat = (s.lat - meanLat) * 111320;
-      const dLng = (s.lng - meanLng) * 111320 * Math.cos(meanLat * Math.PI / 180);
-      return Math.sqrt(dLat * dLat + dLng * dLng);
+      return calculateDistanceMeter(s.lat, s.lng, meanLat, meanLng, meanLat);
     });
 
     const vTPv = residuals.reduce((a, v, i) => a + v * v * weights[i], 0);
@@ -471,42 +480,121 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
 
 
 function calculateKMeans4(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
-  if (samples.length < 4) {
-    return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
+  // ADIM 1: Akademik Güvenlik Sınırı (Merkezi Limit Teoremi: N >= 30)
+  if (samples.length < 30) {
+    let sumW = 0, sumLat = 0, sumLng = 0, sumAcc = 0;
+    for (const p of samples) {
+      const w = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
+      sumW += w;
+      sumLat += p.lat * w;
+      sumLng += p.lng * w;
+      sumAcc += p.accuracy;
+    }
+    const validAlts = samples.filter(s => s.altitude !== null && s.altitude !== undefined);
+    const meanAlt = validAlts.length > 0 ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length : null;
+    const validAltAccs = samples.filter(s => s.altitudeAccuracy !== null && s.altitudeAccuracy !== undefined);
+    const meanAltAcc = validAltAccs.length > 0 ? validAltAccs.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length : null;
+
+    return {
+      result: { 
+        lat: sumLat / sumW, 
+        lng: sumLng / sumW, 
+        accuracy: sumAcc / samples.length, 
+        altitude: meanAlt,
+        altitudeAccuracy: meanAltAcc,
+        timestamp: Date.now() 
+      },
+      usedIndices: samples.map((_, i) => i),
+      clusters: []
+    };
   }
-  
-  // Calculate standard deviation of whole raw dataset
-  const average = calculateAverage(samples);
-  const variance = calculateVariance(samples, average);
-  const sigma = Math.sqrt(variance);
 
-  // Fixed Number of Clusters (k) = 4 as requested
-  const k = 4;
+  // ADIM 2: Dinamik K (Küme Sayısı) Seçimi - X-Means Mantığı
+  let bestK = 2;
+  let bestBIC = Infinity;
+  let bestAssignments: number[] = [];
 
-  const assignments = runKMeans(samples, k);
-  
-  const clusters: number[][] = Array.from({ length: k }, () => []);
-  assignments.forEach((cIdx, i) => {
-    clusters[cIdx].push(i);
-  });
-  
-  let bestClusterIdx = 0;
-  let maxCount = -1;
-  for (let i = 0; i < k; i++) {
-    if (clusters[i].length > maxCount) {
-      maxCount = clusters[i].length;
-      bestClusterIdx = i;
+  for (let k = 2; k <= 5; k++) {
+    if (samples.length < k) continue;
+    const currentAssignments = runKMeans(samples, k);
+    
+    // Calculate centroids
+    const centroids = Array.from({ length: k }, (_, j) => {
+      const cPoints = samples.filter((_, i) => currentAssignments[i] === j);
+      if (cPoints.length === 0) {
+        return { lat: samples[j % samples.length].lat, lng: samples[j % samples.length].lng };
+      }
+      return {
+        lat: cPoints.reduce((a, b) => a + b.lat, 0) / cPoints.length,
+        lng: cPoints.reduce((a, b) => a + b.lng, 0) / cPoints.length
+      };
+    });
+
+    let totalSquaredDist = 0;
+    for (let i = 0; i < samples.length; i++) {
+      const cIdx = currentAssignments[i];
+      totalSquaredDist += calculateSquaredDistance(samples[i].lat, samples[i].lng, centroids[cIdx].lat, centroids[cIdx].lng, samples[i].lat);
+    }
+    
+    const varianceR = totalSquaredDist / Math.max(1, samples.length - k);
+    const numParameters = k * 2;
+    const bicScore = samples.length * Math.log(Math.max(1e-9, varianceR)) + numParameters * Math.log(samples.length);
+
+    if (bicScore < bestBIC) {
+      bestBIC = bicScore;
+      bestK = k;
+      bestAssignments = currentAssignments;
     }
   }
-  
-  const bestClusterPoints = clusters[bestClusterIdx].map(idx => samples[idx]);
-  const lseRes = calculateWeightedLSE(bestClusterPoints);
-  const originalUsedIndices = lseRes.usedIndices.map(i => clusters[bestClusterIdx][i]);
-  
+
+  // ADIM 3: Optimum Kümelerin İnşa Edilmesi
+  const clusters: number[][] = Array.from({ length: bestK }, () => []);
+  bestAssignments.forEach((cIdx, i) => {
+    clusters[cIdx].push(i);
+  });
+
+  const validClusters = clusters.filter(c => c.length > 0);
+
+  // ADIM 4 & 5: Önce donanımsal ağırlık ile o kümenin ağırlığının çarpımıyla WLS çözümü
+  let finalSumW = 0;
+  let finalLatW = 0;
+  let finalLngW = 0;
+  let totalAccuracy = 0;
+  const usedIndices: number[] = [];
+
+  for (let i = 0; i < samples.length; i++) {
+    const p = samples[i];
+    const clusterIdx = validClusters.findIndex(c => c.includes(i));
+    if (clusterIdx === -1) continue;
+
+    const wCluster = validClusters[clusterIdx].length / samples.length;
+    const wHardware = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
+    const combinedWeight = wCluster * wHardware;
+
+    finalSumW += combinedWeight;
+    finalLatW += p.lat * combinedWeight;
+    finalLngW += p.lng * combinedWeight;
+    totalAccuracy += p.accuracy;
+    usedIndices.push(i);
+  }
+
+  const validAlts = samples.filter((_, i) => usedIndices.includes(i) && samples[i].altitude !== null && samples[i].altitude !== undefined);
+  const finalAlt = validAlts.length > 0 ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length : null;
+
+  const validAltAccs = samples.filter((_, i) => usedIndices.includes(i) && samples[i].altitudeAccuracy !== null && samples[i].altitudeAccuracy !== undefined);
+  const finalAltAcc = validAltAccs.length > 0 ? validAltAccs.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length : null;
+
   return {
-    result: lseRes.result,
-    usedIndices: originalUsedIndices,
-    clusters: clusters.filter(c => c.length > 0)
+    result: {
+      lat: finalLatW / (finalSumW || 1.0),
+      lng: finalLngW / (finalSumW || 1.0),
+      accuracy: totalAccuracy / (usedIndices.length || 1),
+      altitude: finalAlt,
+      altitudeAccuracy: finalAltAcc,
+      timestamp: Date.now()
+    },
+    usedIndices,
+    clusters: validClusters
   };
 }
 
@@ -551,25 +639,61 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
   const baardaRes = calculateBaardaPure(samples);
   const baardaIndices = baardaRes.usedIndices;
 
-  // 2. Column B (Spatial Branch): Fixed K-Means Clustering for 4 clusters as requested
-  const k = 4;
+  // 2. Column B (Spatial Branch): Spatial Dynamic KMeans Clustering (Best K via X-Means / BIC)
+  let bestK = 2;
+  let bestBIC = Infinity;
+  let bestAssignments: number[] = [];
 
-  const clusterAssignments = runKMeans(samples, k);
-  const clusters: number[][] = Array.from({ length: k }, () => []);
-  clusterAssignments.forEach((cIdx, i) => {
+  for (let k = 2; k <= 5; k++) {
+    if (samples.length < k) continue;
+    const currentAssignments = runKMeans(samples, k);
+    
+    // Calculate centroids
+    const centroids = Array.from({ length: k }, (_, j) => {
+      const cPoints = samples.filter((_, i) => currentAssignments[i] === j);
+      if (cPoints.length === 0) {
+        return { lat: samples[j % samples.length].lat, lng: samples[j % samples.length].lng };
+      }
+      return {
+        lat: cPoints.reduce((a, b) => a + b.lat, 0) / cPoints.length,
+        lng: cPoints.reduce((a, b) => a + b.lng, 0) / cPoints.length
+      };
+    });
+
+    let totalSquaredDist = 0;
+    for (let i = 0; i < samples.length; i++) {
+      const cIdx = currentAssignments[i];
+      totalSquaredDist += calculateSquaredDistance(samples[i].lat, samples[i].lng, centroids[cIdx].lat, centroids[cIdx].lng, samples[i].lat);
+    }
+    
+    const varianceR = totalSquaredDist / Math.max(1, samples.length - k);
+    const numParameters = k * 2;
+    const bicScore = samples.length * Math.log(Math.max(1e-9, varianceR)) + numParameters * Math.log(samples.length);
+
+    if (bicScore < bestBIC) {
+      bestBIC = bicScore;
+      bestK = k;
+      bestAssignments = currentAssignments;
+    }
+  }
+
+  const clusters: number[][] = Array.from({ length: bestK }, () => []);
+  bestAssignments.forEach((cIdx, i) => {
     clusters[cIdx].push(i);
   });
+
+  const validClusters = clusters.filter(c => c.length > 0);
 
   // Champion Cluster Discovery (Largest cluster by member count)
   let bestClusterIdx = 0;
   let maxCount = -1;
-  for (let i = 0; i < k; i++) {
-    if (clusters[i].length > maxCount) {
-      maxCount = clusters[i].length;
+  for (let i = 0; i < validClusters.length; i++) {
+    if (validClusters[i].length > maxCount) {
+      maxCount = validClusters[i].length;
       bestClusterIdx = i;
     }
   }
-  const championIndices = clusters[bestClusterIdx];
+  const championIndices = validClusters[bestClusterIdx] || [];
 
   // Perform 2-way Intersection of (K-Means ∩ Baarda) first
   const twoWayIndices = baardaIndices.filter(idx => championIndices.includes(idx));
@@ -589,9 +713,7 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
 
     for (const idx of twoWayIndices) {
       const p = samples[idx];
-      const dLat = (p.lat - subMedianCenter.lat) * 111320;
-      const dLng = (p.lng - subMedianCenter.lng) * 111320 * Math.cos(subMedianCenter.lat * Math.PI / 180);
-      const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+      const dist = calculateDistanceMeter(p.lat, p.lng, subMedianCenter.lat, subMedianCenter.lng, subMedianCenter.lat);
       // Keep only points that are close enough to the subset's own centroid
       if (dist <= huberLimit) {
         huberIndices.push(idx);
@@ -604,7 +726,6 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
   const intersectionPoints = intersectionIndices.map(idx => samples[idx]);
 
   // If we have at least 4 viable points, calculate Weighted Least Squares (WLS) adjustment using combined weights:
-  // P_final = w_hardware * w_huber = (accuracy_min / accuracy_i) * w_huber,i
   if (intersectionPoints.length >= 4) {
     const subsetPoints = intersectionPoints;
     const subLats = subsetPoints.map(p => p.lat);
@@ -619,9 +740,7 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
     const accuracyLimit = Math.min(...intersectionPoints.map(s => s.accuracy));
 
     const finalWeights = intersectionPoints.map(s => {
-      const dLat = (s.lat - subMedianCenter.lat) * 111320;
-      const dLng = (s.lng - subMedianCenter.lng) * 111320 * Math.cos(subMedianCenter.lat * Math.PI / 180);
-      const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+      const dist = calculateDistanceMeter(s.lat, s.lng, subMedianCenter.lat, subMedianCenter.lng, subMedianCenter.lat);
       const huberWeight = dist <= huberLimit ? 1.0 : huberLimit / Math.max(0.01, dist);
 
       const hardwareWeight = accuracyLimit / Math.max(0.1, s.accuracy);
@@ -655,7 +774,7 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
     return {
       result: finalResult,
       usedIndices: intersectionIndices,
-      clusters: clusters.filter(c => c.length > 0),
+      clusters: validClusters,
       fallbackApplied: false,
       actualMethodUsed: 'KMEANS_BAARDA_HUBER'
     };
@@ -665,18 +784,11 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
     return {
       result: fallbackRes.result,
       usedIndices: fallbackRes.usedIndices,
-      clusters: clusters.filter(c => c.length > 0),
+      clusters: validClusters,
       fallbackApplied: true,
       actualMethodUsed: 'WEIGHTED_LSE'
     };
   }
-}
-
-function calculateDistanceMeter(lat1: number, lng1: number, lat2: number, lng2: number, baseLat: number): number {
-  const cosLat = Math.cos(baseLat * Math.PI / 180);
-  const dLat = (lat1 - lat2) * 111320;
-  const dLng = (lng1 - lng2) * 111320 * cosLat;
-  return Math.sqrt(dLat * dLat + dLng * dLng);
 }
 
 function calculateMADHuber(samples: Coordinate[], centerLat: number, centerLng: number): number {
