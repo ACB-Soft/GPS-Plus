@@ -202,7 +202,13 @@ const N = (1 - u) * (1 - v) * n00
     <p>Sahada toplanan her bir saniyelik GNSS verisi, çevresel yansımalar ve uydu konfigürasyonlarındaki anlık değişimler nedeniyle rastgele ve sistemsel hatalar barındırır. ${FULL_BRAND}, bu hataları ayıklamak ve kararlı sonuçlar elde etmek amacıyla arazide ve ACB - Labs modülünde toplamda 5 farklı ileri düzey istatistiksel filtreleme kütüphanesini doğrudan kaynak kod yapısında barındırır:</p>
 
     <div class="case-container" style="background-color: #f8fafc; border-left: 4px solid #0284c7; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
-      <p class="bold" style="color: #0369a1; margin-bottom: 6px;">İleri Düzey Süzgeçlerin Çalışma Prensi    <h3>2.4.1. Stokastik Tek Nokta Dengelemesi ve Ölçülerin Ağırlıklı Merkezileştirilmesi (Weighted Centroid)</h3>
+      <p class="bold" style="color: #0369a1; margin-bottom: 6px;">İleri Düzey Süzgeçlerin Çalışma Prensibi</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Giriş Verisi Kalifikasyonu:</span> Gelen tüm ölçüler öncelikle doğruluk dairesi yarıçaplarına göre (en fazla 100m) filtrelenir. Eğer yeterli epok varsa (en az 30), sisteme profesyonel süzgeç silsilesi atanır; aksi halde doğrudan Ağırlıklı LSE (WLS) güvenli geçişine teslim edilir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Stokastik Sıralama:</span> KMeans gibi kümeleme süzgeçleri öncesinde tüm veriler fiziksel konumsal uyum testinden geçirilir, kaba hata kontrolü jeodezik standartlara göre yapılır.</p>
+      <p class="no-indent"><span class="bold">3. Veri Saklama Limitleri:</span> 120 epok tavan tampon bellek sınırı dahilinde en son veriler saklanır, milisaniyelik gecikme analizleri anlık yürütülür.</p>
+    </div>
+
+    <h3>2.4.1. Stokastik Tek Nokta Dengelemesi ve Ölçülerin Ağırlıklı Merkezileştirilmesi (Weighted Centroid)</h3>
     <p>En Küçük Kareler (LSE) prensibine göre, jeodezik bir ölçünün ağırlığı (p), o ölçünün karesel ortalama hatasının (veya standart sapmasının) karesiyle ters orantılıdır (p = 1 / &sigma;<sup>2</sup>). Akıllı konum sensörlerinde tarayıcı düzeyinde elde edilen Geolocation API hassasiyet dairesi yarıçapı (<i>accuracy</i>), doğrudan ham standart sapmayı (&sigma;) değil; pratik kestirim dünyasında %95 güven aralığına karşılık gelen bir dairesel hata olasılığını (Circular Error Probable - CEP veya yaklaşık 2-sigma) temsil eder. CEP değeri standart sapma ile doğrusal bağıntılı olduğundan, bu dairesel hata yarıçaplarının karesiyle ters orantılı ağırlıkların atanması (p<sub>i</sub> = 1 / accuracy<sub>i</sub><sup>2</sup>), teorik jeodezik ağırlıklandırma modeliyle tam bir stokastik uyum sergiler.</p>
     <p>Sistem, tam bir 3B ağ dengelemesinin getireceği matris çözümü ve hesaplama yükü yerine; tek boyut düzeylerinde bağımsız ağırlıklı ortalama denklemini çözen ve "Weighted Centroid" olarak da adlandırılan Ağırlıklı En Küçük Kareler (WLS / Weighted LSE) motorunu doğrudan çalıştırır. Yatay konumlar donanımsal doğruluk değerlerinin ters karesiyle ağırlıklandırılarak dengeli tek nokta konumu elde edilir. Dikey yüksekliklerde ise sistem, yüksek gürültülü düşey verileri sönümlemek amacıyla doğrudan aritmetik ortalamaya başvurur.</p>
 
@@ -238,128 +244,135 @@ function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; used
 
     <div class="case-container" style="background-color: #f8fafc; border-left: 4px solid #4f46e5; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
       <p class="bold" style="color: #4338ca; margin-bottom: 6px;">Huber Robust + Donanımsal Ağırlık Birleşim Mantığı</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. İteratif Yakınsama:</span> İlk etapta tüm gözlemlerin gürbüz <b>Medyan (Ortanca)</b> konumu referans alınarak ölçek parametresi olarak gürbüz <b>MAD (Median Absolute Deviation)</b> hesaplanır. Bu sayede ilk başlangıç değeri ve saçılım genişliği kaba hatalardan tamamen yalıtılır. Huber eşiği (1.345σ_robust) belirlenerek anlık ağırlıklar iteratif biçimde güncellenir ve merkez kayması tolerans değerinin altına inene kadar (max 10 adım) pivot yenilenir.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Kalın Hata Temizliği (3-sigma):</span> İterasyon sonunda nihai koordinat merkezinden en fazla 3-sigma (3 * σ_robust) kadar uzaktaki gözlemler sisteme dahil edilir, bu sınırın dışındaki yansımalı kaba hatalar bütünüyle elenir.</p>
-      <p class="no-indent"><span class="bold">3. Ortak Ağırlıklandırma Formülasyonu:</span> Süzgeçten geçen temiz gözlemlerin nihai ağırlıkları tayin edilirken hem donanımsal hassasiyet (<i>accuracy<sub>min</sub> / accuracy<sub>i</sub></i>) hem de konumsal uzaklığa dayalı Huber sönümlemesi çarpan olarak yansıtılarak tam gürbüzlük (robustness) ve fiziksel kararlılık elde edilir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. İteratif Yakınsama:</span> İlk etapta tüm gözlemlerin gürbüz <b>Medyan (Ortanca)</b> konumu referans alınarak ölçek parametresi olarak gürbüz <b>MAD (Median Absolute Deviation)</b> hesaplanır. Huber eşiği (1.345 * pseudo_sigma, en az 0.50m) belirlenerek anlık ağırlıklar iteratif biçimde güncellenir ve merkez kayması tolerans değerinin (1 milimetre - 0.001m) altına inene kadar (max 15 adım) pivot yenilenir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Kalın Hata Temizliği (3-sigma):</span> İterasyon sonunda nihai koordinat merkezinden en fazla 3-sigma (3 * final_pseudo_sigma, en az 9.0m) kadar uzaktaki gözlemler sisteme dahil edilir, bu sınırın dışındaki yansımalı kaba hatalar bütünüyle elenir.</p>
+      <p class="no-indent"><span class="bold">3. Ortak Ağırlıklandırma Formülasyonu:</span> Süzgeçten geçen temiz gözlemlerin nihai ağırlıkları tayin edilirken hem donanımsal hassasiyet karesel varyans modeli (1 / accuracy²) hem de konumsal uzaklığa dayalı Huber sönümlemesi çarpan olarak yansıtılarak tam gürbüzlük ve fiziksel kararlılık elde edilir.</p>
     </div>
 
     <p class="no-indent">İteratif Huber M-Tahmini gürbüz süzgecini çalıştıran kritik fonksiyon yapısı aşağıda sunulmuştur:</p>
     <pre class="code-block">
+function calculateDistanceMeter(lat1: number, lng1: number, lat2: number, lng2: number, baseLat: number): number {
+  const cosLat = Math.cos(baseLat * Math.PI / 180);
+  const dLat = (lat1 - lat2) * 111320;
+  const dLng = (lng1 - lng2) * 111320 * cosLat;
+  return Math.sqrt(dLat * dLat + dLng * dLng);
+}
+
+function calculateMADHuber(samples: Coordinate[], centerLat: number, centerLng: number): number {
+  const distances = samples.map(p =&gt; calculateDistanceMeter(p.lat, p.lng, centerLat, centerLng, centerLat));
+  return calculateMedian(distances);
+}
+
 export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
   if (samples.length &lt; 4) {
-    return { result: calculateAverage(samples), usedIndices: samples.map((_, i) =&gt; i) };
+    const avgLat = samples.reduce((sum, p) =&gt; sum + p.lat, 0) / samples.length;
+    const avgLng = samples.reduce((sum, p) =&gt; sum + p.lng, 0) / samples.length;
+    const avgAcc = samples.reduce((sum, p) =&gt; sum + p.accuracy, 0) / samples.length;
+    return {
+      result: { lat: avgLat, lng: avgLng, accuracy: avgAcc, timestamp: Date.now() },
+      usedIndices: samples.map((_, i) =&gt; i)
+    };
   }
 
-  // Iterative Huber M-estimation starting with robust Median
-  const candidateLats = samples.map(s =&gt; s.lat);
-  const candidateLngs = samples.map(s =&gt; s.lng);
-  const medianLat = calculateMedian(candidateLats);
-  const medianLng = calculateMedian(candidateLngs);
-  
-  const validAlts = samples.filter(s =&gt; s.altitude !== null);
-  const medianAlt = validAlts.length &gt; 0 ? calculateMedian(validAlts.map(s =&gt; s.altitude as number)) : null;
-  
-  const validAltAccs = samples.filter(s =&gt; s.altitudeAccuracy !== null);
-  const medianAltAcc = validAltAccs.length &gt; 0 ? calculateMedian(validAltAccs.map(s =&gt; s.altitudeAccuracy as number)) : null;
+  let currentLat = calculateMedian(samples.map(s =&gt; s.lat));
+  let currentLng = calculateMedian(samples.map(s =&gt; s.lng));
 
-  let currentCentroid: Coordinate = {
-    ...samples[0],
-    lat: medianLat,
-    lng: medianLng,
-    accuracy: calculateMedian(samples.map(s =&gt; s.accuracy)),
-    altitude: medianAlt,
-    altitudeAccuracy: medianAltAcc,
-    timestamp: Date.now()
-  };
-
-  const maxIterations = 10;
-  const tolerance = 1e-6;
-  let weights = samples.map(() =&gt; 1.0);
-  let usedIndices = samples.map((_, i) =&gt; i);
+  const maxIterations = 15;
+  const toleranceMeter = 0.001;
 
   for (let iter = 0; iter &lt; maxIterations; iter++) {
-    const currentSigma = calculateMAD(samples, currentCentroid);
-    const huberLimit = 1.345 * Math.max(0.05, currentSigma);
+    const currentMAD = calculateMADHuber(samples, currentLat, currentLng);
+    const pseudoSigma = currentMAD * 1.4826;
+    const huberLimit = 1.345 * Math.max(0.50, pseudoSigma);
 
-    let sumW = 0, sumLat = 0, sumLng = 0, sumAlt = 0, sumAltW = 0, hasAlt = false;
+    let sumW = 0;
+    let sumLatW = 0;
+    let sumLngW = 0;
 
     for (let i = 0; i &lt; samples.length; i++) {
       const p = samples[i];
-      const dLat = (p.lat - currentCentroid.lat) * 111320;
-      const dLng = (p.lng - currentCentroid.lng) * 111320 * Math.cos(currentCentroid.lat * Math.PI / 180);
-      const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+      const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
 
-      const hwWeight = 1 / Math.pow(Math.max(0.1, p.accuracy), 2);
+      const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
       const huberWeight = dist &lt;= huberLimit ? 1.0 : huberLimit / Math.max(0.01, dist);
-      const combinedWeight = hwWeight * huberWeight;
-      weights[i] = combinedWeight;
+      const combinedWeight = hardwareWeight * huberWeight;
 
       sumW += combinedWeight;
-      sumLat += p.lat * combinedWeight;
-      sumLng += p.lng * combinedWeight;
-
-      if (p.altitude !== null) {
-        hasAlt = true;
-        sumAlt += p.altitude * combinedWeight;
-        sumAltW += combinedWeight;
-      }
+      sumLatW += p.lat * combinedWeight;
+      sumLngW += p.lng * combinedWeight;
     }
 
     if (sumW === 0) break;
 
-    const nextCentroid = {
-      lat: sumLat / sumW,
-      lng: sumLng / sumW,
-      accuracy: currentCentroid.accuracy,
-      altitude: hasAlt ? sumAlt / sumAltW : null,
-      altitudeAccuracy: currentCentroid.altitudeAccuracy,
-      timestamp: currentCentroid.timestamp
-    };
+    const nextLat = sumLatW / sumW;
+    const nextLng = sumLngW / sumW;
 
-    const dLat = (nextCentroid.lat - currentCentroid.lat) * 111320;
-    const dLng = (nextCentroid.lng - currentCentroid.lng) * 111320 * Math.cos(currentCentroid.lat * Math.PI / 180);
-    const change = Math.sqrt(dLat * dLat + dLng * dLng);
+    const changeInMeter = calculateDistanceMeter(nextLat, nextLng, currentLat, currentLng, currentLat);
 
-    currentCentroid = nextCentroid;
-    if (change &lt; tolerance) break;
+    currentLat = nextLat;
+    currentLng = nextLng;
+
+    if (changeInMeter &lt; toleranceMeter) break;
   }
 
-  // Filter extreme outliers (beyond 3-sigma robustness estimate) for usedIndices
-  const finalSigma = calculateMAD(samples, currentCentroid);
-  const outlierThreshold = 3.0 * Math.max(0.1, finalSigma);
-  
-  usedIndices = [];
-  const finalSamplesToUse = [];
+  const finalMAD = calculateMADHuber(samples, currentLat, currentLng);
+  const finalPseudoSigma = finalMAD * 1.4826;
+  const outlierThreshold = 3.0 * Math.max(3.0, finalPseudoSigma);
+
+  const usedIndices: number[] = [];
+  const cleanSamples: Coordinate[] = [];
+
   for (let i = 0; i &lt; samples.length; i++) {
     const p = samples[i];
-    const dLat = (p.lat - currentCentroid.lat) * 111320;
-    const dLng = (p.lng - currentCentroid.lng) * 111320 * Math.cos(currentCentroid.lat * Math.PI / 180);
-    const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-    
+    const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
+
     if (dist &lt;= outlierThreshold) {
       usedIndices.push(i);
-      finalSamplesToUse.push(p);
+      cleanSamples.push(p);
     }
   }
 
-  if (finalSamplesToUse.length === 0) {
-    return { result: currentCentroid, usedIndices: samples.map((_, i) =&gt; i) };
+  if (cleanSamples.length === 0) {
+    return { 
+      result: { lat: currentLat, lng: currentLng, accuracy: 3.0, timestamp: Date.now() }, 
+      usedIndices: samples.map((_, i) =&gt; i) 
+    };
   }
 
-  // Calculate Huber + Hardware weighted centroids just like in the hybrid method
-  const subLats = finalSamplesToUse.map(p =&gt; p.lat);
-  const subLngs = finalSamplesToUse.map(p =&gt; p.lng);
-  const subMedianCenter = {
-    lat: calculateMedian(subLats),
-    lng: calculateMedian(subLngs)
-  };
-  const subSigma = calculateMAD(finalSamplesToUse, subMedianCenter);
-  const huberLimit = 1.345 * Math.max(0.05, subSigma);
-  const accuracyLimit = Math.min(...finalSamplesToUse.map(s =&gt; s.accuracy));
+  const subMAD = calculateMADHuber(cleanSamples, currentLat, currentLng);
+  const subPseudoSigma = subMAD * 1.4826;
+  const finalHuberLimit = 1.345 * Math.max(0.50, subPseudoSigma);
 
-  const finalWeights = finalSamplesToUse.map(s =&gt; {
-    const dLat = (s.lat - subMedianCenter.lat) * 111320;
-    const dLng = (s.lng - subMedianCenter.lng) * 111320 * Math.cos(subMedianCenter.lat * Math.PI / 180);
+  let finalSumW = 0;
+  let finalLatW = 0;
+  let finalLngW = 0;
+  let totalAccuracy = 0;
+
+  for (const p of cleanSamples) {
+    const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
+    const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
+    const huberWeight = dist &lt;= finalHuberLimit ? 1.0 : finalHuberLimit / Math.max(0.01, dist);
+    const combinedWeight = hardwareWeight * huberWeight;
+
+    finalSumW += combinedWeight;
+    finalLatW += p.lat * combinedWeight;
+    finalLngW += p.lng * combinedWeight;
+    totalAccuracy += p.accuracy;
+  }
+
+  return {
+    result: {
+      lat: finalLatW / finalSumW,
+      lng: finalLngW / finalSumW,
+      accuracy: totalAccuracy / cleanSamples.length,
+      altitude: null,
+      altitudeAccuracy: null,
+      timestamp: Date.now()
+    },
+    usedIndices
+  };
+}
+    </pre>nCenter.lng) * 111320 * Math.cos(subMedianCenter.lat * Math.PI / 180);
     const dist = Math.sqrt(dLat * dLat + dLng * dLng);
     const huberWeight = dist &lt;= huberLimit ? 1.0 : huberLimit / Math.max(0.01, dist);
     const hardwareWeight = accuracyLimit / Math.max(0.1, s.accuracy);

@@ -672,167 +672,125 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
   }
 }
 
+function calculateDistanceMeter(lat1: number, lng1: number, lat2: number, lng2: number, baseLat: number): number {
+  const cosLat = Math.cos(baseLat * Math.PI / 180);
+  const dLat = (lat1 - lat2) * 111320;
+  const dLng = (lng1 - lng2) * 111320 * cosLat;
+  return Math.sqrt(dLat * dLat + dLng * dLng);
+}
+
+function calculateMADHuber(samples: Coordinate[], centerLat: number, centerLng: number): number {
+  const distances = samples.map(p => calculateDistanceMeter(p.lat, p.lng, centerLat, centerLng, centerLat));
+  return calculateMedian(distances);
+}
+
 export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
   if (samples.length < 4) {
-    return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
+    const avgLat = samples.reduce((sum, p) => sum + p.lat, 0) / samples.length;
+    const avgLng = samples.reduce((sum, p) => sum + p.lng, 0) / samples.length;
+    const avgAcc = samples.reduce((sum, p) => sum + p.accuracy, 0) / samples.length;
+    return {
+      result: { lat: avgLat, lng: avgLng, accuracy: avgAcc, altitude: null, altitudeAccuracy: null, timestamp: Date.now() },
+      usedIndices: samples.map((_, i) => i)
+    };
   }
 
-  // Iterative Huber M-estimation starting with robust Median
-  const candidateLats = samples.map(s => s.lat);
-  const candidateLngs = samples.map(s => s.lng);
-  const medianLat = calculateMedian(candidateLats);
-  const medianLng = calculateMedian(candidateLngs);
-  
-  const validAlts = samples.filter(s => s.altitude !== null);
-  const medianAlt = validAlts.length > 0 ? calculateMedian(validAlts.map(s => s.altitude as number)) : null;
-  
-  const validAltAccs = samples.filter(s => s.altitudeAccuracy !== null);
-  const medianAltAcc = validAltAccs.length > 0 ? calculateMedian(validAltAccs.map(s => s.altitudeAccuracy as number)) : null;
+  let currentLat = calculateMedian(samples.map(s => s.lat));
+  let currentLng = calculateMedian(samples.map(s => s.lng));
 
-  let currentCentroid: Coordinate = {
-    ...samples[0],
-    lat: medianLat,
-    lng: medianLng,
-    accuracy: calculateMedian(samples.map(s => s.accuracy)),
-    altitude: medianAlt,
-    altitudeAccuracy: medianAltAcc,
-    timestamp: Date.now()
-  };
-
-  const maxIterations = 10;
-  const tolerance = 1e-6;
-  let weights = samples.map(() => 1.0);
-  let usedIndices = samples.map((_, i) => i);
+  const maxIterations = 15;
+  const toleranceMeter = 0.001;
 
   for (let iter = 0; iter < maxIterations; iter++) {
-    const currentSigma = calculateMAD(samples, currentCentroid);
-    const huberLimit = 1.345 * Math.max(0.05, currentSigma);
+    const currentMAD = calculateMADHuber(samples, currentLat, currentLng);
+    const pseudoSigma = currentMAD * 1.4826;
+    const huberLimit = 1.345 * Math.max(0.50, pseudoSigma);
 
     let sumW = 0;
-    let sumLat = 0;
-    let sumLng = 0;
-    let sumAlt = 0;
-    let sumAltW = 0;
-    let hasAlt = false;
+    let sumLatW = 0;
+    let sumLngW = 0;
 
     for (let i = 0; i < samples.length; i++) {
       const p = samples[i];
-      const dLat = (p.lat - currentCentroid.lat) * 111320;
-      const dLng = (p.lng - currentCentroid.lng) * 111320 * Math.cos(currentCentroid.lat * Math.PI / 180);
-      const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+      const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
 
-      // Hardware accuracy weight
-      const hwWeight = 1 / Math.pow(Math.max(0.1, p.accuracy), 2);
-      // Huber dampening weight
+      const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
       const huberWeight = dist <= huberLimit ? 1.0 : huberLimit / Math.max(0.01, dist);
-      
-      const combinedWeight = hwWeight * huberWeight;
-      weights[i] = combinedWeight;
+      const combinedWeight = hardwareWeight * huberWeight;
 
       sumW += combinedWeight;
-      sumLat += p.lat * combinedWeight;
-      sumLng += p.lng * combinedWeight;
-
-      if (p.altitude !== null) {
-        hasAlt = true;
-        sumAlt += p.altitude * combinedWeight;
-        sumAltW += combinedWeight;
-      }
+      sumLatW += p.lat * combinedWeight;
+      sumLngW += p.lng * combinedWeight;
     }
 
     if (sumW === 0) break;
 
-    const nextCentroid: Coordinate = {
-      lat: sumLat / sumW,
-      lng: sumLng / sumW,
-      accuracy: currentCentroid.accuracy,
-      altitude: hasAlt ? sumAlt / sumAltW : null,
-      altitudeAccuracy: currentCentroid.altitudeAccuracy,
-      timestamp: currentCentroid.timestamp
-    };
+    const nextLat = sumLatW / sumW;
+    const nextLng = sumLngW / sumW;
 
-    const dLat = (nextCentroid.lat - currentCentroid.lat) * 111320;
-    const dLng = (nextCentroid.lng - currentCentroid.lng) * 111320 * Math.cos(currentCentroid.lat * Math.PI / 180);
-    const change = Math.sqrt(dLat * dLat + dLng * dLng);
+    const changeInMeter = calculateDistanceMeter(nextLat, nextLng, currentLat, currentLng, currentLat);
 
-    currentCentroid = nextCentroid;
-    if (change < tolerance) {
-      break;
-    }
+    currentLat = nextLat;
+    currentLng = nextLng;
+
+    if (changeInMeter < toleranceMeter) break;
   }
 
-  // Filter extreme outliers (beyond 3-sigma robustness estimate) for usedIndices
-  const finalSigma = calculateMAD(samples, currentCentroid);
-  const outlierThreshold = 3.0 * Math.max(0.1, finalSigma);
-  
-  usedIndices = [];
-  const finalSamplesToUse: Coordinate[] = [];
-  
+  const finalMAD = calculateMADHuber(samples, currentLat, currentLng);
+  const finalPseudoSigma = finalMAD * 1.4826;
+  const outlierThreshold = 3.0 * Math.max(3.0, finalPseudoSigma);
+
+  const usedIndices: number[] = [];
+  const cleanSamples: Coordinate[] = [];
+
   for (let i = 0; i < samples.length; i++) {
     const p = samples[i];
-    const dLat = (p.lat - currentCentroid.lat) * 111320;
-    const dLng = (p.lng - currentCentroid.lng) * 111320 * Math.cos(currentCentroid.lat * Math.PI / 180);
-    const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-    
+    const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
+
     if (dist <= outlierThreshold) {
       usedIndices.push(i);
-      finalSamplesToUse.push(p);
+      cleanSamples.push(p);
     }
   }
 
-  if (finalSamplesToUse.length === 0) {
-    return { result: currentCentroid, usedIndices: samples.map((_, i) => i) };
+  if (cleanSamples.length === 0) {
+    return { 
+      result: { lat: currentLat, lng: currentLng, accuracy: 3.0, altitude: null, altitudeAccuracy: null, timestamp: Date.now() }, 
+      usedIndices: samples.map((_, i) => i) 
+    };
   }
 
-  // Calculate Huber + Hardware weighted centroids just like in the hybrid method
-  const subLats = finalSamplesToUse.map(p => p.lat);
-  const subLngs = finalSamplesToUse.map(p => p.lng);
-  const subMedianCenter = {
-    lat: calculateMedian(subLats),
-    lng: calculateMedian(subLngs)
-  };
-  const subSigma = calculateMAD(finalSamplesToUse, subMedianCenter);
-  const huberLimit = 1.345 * Math.max(0.05, subSigma);
+  const subMAD = calculateMADHuber(cleanSamples, currentLat, currentLng);
+  const subPseudoSigma = subMAD * 1.4826;
+  const finalHuberLimit = 1.345 * Math.max(0.50, subPseudoSigma);
 
-  const accuracyLimit = Math.min(...finalSamplesToUse.map(s => s.accuracy));
+  let finalSumW = 0;
+  let finalLatW = 0;
+  let finalLngW = 0;
+  let totalAccuracy = 0;
 
-  const finalWeights = finalSamplesToUse.map(s => {
-    const dLat = (s.lat - subMedianCenter.lat) * 111320;
-    const dLng = (s.lng - subMedianCenter.lng) * 111320 * Math.cos(subMedianCenter.lat * Math.PI / 180);
-    const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-    const huberWeight = dist <= huberLimit ? 1.0 : huberLimit / Math.max(0.01, dist);
+  for (const p of cleanSamples) {
+    const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
+    const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
+    const huberWeight = dist <= finalHuberLimit ? 1.0 : finalHuberLimit / Math.max(0.01, dist);
+    const combinedWeight = hardwareWeight * huberWeight;
 
-    const hardwareWeight = accuracyLimit / Math.max(0.1, s.accuracy);
-    return hardwareWeight * huberWeight;
-  });
-
-  const sumW = finalWeights.reduce((a, b) => a + b, 0) || 1.0;
-  const finalLat = finalSamplesToUse.reduce((sum, p, i) => sum + p.lat * finalWeights[i], 0) / sumW;
-  const finalLng = finalSamplesToUse.reduce((sum, p, i) => sum + p.lng * finalWeights[i], 0) / sumW;
-
-  const avgCoords = calculateAverage(finalSamplesToUse);
-
-  const finalResult: Coordinate = {
-    ...finalSamplesToUse[0],
-    lat: finalLat,
-    lng: finalLng,
-    accuracy: avgCoords.accuracy,
-    timestamp: Date.now()
-  };
-
-  const finalValidAlts = finalSamplesToUse.filter(s => s.altitude !== null);
-  finalResult.altitude = finalValidAlts.length > 0
-    ? finalValidAlts.reduce((a, b) => a + (b.altitude || 0), 0) / finalValidAlts.length
-    : null;
-
-  const finalValidAltAccs = finalSamplesToUse.filter(s => s.altitudeAccuracy !== null);
-  finalResult.altitudeAccuracy = finalValidAltAccs.length > 0
-    ? finalValidAltAccs.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / finalValidAltAccs.length
-    : null;
+    finalSumW += combinedWeight;
+    finalLatW += p.lat * combinedWeight;
+    finalLngW += p.lng * combinedWeight;
+    totalAccuracy += p.accuracy;
+  }
 
   return {
-    result: finalResult,
-    usedIndices: usedIndices
+    result: {
+      lat: finalLatW / finalSumW,
+      lng: finalLngW / finalSumW,
+      accuracy: totalAccuracy / cleanSamples.length,
+      altitude: null,
+      altitudeAccuracy: null,
+      timestamp: Date.now()
+    },
+    usedIndices
   };
 }
 
