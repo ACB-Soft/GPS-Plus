@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
 import { SavedLocation, AppSettings, CalculationMethod } from '../types';
-import { convertCoordinate, getSystemDisplayLabel } from '../utils/CoordinateUtils';
+import { convertCoordinate, getSystemDisplayLabel, getWGS84Coefficients } from '../utils/CoordinateUtils';
 import { calculateResult, calculateVariance, calculateMaxDistance } from '../utils/MathUtils';
 import { FULL_BRAND } from '../version';
 import { getCorrectedHeight, getEllipsoidalHeight } from './GeoidUtils';
@@ -382,9 +382,10 @@ export const downloadCombinedAnalysisReport = (
     // Standart sapma (StdDev) hesabı
     const meanLat = samplesList.reduce((a, b) => a + b.lat, 0) / samplesList.length;
     const meanLng = samplesList.reduce((a, b) => a + b.lng, 0) / samplesList.length;
+    const { latCoeff, lngCoeff } = getWGS84Coefficients(meanLat);
     const residuals = samplesList.map(s => {
-      const dLat = (s.lat - meanLat) * 111132;
-      const dLng = (s.lng - meanLng) * 111132 * Math.cos(meanLat * Math.PI / 180);
+      const dLat = (s.lat - meanLat) * latCoeff;
+      const dLng = (s.lng - meanLng) * lngCoeff;
       return dLat * dLat + dLng * dLng;
     });
     const varianceValue = residuals.reduce((a, b) => a + b, 0) / Math.max(1, samplesList.length - 1);

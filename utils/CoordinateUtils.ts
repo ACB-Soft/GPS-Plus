@@ -108,3 +108,32 @@ export const convertToWGS84 = (valE: number, valN: number, system: string, zoneP
 
   return { lat: valE, lng: valN };
 };
+
+export const getWGS84Coefficients = (latDegree: number): { latCoeff: number; lngCoeff: number } => {
+  const latRad = (latDegree * Math.PI) / 180;
+  
+  // WGS-84 Semimajor axis (a) and flattening (f)
+  const a = 6378137.0; // meters
+  const f = 1 / 298.257223563;
+  // Eccentricity squared (e^2)
+  const e2 = 2 * f - f * f; // approximately 0.00669437999014
+  
+  const sinLat = Math.sin(latRad);
+  const cosLat = Math.cos(latRad);
+  
+  const temp = 1.0 - e2 * sinLat * sinLat;
+  const sqrtTemp = Math.sqrt(temp);
+  
+  // Meridional radius of curvature (M) - N-S direction
+  const M = (a * (1.0 - e2)) / (temp * sqrtTemp);
+  
+  // Prime vertical radius of curvature (N) - E-W direction
+  const N = a / sqrtTemp;
+  
+  // 1 degree in meters:
+  const latCoeff = (M * Math.PI) / 180.0;
+  const lngCoeff = (N * Math.PI / 180.0) * cosLat;
+  
+  return { latCoeff, lngCoeff };
+};
+

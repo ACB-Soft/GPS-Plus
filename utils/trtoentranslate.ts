@@ -387,6 +387,7 @@ export const trToEnMap: Record<string, string> = {
   "Eksen:": "Axis:",
   "Kılavuz Adımı:": "Grid Step:",
   "Yazı Boyutu:": "Font Size:",
+  "Nokta Boyutu:": "Point Size:",
   "Eksen Limit:": "Axis Limit:",
   "Auto (En az 10m)": "Auto (Min 10m)",
   "ZAMAN SERİSİ GRAFİK AYARLARI": "TIME SERIES CHART SETTINGS",

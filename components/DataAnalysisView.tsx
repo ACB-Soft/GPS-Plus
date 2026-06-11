@@ -4,7 +4,7 @@ import { saveAs } from 'file-saver';
 import { useLanguage } from '../utils/LanguageContext';
 import { SavedLocation, AppSettings, CalculationMethod } from '../types';
 import { geoidService } from '../services/GeoidService';
-import { convertCoordinate, getSystemDisplayLabel } from '../utils/CoordinateUtils';
+import { convertCoordinate, getSystemDisplayLabel, getWGS84Coefficients } from '../utils/CoordinateUtils';
 import { calculateResult, calculateAverage, calculateMaxDistance } from '../utils/MathUtils';
 import { downloadCombinedAnalysisReport } from './ExcelUtils';
 import { generateTechnicalReport } from '../utils/ReportUtils';
@@ -78,12 +78,13 @@ const CustomScatterLabel = (props: any) => {
 };
 
 const RawPointShape = (props: any) => {
-  const { cx, cy, fill, fillOpacity } = props;
+  const { cx, cy, fill, fillOpacity, r } = props;
+  const radius = r !== undefined ? r : 2.5;
   return (
     <circle 
       cx={cx} 
       cy={cy} 
-      r={2.5} 
+      r={radius} 
       fill={fill} 
       fillOpacity={fillOpacity} 
     />
@@ -150,6 +151,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [customScatterRange, setCustomScatterRange] = useState<string>('auto'); // 'auto', '1.0', '2.0', '3.0', '4.0', '5.0', '10.0', '15.0'
   const [customScatterStep, setCustomScatterStep] = useState<string>('auto'); // 'auto', '0.1', '0.2', '0.5', '1.0', '2.0'
   const [customScatterFontSize, setCustomScatterFontSize] = useState<string>('7.5'); // '6', '7', '7.5', '8', '9', '10', '12'
+  const [customDotSize, setCustomDotSize] = useState<string>('2.5'); // '1.0', '1.5', '2.0', '2.5', '3.0', '4.0', '5.0', '6.0'
   const [xOffset, setXOffset] = useState<number>(0);
   const [yOffset, setYOffset] = useState<number>(0);
   const [customTimeSeriesRange, setCustomTimeSeriesRange] = useState<string>('auto'); // 'auto', '2.0', '3.0', '4.0', '5.0', '10.0', '15.0', '20.0', '30.0', '50.0'
@@ -322,9 +324,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     // Standart sapma (StdDev) hesabı
     const meanLat = location.samples.reduce((a, b) => a + b.lat, 0) / location.samples.length;
     const meanLng = location.samples.reduce((a, b) => a + b.lng, 0) / location.samples.length;
+    const { latCoeff, lngCoeff } = getWGS84Coefficients(meanLat);
     const residuals = location.samples.map(s => {
-      const dLat = (s.lat - meanLat) * 111132;
-      const dLng = (s.lng - meanLng) * 111132 * Math.cos(meanLat * Math.PI / 180);
+      const dLat = (s.lat - meanLat) * latCoeff;
+      const dLng = (s.lng - meanLng) * lngCoeff;
       return dLat * dLat + dLng * dLng;
     });
     const variance = residuals.reduce((a, b) => a + b, 0) / Math.max(1, location.samples.length - 1);
@@ -1365,6 +1368,24 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         <option value="12">12px</option>
                       </select>
                     </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase font-sans">{t("Nokta Boyutu:")}</span>
+                      <select 
+                        value={customDotSize} 
+                        onChange={(e) => setCustomDotSize(e.target.value)}
+                        className="bg-slate-100 hover:bg-slate-200 border border-slate-200/60 text-[9px] font-black rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
+                      >
+                        <option value="1.0">1.0px</option>
+                        <option value="1.5">1.5px</option>
+                        <option value="2.0">2.0px</option>
+                        <option value="2.5">2.5px</option>
+                        <option value="3.0">3.0px</option>
+                        <option value="3.5">3.5px</option>
+                        <option value="4.0">4.0px</option>
+                        <option value="5.0">5.0px</option>
+                        <option value="6.0">6.0px</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
@@ -1525,7 +1546,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         <Scatter 
                           name="Raw Satellite Epochs" 
                           data={distributionData.rawPoints} 
-                          shape={<RawPointShape />} 
+                          shape={<RawPointShape r={parseFloat(customDotSize)} />} 
                         >
                           {distributionData.rawPoints.map((entry, index) => (
                             <Cell 
@@ -1676,7 +1697,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       <div className="flex-1 min-h-0 min-w-0 w-full relative">
                         {hybridClusterChartData && hybridClusterChartData.points.length > 0 ? (
                           <ResponsiveContainer width="100%" height="100%">
-                            <ScatterChart margin={{ top: 12, right: 12, bottom: 35, left: -5 }}>
+                            <ScatterChart margin={{ top: 12, right: 12, bottom: 20, left: -5 }}>
                               <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" horizontal={true} vertical={true} />
                               <XAxis 
                                 type="number" 
@@ -1778,19 +1799,83 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                       name={`${t("Küme")} ${labels[cIdx % labels.length]}`} 
                                       data={ptsOfCluster} 
                                       fill={clusterColors[cIdx % clusterColors.length]}
-                                      shape={<RawPointShape />}
+                                      shape={<RawPointShape r={parseFloat(customDotSize)} />}
                                       onClick={(pt) => setActiveClusterPointId(pt.id)}
                                       className="cursor-pointer"
                                     />
                                   );
                                 });
                               })()}
-                              <Legend wrapperStyle={{ fontSize: '7.5px', fontWeight: 'bold', paddingTop: '15px' }} />
                             </ScatterChart>
                           </ResponsiveContainer>
                         ) : (
                           <div className="flex items-center justify-center h-full text-slate-400 font-bold text-xs uppercase tracking-widest">{t("Veri bulunamadı")}</div>
                         )}
+                      </div>
+
+                      {/* Bottom Panel: Shrunk & Very Compact Legend */}
+                      <div className="shrink-0 border-t border-slate-100 pt-3 flex flex-col gap-2 w-full">
+                        <div className="grid grid-cols-3 gap-x-2 gap-y-1.5 font-sans">
+                          {(() => {
+                            const labels = ['A', 'B', 'C', 'D', 'E', 'F'];
+                            const clusterColors = ['#3b82f6', '#a855f7', '#eab308', '#ec4899', '#14b8a6', '#f97316'];
+                            const fs = parseFloat(customScatterFontSize);
+                            const badgeSize = `${fs + 6.5}px`;
+                            const badgeFontSize = `${fs - 0.5}px`;
+                            const titleFontSize = `${fs - 1}px`;
+                            const subFontSize = `${fs - 2}px`;
+                            
+                            const elements = (hybridClusterChartData?.clusters || []).map((clusterIndices, cIdx) => {
+                              if (clusterIndices.length === 0) return null;
+                              const color = clusterColors[cIdx % clusterColors.length];
+                              return (
+                                <div key={`kmeans-legend-${cIdx}`} className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans font-sans">
+                                  <div className="flex items-center justify-center rounded font-black text-white shrink-0 shadow-xs" style={{ backgroundColor: color, width: badgeSize, height: badgeSize, fontSize: badgeFontSize }}>
+                                    {labels[cIdx % labels.length]}
+                                  </div>
+                                  <div className="min-w-0 font-sans">
+                                    <p className="font-extrabold text-slate-800 uppercase tracking-tight truncate leading-none" style={{ fontSize: titleFontSize }}>
+                                      CLUSTER {labels[cIdx % labels.length]}
+                                    </p>
+                                    <p className="font-bold text-indigo-600 font-mono tracking-tight leading-none mt-0.5" style={{ fontSize: subFontSize }}>
+                                      {clusterIndices.length} EPOCHS
+                                    </p>
+                                  </div>
+                                </div>
+                              );
+                            }).filter(Boolean);
+
+                            return (
+                              <>
+                                {elements}
+                                {analysisType === 'precise' && (
+                                  <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
+                                    <div 
+                                      className="flex items-center justify-center bg-[#000000] border border-[#000000] text-white font-black shrink-0 shadow-xs rotate-45" 
+                                      style={{ 
+                                        width: `${parseFloat(customScatterFontSize) + 2.5}px`, 
+                                        height: `${parseFloat(customScatterFontSize) + 2.5}px`,
+                                        borderRadius: '3px',
+                                        marginLeft: '2px',
+                                        marginRight: '2px'
+                                      }}
+                                    >
+                                      <span className="text-[6px] font-black -rotate-45 block transform">REF</span>
+                                    </div>
+                                    <div className="min-w-0 font-sans">
+                                      <p className="font-extrabold text-slate-800 uppercase tracking-wider truncate leading-none" style={{ fontSize: `${parseFloat(customScatterFontSize) - 0.5}px` }}>
+                                        PRECISE
+                                      </p>
+                                      <p className="font-bold text-black tracking-wider leading-none mt-0.5 truncate" style={{ fontSize: `${parseFloat(customScatterFontSize) - 1.5}px` }}>
+                                        COORDINATE
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1835,7 +1920,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       <div className="flex-1 min-h-0 min-w-0 w-full relative">
                         {hybridClusterChartData && hybridClusterChartData.points.length > 0 ? (
                           <ResponsiveContainer width="100%" height="100%">
-                            <ScatterChart margin={{ top: 12, right: 12, bottom: 35, left: -5 }}>
+                            <ScatterChart margin={{ top: 12, right: 12, bottom: 20, left: -5 }}>
                               <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" horizontal={true} vertical={true} />
                               <XAxis 
                                 type="number" 
@@ -1926,29 +2011,99 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
                               {/* Approved Points Series */}
                               <Scatter 
-                                name={t("Baarda Onaylı (Güvenilir)")} 
+                                name="APPROVED" 
                                 data={hybridClusterChartData.points.filter(p => p.passedBaarda)} 
                                 fill="#10b981"
-                                shape={<RawPointShape />}
+                                shape={<RawPointShape r={parseFloat(customDotSize)} />}
                                 onClick={(pt) => setActiveClusterPointId(pt.id)}
                                 className="cursor-pointer"
                               />
                               
                               {/* Rejected/Outlier Points Series */}
                               <Scatter 
-                                name={t("Elenen Uç Değer (Kaba Hata)")} 
+                                name="OUTLIERS" 
                                 data={hybridClusterChartData.points.filter(p => !p.passedBaarda)} 
                                 fill="#ef4444"
-                                shape={<RawPointShape />}
+                                shape={<RawPointShape r={parseFloat(customDotSize)} />}
                                 onClick={(pt) => setActiveClusterPointId(pt.id)}
                                 className="cursor-pointer"
                               />
-                              <Legend wrapperStyle={{ fontSize: '7.5px', fontWeight: 'bold', paddingTop: '15px' }} />
                             </ScatterChart>
                           </ResponsiveContainer>
                         ) : (
                           <div className="flex items-center justify-center h-full text-slate-400 font-bold text-xs uppercase tracking-widest">{t("Veri bulunamadı")}</div>
                         )}
+                      </div>
+
+                      {/* Bottom Panel: Shrunk & Very Compact Legend */}
+                      <div className="shrink-0 border-t border-slate-100 pt-3 flex flex-col gap-2 w-full">
+                        <div className="grid grid-cols-3 gap-x-2 gap-y-1.5 font-sans">
+                          {(() => {
+                            const fs = parseFloat(customScatterFontSize);
+                            const badgeSize = `${fs + 6.5}px`;
+                            const badgeFontSize = `${fs - 0.5}px`;
+                            const titleFontSize = `${fs - 1}px`;
+                            const subFontSize = `${fs - 2}px`;
+                            const approvedCount = hybridClusterChartData.points.filter(p => p.passedBaarda).length;
+                            const rejectedCount = hybridClusterChartData.points.filter(p => !p.passedBaarda).length;
+                            return (
+                              <>
+                                <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
+                                  <div className="flex items-center justify-center rounded font-black text-white shrink-0 shadow-xs bg-[#10b981]" style={{ width: badgeSize, height: badgeSize, fontSize: badgeFontSize }}>
+                                    OK
+                                  </div>
+                                  <div className="min-w-0 font-sans">
+                                    <p className="font-extrabold text-slate-800 uppercase tracking-tight truncate leading-none" style={{ fontSize: titleFontSize }}>
+                                      APPROVED
+                                    </p>
+                                    <p className="font-bold text-emerald-600 font-mono tracking-tight leading-none mt-0.5" style={{ fontSize: subFontSize }}>
+                                      {approvedCount} EPOCHS
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
+                                  <div className="flex items-center justify-center rounded font-black text-white shrink-0 shadow-xs bg-[#ef4444]" style={{ width: badgeSize, height: badgeSize, fontSize: badgeFontSize }}>
+                                    REJ
+                                  </div>
+                                  <div className="min-w-0 font-sans">
+                                    <p className="font-extrabold text-slate-800 uppercase tracking-tight truncate leading-none" style={{ fontSize: titleFontSize }}>
+                                      OUTLIERS
+                                    </p>
+                                    <p className="font-bold text-rose-600 font-mono tracking-tight leading-none mt-0.5" style={{ fontSize: subFontSize }}>
+                                      {rejectedCount} REJECTED
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {analysisType === 'precise' && (
+                                  <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans font-sans">
+                                    <div 
+                                      className="flex items-center justify-center bg-[#000000] border border-[#000000] text-white font-black shrink-0 shadow-xs rotate-45" 
+                                      style={{ 
+                                        width: `${parseFloat(customScatterFontSize) + 2.5}px`, 
+                                        height: `${parseFloat(customScatterFontSize) + 2.5}px`,
+                                        borderRadius: '3px',
+                                        marginLeft: '2px',
+                                        marginRight: '2px'
+                                      }}
+                                    >
+                                      <span className="text-[6px] font-black -rotate-45 block transform">REF</span>
+                                    </div>
+                                    <div className="min-w-0 font-sans">
+                                      <p className="font-extrabold text-slate-800 uppercase tracking-wider truncate leading-none" style={{ fontSize: `${parseFloat(customScatterFontSize) - 0.5}px` }}>
+                                        PRECISE
+                                      </p>
+                                      <p className="font-bold text-black tracking-wider leading-none mt-0.5 truncate" style={{ fontSize: `${parseFloat(customScatterFontSize) - 1.5}px` }}>
+                                        COORDINATE
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </div>
                       </div>
                     </div>
                   </div>

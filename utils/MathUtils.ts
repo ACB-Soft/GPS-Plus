@@ -1,16 +1,17 @@
 import { Coordinate, CalculationMethod } from '../types';
+import { getWGS84Coefficients } from './CoordinateUtils';
 
 export function calculateDistanceMeter(lat1: number, lng1: number, lat2: number, lng2: number, baseLat: number): number {
-  const cosLat = Math.cos(baseLat * Math.PI / 180);
-  const dLat = (lat1 - lat2) * 111320;
-  const dLng = (lng1 - lng2) * 111320 * cosLat;
+  const { latCoeff, lngCoeff } = getWGS84Coefficients(baseLat);
+  const dLat = (lat1 - lat2) * latCoeff;
+  const dLng = (lng1 - lng2) * lngCoeff;
   return Math.sqrt(dLat * dLat + dLng * dLng);
 }
 
 function calculateSquaredDistance(lat1: number, lng1: number, lat2: number, lng2: number, baseLat: number): number {
-  const cosLat = Math.cos(baseLat * Math.PI / 180);
-  const dLat = (lat1 - lat2) * 111320;
-  const dLng = (lng1 - lng2) * 111320 * cosLat;
+  const { latCoeff, lngCoeff } = getWGS84Coefficients(baseLat);
+  const dLat = (lat1 - lat2) * latCoeff;
+  const dLng = (lng1 - lng2) * lngCoeff;
   return dLat * dLat + dLng * dLng;
 }
 

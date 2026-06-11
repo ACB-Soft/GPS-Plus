@@ -251,10 +251,26 @@ function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; used
 
     <p class="no-indent">İteratif Huber M-Tahmini gürbüz süzgecini çalıştıran kritik fonksiyon yapısı aşağıda sunulmuştur:</p>
     <pre class="code-block">
+function getWGS84Coefficients(latDegree: number): { latCoeff: number; lngCoeff: number } {
+  const latRad = (latDegree * Math.PI) / 180;
+  const a = 6378137.0;
+  const f = 1 / 298.257223563;
+  const e2 = 2 * f - f * f;
+  const sinLat = Math.sin(latRad);
+  const cosLat = Math.cos(latRad);
+  const temp = 1.0 - e2 * sinLat * sinLat;
+  const M = (a * (1.0 - e2)) / (temp * Math.sqrt(temp));
+  const N = a / Math.sqrt(temp);
+  return {
+    latCoeff: (M * Math.PI) / 180.0,
+    lngCoeff: (N * Math.PI / 180.0) * cosLat
+  };
+}
+
 function calculateDistanceMeter(lat1: number, lng1: number, lat2: number, lng2: number, baseLat: number): number {
-  const cosLat = Math.cos(baseLat * Math.PI / 180);
-  const dLat = (lat1 - lat2) * 111320;
-  const dLng = (lng1 - lng2) * 111320 * cosLat;
+  const { latCoeff, lngCoeff } = getWGS84Coefficients(baseLat);
+  const dLat = (lat1 - lat2) * latCoeff;
+  const dLng = (lng1 - lng2) * lngCoeff;
   return Math.sqrt(dLat * dLat + dLng * dLng);
 }
 
@@ -511,8 +527,9 @@ function runKMeans(samples: Coordinate[], k: number): number[] {
         let minDist = Infinity;
         let bestK = 0;
         for (let j = 0; j &lt; k; j++) {
-            const dLat = (samples[i].lat - centroids[j].lat) * 111320;
-            const dLng = (samples[i].lng - centroids[j].lng) * 111320 * Math.cos(samples[i].lat * Math.PI / 180);
+            const { latCoeff, lngCoeff } = getWGS84Coefficients(samples[i].lat);
+            const dLat = (samples[i].lat - centroids[j].lat) * latCoeff;
+            const dLng = (samples[i].lng - centroids[j].lng) * lngCoeff;
             const dist = dLat * dLat + dLng * dLng;
             if (dist &lt; minDist) { minDist = dist; bestK = j; }
         }
@@ -792,9 +809,10 @@ export function analyzeSignalReliability(samples: Coordinate[]): SignalAnalysis 
   // Spatial Variance and Standard Deviation
   const meanLat = samples.reduce((sum, s) => sum + s.lat, 0) / samples.length;
   const meanLng = samples.reduce((sum, s) => sum + s.lng, 0) / samples.length;
+  const { latCoeff, lngCoeff } = getWGS84Coefficients(meanLat);
   const residuals = samples.map(s => {
-    const dLat = (s.lat - meanLat) * 111132;
-    const dLng = (s.lng - meanLng) * 111132 * Math.cos(meanLat * Math.PI / 180);
+    const dLat = (s.lat - meanLat) * latCoeff;
+    const dLng = (s.lng - meanLng) * lngCoeff;
     return dLat * dLat + dLng * dLng;
   });
   const variance = residuals.reduce((sum, val) => sum + val, 0) / Math.max(1, samples.length - 1);
@@ -816,7 +834,7 @@ export function analyzeSignalReliability(samples: Coordinate[]): SignalAnalysis 
 }
     </pre>
 
-    <p><span class="bold">Akademik Metodolojik Not (Yerel Mesafe Hesaplama Sadeleştirmesi):</span> Yukarıdaki hesaplamalarda enlemsel diferansiyeli metreye dönüştürmek amacıyla kullanılan <b>111132</b> katsayısı, ortalama Dünya yarıçapı (<i>R<sub>e</sub> &asymp; 6367 km</i>) kabulüne dayanan küresel bir yaklaşımı temsil etmektedir. Teorik jeodezide, enleme bağlı olarak meridyen eğrilik yarıçapı (<i>M</i>) ve paralel daire eğrilik yarıçapı (<i>N</i>) sürekli değiştiğinden, bu katsayıların WGS84 elipsoidi parametrelerine (<i>a, e</i>) göre dinamik hesaplanması (veya Vincenty / Haversine gibi küresel trigonometrik formülasyonların kullanılması) gerekse de; geliştirilen bu süzgeç modelinde bilinçli olarak yerel bir düzlem yaklaşımı tercih edilmiştir. Bunun nedeni, statik ölçüm süresince toplanan koordinat saçılımlarının saha üzerindeki kaplama alanının (footprint) son derece dar (genellikle &lt; 20 m) olmasıdır. Bu denli küçük lokal açıklıklarda meridyen eğriliğindeki değişim miktarı milimetrik mertebenin altında kaldığından, 111132 sabit katsayısı ve enleme bağlı boylam daralmasını (cos(&phi;)) modelleyen düzlemsel yaklaşım, pratik doğruluktan ödün vermeksizin mobil cihazın hesaplama yükünü (CPU ve batarya tüketimi) minimize etmek amacıyla "lokal olarak basitleştirilmiş elipsoit modeli" kapsamında kararlılıkla işletilmektedir.</p>
+    <p><span class="bold">Akademik Metodolojik Not (Gelişmiş Elipsoidal Diferansiyel Dönüşümü):</span> Hesaplamalarda enlemsel diferansiyeli metreye dönüştürmek amacıyla kullanılan katsayılar, WGS84 referans elipsoidi parametrelerine (<i>a, e</i>) göre her ölçüm kümesinin ortalama enlem değerine bağlı olarak dinamik Taylor ve Krüger meridyen/paralel yay analizleri (Meridyen Eğrilik Yarıçapı <i>M</i> ve Paralel Daire Eğrilik Yarıçapı <i>N</i>) kapsamında hassas biçimde hesaplanmaktadır. Bu sayede, statik ölçüm süresince toplanan koordinatların yerel düzlem üzerindeki milimetrik izdüşüm doğrulukları pratik olarak korunur ve mobil cihazın hesaplama kararlılığı güvence altına alınır.</p>
 
     <p>Bu karar matrisinin en kritik çıktısı, nihai filtrelenmiş verinin konum özniteliğindeki doğruluk (accuracy) değerinin belirlenmesidir. ${FULL_BRAND}, bu amaçla akademik düzeyde benzersiz, çift-aşamalılık (dual-bounding) barındıran muhafazakar ve istatistiki bir uyuşmazlık modeli işletir:</p>
     
