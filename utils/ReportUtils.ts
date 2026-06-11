@@ -203,7 +203,7 @@ const N = (1 - u) * (1 - v) * n00
 
     <div class="case-container" style="background-color: #f8fafc; border-left: 4px solid #0284c7; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
       <p class="bold" style="color: #0369a1; margin-bottom: 6px;">İleri Düzey Süzgeçlerin Çalışma Prensibi</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Giriş Verisi Kalifikasyonu:</span> Gelen tüm ölçüler öncelikle doğruluk dairesi yarıçaplarına göre (en fazla 100m) filtrelenir. Eğer yeterli epok varsa (en az 30), sisteme profesyonel süzgeç silsilesi atanır; aksi halde doğrudan Ağırlıklı LSE (WLS) güvenli geçişine teslim edilir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Giriş Verisi Kalifikasyonu:</span> Gelen tüm ölçüler öncelikle doğruluk dairesi yarıçaplarına göre (en fazla 100m) filtrelenir. Eğer yeterli epok varsa (seçilen yönteme göre en az 30 veya 60), sisteme profesyonel süzgeç silsilesi atanır; aksi halde doğrudan Ağırlıklı LSE (WLS) güvenli geçişine teslim edilir.</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Stokastik Sıralama:</span> KMeans gibi kümeleme süzgeçleri öncesinde tüm veriler fiziksel konumsal uyum testinden geçirilir, kaba hata kontrolü jeodezik standartlara göre yapılır.</p>
       <p class="no-indent"><span class="bold">3. Veri Saklama Limitleri:</span> 120 epok tavan tampon bellek sınırı dahilinde en son veriler saklanır, milisaniyelik gecikme analizleri anlık yürütülür.</p>
     </div>
@@ -436,7 +436,7 @@ function calculateKMeans4(samples: Coordinate[]): { result: Coordinate; usedIndi
   let bestBIC = Infinity;
   let bestAssignments: number[] = [];
 
-  for (let k = 2; k &lt;= 5; k++) {
+  for (let k = 2; k &lt;= 6; k++) {
     if (samples.length &lt; k) continue;
     const currentAssignments = runKMeans(samples, k);
     const centroids = Array.from({ length: k }, (_, j) =&gt; {
@@ -638,7 +638,7 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
   let bestBIC = Infinity;
   let bestAssignments: number[] = [];
 
-  for (let k = 2; k &lt;= 5; k++) {
+  for (let k = 2; k &lt;= 6; k++) {
     if (samples.length &lt; k) continue;
     const currentAssignments = runKMeans(samples, k);
     const centroids = Array.from({ length: k }, (_, j) =&gt; {

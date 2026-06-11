@@ -285,7 +285,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                     <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">{t("İSTATİSTİK")}</span>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                    {t("Baarda kalın hata eleme teorisini kullanarak uyuşumsuz ve kaba hatalı koordinatları sistemden temizler.")} <span className="text-amber-600 font-black">{t("En az 30 epok veri gerektirir.")}</span>
+                    {t("Baarda kalın hata eleme teorisini kullanarak uyuşumsuz ve kaba hatalı koordinatları sistemden temizler.")} <span className="text-amber-600 font-black">{t("En az 60 epok veri gerektirir.")}</span>
                   </p>
                 </div>
 
@@ -295,7 +295,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                     <span className="text-[11px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">{t("İLERİ HİBRİT")}</span>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed mb-3">
-                    {t("KMeans, Baarda ve Huber M-Tahmini yöntemlerini paralel süzgeçler halinde çalıştıran ve 2'li kesişim kümesi üzerinde lokal Huber süzmesi yapan en üstün matematiksel modelimizdir.")} <span className="text-amber-600 font-black">{t("En az 30 epok veri gerektirir.")}</span>
+                    {t("KMeans, Baarda ve Huber M-Tahmini yöntemlerini paralel süzgeçler halinde çalıştıran ve 2'li kesişim kümesi üzerinde lokal Huber süzmesi yapan en üstün matematiksel modelimizdir.")} <span className="text-amber-600 font-black">{t("En az 60 epok veri gerektirir.")}</span>
                   </p>
                   <div className="bg-emerald-50/50 rounded-lg p-3 space-y-2 border border-emerald-100/50">
                      <p className="text-sm font-black text-emerald-800 uppercase tracking-widest">{t("İşlem Adımları:")}</p>
@@ -321,7 +321,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
 
                 <div className="bg-amber-50/70 rounded-2xl p-4 border border-amber-200/50 text-amber-900 leading-relaxed text-xs font-semibold text-justify">
                   <span className="font-extrabold uppercase text-amber-700 block mb-1">⚠️ {t("UYARI / ÖNEMLİ KOŞUL:")}</span>
-                  {t("KMeans, Baarda ve KMeans + Baarda + Huber yöntemleri için en az 30 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.")}
+                  {t("KMeans ve Huber yöntemleri için en az 30 epok; Baarda ve KMeans + Baarda + Huber hibrit yöntemleri için en az 60 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.")}
                 </div>
               </div>
             </div>

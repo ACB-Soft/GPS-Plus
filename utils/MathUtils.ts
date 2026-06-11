@@ -54,18 +54,19 @@ export function calculateResult(
   let finalCalculatedUsedIndices: number[] | null = null;
   let clusters: number[][] | undefined = undefined;
 
-  // Let's implement the 30-epoch constraint check for professional mathematical models:
-  // HUBER, KMEANS_4, BAARDA, KMEANS_BAARDA_HUBER
-  const isProfessional = 
-    method === 'HUBER' ||
-    method === 'KMEANS_4' || 
-    method === 'BAARDA' || 
-    method === 'KMEANS_BAARDA_HUBER';
+  // Let's implement the constraint checks for professional mathematical models:
+  // - HUBER and KMEANS_4 require en az 30 epok.
+  // - BAARDA and KMEANS_BAARDA_HUBER require en az 55 epok.
+  const requires55 = method === 'BAARDA' || method === 'KMEANS_BAARDA_HUBER';
+  const requires30 = method === 'HUBER' || method === 'KMEANS_4';
   
   let finalMethod = method;
   let fallbackApplied = false;
 
-  if (isProfessional && samples.length < 30) {
+  if (requires55 && samples.length < 55) {
+    finalMethod = 'WEIGHTED_LSE';
+    fallbackApplied = true;
+  } else if (requires30 && samples.length < 30) {
     finalMethod = 'WEIGHTED_LSE';
     fallbackApplied = true;
   }
@@ -514,7 +515,7 @@ function calculateKMeans4(samples: Coordinate[]): { result: Coordinate; usedIndi
   let bestBIC = Infinity;
   let bestAssignments: number[] = [];
 
-  for (let k = 2; k <= 5; k++) {
+  for (let k = 2; k <= 6; k++) {
     if (samples.length < k) continue;
     const currentAssignments = runKMeans(samples, k);
     
@@ -644,7 +645,7 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
   let bestBIC = Infinity;
   let bestAssignments: number[] = [];
 
-  for (let k = 2; k <= 5; k++) {
+  for (let k = 2; k <= 6; k++) {
     if (samples.length < k) continue;
     const currentAssignments = runKMeans(samples, k);
     

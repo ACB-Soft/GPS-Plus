@@ -1649,21 +1649,21 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       <div className="flex-1 min-h-0 min-w-0 w-full relative">
                         {hybridClusterChartData && hybridClusterChartData.points.length > 0 ? (
                           <ResponsiveContainer width="100%" height="100%">
-                            <ScatterChart margin={{ top: 12, right: 12, bottom: 20, left: -5 }}>
+                            <ScatterChart margin={{ top: 12, right: 12, bottom: 35, left: -5 }}>
                               <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" horizontal={true} vertical={true} />
                               <XAxis 
                                 type="number" 
                                 dataKey="dx" 
                                 name="ΔE" 
-                                domain={[-maxTickLimit, maxTickLimit]} 
-                                ticks={clusterTicks}
+                                domain={[-maxTickLimit + xOffset, maxTickLimit + xOffset]} 
+                                ticks={xTicks}
                                 interval={0}
                                 angle={-90}
                                 textAnchor="end"
                                 height={32}
                                 tickFormatter={(val) => {
                                   const isInteger = Math.abs(val - Math.round(val)) < 0.01;
-                                  return isInteger ? `${Math.round(val).toFixed(2)}m` : '';
+                                  return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
                                 }}
                                 tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155', dy: 2.5, dx: -3}}
                                 axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
@@ -1673,24 +1673,24 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 type="number" 
                                 dataKey="dy" 
                                 name="ΔN" 
-                                domain={[-maxTickLimit, maxTickLimit]} 
-                                ticks={clusterTicks}
+                                domain={[-maxTickLimit + yOffset, maxTickLimit + yOffset]} 
+                                ticks={yTicks}
                                 interval={0}
                                 tickFormatter={(val) => {
                                   const isInteger = Math.abs(val - Math.round(val)) < 0.01;
-                                  return isInteger ? `${Math.round(val).toFixed(2)}m` : '';
+                                  return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
                                 }}
                                 tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155'}} 
                                 axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
                                 tickLine={{ stroke: '#475569', strokeWidth: 1 }}
                               />
-                              <ZAxis type="number" range={[40, 40]} />
+                              <ZAxis type="number" range={[15, 15]} />
                               <Tooltip 
                                 cursor={{ strokeDasharray: '3 3', stroke: '#475569' }} 
                                 content={({ active, payload }) => {
                                   if (active && payload && payload.length) {
                                     const data = payload[0].payload;
-                                    const labels = ['A', 'B', 'C', 'D', 'E'];
+                                    const labels = ['A', 'B', 'C', 'D', 'E', 'F'];
                                     return (
                                       <div className="bg-slate-900 border border-slate-800 text-white p-2.5 rounded-lg shadow-xl z-50 text-[8px] text-left">
                                         <p className="font-bold uppercase text-blue-400 mb-0.5 pb-0.5 border-b border-slate-800 leading-none">
@@ -1725,17 +1725,30 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               <ReferenceLine x={0} stroke="#475569" strokeWidth={1} strokeDasharray="3 3" />
                               <ReferenceLine y={0} stroke="#475569" strokeWidth={1} strokeDasharray="3 3" />
                               
+                              {/* Reference Point / Ground Truth (REF) */}
+                              {analysisType === 'precise' && (
+                                <Scatter 
+                                  name="GROUND TRUTH (REF)" 
+                                  data={[{ dx: 0, dy: 0 }]} 
+                                  fill="#10b981" 
+                                  shape="diamond" 
+                                  line={false}
+                                >
+                                  <Cell fill="#10b981" stroke="#059669" strokeWidth={1.5} />
+                                </Scatter>
+                              )}
+
                               {/* Draw Each Cluster in its own color layer */}
                               {(() => {
-                                const labels = ['A', 'B', 'C', 'D', 'E'];
-                                const clusterColors = ['#3b82f6', '#a855f7', '#eab308', '#ec4899', '#14b8a6'];
+                                const labels = ['A', 'B', 'C', 'D', 'E', 'F'];
+                                const clusterColors = ['#3b82f6', '#a855f7', '#eab308', '#ec4899', '#14b8a6', '#f97316'];
                                 return hybridClusterChartData?.clusters.map((clusterIndices, cIdx) => {
                                   if (clusterIndices.length === 0) return null;
                                   const ptsOfCluster = hybridClusterChartData.points.filter(p => clusterIndices.includes(p.id - 1));
                                   return (
                                     <Scatter 
                                       key={`kmeans-scatter-${cIdx}`}
-                                      name={`${t("Küme")} ${labels[cIdx]}`} 
+                                      name={`${t("Küme")} ${labels[cIdx % labels.length]}`} 
                                       data={ptsOfCluster} 
                                       fill={clusterColors[cIdx % clusterColors.length]}
                                       shape="circle"
@@ -1745,7 +1758,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   );
                                 });
                               })()}
-                              <Legend wrapperStyle={{ fontSize: '7.5px', fontWeight: 'bold' }} />
+                              <Legend wrapperStyle={{ fontSize: '7.5px', fontWeight: 'bold', paddingTop: '15px' }} />
                             </ScatterChart>
                           </ResponsiveContainer>
                         ) : (
@@ -1795,21 +1808,21 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       <div className="flex-1 min-h-0 min-w-0 w-full relative">
                         {hybridClusterChartData && hybridClusterChartData.points.length > 0 ? (
                           <ResponsiveContainer width="100%" height="100%">
-                            <ScatterChart margin={{ top: 12, right: 12, bottom: 20, left: -5 }}>
+                            <ScatterChart margin={{ top: 12, right: 12, bottom: 35, left: -5 }}>
                               <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" horizontal={true} vertical={true} />
                               <XAxis 
                                 type="number" 
                                 dataKey="dx" 
                                 name="ΔE" 
-                                domain={[-maxTickLimit, maxTickLimit]} 
-                                ticks={clusterTicks}
+                                domain={[-maxTickLimit + xOffset, maxTickLimit + xOffset]} 
+                                ticks={xTicks}
                                 interval={0}
                                 angle={-90}
                                 textAnchor="end"
                                 height={32}
                                 tickFormatter={(val) => {
                                   const isInteger = Math.abs(val - Math.round(val)) < 0.01;
-                                  return isInteger ? `${Math.round(val).toFixed(2)}m` : '';
+                                  return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
                                 }}
                                 tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155', dy: 2.5, dx: -3}}
                                 axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
@@ -1819,24 +1832,24 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 type="number" 
                                 dataKey="dy" 
                                 name="ΔN" 
-                                domain={[-maxTickLimit, maxTickLimit]} 
-                                ticks={clusterTicks}
+                                domain={[-maxTickLimit + yOffset, maxTickLimit + yOffset]} 
+                                ticks={yTicks}
                                 interval={0}
                                 tickFormatter={(val) => {
                                   const isInteger = Math.abs(val - Math.round(val)) < 0.01;
-                                  return isInteger ? `${Math.round(val).toFixed(2)}m` : '';
+                                  return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
                                 }}
                                 tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155'}} 
                                 axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
                                 tickLine={{ stroke: '#475569', strokeWidth: 1 }}
                               />
-                              <ZAxis type="number" range={[40, 40]} />
+                              <ZAxis type="number" range={[15, 15]} />
                               <Tooltip 
                                 cursor={{ strokeDasharray: '3 3', stroke: '#475569' }} 
                                 content={({ active, payload }) => {
                                   if (active && payload && payload.length) {
                                     const data = payload[0].payload;
-                                    const labels = ['A', 'B', 'C', 'D', 'E'];
+                                    const labels = ['A', 'B', 'C', 'D', 'E', 'F'];
                                     return (
                                       <div className="bg-slate-900 border border-slate-800 text-white p-2.5 rounded-lg shadow-xl z-50 text-[8px] text-left">
                                         <p className="font-bold uppercase text-blue-400 mb-0.5 pb-0.5 border-b border-slate-800 leading-none">
@@ -1871,6 +1884,19 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               <ReferenceLine x={0} stroke="#475569" strokeWidth={1} strokeDasharray="3 3" />
                               <ReferenceLine y={0} stroke="#475569" strokeWidth={1} strokeDasharray="3 3" />
                               
+                              {/* Reference Point / Ground Truth (REF) */}
+                              {analysisType === 'precise' && (
+                                <Scatter 
+                                  name="GROUND TRUTH (REF)" 
+                                  data={[{ dx: 0, dy: 0 }]} 
+                                  fill="#10b981" 
+                                  shape="diamond" 
+                                  line={false}
+                                >
+                                  <Cell fill="#10b981" stroke="#059669" strokeWidth={1.5} />
+                                </Scatter>
+                              )}
+
                               {/* Approved Points Series */}
                               <Scatter 
                                 name={t("Baarda Onaylı (Güvenilir)")} 
@@ -1890,7 +1916,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 onClick={(pt) => setActiveClusterPointId(pt.id)}
                                 className="cursor-pointer"
                               />
-                              <Legend wrapperStyle={{ fontSize: '7.5px', fontWeight: 'bold' }} />
+                              <Legend wrapperStyle={{ fontSize: '7.5px', fontWeight: 'bold', paddingTop: '15px' }} />
                             </ScatterChart>
                           </ResponsiveContainer>
                         ) : (
