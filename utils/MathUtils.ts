@@ -98,7 +98,7 @@ export function calculateResult(
       }
       break;
     case 'KMEANS_4':
-      const kmeans4Res = calculateKMeans4(sourceData);
+      const kmeans4Res = calculateKMeans(sourceData);
       resultData = kmeans4Res.result;
       finalCalculatedUsedIndices = kmeans4Res.usedIndices;
       clusters = kmeans4Res.clusters;
@@ -480,7 +480,7 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
 
 
 
-function calculateKMeans4(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
+function calculateKMeans(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
   // ADIM 1: Akademik Güvenlik Sınırı (Merkezi Limit Teoremi: N >= 30)
   if (samples.length < 30) {
     let sumW = 0, sumLat = 0, sumLng = 0, sumAcc = 0;

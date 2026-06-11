@@ -415,7 +415,7 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
 
     <p class="no-indent">Sistemde yürütülen, dinamik K seçimini BIC kriteriyle koşturan, merkez çakışmasını sönümleyen ve nihai ağırlıklı ortalamayı oran katsayısına göre hesaplayan TypeScript kütüphane fonksiyonu şu şekildedir:</p>
     <pre class="code-block">
-function calculateKMeans4(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
+function calculateKMeans(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
   if (samples.length &lt; 30) {
     let sumW = 0, sumLat = 0, sumLng = 0, sumAcc = 0;
     for (const p of samples) {
