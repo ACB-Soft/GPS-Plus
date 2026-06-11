@@ -130,6 +130,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const comparisonChartRef = React.useRef<HTMLDivElement>(null);
   const timeErrorChartRef = React.useRef<HTMLDivElement>(null);
   const hybridClusterChartRef = React.useRef<HTMLDivElement>(null);
+  const clusterChartRef = React.useRef<HTMLDivElement>(null);
+  const baardaChartRef = React.useRef<HTMLDivElement>(null);
 
   const [preciseN, setPreciseN] = useState<string>(''); // Northing (X)
   const [preciseE, setPreciseE] = useState<string>(''); // Easting (Y)
@@ -707,6 +709,33 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     }
     return ticks;
   }, [maxTickLimit, customScatterStep, yOffset]);
+
+  const clusterTicks = useMemo(() => {
+    let step = 0.5;
+    if (customScatterStep !== 'auto') {
+      step = parseFloat(customScatterStep);
+    } else {
+      if (maxTickLimit <= 1.0) step = 0.2;
+      else if (maxTickLimit <= 2.0) step = 0.5;
+      else if (maxTickLimit <= 4.0) step = 0.5;
+      else if (maxTickLimit <= 10.0) step = 1.0;
+      else step = 2.0;
+    }
+    const ticks = [];
+    const minVal = -maxTickLimit;
+    const maxVal = maxTickLimit;
+    const start = Math.floor(minVal / step) * step;
+    let current = start;
+    let loops = 0;
+    while (current <= maxVal + 0.001 && loops < 200) {
+      if (current >= minVal - 0.001) {
+        ticks.push(parseFloat(current.toFixed(2)));
+      }
+      current += step;
+      loops++;
+    }
+    return ticks;
+  }, [maxTickLimit, customScatterStep]);
 
   const timeSeriesChartData = useMemo(() => {
     return chartData.map((point, index) => {
@@ -1576,255 +1605,303 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 </div>
               </div>
 
-              {/* BRAND NEW SECTION: Hybrid Clustering & Baarda Filtering Analysis with Interactive Convex Hull / Polygons */}
+              {/* SEPARATED SECTION: K-Means Clustering & Baarda Outlier Filtering with High-Fidelity Scatter Charts */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center px-1.5">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    {t("Hibrit Küme Dağılımı ve Eleme Analizi")}
+                    {t("Gelişmiş Kümeleme ve Geodezik Kalite Analizi")}
                   </span>
-                  <button 
-                    onClick={() => exportChart(hybridClusterChartRef, 'gps-plus-hybrid-clusters')}
-                    type="button"
-                    className="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-1.5"
-                  >
-                    <i className="fas fa-camera text-indigo-400"></i> {t("PNG İndir (İngilizce)")}
-                  </button>
                 </div>
 
-                {/* Main 1:1 Interactive Container */}
-                <div 
-                  ref={hybridClusterChartRef}
-                  className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] aspect-square mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
-                >
-                  {/* English Geodetic Header */}
-                  <div className="flex justify-between items-center border-b border-slate-900/10 pb-1.5 min-h-0 shrink-0">
-                    <div className="min-w-0">
-                      <h2 className="text-slate-900 font-extrabold text-[10px] uppercase tracking-wider leading-none font-sans">
-                        GPS+ HYBRID K-MEANS & BAARDA ADJ. PLAN
-                      </h2>
-                      <p className="text-slate-400 text-[6.5px] font-bold uppercase tracking-widest mt-0.5 font-mono">
-                        POLYGON CLUSTER ENCLOSURES & OUTLIER ELIMINATION
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span className="bg-indigo-50 border border-indigo-100 text-indigo-600 font-mono text-[7px] font-black px-1.5 py-0.5 rounded">
-                        BAARDA FILTER ACTIVE
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* 1. K-Means Cluster Classification Scatter Chart */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center px-1">
+                      <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">
+                        {t("K-Means Küme Sınıflandırma Grafiği")}
                       </span>
+                      <button 
+                        onClick={() => exportChart(clusterChartRef, 'gps-plus-kmeans-clusters')}
+                        type="button"
+                        className="bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 cursor-pointer flex items-center gap-1"
+                      >
+                        <i className="fas fa-camera text-blue-400"></i> {t("PNG İndir")}
+                      </button>
+                    </div>
+
+                    <div 
+                      ref={clusterChartRef}
+                      className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] aspect-square mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
+                    >
+                      {/* Header */}
+                      <div className="flex justify-between items-center border-b border-slate-900/10 pb-1.5 min-h-0 shrink-0">
+                        <div className="min-w-0">
+                          <h2 className="text-slate-900 font-extrabold text-[9px] uppercase tracking-wider leading-none font-sans">
+                            ACB LABS K-MEANS CLUSTERING PLAN
+                          </h2>
+                          <p className="text-slate-400 text-[6px] font-bold uppercase tracking-widest mt-0.5 font-mono">
+                            SPATIAL COORDINATE DENSITY GROUPS
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Scatter Plot */}
+                      <div className="flex-1 min-h-0 min-w-0 w-full relative">
+                        {hybridClusterChartData && hybridClusterChartData.points.length > 0 ? (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <ScatterChart margin={{ top: 12, right: 12, bottom: 20, left: -5 }}>
+                              <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" horizontal={true} vertical={true} />
+                              <XAxis 
+                                type="number" 
+                                dataKey="dx" 
+                                name="ΔE" 
+                                domain={[-maxTickLimit, maxTickLimit]} 
+                                ticks={clusterTicks}
+                                interval={0}
+                                angle={-90}
+                                textAnchor="end"
+                                height={32}
+                                tickFormatter={(val) => {
+                                  const isInteger = Math.abs(val - Math.round(val)) < 0.01;
+                                  return isInteger ? `${Math.round(val).toFixed(2)}m` : '';
+                                }}
+                                tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155', dy: 2.5, dx: -3}}
+                                axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
+                                tickLine={{ stroke: '#475569', strokeWidth: 1 }}
+                              />
+                              <YAxis 
+                                type="number" 
+                                dataKey="dy" 
+                                name="ΔN" 
+                                domain={[-maxTickLimit, maxTickLimit]} 
+                                ticks={clusterTicks}
+                                interval={0}
+                                tickFormatter={(val) => {
+                                  const isInteger = Math.abs(val - Math.round(val)) < 0.01;
+                                  return isInteger ? `${Math.round(val).toFixed(2)}m` : '';
+                                }}
+                                tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155'}} 
+                                axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
+                                tickLine={{ stroke: '#475569', strokeWidth: 1 }}
+                              />
+                              <ZAxis type="number" range={[40, 40]} />
+                              <Tooltip 
+                                cursor={{ strokeDasharray: '3 3', stroke: '#475569' }} 
+                                content={({ active, payload }) => {
+                                  if (active && payload && payload.length) {
+                                    const data = payload[0].payload;
+                                    const labels = ['A', 'B', 'C', 'D', 'E'];
+                                    return (
+                                      <div className="bg-slate-900 border border-slate-800 text-white p-2.5 rounded-lg shadow-xl z-50 text-[8px] text-left">
+                                        <p className="font-bold uppercase text-blue-400 mb-0.5 pb-0.5 border-b border-slate-800 leading-none">
+                                          {t("Epok")} #{data.id}
+                                        </p>
+                                        <div className="space-y-0.5 font-mono">
+                                          <div className="flex justify-between gap-2">
+                                            <span className="opacity-60 text-[7px] uppercase">{t("Uzaysal Kümesi")}:</span>
+                                            <span className="font-bold text-indigo-400">Küme {labels[data.clusterId % labels.length]}</span>
+                                          </div>
+                                          <div className="flex justify-between gap-2">
+                                            <span className="opacity-60 text-[7px] uppercase">ΔE (Easting):</span>
+                                            <span className="font-bold text-emerald-400">{data.dx.toFixed(4)} m</span>
+                                          </div>
+                                          <div className="flex justify-between gap-2">
+                                            <span className="opacity-60 text-[7px] uppercase">ΔN (Northing):</span>
+                                            <span className="font-bold text-sky-400">{data.dy.toFixed(4)} m</span>
+                                          </div>
+                                          <div className="flex justify-between gap-2">
+                                            <span className="opacity-60 text-[7px] uppercase">Baarda Süzgeci:</span>
+                                            <span className={`font-bold ${data.passedBaarda ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                              {data.passedBaarda ? t("GEÇTİ") : t("ELENDİ")}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                }}
+                              />
+                              <ReferenceLine x={0} stroke="#475569" strokeWidth={1} strokeDasharray="3 3" />
+                              <ReferenceLine y={0} stroke="#475569" strokeWidth={1} strokeDasharray="3 3" />
+                              
+                              {/* Draw Each Cluster in its own color layer */}
+                              {(() => {
+                                const labels = ['A', 'B', 'C', 'D', 'E'];
+                                const clusterColors = ['#3b82f6', '#a855f7', '#eab308', '#ec4899', '#14b8a6'];
+                                return hybridClusterChartData?.clusters.map((clusterIndices, cIdx) => {
+                                  if (clusterIndices.length === 0) return null;
+                                  const ptsOfCluster = hybridClusterChartData.points.filter(p => clusterIndices.includes(p.id - 1));
+                                  return (
+                                    <Scatter 
+                                      key={`kmeans-scatter-${cIdx}`}
+                                      name={`${t("Küme")} ${labels[cIdx]}`} 
+                                      data={ptsOfCluster} 
+                                      fill={clusterColors[cIdx % clusterColors.length]}
+                                      shape="circle"
+                                      onClick={(pt) => setActiveClusterPointId(pt.id)}
+                                      className="cursor-pointer"
+                                    />
+                                  );
+                                });
+                              })()}
+                              <Legend wrapperStyle={{ fontSize: '7.5px', fontWeight: 'bold' }} />
+                            </ScatterChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <div className="flex items-center justify-center h-full text-slate-400 font-bold text-xs uppercase tracking-widest">{t("Veri bulunamadı")}</div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  {/* SVG Canvas Area */}
-                  <div className="flex-1 min-h-0 min-w-0 w-full relative bg-slate-50/50 rounded-xl overflow-hidden border border-slate-100">
-                    {hybridClusterChartData && hybridClusterChartData.points.length > 0 ? (
-                      <svg viewBox="0 0 400 400" className="w-full h-full">
-                        {/* 1. Draw Concentric Grid Rings */}
-                        {clusterRings.results.map((r, ri) => {
-                          const margin = 35;
-                          const drawableSize = 400 - margin * 2;
-                          const rPixels = (r / clusterBounds.span) * drawableSize;
-                          const centerOffset = {
-                            x: margin + ((0 - clusterBounds.minX) / clusterBounds.span) * drawableSize,
-                            y: margin + ((clusterBounds.maxY - 0) / clusterBounds.span) * drawableSize
-                          };
-
-                          return (
-                            <g key={`ring-${ri}`}>
-                              <circle
-                                cx={centerOffset.x}
-                                cy={centerOffset.y}
-                                r={rPixels}
-                                fill="none"
-                                stroke="#e2e8f0"
-                                strokeWidth="0.75"
-                                strokeDasharray="3 3"
-                              />
-                              <text
-                                x={centerOffset.x + rPixels + 3}
-                                y={centerOffset.y + 3}
-                                fill="#94a3b8"
-                                fontSize="7"
-                                className="font-mono select-none font-bold"
-                              >
-                                {r.toFixed(2)}m
-                              </text>
-                            </g>
-                          );
-                        })}
-
-                        {/* 2. Draw Crosshair Centered at Dataset Barycenter (0, 0) */}
-                        {(() => {
-                          const margin = 35;
-                          const drawableSize = 400 - margin * 2;
-                          const centerOffset = {
-                            x: margin + ((0 - clusterBounds.minX) / clusterBounds.span) * drawableSize,
-                            y: margin + ((clusterBounds.maxY - 0) / clusterBounds.span) * drawableSize
-                          };
-                          return (
-                            <g>
-                              {/* Horizontal axis */}
-                              <line
-                                x1={margin}
-                                y1={centerOffset.y}
-                                x2={400 - margin}
-                                y2={centerOffset.y}
-                                stroke="#cbd5e1"
-                                strokeWidth="0.75"
-                              />
-                              {/* Vertical axis */}
-                              <line
-                                x1={centerOffset.x}
-                                y1={margin}
-                                x2={centerOffset.x}
-                                y2={400 - margin}
-                                stroke="#cbd5e1"
-                                strokeWidth="0.75"
-                              />
-                            </g>
-                          );
-                        })()}
-
-                        {/* 3. Draw Polygons / Enclosures Around Each Cluster (Using Convex Hull) */}
-                        {(() => {
-                          const clusterColors = [
-                            { fill: 'rgba(59, 130, 246, 0.08)', stroke: 'rgba(59, 130, 246, 0.5)', border: '#3b82f6' },
-                            { fill: 'rgba(168, 85, 247, 0.08)', stroke: 'rgba(168, 85, 247, 0.5)', border: '#a855f7' },
-                            { fill: 'rgba(234, 179, 8, 0.08)', stroke: 'rgba(234, 179, 8, 0.5)', border: '#eab308' },
-                            { fill: 'rgba(236, 72, 153, 0.08)', stroke: 'rgba(236, 72, 153, 0.5)', border: '#ec4899' },
-                            { fill: 'rgba(20, 184, 166, 0.08)', stroke: 'rgba(20, 184, 166, 0.5)', border: '#14b8a6' }
-                          ];
-                          const margin = 35;
-                          const drawableSize = 400 - margin * 2;
-                          const getSvgCoordsLoc = (dx: number, dy: number) => {
-                            const x = margin + ((dx - clusterBounds.minX) / clusterBounds.span) * drawableSize;
-                            const y = margin + ((clusterBounds.maxY - dy) / clusterBounds.span) * drawableSize;
-                            return { x, y };
-                          };
-
-                          return hybridClusterChartData.clusters.map((clusterIndices, cIdx) => {
-                            if (clusterIndices.length === 0) return null;
-                            const ptsOfCluster = hybridClusterChartData.points.filter(p => clusterIndices.includes(p.id - 1));
-                            const color = clusterColors[cIdx % clusterColors.length];
-
-                            if (ptsOfCluster.length >= 3) {
-                              const hullPts = getConvexHullPoints(ptsOfCluster);
-                              const pointsString = hullPts.map(p => {
-                                const hc = getSvgCoordsLoc(p.dx, p.dy);
-                                return `${hc.x},${hc.y}`;
-                              }).join(' ');
-
-                              return (
-                                <g key={`poly-${cIdx}`}>
-                                  <polygon
-                                    points={pointsString}
-                                    fill={color.fill}
-                                    stroke={color.stroke}
-                                    strokeWidth="1.5"
-                                    strokeDasharray="4 3"
-                                  />
-                                </g>
-                              );
-                            } else if (ptsOfCluster.length === 2) {
-                              const h1 = getSvgCoordsLoc(ptsOfCluster[0].dx, ptsOfCluster[0].dy);
-                              const h2 = getSvgCoordsLoc(ptsOfCluster[1].dx, ptsOfCluster[1].dy);
-                              return (
-                                <line
-                                  key={`poly-line-${cIdx}`}
-                                  x1={h1.x}
-                                  y1={h1.y}
-                                  x2={h2.x}
-                                  y2={h2.y}
-                                  stroke={color.stroke}
-                                  strokeWidth="1.5"
-                                  strokeDasharray="4 3"
-                                />
-                              );
-                            }
-                            return null;
-                          });
-                        })()}
-
-                        {/* 4. Draw Individual Points Cloud */}
-                        {(() => {
-                          const clusterColors = [
-                            { border: '#3b82f6' },
-                            { border: '#a855f7' },
-                            { border: '#eab308' },
-                            { border: '#ec4899' },
-                            { border: '#14b8a6' }
-                          ];
-                          const margin = 35;
-                          const drawableSize = 400 - margin * 2;
-                          
-                          return hybridClusterChartData.points.map((p) => {
-                            const x = margin + ((p.dx - clusterBounds.minX) / clusterBounds.span) * drawableSize;
-                            const y = margin + ((clusterBounds.maxY - p.dy) / clusterBounds.span) * drawableSize;
-                            const color = clusterColors[p.clusterId % clusterColors.length];
-                            const isSelected = activeClusterPointId === p.id;
-
-                            return (
-                              <g key={`pt-${p.id}`} className="cursor-pointer">
-                                {isSelected && (
-                                  <circle
-                                    cx={x}
-                                    cy={y}
-                                    r="8.5"
-                                    fill="none"
-                                    stroke={p.passedBaarda ? "#10b981" : "#ef4444"}
-                                    strokeWidth="1.2"
-                                    strokeOpacity="0.6"
-                                    className="animate-ping"
-                                  />
-                                )}
-                                <circle
-                                  cx={x}
-                                  cy={y}
-                                  r={isSelected ? "5.5" : "3.5"}
-                                  fill={p.passedBaarda ? "#10b981" : "#ef4444"}
-                                  stroke={color.border}
-                                  strokeWidth={isSelected ? "2.2" : "1.2"}
-                                  onClick={() => setActiveClusterPointId(p.id)}
-                                />
-                              </g>
-                            );
-                          });
-                        })()}
-                      </svg>
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-slate-400 font-bold text-xs uppercase tracking-widest">{t("Veri bulunamadı")}</div>
-                    )}
-                  </div>
-
-                  {/* Shrunk and Highly-Intuitive Legend */}
-                  <div className="shrink-0 border-t border-slate-100 pt-3 flex flex-col gap-2 w-full text-[8.5px] font-sans">
-                    <div className="grid grid-cols-2 gap-2 text-slate-700">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-emerald-600 block shrink-0"></span>
-                        <span className="font-extrabold uppercase text-slate-700 tracking-wide">{t("Baarda Onaylı (Geodezik)")}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500 border border-rose-600 block shrink-0"></span>
-                        <span className="font-extrabold uppercase text-slate-700 tracking-wide">{t("Uç Değer (Kaba Hata / Elendi)")}</span>
-                      </div>
+                  {/* 2. Baarda Outlier Filtering Scatter Chart */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center px-1">
+                      <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">
+                        {t("Baarda Güvenilirlik Süzgesi Grafiği")}
+                      </span>
+                      <button 
+                        onClick={() => exportChart(baardaChartRef, 'gps-plus-baarda-reliability')}
+                        type="button"
+                        className="bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 cursor-pointer flex items-center gap-1"
+                      >
+                        <i className="fas fa-camera text-emerald-400"></i> {t("PNG İndir")}
+                      </button>
                     </div>
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[#64748b] border-t border-slate-50 pt-2 font-mono">
-                      <span>{t("Kümeler:")}</span>
-                      {(() => {
-                        const labels = ['A', 'B', 'C', 'D', 'E'];
-                        const textColors = ['text-blue-500', 'text-purple-500', 'text-yellow-600', 'text-pink-500', 'text-teal-600'];
-                        return hybridClusterChartData?.clusters.map((cluster, cIdx) => {
-                          if (cluster.length === 0) return null;
-                          return (
-                            <span key={cIdx} className={`${textColors[cIdx % textColors.length]} font-bold`}>
-                              Küme {labels[cIdx]}: {cluster.length} {t("nokta")}
-                            </span>
-                          );
-                        });
-                      })()}
+
+                    <div 
+                      ref={baardaChartRef}
+                      className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] aspect-square mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
+                    >
+                      {/* Header */}
+                      <div className="flex justify-between items-center border-b border-slate-900/10 pb-1.5 min-h-0 shrink-0">
+                        <div className="min-w-0">
+                          <h2 className="text-slate-900 font-extrabold text-[9px] uppercase tracking-wider leading-none font-sans">
+                            ACB LABS BAARDA ELIMINATION PLAN
+                          </h2>
+                          <p className="text-slate-400 text-[6px] font-bold uppercase tracking-widest mt-0.5 font-mono">
+                            GEODETIC RELIABILITY & OUTLIER DETECTION
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="bg-emerald-50 border border-emerald-100 text-emerald-600 font-mono text-[6px] font-black px-1.5 py-0.5 rounded">
+                            BAARDA ACTIVE
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Scatter Plot */}
+                      <div className="flex-1 min-h-0 min-w-0 w-full relative">
+                        {hybridClusterChartData && hybridClusterChartData.points.length > 0 ? (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <ScatterChart margin={{ top: 12, right: 12, bottom: 20, left: -5 }}>
+                              <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" horizontal={true} vertical={true} />
+                              <XAxis 
+                                type="number" 
+                                dataKey="dx" 
+                                name="ΔE" 
+                                domain={[-maxTickLimit, maxTickLimit]} 
+                                ticks={clusterTicks}
+                                interval={0}
+                                angle={-90}
+                                textAnchor="end"
+                                height={32}
+                                tickFormatter={(val) => {
+                                  const isInteger = Math.abs(val - Math.round(val)) < 0.01;
+                                  return isInteger ? `${Math.round(val).toFixed(2)}m` : '';
+                                }}
+                                tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155', dy: 2.5, dx: -3}}
+                                axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
+                                tickLine={{ stroke: '#475569', strokeWidth: 1 }}
+                              />
+                              <YAxis 
+                                type="number" 
+                                dataKey="dy" 
+                                name="ΔN" 
+                                domain={[-maxTickLimit, maxTickLimit]} 
+                                ticks={clusterTicks}
+                                interval={0}
+                                tickFormatter={(val) => {
+                                  const isInteger = Math.abs(val - Math.round(val)) < 0.01;
+                                  return isInteger ? `${Math.round(val).toFixed(2)}m` : '';
+                                }}
+                                tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155'}} 
+                                axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
+                                tickLine={{ stroke: '#475569', strokeWidth: 1 }}
+                              />
+                              <ZAxis type="number" range={[40, 40]} />
+                              <Tooltip 
+                                cursor={{ strokeDasharray: '3 3', stroke: '#475569' }} 
+                                content={({ active, payload }) => {
+                                  if (active && payload && payload.length) {
+                                    const data = payload[0].payload;
+                                    const labels = ['A', 'B', 'C', 'D', 'E'];
+                                    return (
+                                      <div className="bg-slate-900 border border-slate-800 text-white p-2.5 rounded-lg shadow-xl z-50 text-[8px] text-left">
+                                        <p className="font-bold uppercase text-blue-400 mb-0.5 pb-0.5 border-b border-slate-800 leading-none">
+                                          {t("Epok")} #{data.id}
+                                        </p>
+                                        <div className="space-y-0.5 font-mono">
+                                          <div className="flex justify-between gap-2">
+                                            <span className="opacity-60 text-[7px] uppercase">{t("Uzaysal Kümesi")}:</span>
+                                            <span className="font-bold text-indigo-400">Küme {labels[data.clusterId % labels.length]}</span>
+                                          </div>
+                                          <div className="flex justify-between gap-2">
+                                            <span className="opacity-60 text-[7px] uppercase">ΔE (Easting):</span>
+                                            <span className="font-bold text-emerald-400">{data.dx.toFixed(4)} m</span>
+                                          </div>
+                                          <div className="flex justify-between gap-2">
+                                            <span className="opacity-60 text-[7px] uppercase">ΔN (Northing):</span>
+                                            <span className="font-bold text-sky-400">{data.dy.toFixed(4)} m</span>
+                                          </div>
+                                          <div className="flex justify-between gap-2">
+                                            <span className="opacity-60 text-[7px] uppercase">Baarda Süzgeci:</span>
+                                            <span className={`font-bold ${data.passedBaarda ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                              {data.passedBaarda ? t("GEÇTİ (GÜVENİLİR)") : t("ELENDİ (KABA HATA)")}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                }}
+                              />
+                              <ReferenceLine x={0} stroke="#475569" strokeWidth={1} strokeDasharray="3 3" />
+                              <ReferenceLine y={0} stroke="#475569" strokeWidth={1} strokeDasharray="3 3" />
+                              
+                              {/* Approved Points Series */}
+                              <Scatter 
+                                name={t("Baarda Onaylı (Güvenilir)")} 
+                                data={hybridClusterChartData.points.filter(p => p.passedBaarda)} 
+                                fill="#10b981"
+                                shape="circle"
+                                onClick={(pt) => setActiveClusterPointId(pt.id)}
+                                className="cursor-pointer"
+                              />
+                              
+                              {/* Rejected/Outlier Points Series */}
+                              <Scatter 
+                                name={t("Elenen Uç Değer (Kaba Hata)")} 
+                                data={hybridClusterChartData.points.filter(p => !p.passedBaarda)} 
+                                fill="#ef4444"
+                                shape="circle"
+                                onClick={(pt) => setActiveClusterPointId(pt.id)}
+                                className="cursor-pointer"
+                              />
+                              <Legend wrapperStyle={{ fontSize: '7.5px', fontWeight: 'bold' }} />
+                            </ScatterChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <div className="flex items-center justify-center h-full text-slate-400 font-bold text-xs uppercase tracking-widest">{t("Veri bulunamadı")}</div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Selected Point Detailed Analysis Panel */}
+                {/* Selected Point Detailed Analysis Panel (Fully Interactive with both charts) */}
                 <div className="bg-slate-50 border border-slate-200/60 rounded-2xl p-4.5 text-slate-800 text-xs shadow-xs space-y-2">
                   <div className="flex items-center gap-2 border-b border-slate-150 pb-2">
                     <div className="w-5 h-5 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 shrink-0">
@@ -1880,7 +1957,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     })()
                   ) : (
                     <div className="py-2 text-center text-[#94a3b8] font-bold text-[9px] uppercase tracking-wider">
-                      {t("Özelliklerini incelemek için grafikteki bir koordinat noktasına (yuvarlak) tıklayın.")}
+                      {t("Özelliklerini incelemek için grafiklerdeki bir koordinat noktasına (yuvarlak) tıklayın.")}
                     </div>
                   )}
                 </div>
