@@ -434,7 +434,7 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
   while (currentSamples.length > 4) {
     // Kalan verinin saçılım genişliği 0.25m'nin altına düştüğünde veri elemesini durdur
     const currentSpread = calculateMaxDistance(currentSamples);
-    if (currentSpread < 0.25) {
+    if (currentSpread < 0.50) {
       break;
     }
 
