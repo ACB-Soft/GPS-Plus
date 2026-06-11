@@ -569,14 +569,12 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
     const meanLng = currentSamples.reduce((a, b, i) => a + b.lng * weights[i], 0) / sumW;
 
     const residuals = currentSamples.map(s => {
-      const dLat = (s.lat - meanLat) * 111320;
-      const dLng = (s.lng - meanLng) * 111320 * Math.cos(meanLat * Math.PI / 180);
-      return Math.sqrt(dLat * dLat + dLng * dLng);
+      return calculateDistanceMeter(s.lat, s.lng, meanLat, meanLng, meanLat);
     });
 
     const vTPv = residuals.reduce((a, v, i) => a + v * v * weights[i], 0);
     
-    // Geodetically correct degrees of freedom: f = n - u, where u = 2 (Lat, Lng)
+    // Corrected degree of freedom: f = n - u, where u = 2 (lat, lng) unknowns in 2D adjustments.
     const sigma0 = Math.sqrt(vTPv / (currentSamples.length - 2));
 
     const standardizedResiduals = currentSamples.map((s, i) => {
@@ -595,28 +593,27 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
     }
 
     if (maxW > criticalValue) {
-        currentSamples.splice(worstIdx, 1); // Reject coordinate containing outlier error
+        currentSamples.splice(worstIdx, 1);
     } else {
-        break; // Exit loop if the critical limit is satisfied (system resolved)
+        break; 
     }
   }
 
-  // Geodetically sound: use calculateWeightedLSE on clean remaining samples
   const lseResult = calculateWeightedLSE(currentSamples);
   return { result: lseResult.result, usedIndices: currentSamples.map(s => s._originalIdx) };
 }
     </pre>
 
     <h3>2.4.5. "KMeans + Baarda + Huber" İleri-Hibrit Filtreleme Modeli</h3>
-    <p>Uygulamada yer alan en gelişmiş ve akademik seviyedeki konum hesaplama yöntemidir. Bu metot, uydulardan gelen sinyal hatalarını ve çoklu yol yansımalarını (multipath) en üstün hassasiyetle ayıklamak amacıyla geliştirilmiştir. Yöntem, küresel Baarda testi ve dinamik K-Means (BIC) sonuçlarını kesiştirerek elde edilen temiz küme üzerinde <b>lokal Huber M-Estimation süzgecini</b> koşturur. Bu sayede local gürültü öbekleri de bütünüyle elimine edilir.</p>
+    <p>Uygulamada yer alan en gelişmiş ve akademik seviyedeki konum hesaplama yöntemidir. Bu metot, uydulardan gelen sinyal hatalarını ve çoklu yol yansımalarını (multipath) en üstün hassasiyetle ayıklamak ve dengelemek amacıyla geliştirilmiştir. Yöntem, küresel Baarda testi sonuçları üzerinde <b>lokal Huber M-Estimation süzgecini</b> doğrudan koşturarak veri temizliği yaparken; K-Means kümeleme modelini veri elemek için değil, uzaysal yoğunluk oranlarına göre ağırlıklandırma yapmak için kullanır.</p>
 
     <div class="case-container" style="background-color: #f0fdf4; border-left: 4px solid #10b981; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
-      <p class="bold" style="color: #065f46; margin-bottom: 6px;">İleri Hibrit Algoritması Paralel Kolları ve Kesişim Kuralları</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Kol - Genel Baarda Testi (İç Güvenilirlik Süzgeci):</span> 120 epokluk ham havuzun tamamını tek bir grup olarak inceleyerek, ani konumsal sıçramaları ve kalın donanımsal hataları varyans test büyüklüklerine göre ayıklar.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Kol - Dinamik K-Means (Geometrik Süzgeç):</span> Alınan tüm veriler en uygun K küme sayısına ayrıştırılır (BIC/X-Means kriteri). En yoğun "Şampiyon Küme" seçilerek çoklu yansımanın binalardan oluşturduğu uydurma ömürsüz öbekler dışlanır.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. Kesişim Kümesi ve Huber Robust Süzgeci:</span> Baarda'dan temiz çıkan küresel noktalar ile K-Means'in yoğun şampiyon kümesinin doğrudan indeks kesişimi (2-Way Intersection) alınır. Bu kesişen temiz alt grupta, gürbüz varyans temel alınarak <b>Lokal Huber M-Estimation</b> (1.345σ) filtresi çalıştırılır; böylece grup içine sızmış mikro gürültüler de filtrelenir.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">4. Geri Çekilme Mekanizması (Fallback):</span> Eğer nihai Huber filtresinden geçen nokta sayısı sönümlenmiş alt limitin (nokta sayısı &lt; 4) altına inerse, sistem otomatik olarak stabil çalışan diğer "KMeans + Baarda" modeline geri döner (Fallback).</p>
-      <p class="no-indent"><span class="bold">5. Stokastik WLS Dengelemesi (Joint Weighting):</span> Süzülen nihai üst-temiz gözlemler, donanımsal doğruluk değeri ile Huber robust ağırlığının ortak çarpımından üretilen joint ağırlıklar (P_nihai = w_donanım * w_Huber) kullanılarak dikey ve yatay koordinatların milimetrik hassasiyette dengelenmesini sağlar.</p>
+      <p class="bold" style="color: #065f46; margin-bottom: 6px;">İleri Hibrit Algoritması Paralel Kolları ve Yeni Nesil Ağırlık Sentezi</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Kol - Genel Baarda Testi (İç Güvenilirlik Süzgeci):</span> Ham ölçüm havuzunun tamamını inceleyerek, konumsal sıçramaları ve kaba koordinat hatalarını varyans kriterlerine göre tamamen ayıklar.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Kol - Dinamik K-Means (Yoğunluk Dağılım Modeli):</span> Ham veriler Bayes Bilgi Kriteri (BIC) yardımıyla en uygun <i>K</i> kümesine bölünür (K=2..5). K-Means bu modelde herhangi bir veri elemesi yapmaz, bunun yerine her bir noktanın ait olduğu kümenin eleman yoğunluğunu (<i>w<sub>cluster</sub> = N<sub>c</sub> / N<sub>total</sub></i>) tespit eder.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. Huber Robust Süzgeci:</span> Baarda testini başarıyla geçen temiz gözlemler üzerinde, gürbüz varyans referans alan <b>Lokal Huber M-Estimation süzgeci</b> çalıştırılır. Sınır dışı kalan (huber kutusu dışındaki) mikro gürültüler elenerek gürbüz alt set (<code>huberIndices</code>) elde edilir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">4. Geri Çekilme Mekanizması (Fallback):</span> Huber kriterinden başarıyla geçen nokta adedi kritik limitin altına düşerse (nokta sayısı &lt; 4), sistem otomatik olarak hata koruması adına standart Ağırlıklı En Küçük Kareler (Weighted LSE) modeline geri çekilir.</p>
+      <p class="no-indent"><span class="bold">5. Üçlü Hibrit WLS Dengelemesi (Joint Weighting):</span> Temiz gözlemlerin nihai weights matrisi; dinamik küme yoğunluğu katsayısı, donanımsal hassasiyetin karesinin tersi ve Huber robust ağırlık katsayısının doğrudan çarpımıyla elde edilir: <i>P<sub>nihai</sub> = w<sub>cluster</sub> &times; w<sub>hardware</sub> &times; w<sub>huber</sub> = (N<sub>c</sub> / N<sub>total</sub>) &times; (1 / accuracy<sup>2</sup>) &times; w<sub>huber</sub></i>. Bu sayede en güvenilir, yüksek yoğunluklu ve düşük hatalı verilerin ağırlığı katlanırken uç değerlerin etkisi sıfıra yakınsar.</p>
     </div>
 
     <p class="no-indent">"KMeans + Baarda + Huber" yönteminin TypeScript programlama dilli motor kaynak kod tasarımı aşağıda sunulmuştur:</p>
@@ -675,49 +672,42 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
   });
   const validClusters = clusters.filter(c =&gt; c.length &gt; 0);
 
-  // Champion Cluster Discovery (Largest cluster by member count)
-  let bestClusterIdx = 0;
-  let maxCount = -1;
-  for (let i = 0; i &lt; validClusters.length; i++) {
-    if (validClusters[i].length &gt; maxCount) {
-      maxCount = validClusters[i].length;
-      bestClusterIdx = i;
-    }
-  }
-  const championIndices = validClusters[bestClusterIdx] || [];
-
-  // Perform 2-way Intersection of (K-Means ∩ Baarda) first
-  const twoWayIndices = baardaIndices.filter(idx =&gt; championIndices.includes(idx));
-
-  // 3. Huber Robust M-Estimation Filter: Apply specifically to the two-way intersection set
+  // 3. Huber Robust M-Estimation Filter: Apply specifically to the Baarda outlier-eliminated set
   const huberIndices: number[] = [];
-  if (twoWayIndices.length &gt; 0) {
-    const subsetPoints = twoWayIndices.map(idx =&gt; samples[idx]);
-    const subAverage = calculateAverage(subsetPoints);
-    const subVariance = calculateVariance(subsetPoints, subAverage);
-    const subSigma = Math.sqrt(subVariance);
-
+  if (baardaIndices.length &gt; 0) {
+    const subsetPoints = baardaIndices.map(idx =&gt; samples[idx]);
+    const subLats = subsetPoints.map(p => p.lat);
+    const subLngs = subsetPoints.map(p => p.lng);
+    const subMedianCenter = {
+      lat: calculateMedian(subLats),
+      lng: calculateMedian(subLngs)
+    };
+    const subSigma = calculateMAD(subsetPoints, subMedianCenter);
     const huberLimit = 1.345 * Math.max(0.05, subSigma);
-    for (const idx of twoWayIndices) {
+
+    for (const idx of baardaIndices) {
       const p = samples[idx];
-      const dist = calculateDistanceMeter(p.lat, p.lng, subAverage.lat, subAverage.lng, subAverage.lat);
+      const dist = calculateDistanceMeter(p.lat, p.lng, subMedianCenter.lat, subMedianCenter.lng, subMedianCenter.lat);
       if (dist &lt;= huberLimit) {
         huberIndices.push(idx);
       }
     }
   }
 
-  // The final intersected indices are the ones that survive the Huber filter
+  // The final indices are the ones that survive Baarda and Huber robust criteria
   const intersectionIndices = huberIndices;
   const intersectionPoints = intersectionIndices.map(idx =&gt; samples[idx]);
 
   // If we have at least 4 viable points, calculate Weighted Least Squares (WLS) adjustment using combined weights:
-  // P_final = w_hardware * w_huber * w_cluster
   if (intersectionPoints.length &gt;= 4) {
     const subsetPoints = intersectionPoints;
-    const subAverage = calculateAverage(subsetPoints);
-    const subVariance = calculateVariance(subsetPoints, subAverage);
-    const subSigma = Math.sqrt(subVariance);
+    const subLats = subsetPoints.map(p =&gt; p.lat);
+    const subLngs = subsetPoints.map(p =&gt; p.lng);
+    const subMedianCenter = {
+      lat: calculateMedian(subLats),
+      lng: calculateMedian(subLngs)
+    };
+    const subSigma = calculateMAD(subsetPoints, subMedianCenter);
     const huberLimit = 1.345 * Math.max(0.05, subSigma);
 
     const finalWeights = intersectionPoints.map((s, index) =&gt; {
@@ -725,9 +715,10 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
       const clusterIdx = validClusters.findIndex(c =&gt; c.includes(globalIndex));
       const wCluster = clusterIdx !== -1 ? validClusters[clusterIdx].length / samples.length : 1.0 / samples.length;
 
-      const dist = calculateDistanceMeter(s.lat, s.lng, subAverage.lat, subAverage.lng, subAverage.lat);
+      const dist = calculateDistanceMeter(s.lat, s.lng, subMedianCenter.lat, subMedianCenter.lng, subMedianCenter.lat);
       const huberWeight = dist &lt;= huberLimit ? 1.0 : huberLimit / Math.max(0.01, dist);
 
+      // Hardware weight is proportional to inverse squared accuracy: 1 / (accuracy^2)
       const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, s.accuracy), 2);
       return hardwareWeight * huberWeight * wCluster;
     });
@@ -751,7 +742,7 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
       ? validAlts.reduce((a, b) =&gt; a + (b.altitude || 0), 0) / validAlts.length
       : null;
 
-    const validAltAccs = intersectionPoints.filter(s => s.altitudeAccuracy !== null);
+    const validAltAccs = intersectionPoints.filter(s =&gt; s.altitudeAccuracy !== null);
     finalResult.altitudeAccuracy = validAltAccs.length &gt; 0
       ? validAltAccs.reduce((a, b) =&gt; a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length
       : null;

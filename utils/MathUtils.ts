@@ -684,24 +684,10 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
 
   const validClusters = clusters.filter(c => c.length > 0);
 
-  // Champion Cluster Discovery (Largest cluster by member count)
-  let bestClusterIdx = 0;
-  let maxCount = -1;
-  for (let i = 0; i < validClusters.length; i++) {
-    if (validClusters[i].length > maxCount) {
-      maxCount = validClusters[i].length;
-      bestClusterIdx = i;
-    }
-  }
-  const championIndices = validClusters[bestClusterIdx] || [];
-
-  // Perform 2-way Intersection of (K-Means ∩ Baarda) first
-  const twoWayIndices = baardaIndices.filter(idx => championIndices.includes(idx));
-
-  // 3. Huber Robust M-Estimation Filter: Apply specifically to the two-way intersection set
+  // 3. Huber Robust M-Estimation Filter: Apply specifically to the Baarda outlier-eliminated set
   const huberIndices: number[] = [];
-  if (twoWayIndices.length > 0) {
-    const subsetPoints = twoWayIndices.map(idx => samples[idx]);
+  if (baardaIndices.length > 0) {
+    const subsetPoints = baardaIndices.map(idx => samples[idx]);
     const subLats = subsetPoints.map(p => p.lat);
     const subLngs = subsetPoints.map(p => p.lng);
     const subMedianCenter = {
@@ -711,7 +697,7 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
     const subSigma = calculateMAD(subsetPoints, subMedianCenter);
     const huberLimit = 1.345 * Math.max(0.05, subSigma);
 
-    for (const idx of twoWayIndices) {
+    for (const idx of baardaIndices) {
       const p = samples[idx];
       const dist = calculateDistanceMeter(p.lat, p.lng, subMedianCenter.lat, subMedianCenter.lng, subMedianCenter.lat);
       // Keep only points that are close enough to the subset's own centroid
@@ -721,7 +707,7 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
     }
   }
 
-  // The final intersected indices are the ones that survive the Huber filter
+  // The final indices are the ones that survive Baarda and Huber robust criteria
   const intersectionIndices = huberIndices;
   const intersectionPoints = intersectionIndices.map(idx => samples[idx]);
 
@@ -737,14 +723,19 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
     const subSigma = calculateMAD(subsetPoints, subMedianCenter);
     const huberLimit = 1.345 * Math.max(0.05, subSigma);
 
-    const accuracyLimit = Math.min(...intersectionPoints.map(s => s.accuracy));
+    const finalWeights = intersectionPoints.map((s, index) => {
+      const globalIndex = intersectionIndices[index];
+      const clusterIdx = validClusters.findIndex(c => c.includes(globalIndex));
+      const wCluster = clusterIdx !== -1 ? validClusters[clusterIdx].length / samples.length : 1.0 / samples.length;
 
-    const finalWeights = intersectionPoints.map(s => {
       const dist = calculateDistanceMeter(s.lat, s.lng, subMedianCenter.lat, subMedianCenter.lng, subMedianCenter.lat);
       const huberWeight = dist <= huberLimit ? 1.0 : huberLimit / Math.max(0.01, dist);
 
-      const hardwareWeight = accuracyLimit / Math.max(0.1, s.accuracy);
-      return hardwareWeight * huberWeight;
+      // Hardware weight is proportional to inverse squared accuracy: 1 / (accuracy^2)
+      const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, s.accuracy), 2);
+      
+      // Combined Joint Weight: Cluster Density Weight * Hardware Weight * Huber Weight
+      return wCluster * hardwareWeight * huberWeight;
     });
 
     const sumW = finalWeights.reduce((a, b) => a + b, 0) || 1.0;
