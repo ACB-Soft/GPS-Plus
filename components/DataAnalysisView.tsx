@@ -1730,11 +1730,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 <Scatter 
                                   name="GROUND TRUTH (REF)" 
                                   data={[{ dx: 0, dy: 0 }]} 
-                                  fill="#10b981" 
+                                  fill="#000000" 
                                   shape="diamond" 
                                   line={false}
                                 >
-                                  <Cell fill="#10b981" stroke="#059669" strokeWidth={1.5} />
+                                  <Cell fill="#000000" stroke="#000000" strokeWidth={1.5} />
                                 </Scatter>
                               )}
 
@@ -1751,7 +1751,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                       name={`${t("Küme")} ${labels[cIdx % labels.length]}`} 
                                       data={ptsOfCluster} 
                                       fill={clusterColors[cIdx % clusterColors.length]}
-                                      shape="circle"
+                                      shape={<RawPointShape />}
                                       onClick={(pt) => setActiveClusterPointId(pt.id)}
                                       className="cursor-pointer"
                                     />
@@ -1889,11 +1889,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 <Scatter 
                                   name="GROUND TRUTH (REF)" 
                                   data={[{ dx: 0, dy: 0 }]} 
-                                  fill="#10b981" 
+                                  fill="#000000" 
                                   shape="diamond" 
                                   line={false}
                                 >
-                                  <Cell fill="#10b981" stroke="#059669" strokeWidth={1.5} />
+                                  <Cell fill="#000000" stroke="#000000" strokeWidth={1.5} />
                                 </Scatter>
                               )}
 
@@ -1902,7 +1902,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 name={t("Baarda Onaylı (Güvenilir)")} 
                                 data={hybridClusterChartData.points.filter(p => p.passedBaarda)} 
                                 fill="#10b981"
-                                shape="circle"
+                                shape={<RawPointShape />}
                                 onClick={(pt) => setActiveClusterPointId(pt.id)}
                                 className="cursor-pointer"
                               />
@@ -1912,7 +1912,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 name={t("Elenen Uç Değer (Kaba Hata)")} 
                                 data={hybridClusterChartData.points.filter(p => !p.passedBaarda)} 
                                 fill="#ef4444"
-                                shape="circle"
+                                shape={<RawPointShape />}
                                 onClick={(pt) => setActiveClusterPointId(pt.id)}
                                 className="cursor-pointer"
                               />
