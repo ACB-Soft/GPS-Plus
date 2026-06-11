@@ -129,6 +129,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const rawChartRef = React.useRef<HTMLDivElement>(null);
   const comparisonChartRef = React.useRef<HTMLDivElement>(null);
   const timeErrorChartRef = React.useRef<HTMLDivElement>(null);
+  const hybridClusterChartRef = React.useRef<HTMLDivElement>(null);
 
   const [preciseN, setPreciseN] = useState<string>(''); // Northing (X)
   const [preciseE, setPreciseE] = useState<string>(''); // Easting (Y)
@@ -141,6 +142,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   
   const [analysisResults, setAnalysisResults] = useState<any[] | null>(null);
   const [computedClusters, setComputedClusters] = useState<number[][] | null>(null);
+  const [activeClusterPointId, setActiveClusterPointId] = useState<number | null>(null);
 
   // Grafik özelleştirme seçenekleri
   const [customScatterRange, setCustomScatterRange] = useState<string>('auto'); // 'auto', '1.0', '2.0', '3.0', '4.0', '5.0', '10.0', '15.0'
@@ -430,6 +432,154 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       };
     });
   }, [location, analysisType, appliedPreciseN, appliedPreciseE, useLocal, computedClusters]);
+
+  // Convex hull helper for cluster boundary polygons
+  const getConvexHullPoints = (pts: { dx: number; dy: number }[]) => {
+    if (pts.length <= 1) return pts;
+    const sorted = [...pts].sort((a, b) => a.dx !== b.dx ? a.dx - b.dx : a.dy - b.dy);
+    const cross = (o: { dx: number; dy: number }, a: { dx: number; dy: number }, b: { dx: number; dy: number }) => {
+      return (a.dx - o.dx) * (b.dy - o.dy) - (a.dy - o.dy) * (b.dx - o.dx);
+    };
+    const lower: { dx: number; dy: number }[] = [];
+    for (const p of sorted) {
+      while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) {
+        lower.pop();
+      }
+      lower.push(p);
+    }
+    const upper: { dx: number; dy: number }[] = [];
+    for (let i = sorted.length - 1; i >= 0; i--) {
+      const p = sorted[i];
+      while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) {
+        upper.pop();
+      }
+      upper.push(p);
+    }
+    upper.pop();
+    lower.pop();
+    return lower.concat(upper);
+  };
+
+  const hybridClusterChartData = useMemo(() => {
+    if (!location || !location.samples || location.samples.length < 1) return null;
+    const accuracyLimit = location.accuracyLimit || 5.0;
+    
+    // Calculate results for the hybrid method
+    const { clusters, usedIndices } = calculateResult(
+      location.samples,
+      'KMEANS_BAARDA_HUBER',
+      accuracyLimit
+    );
+    
+    const sys = location.coordinateSystem || 'ITRF96_3';
+    
+    const accuracyFilteredIndices = location.samples
+      .map((s, idx) => s.accuracy <= accuracyLimit ? idx : -1)
+      .filter(idx => idx !== -1);
+
+    if (accuracyFilteredIndices.length === 0) return null;
+
+    let sumX = 0;
+    let sumY = 0;
+    const convertedPoints = accuracyFilteredIndices.map(idx => {
+      const s = location.samples![idx];
+      const conv = convertCoordinate(s.lat, s.lng, sys);
+      sumX += conv.x;
+      sumY += conv.y;
+      return {
+        idx,
+        x: conv.x,
+        y: conv.y,
+        lat: s.lat,
+        lng: s.lng,
+        accuracy: s.accuracy,
+        timestamp: s.timestamp
+      };
+    });
+
+    const meanX = sumX / accuracyFilteredIndices.length;
+    const meanY = sumY / accuracyFilteredIndices.length;
+
+    const relativePoints = convertedPoints.map(p => {
+      const dx = p.x - meanX; // Easting offset in meters
+      const dy = p.y - meanY; // Northing offset in meters
+      
+      const passedBaarda = usedIndices ? usedIndices.includes(p.idx) : true;
+      
+      let clusterId = 0;
+      if (clusters) {
+        clusters.forEach((cluster, cIndex) => {
+          if (cluster.includes(p.idx)) {
+            clusterId = cIndex;
+          }
+        });
+      }
+
+      return {
+        id: p.idx + 1,
+        name: `${t("Epok")} #${p.idx + 1}`,
+        dx,
+        dy,
+        lat: p.lat,
+        lng: p.lng,
+        passedBaarda,
+        clusterId,
+        accuracy: p.accuracy,
+        time: new Date(p.timestamp).toLocaleTimeString()
+      };
+    });
+
+    return {
+      points: relativePoints,
+      clusters: clusters || [],
+      usedIndices: usedIndices || []
+    };
+  }, [location, t]);
+
+  const clusterBounds = useMemo(() => {
+    if (!hybridClusterChartData || hybridClusterChartData.points.length === 0) {
+      return { minX: -1, maxX: 1, minY: -1, maxY: 1, span: 2 };
+    }
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+    hybridClusterChartData.points.forEach(p => {
+      if (p.dx < minX) minX = p.dx;
+      if (p.dx > maxX) maxX = p.dx;
+      if (p.dy < minY) minY = p.dy;
+      if (p.dy > maxY) maxY = p.dy;
+    });
+    
+    const spanX = maxX - minX;
+    const spanY = maxY - minY;
+    const maxSpan = Math.max(spanX, spanY, 0.2);
+    
+    const midX = minX + spanX / 2;
+    const midY = minY + spanY / 2;
+    const halfSpan = (maxSpan / 2) * 1.35; // 35% padding
+    
+    return {
+      minX: midX - halfSpan,
+      maxX: midX + halfSpan,
+      minY: midY - halfSpan,
+      maxY: midY + halfSpan,
+      span: halfSpan * 2
+    };
+  }, [hybridClusterChartData]);
+
+  const clusterRings = useMemo(() => {
+    if (!clusterBounds) return { results: [], step: 0.5 };
+    const maxMeters = clusterBounds.span / 2;
+    const steps = [0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, 15.0, 20.0];
+    const step = steps.find(s => maxMeters / s <= 4) || 2.0;
+    
+    const results = [];
+    for (let r = step; r < maxMeters; r += step) {
+      results.push(r);
+    }
+    return { results, step };
+  }, [clusterBounds]);
 
   const distributionData = useMemo(() => {
     if (chartData.length === 0) return { rawPoints: [], methodPoints: [], centerPoint: [], range: 0.5 };
@@ -1423,6 +1573,316 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       )}
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* BRAND NEW SECTION: Hybrid Clustering & Baarda Filtering Analysis with Interactive Convex Hull / Polygons */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center px-1.5">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    {t("Hibrit Küme Dağılımı ve Eleme Analizi")}
+                  </span>
+                  <button 
+                    onClick={() => exportChart(hybridClusterChartRef, 'gps-plus-hybrid-clusters')}
+                    type="button"
+                    className="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-1.5"
+                  >
+                    <i className="fas fa-camera text-indigo-400"></i> {t("PNG İndir (İngilizce)")}
+                  </button>
+                </div>
+
+                {/* Main 1:1 Interactive Container */}
+                <div 
+                  ref={hybridClusterChartRef}
+                  className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] aspect-square mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
+                >
+                  {/* English Geodetic Header */}
+                  <div className="flex justify-between items-center border-b border-slate-900/10 pb-1.5 min-h-0 shrink-0">
+                    <div className="min-w-0">
+                      <h2 className="text-slate-900 font-extrabold text-[10px] uppercase tracking-wider leading-none font-sans">
+                        GPS+ HYBRID K-MEANS & BAARDA ADJ. PLAN
+                      </h2>
+                      <p className="text-slate-400 text-[6.5px] font-bold uppercase tracking-widest mt-0.5 font-mono">
+                        POLYGON CLUSTER ENCLOSURES & OUTLIER ELIMINATION
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="bg-indigo-50 border border-indigo-100 text-indigo-600 font-mono text-[7px] font-black px-1.5 py-0.5 rounded">
+                        BAARDA FILTER ACTIVE
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* SVG Canvas Area */}
+                  <div className="flex-1 min-h-0 min-w-0 w-full relative bg-slate-50/50 rounded-xl overflow-hidden border border-slate-100">
+                    {hybridClusterChartData && hybridClusterChartData.points.length > 0 ? (
+                      <svg viewBox="0 0 400 400" className="w-full h-full">
+                        {/* 1. Draw Concentric Grid Rings */}
+                        {clusterRings.results.map((r, ri) => {
+                          const margin = 35;
+                          const drawableSize = 400 - margin * 2;
+                          const rPixels = (r / clusterBounds.span) * drawableSize;
+                          const centerOffset = {
+                            x: margin + ((0 - clusterBounds.minX) / clusterBounds.span) * drawableSize,
+                            y: margin + ((clusterBounds.maxY - 0) / clusterBounds.span) * drawableSize
+                          };
+
+                          return (
+                            <g key={`ring-${ri}`}>
+                              <circle
+                                cx={centerOffset.x}
+                                cy={centerOffset.y}
+                                r={rPixels}
+                                fill="none"
+                                stroke="#e2e8f0"
+                                strokeWidth="0.75"
+                                strokeDasharray="3 3"
+                              />
+                              <text
+                                x={centerOffset.x + rPixels + 3}
+                                y={centerOffset.y + 3}
+                                fill="#94a3b8"
+                                fontSize="7"
+                                className="font-mono select-none font-bold"
+                              >
+                                {r.toFixed(2)}m
+                              </text>
+                            </g>
+                          );
+                        })}
+
+                        {/* 2. Draw Crosshair Centered at Dataset Barycenter (0, 0) */}
+                        {(() => {
+                          const margin = 35;
+                          const drawableSize = 400 - margin * 2;
+                          const centerOffset = {
+                            x: margin + ((0 - clusterBounds.minX) / clusterBounds.span) * drawableSize,
+                            y: margin + ((clusterBounds.maxY - 0) / clusterBounds.span) * drawableSize
+                          };
+                          return (
+                            <g>
+                              {/* Horizontal axis */}
+                              <line
+                                x1={margin}
+                                y1={centerOffset.y}
+                                x2={400 - margin}
+                                y2={centerOffset.y}
+                                stroke="#cbd5e1"
+                                strokeWidth="0.75"
+                              />
+                              {/* Vertical axis */}
+                              <line
+                                x1={centerOffset.x}
+                                y1={margin}
+                                x2={centerOffset.x}
+                                y2={400 - margin}
+                                stroke="#cbd5e1"
+                                strokeWidth="0.75"
+                              />
+                            </g>
+                          );
+                        })()}
+
+                        {/* 3. Draw Polygons / Enclosures Around Each Cluster (Using Convex Hull) */}
+                        {(() => {
+                          const clusterColors = [
+                            { fill: 'rgba(59, 130, 246, 0.08)', stroke: 'rgba(59, 130, 246, 0.5)', border: '#3b82f6' },
+                            { fill: 'rgba(168, 85, 247, 0.08)', stroke: 'rgba(168, 85, 247, 0.5)', border: '#a855f7' },
+                            { fill: 'rgba(234, 179, 8, 0.08)', stroke: 'rgba(234, 179, 8, 0.5)', border: '#eab308' },
+                            { fill: 'rgba(236, 72, 153, 0.08)', stroke: 'rgba(236, 72, 153, 0.5)', border: '#ec4899' },
+                            { fill: 'rgba(20, 184, 166, 0.08)', stroke: 'rgba(20, 184, 166, 0.5)', border: '#14b8a6' }
+                          ];
+                          const margin = 35;
+                          const drawableSize = 400 - margin * 2;
+                          const getSvgCoordsLoc = (dx: number, dy: number) => {
+                            const x = margin + ((dx - clusterBounds.minX) / clusterBounds.span) * drawableSize;
+                            const y = margin + ((clusterBounds.maxY - dy) / clusterBounds.span) * drawableSize;
+                            return { x, y };
+                          };
+
+                          return hybridClusterChartData.clusters.map((clusterIndices, cIdx) => {
+                            if (clusterIndices.length === 0) return null;
+                            const ptsOfCluster = hybridClusterChartData.points.filter(p => clusterIndices.includes(p.id - 1));
+                            const color = clusterColors[cIdx % clusterColors.length];
+
+                            if (ptsOfCluster.length >= 3) {
+                              const hullPts = getConvexHullPoints(ptsOfCluster);
+                              const pointsString = hullPts.map(p => {
+                                const hc = getSvgCoordsLoc(p.dx, p.dy);
+                                return `${hc.x},${hc.y}`;
+                              }).join(' ');
+
+                              return (
+                                <g key={`poly-${cIdx}`}>
+                                  <polygon
+                                    points={pointsString}
+                                    fill={color.fill}
+                                    stroke={color.stroke}
+                                    strokeWidth="1.5"
+                                    strokeDasharray="4 3"
+                                  />
+                                </g>
+                              );
+                            } else if (ptsOfCluster.length === 2) {
+                              const h1 = getSvgCoordsLoc(ptsOfCluster[0].dx, ptsOfCluster[0].dy);
+                              const h2 = getSvgCoordsLoc(ptsOfCluster[1].dx, ptsOfCluster[1].dy);
+                              return (
+                                <line
+                                  key={`poly-line-${cIdx}`}
+                                  x1={h1.x}
+                                  y1={h1.y}
+                                  x2={h2.x}
+                                  y2={h2.y}
+                                  stroke={color.stroke}
+                                  strokeWidth="1.5"
+                                  strokeDasharray="4 3"
+                                />
+                              );
+                            }
+                            return null;
+                          });
+                        })()}
+
+                        {/* 4. Draw Individual Points Cloud */}
+                        {(() => {
+                          const clusterColors = [
+                            { border: '#3b82f6' },
+                            { border: '#a855f7' },
+                            { border: '#eab308' },
+                            { border: '#ec4899' },
+                            { border: '#14b8a6' }
+                          ];
+                          const margin = 35;
+                          const drawableSize = 400 - margin * 2;
+                          
+                          return hybridClusterChartData.points.map((p) => {
+                            const x = margin + ((p.dx - clusterBounds.minX) / clusterBounds.span) * drawableSize;
+                            const y = margin + ((clusterBounds.maxY - p.dy) / clusterBounds.span) * drawableSize;
+                            const color = clusterColors[p.clusterId % clusterColors.length];
+                            const isSelected = activeClusterPointId === p.id;
+
+                            return (
+                              <g key={`pt-${p.id}`} className="cursor-pointer">
+                                {isSelected && (
+                                  <circle
+                                    cx={x}
+                                    cy={y}
+                                    r="8.5"
+                                    fill="none"
+                                    stroke={p.passedBaarda ? "#10b981" : "#ef4444"}
+                                    strokeWidth="1.2"
+                                    strokeOpacity="0.6"
+                                    className="animate-ping"
+                                  />
+                                )}
+                                <circle
+                                  cx={x}
+                                  cy={y}
+                                  r={isSelected ? "5.5" : "3.5"}
+                                  fill={p.passedBaarda ? "#10b981" : "#ef4444"}
+                                  stroke={color.border}
+                                  strokeWidth={isSelected ? "2.2" : "1.2"}
+                                  onClick={() => setActiveClusterPointId(p.id)}
+                                />
+                              </g>
+                            );
+                          });
+                        })()}
+                      </svg>
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-slate-400 font-bold text-xs uppercase tracking-widest">{t("Veri bulunamadı")}</div>
+                    )}
+                  </div>
+
+                  {/* Shrunk and Highly-Intuitive Legend */}
+                  <div className="shrink-0 border-t border-slate-100 pt-3 flex flex-col gap-2 w-full text-[8.5px] font-sans">
+                    <div className="grid grid-cols-2 gap-2 text-slate-700">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-emerald-600 block shrink-0"></span>
+                        <span className="font-extrabold uppercase text-slate-700 tracking-wide">{t("Baarda Onaylı (Geodezik)")}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500 border border-rose-600 block shrink-0"></span>
+                        <span className="font-extrabold uppercase text-slate-700 tracking-wide">{t("Uç Değer (Kaba Hata / Elendi)")}</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[#64748b] border-t border-slate-50 pt-2 font-mono">
+                      <span>{t("Kümeler:")}</span>
+                      {(() => {
+                        const labels = ['A', 'B', 'C', 'D', 'E'];
+                        const textColors = ['text-blue-500', 'text-purple-500', 'text-yellow-600', 'text-pink-500', 'text-teal-600'];
+                        return hybridClusterChartData?.clusters.map((cluster, cIdx) => {
+                          if (cluster.length === 0) return null;
+                          return (
+                            <span key={cIdx} className={`${textColors[cIdx % textColors.length]} font-bold`}>
+                              Küme {labels[cIdx]}: {cluster.length} {t("nokta")}
+                            </span>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Selected Point Detailed Analysis Panel */}
+                <div className="bg-slate-50 border border-slate-200/60 rounded-2xl p-4.5 text-slate-800 text-xs shadow-xs space-y-2">
+                  <div className="flex items-center gap-2 border-b border-slate-150 pb-2">
+                    <div className="w-5 h-5 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 shrink-0">
+                      <i className="fas fa-info-circle text-[9px]"></i>
+                    </div>
+                    <span className="font-black text-[9.5px] uppercase text-slate-700 tracking-wider">
+                      {activeClusterPointId ? `${t("Epok")} #${activeClusterPointId} ${t("Analiz Detayı")}` : t("Detaylı Nokta Analizi")}
+                    </span>
+                  </div>
+
+                  {activeClusterPointId && hybridClusterChartData ? (
+                    (() => {
+                      const pt = hybridClusterChartData.points.find(p => p.id === activeClusterPointId);
+                      if (!pt) return null;
+                      const offsetMeters = Math.sqrt(pt.dx * pt.dx + pt.dy * pt.dy);
+                      const labels = ['A', 'B', 'C', 'D', 'E'];
+                      return (
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 font-sans text-[10.5px]">
+                          <div className="space-y-1">
+                            <p className="text-slate-400 font-bold uppercase text-[8px] tracking-wider leading-none">{t("Uzaysal Kümesi")}</p>
+                            <p className="font-extrabold text-slate-800 leading-snug">
+                              Küme {labels[pt.clusterId % labels.length]}
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-slate-400 font-bold uppercase text-[8px] tracking-wider leading-none">{t("Varyans Merkezinden Sapma")}</p>
+                            <p className="font-extrabold text-slate-800 leading-snug">
+                              ±{offsetMeters.toFixed(4)} m
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-slate-400 font-bold uppercase text-[8px] tracking-wider leading-none">{t("Donanımsal Hassasiyet (3D)")}</p>
+                            <p className="font-extrabold text-blue-600 font-semibold leading-snug">
+                              {pt.accuracy.toFixed(2)} m
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-slate-400 font-bold uppercase text-[8px] tracking-wider leading-none">{t("Baarda Güvenilirlik Süzgeci")}</p>
+                            <p className={`font-black uppercase text-[9px] leading-snug ${pt.passedBaarda ? 'text-emerald-600' : 'text-rose-600'}`}>
+                              {pt.passedBaarda ? t("GEÇTİ (GÜVENİLİR)") : t("ELENDİ (KABA HATA)")}
+                            </p>
+                          </div>
+                          <div className="col-span-2 bg-white/70 p-2.5 rounded-xl border border-slate-150 mt-1">
+                            <p className="text-slate-500 font-medium leading-relaxed font-sans">
+                              {pt.passedBaarda 
+                                ? t("Bu veri noktası Baarda global varyans testi kriterlerini karşılayarak kaba hatalardan arındırılmış ve geodezik dengelemeye (Ağırlıklı LSE) dahil edilmiştir.")
+                                : t("Bu veri noktası varyans sınırlarının dışına taşarak konumsal sıçrama (outlier/multipath) tespitiyle elenmiştir. Hesaplamada ağırlığı sıfırlanmıştır.")
+                              }
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })()
+                  ) : (
+                    <div className="py-2 text-center text-[#94a3b8] font-bold text-[9px] uppercase tracking-wider">
+                      {t("Özelliklerini incelemek için grafikteki bir koordinat noktasına (yuvarlak) tıklayın.")}
+                    </div>
+                  )}
                 </div>
               </div>
 
