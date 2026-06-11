@@ -1613,7 +1613,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex flex-col gap-6">
                   {/* 1. K-Means Cluster Classification Scatter Chart */}
                   <div className="space-y-2">
                     <div className="flex justify-between items-center px-1">

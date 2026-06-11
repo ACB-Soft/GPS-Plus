@@ -541,7 +541,7 @@ function runKMeans(samples: Coordinate[], k: number): number[] {
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Kritik Sınır Değeri (3.29):</span> Seçilen w<sub>test</sub> = 3.29 kritik sınırı, standart normal dağılımda (N(0,1)) çift taraflı %99.9 güven düzeyine (&alpha; = 0.001) tekabül eder. Bu muhafazakar tercih, kaba hata içermeyen temiz epokların yanlışlıkla reddedilmesini (I. Tip Hata) jeodezik toleranslar dahilinde minimize etmek amacıyla Baarda'nın orijinal güven kriteriyle uyumludur.</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. İndeks Kırılma Koruması:</span> Üst katmandan gelen örneklem grubunda '_originalIdx' özniteliğinin eksik veya tanımsız olması durumuna karşı, metodun girişinde dinamik indeks haritalaması uygulanarak çalışma zamanı bozulma (runtime crash/breakage) riskleri tamamen sönümlenmiştir.</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">4. Kaba Hata Sonrası Dengeleme:</span> İstatistiki uyuşmazlık testleri tamamlanarak gürültülü veriler elendikten sonra, kalan temiz koordinatlar düz aritmetik ortalamaya tabi tutulmaz. Bunun yerine kalan veriler kendi güncel hassasiyetleri (<i>p<sub>i</sub> = 1/accuracy<sub>i</sub><sup>2</sup></i>) ile tekrar ağırlıklandırılarak <b>Stokastik Ağırlıklı En Küçük Kareler (Weighted Centroid)</b> motorumuzla çözümlenir ve nihai denge koordinatı jeodezik açıdan en kararlı şekilde elde edilir.</p>
-      <p class="no-indent"><span class="bold">5. Erken Durdurma ve Minimum Numune Kriterleri:</span> Bloklar içindeki aşırı veri kaybını engellemek için, kalan verinin maksimum saçılım genişliği 0.50 metrenin altına düştüğü anda veya kalan veri sayısı en az 4 noktaya (n &le; 4) gerilediğinde eleme döngüsü erken sonlandırılır. Bu sayede yeterli sayıda verinin ağırlıklı ortalamaya katılması güvenceye alınır.</p>
+      <p class="no-indent"><span class="bold">5. Erken Durdurma ve Minimum Numune Kriterleri:</span> Bloklar içindeki aşırı veri kaybını engellemek için, kalan verinin maksimum saçılım genişliği 0.25 metrenin altına düştüğü anda veya kalan veri sayısı en az 4 noktaya (n &le; 4) gerilediğinde eleme döngüsü erken sonlandırılır. Bu sayede yeterli sayıda verinin ağırlıklı ortalamaya katılması güvenceye alınır.</p>
     </div>
 
     <p class="no-indent">Baarda kalın hata test büyüklüğünü, n - 2 serbestlik derecesini ve temizlenmiş verilerin ağırlıklı dengelenmesini koşturan kritik fonksiyon aşağıda yer almaktadır:</p>
@@ -557,9 +557,9 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
   const criticalValue = 3.29; // Critical limit for 99.9% confidence interval (alpha = 0.001)
 
   while (currentSamples.length > 4) {
-    // Kalan verilerin maksimum saçılım genişliği 0.50m'nin altına düştüğünde veri elemeyi durdur
+    // Kalan verilerin maksimum saçılım genişliği 0.25m'nin altına düştüğünde veri elemeyi durdur
     const currentSpread = calculateMaxDistance(currentSamples);
-    if (currentSpread < 0.50) {
+    if (currentSpread < 0.25) {
       break;
     }
 

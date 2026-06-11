@@ -430,9 +430,9 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
   const criticalValue = 3.29; // Critical limit for 99.9% confidence interval
 
   while (currentSamples.length > 4) {
-    // Kalan verinin saçılım genişliği 0.50m'nin altına düştüğünde veri elemesini durdur
+    // Kalan verinin saçılım genişliği 0.25m'nin altına düştüğünde veri elemesini durdur
     const currentSpread = calculateMaxDistance(currentSamples);
-    if (currentSpread < 0.50) {
+    if (currentSpread < 0.25) {
       break;
     }
 
