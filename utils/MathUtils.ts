@@ -507,153 +507,8 @@ function calculateKMeans(samples: Coordinate[]): { result: Coordinate; usedIndic
     };
   }
 
-  // G-Means (Gaussian Means) implementation to dynamically discover the best K
-  // Start with a single cluster containing all indices
-  const finalClusters: number[][] = [];
-  const queue: number[][] = [Array.from({ length: samples.length }, (_, i) => i)];
-
-  // Determine a central lat/lng to compute relative local Cartesian distance without polar distortion
-  const centerLat = samples.reduce((sum, s) => sum + s.lat, 0) / samples.length;
-  const centerLng = samples.reduce((sum, s) => sum + s.lng, 0) / samples.length;
-  const { latCoeff, lngCoeff } = getWGS84Coefficients(centerLat);
-
-  const toLocal = (p: Coordinate) => ({
-    x: (p.lng - centerLng) * lngCoeff,
-    y: (p.lat - centerLat) * latCoeff
-  });
-
-  // Anderson-Darling Normality Test Helpers
-  function erf(x: number): number {
-    const a1 =  0.254829592;
-    const a2 = -0.284496736;
-    const a3 =  1.421413741;
-    const a4 = -1.453152027;
-    const a5 =  1.061405429;
-    const p  =  0.3275911;
-
-    const sign = x < 0 ? -1 : 1;
-    const absX = Math.abs(x);
-
-    const t = 1.0 / (1.0 + p * absX);
-    const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-absX * absX);
-
-    return sign * y;
-  }
-
-  function normalCDF(val: number): number {
-    return 0.5 * (1 + erf(val / Math.sqrt(2)));
-  }
-
-  // G-Means splitting loop
-  while (queue.length > 0) {
-    const C = queue.shift()!;
-
-    // Academic minimum threshold for statistical normality testing is typically near 8.
-    // Also, if the cluster size is too small (< 4), sub-splitting would yield invalid sizes (< 2).
-    if (C.length < 8) {
-      finalClusters.push(C);
-      continue;
-    }
-
-    // Run 2-Means on this subset
-    const subSamples = C.map(idx => samples[idx]);
-    const subAssignments = runKMeans(subSamples, 2);
-
-    const C0: number[] = [];
-    const C1: number[] = [];
-    for (let i = 0; i < subAssignments.length; i++) {
-      if (subAssignments[i] === 0) {
-        C0.push(C[i]);
-      } else {
-        C1.push(C[i]);
-      }
-    }
-
-    if (C0.length === 0 || C1.length === 0) {
-      finalClusters.push(C);
-      continue;
-    }
-
-    // Calculate sub-centroids in local Cartesian meters grid
-    const pSub0 = C0.map(idx => toLocal(samples[idx]));
-    const pSub1 = C1.map(idx => toLocal(samples[idx]));
-
-    const c0 = {
-      x: pSub0.reduce((sum, p) => sum + p.x, 0) / pSub0.length,
-      y: pSub0.reduce((sum, p) => sum + p.y, 0) / pSub0.length
-    };
-    const c1 = {
-      x: pSub1.reduce((sum, p) => sum + p.x, 0) / pSub1.length,
-      y: pSub1.reduce((sum, p) => sum + p.y, 0) / pSub1.length
-    };
-
-    // Projection vector v: connecting c0 and c1
-    const vx = c0.x - c1.x;
-    const vy = c0.y - c1.y;
-    const len = Math.sqrt(vx * vx + vy * vy);
-
-    if (len < 1e-6) {
-      finalClusters.push(C);
-      continue;
-    }
-
-    const ux = vx / len;
-    const uy = vy / len;
-
-    // Project each coordinate onto unit vector u
-    const projected: number[] = [];
-    for (const idx of C) {
-      const localPt = toLocal(samples[idx]);
-      const proj = localPt.x * ux + localPt.y * uy;
-      projected.push(proj);
-    }
-
-    // Normalize projected values (Z-score normalization)
-    const N = projected.length;
-    const m = projected.reduce((sum, val) => sum + val, 0) / N;
-    const variance = projected.reduce((sum, val) => sum + Math.pow(val - m, 2), 0) / N;
-
-    if (variance < 1e-9) {
-      finalClusters.push(C);
-      continue;
-    }
-
-    const std = Math.sqrt(variance);
-    const z = projected.map(val => (val - m) / std);
-
-    // Sort z-scores in ascending order for Anderson-Darling test
-    const sortedZ = [...z].sort((a, b) => a - b);
-
-    // Anderson-Darling test statistic calculation (A^2)
-    let sum = 0;
-    for (let i = 0; i < N; i++) {
-      const pVal = normalCDF(sortedZ[i]);
-      const pValComplement = normalCDF(sortedZ[N - 1 - i]);
-
-      const logP = Math.log(Math.max(1e-15, pVal));
-      const log1P = Math.log(Math.max(1e-15, 1 - pValComplement));
-
-      sum += (2 * (i + 1) - 1) * (logP + log1P);
-    }
-    const A2 = -N - sum / N;
-
-    // Apply the correction factor for estimated mean & variance (Hamerly & Elkan G-Means standard)
-    const A2Star = A2 * (1 + 4 / N - 25 / (N * N));
-
-    // Significance level alpha = 0.0001 critical threshold in G-Means is 1.869
-    const criticalValueGMeans = 1.869;
-
-    if (A2Star > criticalValueGMeans) {
-      // Reject Gaussianity hypothesis -> Split is valid!
-      queue.push(C0);
-      queue.push(C1);
-    } else {
-      // Accept Gaussianity -> Keep cluster C!
-      finalClusters.push(C);
-    }
-  }
-
-  const validClusters = finalClusters.filter(c => c.length > 0);
+  // G-Means (Gaussian Means) ile dinamik küme keşfi
+  const validClusters = getGMeansClusters(samples);
 
   // 4. Şampiyon Küme Seçimi (En çok eleman barındıran baskın küme)
   let bestClusterIdx = 0;
@@ -700,6 +555,146 @@ function calculateKMeans(samples: Coordinate[]): { result: Coordinate; usedIndic
     usedIndices: championIndices,
     clusters: validClusters
   };
+}
+
+/**
+ * Reusable dynamic G-Means (Gaussian Means) clustering helper.
+ * Recursively splits clusters that reject the 1D Gaussian distribution hypothesis via Anderson-Darling tests.
+ */
+function getGMeansClusters(samples: Coordinate[]): number[][] {
+  if (samples.length < 2) {
+    return [samples.map((_, i) => i)];
+  }
+
+  const finalClusters: number[][] = [];
+  const queue: number[][] = [Array.from({ length: samples.length }, (_, i) => i)];
+
+  const centerLat = samples.reduce((sum, s) => sum + s.lat, 0) / samples.length;
+  const centerLng = samples.reduce((sum, s) => sum + s.lng, 0) / samples.length;
+  const { latCoeff, lngCoeff } = getWGS84Coefficients(centerLat);
+
+  const toLocal = (p: Coordinate) => ({
+    x: (p.lng - centerLng) * lngCoeff,
+    y: (p.lat - centerLat) * latCoeff
+  });
+
+  function erf(x: number): number {
+    const a1 =  0.254829592;
+    const a2 = -0.284496736;
+    const a3 =  1.421413741;
+    const a4 = -1.453152027;
+    const a5 =  1.061405429;
+    const p  =  0.3275911;
+
+    const sign = x < 0 ? -1 : 1;
+    const absX = Math.abs(x);
+
+    const t = 1.0 / (1.0 + p * absX);
+    const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-absX * absX);
+
+    return sign * y;
+  }
+
+  function normalCDF(val: number): number {
+    return 0.5 * (1 + erf(val / Math.sqrt(2)));
+  }
+
+  while (queue.length > 0) {
+    const C = queue.shift()!;
+
+    if (C.length < 8) {
+      finalClusters.push(C);
+      continue;
+    }
+
+    const subSamples = C.map(idx => samples[idx]);
+    const subAssignments = runKMeans(subSamples, 2);
+
+    const C0: number[] = [];
+    const C1: number[] = [];
+    for (let i = 0; i < subAssignments.length; i++) {
+      if (subAssignments[i] === 0) {
+        C0.push(C[i]);
+      } else {
+        C1.push(C[i]);
+      }
+    }
+
+    if (C0.length === 0 || C1.length === 0) {
+      finalClusters.push(C);
+      continue;
+    }
+
+    const pSub0 = C0.map(idx => toLocal(samples[idx]));
+    const pSub1 = C1.map(idx => toLocal(samples[idx]));
+
+    const c0 = {
+      x: pSub0.reduce((sum, p) => sum + p.x, 0) / pSub0.length,
+      y: pSub0.reduce((sum, p) => sum + p.y, 0) / pSub0.length
+    };
+    const c1 = {
+      x: pSub1.reduce((sum, p) => sum + p.x, 0) / pSub1.length,
+      y: pSub1.reduce((sum, p) => sum + p.y, 0) / pSub1.length
+    };
+
+    const vx = c0.x - c1.x;
+    const vy = c0.y - c1.y;
+    const len = Math.sqrt(vx * vx + vy * vy);
+
+    if (len < 1e-6) {
+      finalClusters.push(C);
+      continue;
+    }
+
+    const ux = vx / len;
+    const uy = vy / len;
+
+    const projected: number[] = [];
+    for (const idx of C) {
+      const localPt = toLocal(samples[idx]);
+      const proj = localPt.x * ux + localPt.y * uy;
+      projected.push(proj);
+    }
+
+    const N = projected.length;
+    const m = projected.reduce((sum, val) => sum + val, 0) / N;
+    const variance = projected.reduce((sum, val) => sum + Math.pow(val - m, 2), 0) / N;
+
+    if (variance < 1e-9) {
+      finalClusters.push(C);
+      continue;
+    }
+
+    const std = Math.sqrt(variance);
+    const z = projected.map(val => (val - m) / std);
+
+    const sortedZ = [...z].sort((a, b) => a - b);
+
+    let sum = 0;
+    for (let i = 0; i < N; i++) {
+      const pVal = normalCDF(sortedZ[i]);
+      const pValComplement = normalCDF(sortedZ[N - 1 - i]);
+
+      const logP = Math.log(Math.max(1e-15, pVal));
+      const log1P = Math.log(Math.max(1e-15, 1 - pValComplement));
+
+      sum += (2 * (i + 1) - 1) * (logP + log1P);
+    }
+    const A2 = -N - sum / N;
+
+    const A2Star = A2 * (1 + 4 / N - 25 / (N * N));
+
+    const criticalValueGMeans = 1.869;
+
+    if (A2Star > criticalValueGMeans) {
+      queue.push(C0);
+      queue.push(C1);
+    } else {
+      finalClusters.push(C);
+    }
+  }
+
+  return finalClusters.filter(c => c.length > 0);
 }
 
 function calculateBaardaPure(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
@@ -781,13 +776,13 @@ function calculateBaardaPureAcademic(samples: Coordinate[]): { result: Coordinat
 }
 
 /**
- * KMeans + Baarda + Huber + WLS Hybrid Model
+ * G-Means + Baarda + Huber + WLS Hybrid Model
  * Processes raw coordinates concurrently through 3 analytical branches:
  * 1. Global Baarda Test (Geodetic Branch)
- * 2. Adaptive KMeans (Spatial Density Branch, k=2..6)
+ * 2. Adaptive G-Means (Spatial Density Branch)
  * 3. Huber M-Estimation (Robust Scoring Branch)
  * Intersects all three branches. If >= 4 points remain, runs WLS Adjustment.
- * Otherwise, falls back to standard K-Means + Baarda + WLS (calculateKMeansBaarda) method.
+ * Otherwise, falls back to standard G-Means + Baarda + WLS method.
  */
 function calculateKMeansBaardaHuber(samples: Coordinate[]): { 
   result: Coordinate; 
@@ -809,50 +804,8 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
   const baardaRes = calculateBaardaPure(samples);
   const baardaIndices = baardaRes.usedIndices;
 
-  // 2. Column B (Spatial Branch): Spatial Dynamic KMeans Clustering (Best K via X-Means / BIC)
-  let bestK = 2;
-  let bestBIC = Infinity;
-  let bestAssignments: number[] = [];
-  const maxK = Math.min(6, samples.length);
-
-  for (let k = 2; k <= maxK; k++) {
-    const currentAssignments = runKMeans(samples, k);
-    
-    // Calculate centroids
-    const centroids = Array.from({ length: k }, (_, j) => {
-      const cPoints = samples.filter((_, i) => currentAssignments[i] === j);
-      if (cPoints.length === 0) {
-        return { lat: samples[j % samples.length].lat, lng: samples[j % samples.length].lng };
-      }
-      return {
-        lat: cPoints.reduce((a, b) => a + b.lat, 0) / cPoints.length,
-        lng: cPoints.reduce((a, b) => a + b.lng, 0) / cPoints.length
-      };
-    });
-
-    let totalSquaredDist = 0;
-    for (let i = 0; i < samples.length; i++) {
-      const cIdx = currentAssignments[i];
-      totalSquaredDist += calculateSquaredDistance(samples[i].lat, samples[i].lng, centroids[cIdx].lat, centroids[cIdx].lng, samples[i].lat);
-    }
-    
-    const varianceR = totalSquaredDist / Math.max(1, samples.length - k);
-    const numParameters = k * 3; // d=2 dimensions per cluster
-    const bicScore = samples.length * Math.log(Math.max(1e-9, varianceR)) + numParameters * Math.log(samples.length);
-
-    if (bicScore < bestBIC) {
-      bestBIC = bicScore;
-      bestK = k;
-      bestAssignments = currentAssignments;
-    }
-  }
-
-  const clusters: number[][] = Array.from({ length: bestK }, () => []);
-  bestAssignments.forEach((cIdx, i) => {
-    clusters[cIdx].push(i);
-  });
-
-  const validClusters = clusters.filter(c => c.length > 0);
+  // 2. Column B (Spatial Branch): Spatial Dynamic G-Means Clustering
+  const validClusters = getGMeansClusters(samples);
 
   // 3. Huber Robust Weighting Scheme: Applied mathematically in the WLS step rather than hard-truncation
   // No data points are hard-eliminated beyond the Baarda geodetic filter.
