@@ -255,12 +255,12 @@ function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; used
     </pre>
 
     <h3>2.4.2. Gürbüz Adımlı Huber M-Tahmini Süzgeci (Robust Huber M-Estimation)</h3>
-    <p>Huber M-tahmini yöntemi, veri havuzundaki konumsal sıçramaları ve gürültüleri hassasiyete göre yumuşatan gürbüz (robust) bir istatistiksel yaklaşımı temsil eder. Geliştirilen bu saf Huber süzgeci, klasik Huber sönümlemesini donanımsal alıcı doğruluk ağırlıkları ile birleştirerek iteratif bir dengeleme yürütür. 3-sigma eşiğini aşan aşırı sapanlar elendikten sonra, hibrit modelimizdeki gibi <b>Donanım Duyarlılığı × Huber Robust Ağırlığı</b> ortak çarpımı kullanılarak nihai ağırlıklı koordinat çözümü üretilir.</p>
+    <p>Huber M-tahmini yöntemi, veri havuzundaki konumsal sıçramaları ve gürültüleri hassasiyete göre yumuşatan gürbüz (robust) bir istatistiksel yaklaşımı temsil eder. Geliştirilen bu saf Huber süzgeci, klasik Huber sönümlemesini donanımsal alıcı doğruluk ağırlıkları ile birleştirerek iteratif bir dengeleme yürütür. 2-sigma eşiğini aşan aşırı sapanlar elendikten sonra, hibrit modelimizdeki gibi <b>Donanım Duyarlılığı × Huber Robust Ağırlığı</b> ortak çarpımı kullanılarak nihai ağırlıklı koordinat çözümü üretilir.</p>
 
     <div class="case-container" style="background-color: #f8fafc; border-left: 4px solid #4f46e5; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
       <p class="bold" style="color: #4338ca; margin-bottom: 6px;">Huber Robust + Donanımsal Ağırlık Birleşim Mantığı</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. İteratif Yakınsama:</span> İlk etapta tüm gözlemlerin gürbüz <b>Medyan (Ortanca)</b> konumu referans alınarak ölçek parametresi olarak gürbüz <b>MAD (Median Absolute Deviation)</b> hesaplanır. Huber eşiği (1.345 * pseudo_sigma, en az 0.50m) belirlenerek anlık ağırlıklar iteratif biçimde güncellenir ve merkez kayması tolerans değerinin (1 milimetre - 0.001m) altına inene kadar (max 15 adım) pivot yenilenir.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Kalın Hata Temizliği (3-sigma):</span> İterasyon sonunda nihai koordinat merkezinden en fazla 3-sigma (3 * final_pseudo_sigma, en az 9.0m) kadar uzaktaki gözlemler sisteme dahil edilir, bu sınırın dışındaki yansımalı kaba hatalar bütünüyle elenir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. İteratif Yakınsama:</span> İlk etapta tüm gözlemlerin gürbüz <b>Medyan (Ortanca)</b> konumu referans alınarak ölçek parametresi olarak gürbüz <b>MAD (Median Absolute Deviation)</b> hesaplanır. Huber eşiği (1.345 * pseudo_sigma, sayısal kararlılık için en az 1e-7m) belirlenerek anlık ağırlıklar iteratif biçimde güncellenir ve merkez kayması tolerans değerinin (1 milimetre - 0.001m) altına inene kadar (max 15 adım) pivot yenilenir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Kalın Hata Temizliği (2-sigma):</span> İterasyon sonunda nihai koordinat merkezinden en fazla 2-sigma (2 * final_pseudo_sigma) kadar uzaktaki gözlemler sisteme dahil edilir, bu sınırın dışındaki yansımalı kaba hatalar bütünüyle elenir.</p>
       <p class="no-indent"><span class="bold">3. Ortak Ağırlıklandırma Formülasyonu:</span> Süzgeçten geçen temiz gözlemlerin nihai ağırlıkları tayin edilirken hem donanımsal hassasiyet karesel varyans modeli (1 / accuracy²) hem de konumsal uzaklığa dayalı Huber sönümlemesi çarpan olarak yansıtılarak tam gürbüzlük ve fiziksel kararlılık elde edilir.</p>
     </div>
 
@@ -314,7 +314,8 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
   for (let iter = 0; iter &lt; maxIterations; iter++) {
     const currentMAD = calculateMADHuber(samples, currentLat, currentLng);
     const pseudoSigma = currentMAD * 1.4826;
-    const huberLimit = 1.345 * Math.max(0.50, pseudoSigma);
+    const stablePseudoSigma = pseudoSigma &gt; 1e-7 ? pseudoSigma : 1e-7;
+    const huberLimit = 1.345 * stablePseudoSigma;
 
     let sumW = 0;
     let sumLatW = 0;
@@ -325,7 +326,7 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
       const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
 
       const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
-      const huberWeight = dist &lt;= huberLimit ? 1.0 : huberLimit / Math.max(0.01, dist);
+      const huberWeight = dist &lt;= huberLimit ? 1.0 : huberLimit / Math.max(0.001, dist);
       const combinedWeight = hardwareWeight * huberWeight;
 
       sumW += combinedWeight;
@@ -348,7 +349,8 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
 
   const finalMAD = calculateMADHuber(samples, currentLat, currentLng);
   const finalPseudoSigma = finalMAD * 1.4826;
-  const outlierThreshold = 3.0 * Math.max(3.0, finalPseudoSigma);
+  const stableFinalPseudoSigma = finalPseudoSigma &gt; 1e-7 ? finalPseudoSigma : 1e-7;
+  const outlierThreshold = 2.0 * stableFinalPseudoSigma;
 
   const usedIndices: number[] = [];
   const cleanSamples: Coordinate[] = [];
@@ -372,7 +374,8 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
 
   const subMAD = calculateMADHuber(cleanSamples, currentLat, currentLng);
   const subPseudoSigma = subMAD * 1.4826;
-  const finalHuberLimit = 1.345 * Math.max(0.50, subPseudoSigma);
+  const stableSubPseudoSigma = subPseudoSigma &gt; 1e-7 ? subPseudoSigma : 1e-7;
+  const finalHuberLimit = 1.345 * stableSubPseudoSigma;
 
   let finalSumW = 0;
   let finalLatW = 0;
@@ -382,7 +385,7 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
   for (const p of cleanSamples) {
     const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
     const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
-    const huberWeight = dist &lt;= finalHuberLimit ? 1.0 : finalHuberLimit / Math.max(0.01, dist);
+    const huberWeight = dist &lt;= finalHuberLimit ? 1.0 : finalHuberLimit / Math.max(0.001, dist);
     const combinedWeight = hardwareWeight * huberWeight;
 
     finalSumW += combinedWeight;
