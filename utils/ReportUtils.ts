@@ -408,32 +408,24 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
 }
     </pre>
 
-    <h3>2.4.3. Dinamik K-Means Kümeleme ve Yoğunluk Oranlı Ağırlıklandırma Süzgeci (X-Means & WLS)</h3>
-    <p>Bu filtreleme modeli, 2D konum verilerini sabit bir <i>K</i> küme sayısı yerine, <b>Bayes Bilgi Kriteri (Bayesian Information Criterion - BIC)</b> rehberliğinde dinamik olarak bölümler (X-Means yaklaşımı). Uydu sinyallerinin arazi koşullarından (multipath, beyaz gürültü) ötürü sergilediği saçılım örüntüsü analiz edilerek, veri havuzunun geometrik ve istatistiksel gürültü yapısına en uygun küme adedi (<i>K = 2..5</i>) otomatik olarak belirlenir.</p>
+    <h3>2.4.3. Dinamik K-Means Kümeleme ve Şampiyon Küme Süzgeci (Academic X-Means & WLS)</h3>
+    <p>Bu filtreleme modeli, 2D konum verilerini sabit bir <i>K</i> küme sayısı yerine, <b>Bayes Bilgi Kriteri (Bayesian Information Criterion - BIC)</b> rehberliğinde dinamik olarak bölümler (X-Means yaklaşımı). Uydu sinyallerinin arazi koşullarından (multipath, beyaz gürültü) ötürü sergilediği saçılım örüntüsü analiz edilerek, veri havuzunun geometrik ve istatistiksel gürültü yapısına en uygun küme adedi (<i>K = 2..6</i>) otomatik olarak belirlenir. Belirlenen bu kümeler arasından yoğunluğu ve eleman sayısı en fazla olan küme "Şampiyon Küme" ilan edilir ve diğer kümeler gürültü/çoklu yol yansıması olarak elenir.</p>
 
     <div class="case-container" style="background-color: #fafaf9; border-left: 4px solid #da5d20; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
-      <p class="bold" style="color: #bc4613; margin-bottom: 6px;">Dinamik Kümeleme ve Yenilikçi Oransal Nokta Ağırlıklandırması</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Bayes Bilgi Kriteri (BIC) ile K Seçimi:</span> Aşırı bölümleme (overfitting) ve yetersiz kümeleme riskleri BIC skoru minimize edilerek sönümlenir. Model, her <i>K</i> seçeneği için iç varyansı ve parametre ceza terimlerini dengeleyerek en anlamlı geometrik grupları saptar.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Merkez Çakışması ve Yerel Minimum Engeli:</span> İlk saniyelerde veya veri setinin başında uydulardan gelen verilerin birbirine çok yakın olması, geleneksel K-Means merkezlerinin üst üste binerek yerel minimumlara takılması riskini doğurur. Bunu sönümlemek amacıyla, ilk merkez atamalarında (~1cm seviyesinde) mikroskobik yatay/düşey düzensizlik (posizyonel jitter) tatbik edilir.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. Oransal Küme Filtresi (Yoğunluk Katsayısı):</span> Her kümenin toplam epok adedine oranı, o kümenin ağırlığı (<i>w<sub>cluster</sub> = N<sub>c</sub> / N<sub>total</sub></i>) olarak atanır. Örneğin, 120 epokluk ölçümde birinci kümede 50 veri varsa bu kümenin ağırlık oranı 50/120 = 0.416 bulunur.</p>
-      <p class="no-indent"><span class="bold">4. Hibrit Birleşik Donanım/Konum Dengelemesi (WLS):</span> Kümedeki her bir noktanın nihai ağırlığı, donanımsal hassasiyet ağırlığı ile ait olduğu kümenin yoğunluk oranının doğrudan çarpımıyla elde edilir: <i>P<sub>nihai</sub> = w<sub>hardware</sub> &times; w<sub>cluster</sub> = (1 / accuracy<sup>2</sup>) &times; (N<sub>c</sub> / N<sub>total</sub>)</i>. Bu sayede kalabalık olmayan, çoklu yol yansıması kaynaklı uydurma uç alt grupların nihai koordinata etkisi matematiksel olarak sıfıra yakınsallatılır.</p>
+      <p class="bold" style="color: #bc4613; margin-bottom: 6px;">Akademik X-Means ve Şampiyon Kümeleme Mantığı</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Bayes Bilgi Kriteri (BIC) ile Dinamik K Belirleme:</span> Aşırı bölümleme (overfitting) ve yetersiz kümeleme riskleri BIC skoru minimize edilerek sönümlenir. Model, her <i>K</i> seçeneği için iç varyansı ve serbestlik derecesine dayalı parametre ceza terimlerini dengeleyerek en anlamlı geometrik bölümleri saptar.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Merkez Çakışması ve Yerel Minimum Engeli:</span> K-Means merkezlerinin üst üste binerek yerel minimumlara takılması riskini sönümlemek amacıyla, ilk merkez atamalarında mikroskobik yatay/düşey konum jitter'ı tatbik edilir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. Şampiyon Küme Tespiti ve Kaba Hata Eleme:</span> Tüm veri noktaları optimum <i>K</i> adet kümeye ayrıldıktan sonra, en yüksek veri sıklığına/eleman sayısına sahip olan baskın küme "Şampiyon Küme" seçilir. Diğer tüm kümelerin taşıdığı veriler çoklu yol (multipath) veya konumsal sıçrama olarak kabul edilerek bütünüyle filtrelenir/elenir.</p>
+      <p class="no-indent"><span class="bold">4. Şampiyon Kümeye Saf Donanım Ağırlıklı WLS Çözümü:</span> Süzgeçten geçen temiz şampiyon küme gözlemlerinin nihai ağırlıkları tayin edilirken donanımsal hassasiyet modeline göre karesel varyans modeli (1 / accuracy²) doğrudan WLS algoritmasına aktarılarak nihai koordinat çözümü üretilir.</p>
     </div>
 
     <p class="no-indent">Sistemde yürütülen, dinamik K seçimini BIC kriteriyle koşturan, merkez çakışmasını sönümleyen ve nihai ağırlıklı ortalamayı oran katsayısına göre hesaplayan TypeScript kütüphane fonksiyonu şu şekildedir:</p>
     <pre class="code-block">
 function calculateKMeans(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
-  if (samples.length &lt; 30) {
-    let sumW = 0, sumLat = 0, sumLng = 0, sumAcc = 0;
-    for (const p of samples) {
-      const w = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
-      sumW += w;
-      sumLat += p.lat * w;
-      sumLng += p.lng * w;
-      sumAcc += p.accuracy;
-    }
+  if (samples.length &lt; 2) {
     return {
-      result: { lat: sumLat / sumW, lng: sumLng / sumW, accuracy: sumAcc / samples.length, altitude: null, altitudeAccuracy: null, timestamp: Date.now() },
-      usedIndices: samples.map((_, i) => i),
+      result: samples[0] || { lat: 0, lng: 0, accuracy: 0, timestamp: Date.now(), altitude: null, altitudeAccuracy: null },
+      usedIndices: samples.map((_, i) =&gt; i),
       clusters: []
     };
   }
@@ -441,9 +433,9 @@ function calculateKMeans(samples: Coordinate[]): { result: Coordinate; usedIndic
   let bestK = 2;
   let bestBIC = Infinity;
   let bestAssignments: number[] = [];
+  const maxK = Math.min(6, samples.length);
 
-  for (let k = 2; k &lt;= 6; k++) {
-    if (samples.length &lt; k) continue;
+  for (let k = 2; k &lt;= maxK; k++) {
     const currentAssignments = runKMeans(samples, k);
     const centroids = Array.from({ length: k }, (_, j) =&gt; {
       const cPoints = samples.filter((_, i) =&gt; currentAssignments[i] === j);
@@ -460,7 +452,7 @@ function calculateKMeans(samples: Coordinate[]): { result: Coordinate; usedIndic
       totalSquaredDist += calculateSquaredDistance(samples[i].lat, samples[i].lng, centroids[cIdx].lat, centroids[cIdx].lng, samples[i].lat);
     }
     const varianceR = totalSquaredDist / Math.max(1, samples.length - k);
-    const numParameters = k * k;
+    const numParameters = k * 3;
     const bicScore = samples.length * Math.log(Math.max(1e-9, varianceR)) + numParameters * Math.log(samples.length);
 
     if (bicScore &lt; bestBIC) {
@@ -474,28 +466,37 @@ function calculateKMeans(samples: Coordinate[]): { result: Coordinate; usedIndic
   bestAssignments.forEach((cIdx, i) =&gt; { clusters[cIdx].push(i); });
   const validClusters = clusters.filter(c =&gt; c.length &gt; 0);
 
+  let bestClusterIdx = 0;
+  let maxCount = -1;
+  for (let i = 0; i &lt; validClusters.length; i++) {
+    if (validClusters[i].length &gt; maxCount) {
+      maxCount = validClusters[i].length;
+      bestClusterIdx = i;
+    }
+  }
+
+  const championIndices = validClusters[bestClusterIdx];
+  const championPoints = championIndices.map(idx => samples[idx]);
+
   let finalSumW = 0, finalLatW = 0, finalLngW = 0, totalAccuracy = 0;
-  const usedIndices: number[] = [];
-
-  for (let i = 0; i &lt; samples.length; i++) {
-    const p = samples[i];
-    const clusterIdx = validClusters.findIndex(c =&gt; c.includes(i));
-    if (clusterIdx === -1) continue;
-
-    const wCluster = validClusters[clusterIdx].length / samples.length;
+  for (const p of championPoints) {
     const wHardware = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
-    const combinedWeight = wCluster * wHardware;
-
-    finalSumW += combinedWeight;
-    finalLatW += p.lat * combinedWeight;
-    finalLngW += p.lng * combinedWeight;
+    finalSumW += wHardware;
+    finalLatW += p.lat * wHardware;
+    finalLngW += p.lng * wHardware;
     totalAccuracy += p.accuracy;
-    usedIndices.push(i);
   }
 
   return {
-    result: { lat: finalLatW / (finalSumW || 1.0), lng: finalLngW / (finalSumW || 1.0), accuracy: totalAccuracy / (usedIndices.length || 1), altitude: null, altitudeAccuracy: null, timestamp: Date.now() },
-    usedIndices,
+    result: {
+      lat: finalLatW / (finalSumW || 1.0),
+      lng: finalLngW / (finalSumW || 1.0),
+      accuracy: totalAccuracy / (championIndices.length || 1),
+      altitude: null,
+      altitudeAccuracy: null,
+      timestamp: Date.now()
+    },
+    usedIndices: championIndices,
     clusters: validClusters
   };
 }

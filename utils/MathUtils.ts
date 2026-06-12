@@ -493,45 +493,25 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
 
 
 function calculateKMeans(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
-  // ADIM 1: Akademik Güvenlik Sınırı (Merkezi Limit Teoremi: N >= 30)
-  if (samples.length < 30) {
-    let sumW = 0, sumLat = 0, sumLng = 0, sumAcc = 0;
-    for (const p of samples) {
-      const w = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
-      sumW += w;
-      sumLat += p.lat * w;
-      sumLng += p.lng * w;
-      sumAcc += p.accuracy;
-    }
-    const validAlts = samples.filter(s => s.altitude !== null && s.altitude !== undefined);
-    const meanAlt = validAlts.length > 0 ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length : null;
-    const validAltAccs = samples.filter(s => s.altitudeAccuracy !== null && s.altitudeAccuracy !== undefined);
-    const meanAltAcc = validAltAccs.length > 0 ? validAltAccs.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length : null;
-
+  // 1. Minimum örnek sayısı kontrolü (Kümeleme için en az 2 örnek gereklidir)
+  if (samples.length < 2) {
     return {
-      result: { 
-        lat: sumLat / sumW, 
-        lng: sumLng / sumW, 
-        accuracy: sumAcc / samples.length, 
-        altitude: meanAlt,
-        altitudeAccuracy: meanAltAcc,
-        timestamp: Date.now() 
-      },
+      result: samples[0] || { lat: 0, lng: 0, accuracy: 0, timestamp: Date.now(), altitude: null, altitudeAccuracy: null },
       usedIndices: samples.map((_, i) => i),
       clusters: []
     };
   }
 
-  // ADIM 2: Dinamik K (Küme Sayısı) Seçimi - X-Means Mantığı
+  // 2. Dinamik K (Küme Sayısı) Seçimi - Bayes Bilgi Kriteri (BIC) ile X-Means
   let bestK = 2;
   let bestBIC = Infinity;
   let bestAssignments: number[] = [];
+  const maxK = Math.min(6, samples.length);
 
-  for (let k = 2; k <= 6; k++) {
-    if (samples.length < k) continue;
+  for (let k = 2; k <= maxK; k++) {
     const currentAssignments = runKMeans(samples, k);
     
-    // Calculate centroids
+    // Merkezleri hesapla
     const centroids = Array.from({ length: k }, (_, j) => {
       const cPoints = samples.filter((_, i) => currentAssignments[i] === j);
       if (cPoints.length === 0) {
@@ -550,7 +530,7 @@ function calculateKMeans(samples: Coordinate[]): { result: Coordinate; usedIndic
     }
     
     const varianceR = totalSquaredDist / Math.max(1, samples.length - k);
-    const numParameters = k * k;
+    const numParameters = k * 3; // d=2 boyutlu uzayda her küme için (centroid enlem/boylam + varyans) parametreleri
     const bicScore = samples.length * Math.log(Math.max(1e-9, varianceR)) + numParameters * Math.log(samples.length);
 
     if (bicScore < bestBIC) {
@@ -560,7 +540,7 @@ function calculateKMeans(samples: Coordinate[]): { result: Coordinate; usedIndic
     }
   }
 
-  // ADIM 3: Optimum Kümelerin İnşa Edilmesi
+  // 3. Optimum Kümelerin Oluşturulması
   const clusters: number[][] = Array.from({ length: bestK }, () => []);
   bestAssignments.forEach((cIdx, i) => {
     clusters[cIdx].push(i);
@@ -568,45 +548,49 @@ function calculateKMeans(samples: Coordinate[]): { result: Coordinate; usedIndic
 
   const validClusters = clusters.filter(c => c.length > 0);
 
-  // ADIM 4 & 5: Önce donanımsal ağırlık ile o kümenin ağırlığının çarpımıyla WLS çözümü
+  // 4. Şampiyon Küme Seçimi (En çok eleman barındıran baskın küme)
+  let bestClusterIdx = 0;
+  let maxCount = -1;
+  for (let i = 0; i < validClusters.length; i++) {
+    if (validClusters[i].length > maxCount) {
+      maxCount = validClusters[i].length;
+      bestClusterIdx = i;
+    }
+  }
+
+  const championIndices = validClusters[bestClusterIdx];
+  const championPoints = championIndices.map(idx => samples[idx]);
+
+  // 5. Şampiyon Küme Elemanları ile Ağırlıklı En Küçük Kareler (WLS) Çözümü
   let finalSumW = 0;
   let finalLatW = 0;
   let finalLngW = 0;
   let totalAccuracy = 0;
-  const usedIndices: number[] = [];
 
-  for (let i = 0; i < samples.length; i++) {
-    const p = samples[i];
-    const clusterIdx = validClusters.findIndex(c => c.includes(i));
-    if (clusterIdx === -1) continue;
-
-    const wCluster = validClusters[clusterIdx].length / samples.length;
+  for (const p of championPoints) {
     const wHardware = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
-    const combinedWeight = wCluster * wHardware;
-
-    finalSumW += combinedWeight;
-    finalLatW += p.lat * combinedWeight;
-    finalLngW += p.lng * combinedWeight;
+    finalSumW += wHardware;
+    finalLatW += p.lat * wHardware;
+    finalLngW += p.lng * wHardware;
     totalAccuracy += p.accuracy;
-    usedIndices.push(i);
   }
 
-  const validAlts = samples.filter((_, i) => usedIndices.includes(i) && samples[i].altitude !== null && samples[i].altitude !== undefined);
+  const validAlts = championPoints.filter(s => s.altitude !== null && s.altitude !== undefined);
   const finalAlt = validAlts.length > 0 ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length : null;
 
-  const validAltAccs = samples.filter((_, i) => usedIndices.includes(i) && samples[i].altitudeAccuracy !== null && samples[i].altitudeAccuracy !== undefined);
+  const validAltAccs = championPoints.filter(s => s.altitudeAccuracy !== null && s.altitudeAccuracy !== undefined);
   const finalAltAcc = validAltAccs.length > 0 ? validAltAccs.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length : null;
 
   return {
     result: {
       lat: finalLatW / (finalSumW || 1.0),
       lng: finalLngW / (finalSumW || 1.0),
-      accuracy: totalAccuracy / (usedIndices.length || 1),
+      accuracy: totalAccuracy / (championIndices.length || 1),
       altitude: finalAlt,
       altitudeAccuracy: finalAltAcc,
       timestamp: Date.now()
     },
-    usedIndices,
+    usedIndices: championIndices,
     clusters: validClusters
   };
 }
