@@ -157,6 +157,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [customTimeSeriesRange, setCustomTimeSeriesRange] = useState<string>('auto'); // 'auto', '2.0', '3.0', '4.0', '5.0', '10.0', '15.0', '20.0', '30.0', '50.0'
   const [customTimeSeriesStep, setCustomTimeSeriesStep] = useState<string>('auto'); // 'auto', '0.1', '0.2', '0.5', '1.0', '2.0'
   const [customTimeSeriesFontSize, setCustomTimeSeriesFontSize] = useState<string>('7'); // '6', '7', '8', '9', '10', '12'
+  const [customTimeSeriesDotSize, setCustomTimeSeriesDotSize] = useState<string>('2.5'); // '1.0', '1.5', '2.0', '2.5', '3.0', '4.0', '5.0', '6.0'
 
   const bestMethod = useMemo(() => {
     if (!analysisResults || analysisResults.length === 0) return null;
@@ -2245,6 +2246,24 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         <option value="12">12px</option>
                       </select>
                     </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase">{t("Nokta Boyutu:")}</span>
+                      <select 
+                        value={customTimeSeriesDotSize} 
+                        onChange={(e) => setCustomTimeSeriesDotSize(e.target.value)}
+                        className="bg-slate-100 hover:bg-slate-200 border border-slate-200/60 text-[9px] font-black rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
+                      >
+                        <option value="1.0">1.0px</option>
+                        <option value="1.5">1.5px</option>
+                        <option value="2.0">2.0px</option>
+                        <option value="2.5">2.5px</option>
+                        <option value="3.0">3.0px</option>
+                        <option value="3.5">3.5px</option>
+                        <option value="4.0">4.0px</option>
+                        <option value="5.0">5.0px</option>
+                        <option value="6.0">6.0px</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
@@ -2320,8 +2339,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           name="Deviation"
                           stroke="#f43f5e" 
                           strokeWidth={2.5} 
-                          dot={{ r: 2.5, fill: '#f43f5e', stroke: '#fff', strokeWidth: 1 }} 
-                          activeDot={{ r: 4, stroke: '#f43f5e', strokeWidth: 2, fill: '#fff' }}
+                          dot={{ r: parseFloat(customTimeSeriesDotSize), fill: '#f43f5e', stroke: '#fff', strokeWidth: 1 }} 
+                          activeDot={{ r: parseFloat(customTimeSeriesDotSize) + 1.5, stroke: '#f43f5e', strokeWidth: 2, fill: '#fff' }}
                         />
                       </LineChart>
                     </ResponsiveContainer>
