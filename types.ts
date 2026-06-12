@@ -14,7 +14,8 @@ export type CalculationMethod =
   | 'HUBER'
   | 'KMEANS_4' 
   | 'BAARDA'
-  | 'KMEANS_BAARDA_HUBER';
+  | 'KMEANS_BAARDA_HUBER'
+  | 'IQR_WLS';
 
 export interface SavedLocation extends Coordinate {
   id: string;

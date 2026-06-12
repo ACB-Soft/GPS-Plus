@@ -833,7 +833,42 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
 }
     </pre>
 
-    <h3>2.4.6. Sinyal Güvenilirlik Analizi ve Veri Saçılım Metodolojisi</h3>
+    <h3>2.4.6. IQR (Interquartile Range) Uzaysal Aykırı Değer Eleme ve WLS Dengelemesi</h3>
+    <p>Jeodezik ağlardaki ve GPS/GNSS gözlemlerindeki kaba hataların (outlier) temizlenmesinde kullanılan diğer bir yenilikçi ve robust yaklaşım ise <b>Interquartile Range (IQR - Çeyrekler Açıklığı)</b> tabanlı uzaysal eleme tekniğidir. Bu yöntem, verilerin olasılık dağılımından bağımsız (non-parametric) olması sebebiyle son derece güvenilirdir ve çoklu yol (multipath) yansımalarından ötürü saçılmış koordinat kümelerinin hızlıca elenmesinde geodezi mühendisliğinde sıklıkla tercih edilmektedir.</p>
+
+    <div class="case-container" style="background-color: #fff1f2; border-left: 4px solid #f43f5e; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
+      <p class="bold" style="color: #9f1239; margin-bottom: 6px;">IQR ve Ağırlıklı En Küçük Kareler (WLS) Entegrasyon Modeli</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Medyan Tabanlı Merkez tespiti:</span> Ortalama koordinatların çok büyük saçılmalar içeren kaba hatalardan (blunders) olumsuz etkilenmesini önlemek amacıyla, tüm gözlem serisindeki yerel Cartesian X ve Y koordinatlarının <b>Medyan (Q2 - Ortanca)</b> konumu hesaplanır. Bu medyan nokta, sistemin robust referans asıllı nirengi noktasıdır.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Konumsal Artık Hesaplama:</span> Her bir <i>P<sub>i</sub></i> gözleminin bu medyan nirengi noktasına olan iki boyutlu Euclidean mesafesi (Residual) hesaplanır: <i>d<sub>i</sub> = &radic;((x<sub>i</sub> - x<sub>medyan</sub>)<sup>2</sup> + (y<sub>i</sub> - y<sub>medyan</sub>)<sup>2</sup>)</i>.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. Çeyrekler Açıklığı Sınırı:</span> Bu elde edilen mesafeler küçükten büyüğe sıralandıktan sonra Birinci Çeyreklik (<i>Q<sub>1</sub></i>, %25. yüzdelik) ve Üçüncü Çeyreklik (<i>Q<sub>3</sub></i>, %75. yüzdelik) konumları belirlenir. Çeyrekler Açıklığı ise şöyle bulunur: <i>IQR = Q<sub>3</sub> - Q<sub>1</sub></i>. Gözlemler için kabul edilebilir üst limit (Outlier Threshold Gate) şu şekilde tanımlanır:
+        <br/><span class="bold" style="display: block; text-align: center; margin: 8px 0; font-family: monospace;">Üst Sınır = Q<sub>3</sub> + 1.5 &times; IQR</span>
+      </p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">4. Eleme Kartı ve WLS Çözümü:</span> Mesafesi belirlenen üst sınırın üzerinde olan koordinat gözlemleri sistem dışı bırakılır. Geriye kalan temiz ve güvenceli örneklemler (inliers) ile ağırlık matrisi <i>P = 1 / accuracy<sup>2</sup></i> olan <b>Ağırlıklı En Küçük Kareler (WLS)</b> doğrusal dengeleme matrisi koşturularak nokta konumu en yüksek hassasiyetle hesaplanır.</p>
+    </div>
+
+    <p class="no-indent">IQR + WLS koordinat süzme metodolojisinin TS programlama dili motorundaki kaynak kod yapısı aşağıdadır:</p>
+    <pre class="code-block">
+function calculateIQRWLS(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  // Convert samples to 2D local Cartesian relative to overall mean
+  const localPts = samples.map(s => ({ x: (s.lng - avgLng) * lngCoeff, y: (s.lat - avgLat) * latCoeff }));
+  const medianX = calculateMedian(localPts.map(p => p.x));
+  const medianY = calculateMedian(localPts.map(p => p.y));
+
+  // Compute distance residuals to central median
+  const distances = localPts.map(p => Math.sqrt((p.x - medianX)**2 + (p.y - medianY)**2));
+  const sortedDists = [...distances].sort((a,b) => a - b);
+
+  const q1 = getPercentile(sortedDists, 0.25);
+  const q3 = getPercentile(sortedDists, 0.75);
+  const iqr = q3 - q1;
+  const upperBound = q3 + 1.5 * iqr;
+
+  const inliers = samples.filter((_, i) => distances[i] <= upperBound);
+  return calculateWeightedLSE(inliers);
+}
+    </pre>
+
+    <h3>2.4.7. Sinyal Güvenilirlik Analizi ve Veri Saçılım Metodolojisi</h3>
     <p>Mobil donanımların ve akıllı telefonların entegre konum sensörleri doğrudan ham GNSS gözlemleri (taşıyıcı fazı vb.) yerine tarayıcı düzlemine filtrelenmiş tahminler sunar. Bu sebeple donanımın ürettiği konumsal doğruluk kestirimleri (UERE - User Equivalent Range Error tabanlı tahmini konum hatası veya Geolocation API Hassasiyet Çemberi / Accuracy Radius), her zaman sahada karşılaşılan fiziki çoklu yansıma (multipath) ve atmosferik gecikme etkilerini bütünüyle yansıtamaz. ${FULL_BRAND}, bu tip yetersiz veya iyimser bildirimlerden kaynaklı riskleri bertaraf etmek amacıyla <b>Konumsal Veri Saçılımı ve Sinyal Güvenilirlik Analiz Motorunu</b> çalıştırır. Bu motor, toplanan örneklem havuzunun uzaysal dağılımını matematiksel kriterlere göre denetleyerek sinyal kalitesini derecelendirir.</p>
 
     <p><span class="bold">Zaman Serisi ve Epok Aralığı (1 Hz Frekans Modeli):</span> Akıllı konumlandırma motoru, statik ölçüm sırasında Geolocation API'nin standart saniyelik güncelleme hızı olan 1 Hz varsayılan frekansı ile veri toplar. Güvenli bir istatistiksel çıkarım için en az 15 epok (yaklaşık 15 saniyelik kesintisiz zaman serisi dizisi) toplanması zorunluluğu getirilmiştir. Bu 15 saniyelik statik oturum, GNSS uydularının saatler içinde gerçekleşen yörünge/geometri değişimlerini (bölgesel DOP değişimini) modellemek yerine; yerel çevresel engeller, bina yansımaları ve ağaç örtüsünden kaynaklanan anlık çoklu yol (multipath) sapmalarını, sinyal saçılmalarını ve yüksek frekanslı beyaz gürültüyü sönümleyerek verilerin kararlılığını güvene almayı hedefler.</p>

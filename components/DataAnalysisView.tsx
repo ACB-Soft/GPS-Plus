@@ -45,7 +45,8 @@ const METHOD_COLORS: Record<string, string> = {
   HUBER: '#3b82f6',
   KMEANS_4: '#06b6d4',
   BAARDA: '#f59e0b',
-  KMEANS_BAARDA_HUBER: '#10b981'
+  KMEANS_BAARDA_HUBER: '#10b981',
+  IQR_WLS: '#e11d48'
 };
 
 const CLUSTER_COLORS = [
@@ -205,7 +206,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     'HUBER',
     'KMEANS_4',
     'BAARDA',
-    'KMEANS_BAARDA_HUBER'
+    'KMEANS_BAARDA_HUBER',
+    'IQR_WLS'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
@@ -214,7 +216,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       'HUBER': t("2. Huber M-Tahmini"),
       'KMEANS_4': t("3. Dinamik KMeans Kümeleme"),
       'BAARDA': t("4. Baarda Eleme"),
-      'KMEANS_BAARDA_HUBER': t("5. Hibrit Yöntem (KMeans + Baarda + Huber)")
+      'KMEANS_BAARDA_HUBER': t("5. Hibrit Yöntem (KMeans + Baarda + Huber)"),
+      'IQR_WLS': t("6. IQR Aykırı Değer Eleme (WLS)")
     };
     return labels[m] || m;
   };
@@ -1501,7 +1504,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   'HUBER': 'Huber',
                                   'KMEANS_4': 'KMeans',
                                   'BAARDA': 'Baarda',
-                                  'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber'
+                                  'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
+                                  'IQR_WLS': 'IQR + WLS'
                                 };
                                 return labels[m] || m;
                               };
@@ -1567,7 +1571,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               'HUBER': 'Huber',
                               'KMEANS_4': 'KMeans',
                               'BAARDA': 'Baarda',
-                              'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber'
+                              'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
+                              'IQR_WLS': 'IQR + WLS'
                             };
                             return labels[m] || m;
                           };
@@ -1602,7 +1607,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             'HUBER': 'Huber',
                             'KMEANS_4': 'KMeans',
                             'BAARDA': 'Baarda',
-                            'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber'
+                            'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
+                            'IQR_WLS': 'IQR + WLS'
                           };
                           return labels[m] || m;
                         };

@@ -59,8 +59,10 @@ export function calculateResult(
   // - HUBER and KMEANS_4 require en az 30 epok.
   // - KMEANS_BAARDA_HUBER (Hybrid) require en az 55 epok.
   // - Standalone BAARDA only requires geodetic minimum of 4 epok.
+  // - IQR_WLS requires en az 10 epok.
   const requires55 = method === 'KMEANS_BAARDA_HUBER';
   const requires30 = method === 'HUBER' || method === 'KMEANS_4';
+  const requires10 = method === 'IQR_WLS';
   const requires4 = method === 'BAARDA';
   
   let finalMethod = method;
@@ -70,6 +72,9 @@ export function calculateResult(
     finalMethod = 'WEIGHTED_LSE';
     fallbackApplied = true;
   } else if (requires30 && samples.length < 30) {
+    finalMethod = 'WEIGHTED_LSE';
+    fallbackApplied = true;
+  } else if (requires10 && samples.length < 10) {
     finalMethod = 'WEIGHTED_LSE';
     fallbackApplied = true;
   } else if (requires4 && samples.length < 4) {
@@ -113,6 +118,11 @@ export function calculateResult(
       const pureBaardaRes = calculateBaardaPureAcademic(sourceData);
       resultData = pureBaardaRes.result;
       finalCalculatedUsedIndices = pureBaardaRes.usedIndices;
+      break;
+    case 'IQR_WLS':
+      const iqrRes = calculateIQRWLS(sourceData);
+      resultData = iqrRes.result;
+      finalCalculatedUsedIndices = iqrRes.usedIndices;
       break;
     default:
       const defaultLse = calculateWeightedLSE(sourceData);
@@ -997,6 +1007,103 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
       accuracy: totalAccuracy / cleanSamples.length,
       altitude: null,
       altitudeAccuracy: null,
+      timestamp: Date.now()
+    },
+    usedIndices
+  };
+}
+
+/**
+ * Standalone IQR Outlier Detection + Weighted Least Squares (WLS) Adjustment Branch
+ * Designed with geodetic precision:
+ * 1. Computes local 2D local-Mercator/WGS84 Cartesian coordinates relative to average.
+ * 2. Identifies the Median of X and Median of Y to minimize impact of any single large cluster bias.
+ * 3. Calculates distance residuals to this Median position.
+ * 4. Runs a rigorous 1D IQR quartile calculation on distance residuals (Q1, Q3, IQR = Q3 - Q1).
+ * 5. Classifies observations > Q3 + 1.5 * IQR as outliers and rejects them.
+ * 6. Executes rigorous Weighted Least Squares (WLS) adjustment on all accepted inliers using 1/(accuracy^2) sensor weighting.
+ */
+export function calculateIQRWLS(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length < 2) {
+    return { result: samples[0], usedIndices: [0] };
+  }
+
+  const avgLat = samples.reduce((sum, s) => sum + s.lat, 0) / samples.length;
+  const avgLng = samples.reduce((sum, s) => sum + s.lng, 0) / samples.length;
+  const { latCoeff, lngCoeff } = getWGS84Coefficients(avgLat);
+
+  // Compute local coordinates
+  const localPts = samples.map(s => ({
+    x: (s.lng - avgLng) * lngCoeff,
+    y: (s.lat - avgLat) * latCoeff
+  }));
+
+  // Identify Median
+  const medianX = calculateMedian(localPts.map(p => p.x));
+  const medianY = calculateMedian(localPts.map(p => p.y));
+
+  // Distance residuals to median
+  const distances = localPts.map(p => Math.sqrt(Math.pow(p.x - medianX, 2) + Math.pow(p.y - medianY, 2)));
+
+  // Statistical IQR calculations
+  const sortedDists = [...distances].sort((a, b) => a - b);
+  
+  function getPercentile(arr: number[], percentile: number): number {
+    if (arr.length === 0) return 0;
+    if (arr.length === 1) return arr[0];
+    const index = (arr.length - 1) * percentile;
+    const lower = Math.floor(index);
+    const upper = Math.ceil(index);
+    const weight = index - lower;
+    return arr[lower] * (1 - weight) + arr[upper] * weight;
+  }
+
+  const q1 = getPercentile(sortedDists, 0.25);
+  const q3 = getPercentile(sortedDists, 0.75);
+  const iqr = q3 - q1;
+  const upperBound = q3 + 1.5 * iqr;
+
+  const usedIndices: number[] = [];
+  const inlierSamples: Coordinate[] = [];
+
+  for (let i = 0; i < samples.length; i++) {
+    if (distances[i] <= upperBound) {
+      usedIndices.push(i);
+      inlierSamples.push(samples[i]);
+    }
+  }
+
+  if (inlierSamples.length === 0) {
+    return { result: samples[0], usedIndices: [0] };
+  }
+
+  // Pure hardware-weighted WLS Solution on inliers
+  let finalSumW = 0;
+  let finalLatW = 0;
+  let finalLngW = 0;
+  let totalAccuracy = 0;
+
+  for (const p of inlierSamples) {
+    const wHardware = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
+    finalSumW += wHardware;
+    finalLatW += p.lat * wHardware;
+    finalLngW += p.lng * wHardware;
+    totalAccuracy += p.accuracy;
+  }
+
+  const validAlts = inlierSamples.filter(s => s.altitude !== null && s.altitude !== undefined);
+  const finalAlt = validAlts.length > 0 ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length : null;
+
+  const validAltAccs = inlierSamples.filter(s => s.altitudeAccuracy !== null && s.altitudeAccuracy !== undefined);
+  const finalAltAcc = validAltAccs.length > 0 ? validAltAccs.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length : null;
+
+  return {
+    result: {
+      lat: finalLatW / (finalSumW || 1.0),
+      lng: finalLngW / (finalSumW || 1.0),
+      accuracy: totalAccuracy / (inlierSamples.length || 1),
+      altitude: finalAlt,
+      altitudeAccuracy: finalAltAcc,
       timestamp: Date.now()
     },
     usedIndices
