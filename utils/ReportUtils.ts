@@ -612,7 +612,7 @@ function calculateBaardaInternalAcademic(samples: any[]): { result: Coordinate; 
     <div class="case-container" style="background-color: #f0fdf4; border-left: 4px solid #10b981; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
       <p class="bold" style="color: #065f46; margin-bottom: 6px;">İleri Hibrit Algoritması Paralel Kolları ve Yeni Nesil Ağırlık Sentezi</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Kol - Genel Baarda Testi (İç Güvenilirlik Süzgeci):</span> Ham ölçüm havuzunun tamamını inceleyerek, konumsal sıçramaları ve kaba koordinat hatalarını varyans kriterlerine göre tamamen ayıklar.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Kol - Dinamik K-Means (Yoğunluk Dağılım Modeli):</span> Ham veriler Bayes Bilgi Kriteri (BIC) yardımıyla en uygun <i>K</i> kümesine bölünür (K=2..5). K-Means bu modelde herhangi bir veri elemesi yapmaz, bunun yerine her bir noktanın ait olduğu kümenin eleman yoğunluğunu (<i>w<sub>cluster</sub> = N<sub>c</sub> / N<sub>total</sub></i>) tespit eder.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Kol - Dinamik K-Means (Yoğunluk Dağılım Modeli):</span> Ham veriler Bayes Bilgi Kriteri (BIC) yardımıyla en uygun <i>K</i> kümesine bölünür (K=2..6). K-Means bu modelde herhangi bir veri elemesi yapmaz, bunun yerine her bir noktanın ait olduğu kümenin eleman yoğunluğunu (<i>w<sub>cluster</sub> = N<sub>c</sub> / N<sub>total</sub></i>) tespit eder.</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. Huber Robust Matematiksel Dengelemesi (Yumuşak Ağırlıklandırma):</span> Baarda testini başarıyla geçen temiz gözlemler üzerinde gürbüz varyans referans alınarak her koordinatın Huber ağırlık katsayısı (<i>w<sub>huber</sub></i>) hesaplanır. Sınır dışı kalan mikro gürültülü gözlemler sert şekilde elenmek yerine, etki fonksiyonuyla yumuşak bir şekilde aşağı ağırlıklandırılır (downweight).</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">4. Geri Çekilme Mekanizması (Fallback):</span> Baarda testinden başarıyla geçen nokta adedi kritik limitin altına düşerse (nokta sayısı &lt; 4), sistem otomatik olarak hata koruması adına standart Ağırlıklı En Küçük Kareler (Weighted LSE) modeline geri çekilir.</p>
       <p class="no-indent"><span class="bold">5. Üçlü Hibrit WLS Dengelemesi (Joint Weighting):</span> Temiz gözlemlerin nihai weights matrisi; dinamik küme yoğunluğu katsayısı, donanımsal hassasiyetin karesinin tersi ve Huber robust ağırlık katsayısının doğrudan çarpımıyla elde edilir: <i>P<sub>nihai</sub> = w<sub>cluster</sub> &times; w<sub>hardware</sub> &times; w<sub>huber</sub> = (N<sub>c</sub> / N<sub>total</sub>) &times; (1 / accuracy<sup>2</sup>) &times; w<sub>huber</sub></i>. Bu sayede en güvenilir, yüksek yoğunluklu ve düşük hatalı verilerin ağırlığı katlanırken uç değerlerin etkisi sıfıra yakınsar.</p>
@@ -639,9 +639,9 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
   let bestK = 2;
   let bestBIC = Infinity;
   let bestAssignments: number[] = [];
+  const maxK = Math.min(6, samples.length);
 
-  for (let k = 2; k &lt;= 6; k++) {
-    if (samples.length &lt; k) continue;
+  for (let k = 2; k &lt;= maxK; k++) {
     const currentAssignments = runKMeans(samples, k);
     const centroids = Array.from({ length: k }, (_, j) =&gt; {
       const cPoints = samples.filter((_, i) =&gt; currentAssignments[i] === j);
@@ -658,7 +658,7 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
       totalSquaredDist += calculateSquaredDistance(samples[i].lat, samples[i].lng, centroids[cIdx].lat, centroids[cIdx].lng, samples[i].lat);
     }
     const varianceR = totalSquaredDist / Math.max(1, samples.length - k);
-    const numParameters = k * k;
+    const numParameters = k * 3; // d=2 dimensions per cluster
     const bicScore = samples.length * Math.log(Math.max(1e-9, varianceR)) + numParameters * Math.log(samples.length);
 
     if (bicScore &lt; bestBIC) {

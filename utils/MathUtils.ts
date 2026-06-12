@@ -711,9 +711,9 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
   let bestK = 2;
   let bestBIC = Infinity;
   let bestAssignments: number[] = [];
+  const maxK = Math.min(6, samples.length);
 
-  for (let k = 2; k <= 6; k++) {
-    if (samples.length < k) continue;
+  for (let k = 2; k <= maxK; k++) {
     const currentAssignments = runKMeans(samples, k);
     
     // Calculate centroids
@@ -735,7 +735,7 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
     }
     
     const varianceR = totalSquaredDist / Math.max(1, samples.length - k);
-    const numParameters = k * k;
+    const numParameters = k * 3; // d=2 dimensions per cluster
     const bicScore = samples.length * Math.log(Math.max(1e-9, varianceR)) + numParameters * Math.log(samples.length);
 
     if (bicScore < bestBIC) {
