@@ -408,18 +408,18 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
 }
     </pre>
 
-    <h3>2.4.3. Dinamik K-Means Kümeleme ve Şampiyon Küme Süzgeci (Academic X-Means & WLS)</h3>
-    <p>Bu filtreleme modeli, 2D konum verilerini sabit bir <i>K</i> küme sayısı yerine, <b>Bayes Bilgi Kriteri (Bayesian Information Criterion - BIC)</b> rehberliğinde dinamik olarak bölümler (X-Means yaklaşımı). Uydu sinyallerinin arazi koşullarından (multipath, beyaz gürültü) ötürü sergilediği saçılım örüntüsü analiz edilerek, veri havuzunun geometrik ve istatistiksel gürültü yapısına en uygun küme adedi (<i>K = 2..6</i>) otomatik olarak belirlenir. Belirlenen bu kümeler arasından yoğunluğu ve eleman sayısı en fazla olan küme "Şampiyon Küme" ilan edilir ve diğer kümeler gürültü/çoklu yol yansıması olarak elenir.</p>
+    <h3>2.4.3. Dinamik G-Means Kümeleme ve Şampiyon Küme Süzgeci (Academic G-Means & WLS)</h3>
+    <p>Bu filtreleme modeli, 2D konum verilerini sabit bir <i>K</i> küme sayısı veya yapay sınır kısıtlı bir BIC yaklaşımı yerine, <b>G-Means (Gaussian Means)</b> algoritması yardımıyla dinamik olarak bölümler. Model, Anderson-Darling normal uyuşmazlık test büyüklüğü ve istatistiksel kritik sınırlar rehberliğinde küme alt gruplarının standart normal dağılıma (Gaussian) uygunluğunu denetler. Eğer bir alt grup normal dağılıma uymuyorsa, dinamik olarak bölünerek yeni alt kümeler türetilir. Tüm alt kümeler Gaussian normalliğini sağladığında bölme durur. Ardından en çok eleman barındıran baskın küme "Şampiyon Küme" seçilerek diğer kümelerin taşıdığı gözlemler gürültü ve çoklu-yol yansıması kabul edilip bütünüyle elenir.</p>
 
     <div class="case-container" style="background-color: #fafaf9; border-left: 4px solid #da5d20; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
-      <p class="bold" style="color: #bc4613; margin-bottom: 6px;">Akademik X-Means ve Şampiyon Kümeleme Mantığı</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Bayes Bilgi Kriteri (BIC) ile Dinamik K Belirleme:</span> Aşırı bölümleme (overfitting) ve yetersiz kümeleme riskleri BIC skoru minimize edilerek sönümlenir. Model, her <i>K</i> seçeneği için iç varyansı ve serbestlik derecesine dayalı parametre ceza terimlerini dengeleyerek en anlamlı geometrik bölümleri saptar.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Merkez Çakışması ve Yerel Minimum Engeli:</span> K-Means merkezlerinin üst üste binerek yerel minimumlara takılması riskini sönümlemek amacıyla, ilk merkez atamalarında mikroskobik yatay/düşey konum jitter'ı tatbik edilir.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. Şampiyon Küme Tespiti ve Kaba Hata Eleme:</span> Tüm veri noktaları optimum <i>K</i> adet kümeye ayrıldıktan sonra, en yüksek veri sıklığına/eleman sayısına sahip olan baskın küme "Şampiyon Küme" seçilir. Diğer tüm kümelerin taşıdığı veriler çoklu yol (multipath) veya konumsal sıçrama olarak kabul edilerek bütünüyle filtrelenir/elenir.</p>
-      <p class="no-indent"><span class="bold">4. Şampiyon Kümeye Saf Donanım Ağırlıklı WLS Çözümü:</span> Süzgeçten geçen temiz şampiyon küme gözlemlerinin nihai ağırlıkları tayin edilirken donanımsal hassasiyet modeline göre karesel varyans modeli (1 / accuracy²) doğrudan WLS algoritmasına aktarılarak nihai koordinat çözümü üretilir.</p>
+      <p class="bold" style="color: #bc4613; margin-bottom: 6px;">Akademik G-Means ve Şampiyon Kümeleme Mantığı</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Anderson-Darling Testi ile Bölme Kriteri:</span> Her adımda alt küme verilerinin birincil projeksiyon ekseni üzerindeki dağılımı incelenerek Anderson-Darling normallik test büyüklüğü (A2*) hesaplanır. Test değeri kritik eşik olan 1.869 değerini (alfa = 0.0001) aşarsa kümenin Gaussian olmadığına karar verilerek bölünmeye devam edilir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Yapay Sınırların Ortadan Kaldırılması:</span> G-Means ile birlikte sabit K bölümleri veya yapay küme sayı kısıtlamaları tamamen ortadan kalkar. Bölme işlemi, verinin doğal konumsal dağılımına uygun olarak tamamen istatistiksel normalliğe göre kendiliğinden sonlanır.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. Şampiyon Küme Seçimi ve Filtreleme:</span> Bölme durduktan sonra, en yüksek gözlem yoğunluğuna sahip olan baskın küme "Şampiyon Küme" seçilir. Sinyal saçılımları ve multipath içeren diğer seyrek gruplar doğrudan elenir.</p>
+      <p class="no-indent"><span class="bold">4. Şampiyon Kümeye Saf Donanım Ağırlıklı WLS Çözümü:</span> Filtreden başarıyla geçen şampiyon küme gözlemlerinin nihai ağırlıkları tayin edilirken donanımsal hassasiyet modeline göre karesel varyans modeli (1 / accuracy²) doğrudan WLS algoritmasına aktarılarak nihai koordinat çözümü üretilir.</p>
     </div>
 
-    <p class="no-indent">Sistemde yürütülen, dinamik K seçimini BIC kriteriyle koşturan, merkez çakışmasını sönümleyen ve nihai ağırlıklı ortalamayı oran katsayısına göre hesaplayan TypeScript kütüphane fonksiyonu şu şekildedir:</p>
+    <p class="no-indent">Sistemde yürütülen, dinamik K seçimini G-Means uyuşmazlık modeliyle koşturan, merkez çakışmasını sönümleyen ve nihai ağırlıklı ortalamayı oran katsayısına göre hesaplayan TypeScript kütüphane fonksiyonu şu şekildedir:</p>
     <pre class="code-block">
 function calculateKMeans(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
   if (samples.length &lt; 2) {
@@ -430,41 +430,126 @@ function calculateKMeans(samples: Coordinate[]): { result: Coordinate; usedIndic
     };
   }
 
-  let bestK = 2;
-  let bestBIC = Infinity;
-  let bestAssignments: number[] = [];
-  const maxK = Math.min(6, samples.length);
+  const finalClusters: number[][] = [];
+  const queue: number[][] = [Array.from({ length: samples.length }, (_, i) =&gt; i)];
 
-  for (let k = 2; k &lt;= maxK; k++) {
-    const currentAssignments = runKMeans(samples, k);
-    const centroids = Array.from({ length: k }, (_, j) =&gt; {
-      const cPoints = samples.filter((_, i) =&gt; currentAssignments[i] === j);
-      if (cPoints.length === 0) return { lat: samples[j % samples.length].lat, lng: samples[j % samples.length].lng };
-      return {
-        lat: cPoints.reduce((a, b) =&gt; a + b.lat, 0) / cPoints.length,
-        lng: cPoints.reduce((a, b) =&gt; a + b.lng, 0) / cPoints.length
-      };
-    });
+  const centerLat = samples.reduce((sum, s) =&gt; sum + s.lat, 0) / samples.length;
+  const centerLng = samples.reduce((sum, s) =&gt; sum + s.lng, 0) / samples.length;
+  const { latCoeff, lngCoeff } = getWGS84Coefficients(centerLat);
 
-    let totalSquaredDist = 0;
-    for (let i = 0; i &lt; samples.length; i++) {
-      const cIdx = currentAssignments[i];
-      totalSquaredDist += calculateSquaredDistance(samples[i].lat, samples[i].lng, centroids[cIdx].lat, centroids[cIdx].lng, samples[i].lat);
+  const toLocal = (p: Coordinate) =&gt; ({
+    x: (p.lng - centerLng) * lngCoeff,
+    y: (p.lat - centerLat) * latCoeff
+  });
+
+  function erf(x: number): number {
+    const a1 =  0.254829592;
+    const a2 = -0.284496736;
+    const a3 =  1.421413741;
+    const a4 = -1.453152027;
+    const a5 =  1.061405429;
+    const p  =  0.3275911;
+    const sign = x &lt; 0 ? -1 : 1;
+    const absX = Math.abs(x);
+    const t = 1.0 / (1.0 + p * absX);
+    const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-absX * absX);
+    return sign * y;
+  }
+
+  function normalCDF(val: number): number {
+    return 0.5 * (1 + erf(val / Math.sqrt(2)));
+  }
+
+  while (queue.length &gt; 0) {
+    const C = queue.shift()!;
+    if (C.length &lt; 8) {
+      finalClusters.push(C);
+      continue;
     }
-    const varianceR = totalSquaredDist / Math.max(1, samples.length - k);
-    const numParameters = k * 3;
-    const bicScore = samples.length * Math.log(Math.max(1e-9, varianceR)) + numParameters * Math.log(samples.length);
 
-    if (bicScore &lt; bestBIC) {
-      bestBIC = bicScore;
-      bestK = k;
-      bestAssignments = currentAssignments;
+    const subSamples = C.map(idx =&gt; samples[idx]);
+    const subAssignments = runKMeans(subSamples, 2);
+
+    const C0: number[] = [];
+    const C1: number[] = [];
+    for (let i = 0; i &lt; subAssignments.length; i++) {
+      if (subAssignments[i] === 0) {
+        C0.push(C[i]);
+      } else {
+        C1.push(C[i]);
+      }
+    }
+
+    if (C0.length === 0 || C1.length === 0) {
+      finalClusters.push(C);
+      continue;
+    }
+
+    const pSub0 = C0.map(idx =&gt; toLocal(samples[idx]));
+    const pSub1 = C1.map(idx =&gt; toLocal(samples[idx]));
+
+    const c0 = {
+      x: pSub0.reduce((sum, p) =&gt; sum + p.x, 0) / pSub0.length,
+      y: pSub0.reduce((sum, p) =&gt; sum + p.y, 0) / pSub0.length
+    };
+    const c1 = {
+      x: pSub1.reduce((sum, p) =&gt; sum + p.x, 0) / pSub1.length,
+      y: pSub1.reduce((sum, p) =&gt; sum + p.y, 0) / pSub1.length
+    };
+
+    const vx = c0.x - c1.x;
+    const vy = c0.y - c1.y;
+    const len = Math.sqrt(vx * vx + vy * vy);
+
+    if (len &lt; 1e-6) {
+      finalClusters.push(C);
+      continue;
+    }
+
+    const ux = vx / len;
+    const uy = vy / len;
+
+    const projected: number[] = [];
+    for (const idx of C) {
+      const localPt = toLocal(samples[idx]);
+      const proj = localPt.x * ux + localPt.y * uy;
+      projected.push(proj);
+    }
+
+    const N = projected.length;
+    const m = projected.reduce((sum, val) =&gt; sum + val, 0) / N;
+    const variance = projected.reduce((sum, val) =&gt; sum + Math.pow(val - m, 2), 0) / N;
+
+    if (variance &lt; 1e-9) {
+      finalClusters.push(C);
+      continue;
+    }
+
+    const std = Math.sqrt(variance);
+    const z = projected.map(val =&gt; (val - m) / std);
+    const sortedZ = [...z].sort((a, b) =&gt; a - b);
+
+    let sum = 0;
+    for (let i = 0; i &lt; N; i++) {
+      const pVal = normalCDF(sortedZ[i]);
+      const pValComplement = normalCDF(sortedZ[N - 1 - i]);
+      const logP = Math.log(Math.max(1e-15, pVal));
+      const log1P = Math.log(Math.max(1e-15, 1 - pValComplement));
+      sum += (2 * (i + 1) - 1) * (logP + log1P);
+    }
+    const A2 = -N - sum / N;
+    const A2Star = A2 * (1 + 4 / N - 25 / (N * N));
+    const criticalValueGMeans = 1.869;
+
+    if (A2Star &gt; criticalValueGMeans) {
+      queue.push(C0);
+      queue.push(C1);
+    } else {
+      finalClusters.push(C);
     }
   }
 
-  const clusters: number[][] = Array.from({ length: bestK }, () =&gt; []);
-  bestAssignments.forEach((cIdx, i) =&gt; { clusters[cIdx].push(i); });
-  const validClusters = clusters.filter(c =&gt; c.length &gt; 0);
+  const validClusters = finalClusters.filter(c =&gt; c.length &gt; 0);
 
   let bestClusterIdx = 0;
   let maxCount = -1;
@@ -475,8 +560,8 @@ function calculateKMeans(samples: Coordinate[]): { result: Coordinate; usedIndic
     }
   }
 
-  const championIndices = validClusters[bestClusterIdx];
-  const championPoints = championIndices.map(idx => samples[idx]);
+  const championIndices = validClusters[bestClusterIdx] || [];
+  const championPoints = championIndices.map(idx =&gt; samples[idx]);
 
   let finalSumW = 0, finalLatW = 0, finalLngW = 0, totalAccuracy = 0;
   for (const p of championPoints) {
@@ -500,7 +585,6 @@ function calculateKMeans(samples: Coordinate[]): { result: Coordinate; usedIndic
     clusters: validClusters
   };
 }
-    </pre>
 
 function runKMeans(samples: Coordinate[], k: number): number[] {
   let centroids = samples.slice(0, k).map(s =&gt; ({ lat: s.lat, lng: s.lng }));
