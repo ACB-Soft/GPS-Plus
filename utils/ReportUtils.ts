@@ -75,69 +75,47 @@ export const generateTechnicalReport = () => {
 
     <p class="no-indent"><span class="bold">Özet:</span> Bu akademik teknik raporda, akıllı telefon GNSS donanımlarının jeodezik ölçüm, CBS veri toplama ve koordinat aplikasyonu gibi mühendislik süreçlerindeki doğruluğunu artırmak amacıyla geliştirilen ${FULL_BRAND} Progresif Web Uygulaması (PWA) mimarisi bilimsel olarak incelenmektedir. Çalışmada, akıllı telefonlardan elde edilen ham gözlem verilerinin (WGS84) yerel ITRF/ED50 izdüşüm düzlemlerine ve TG-20 düşey datumuna dönüştürülmesini sağlayan sunucusuz (serverless) jeodezik hesaplama motoru açıklanmaktadır. Ayrıca, çevre gürültüsünü (multipath ve drift) süzmek üzere tasarlanan 9 farklı gerçek zamanlı istatistiksel filtreleme yöntemi matematiksel formülasyonlarıyla sunulmuştur. Sistem geliştirme aşamasında alan uzmanı kontrolünde (Expert-in-the-Loop) uygulanan Google AI Studio yapay zeka entegrasyon metodolojisi, vaka analizleri ve self-debugging süreçleriyle ele alınmaktadır. Yapılan çalışmalar, mobil cihazlarda yerel çalışan jeofiziksel/jeodezik algoritmaların, sunucu bağımsız ve internet gerektirmeden profesyonel arazi doğruluğu sağlama potansiyeli gözler önüne sermektedir.</p>
 
-    <h1>1. GİRİŞ (INTRODUCTION)</h1>
-    <p>Son yıllarda mobil cihaz donanımlarında yaşanan radikal gelişmeler, mikrosistem teknolojilerinin konumsal veri üretebilme sınırlarını göz ardı edilemeyecek düzeye taşımıştır. Özellikle yer bilimleri ve harita mühendisliği gibi yüksek doğruluk ve hassasiyet gerektiren disiplinlerde, taşınabilir tüketici donanımlarının profesyonel CBS veri toplama ve aplikasyon işlemlerinde kullanılıp kullanılamayacağı konusu güncelliğini koruyan önemli bir araştırma alanıdır.</p>
+    <h1>1. GİRİŞ</h1>
+    <p>Akıllı telefon donanımlarında yaşanan gelişmeler, taşınabilir tüketici donanımlarının konumsal veri üretebilme yeteneklerini göz ardı edilemeyecek düzeye taşımıştır. Yüksek doğruluk ve hassasiyet gerektiren ölçümlerde kullanılan profesyonel jeodezik donanımlar ve profesyonel yazılımlar için yüksek maliyet ve kullanıcı tarafında ciddi bilgi birikimi gerekmektedir. Bu durum taşınabilir tüketici donanımların ön etüt aşamasında; veri toplama ve aplikasyon işlemlerinde kullanılıp kullanılamayacağını bir araştırma konusuna dönüştürmüştür.</p>
 
-    <h2>1.1. Tek frekanslı ve Çift Frekans GNSS Çipleri</h2>
-    <p>Akıllı telefon GNSS (Global Navigation Satellite System) donanımları, tarihsel süreçte ciddi bir evrim geçirmiştir. Geleneksel olarak mobil cihazlarda kullanılan tek frekanslı (L1 only) GNSS alıcıları; atmosferik kırılmalar, iyonosferik gecikmeler ve özellikle binalardan veya engellerden yansıyan çoklu sinyal parazitleri (multipath) nedeniyle 5 ila 15 metre arasında değişen geniş hata sınırlarına sahip olmuştur. Ancak, yeni nesil akıllı cihazlara entegre edilen çift frekanslı (L1/L5) GNSS çipleri, farklı uydulardan gelen sinyallerin korelasyonunu yaparak atmosferik gecikme hatalarını matematiksel olarak sönümler ve multipath etkisini minimum seviyelere indirgerek sub-metre (metrenin altında) doğruluğu olası hale getirir.</p>
-    <p>Uygulama, bu donanımsal potansiyeli en üst seviyedeki "Sensör Füzyon Hub" mimarisiyle işler:</p>
-    <ul>
-      <li><span class="bold">Ham NMEA Veri İnceleme (Parsing):</span> İşletim sisteminin standart harita konumlandırma süzgecine girmeden önce, tarayıcı ortamında yakalanabilen ham NMEA cümleleri (GGA, RMC, GSV vb.) ve konum öznitelikleri anlık olarak analiz edilir. Bu sayede uydu sinyal kalitesi (SNR) ve donanım duyarlılığı doğrudan gözlemlenir.</li>
-      <li><span class="bold">Sistemler Arası Hibrit Entegrasyon:</span> GNSS uydularından gelen uydu konumlarına ek olarak mobil cihazın tümleşik ivmeölçeri (accelerometer), manyetometresi (magnetometer) ve jiroskobu (gyroscope) gibi atalet sensörleri ortak bir füzyon süzgecine dahil edilir.</li>
-      <li><span class="bold">Dead Reckoning (Hesaplı Mevki):</span> Yoğun ağaçlık bölgeler, kanyonlar veya köprü altları gibi uydu sinyallerinin tamamen kesildiği ya da aşırı saçıldığı engelli sahalarda, cihazın son bilinen konumu, ivme ve yönelim (heading) vektörü üzerinden sürekli tahmin edilerek kesintisiz bir izleme akışı inşa edilir.</li>
-      <li><span class="bold">Sektörel Frekans Yönetimi:</span> Uygulama, batarya tüketimi ile veri toplama yoğunluğu arasındaki optimizasyonu korumak üzere 1Hz (saniyede 1 okuma) frekansında kararlı çalışarak, sahada uzun süreli ölçüm ergonomisi sunar.</li>
-    </ul>
+    <h2>1.1. Akıllı Telefon GNSS Donanımlarının Gelişimi</h2>
+    <p>Akıllı telefonların GNSS alıcıları tarihsel süreçte tek frekanslı (L1) GNSS alıcıları ve çift frekanslı (L1/L5) GNSS alıcıları olarak gelişim göstermiştir. Akıllı telefonların konum doğruluğu, veri toplama sırasında sinyalleri etkileyen çevresel faktörler, uydu konumları, donanım özellikleri ve yazılım değişkenlerine bağlı olarak değişmektedir. Bununla birlikte, çift frekanslı (L1/L5) GNSS alıcısına sahip akıllı telefonlar, düşük maliyetli bir alternatif olarak konumlandırmada gelişmiş doğruluk sağlayabilme potansiyeline sahiptir [1, 2]. Son yıllarda “Geolocation API” hizmeti ile konum, yükseklik ve hassasiyet parametresi kullanıma açılmıştır [3]. Bu durum web tarayıcı tabanlı veri toplama süreçleri için ön ayak oluşturmuştur.</p>
 
-    <h2>1.2. Arazi Çalışmalarındaki Pratik Zorluklar</h2>
-    <p>Harita ve jeodezi mühendislerinin arazi çalışmalarında karşılaştığı en büyük zorluklardan biri, mobil cihazların ham ürettiği WGS84 coğrafi koordinatlarının (enlem, boylam, elipsoidal yükseklik) yerel harita ve kadastro projelerinde doğrudan kullanılamamasıdır. Türkiye'deki kadastral projeler ve CBS altyapıları genellikle yerel izdüşüm sistemlerini (ITRF96 veya ED50 UTM) ve ulusal pafta indekslerini referans alır. Bu durum, sahada bulunan mühendislerin harita düzlemine geçebilmek amacıyla sürekli olarak masaüstü CAD/CBS yazılımlarına bağımlı kalmasına yol açmaktadır. Anlık olarak dönüştürülemeyen, yerel elipsoid referanslarına ve pafta indekslerine adapte edilemeyen koordinatlar, arazide hızlı karar vermeyi engellemekte ve operasyonel verimliliği düşürmektedir.</p>
+    <h2>1.2. Arazi Çalışmalarındaki Zorluklar</h2>
+    <p>Saha çalışması yapan tüm disiplinlerin arazi çalışmalarında karşılaştığı en büyük zorluklardan biri, akıllı telefonların ham ürettiği WGS84 coğrafi koordinatlarının (enlem, boylam, elipsoidal yükseklik) yerel harita ve kadastro projelerinde doğrudan kullanılamamasıdır. Türkiye'deki kadastro projeleri ve CBS altyapıları genellikle yerel izdüşüm sistemlerini (ITRF96/ED50) referans alır. Bu durum, sahada bulunan mühendislerin harita düzlemine geçebilmek amacıyla sürekli olarak masaüstü (CAD/CBS) yazılımlarına bağımlı kalmaktadır. Anlık olarak dönüştürülemeyen, yerel elipsoid referanslarına ve pafta indekslerine adapte edilemeyen koordinatlar, saha çalışmalarında hızlı karar vermeyi engellemekte ve verimliliği düşürmektedir.</p>
 
-    <h2>1.3. Araştırma Boşluğu (Research Gap)</h2>
-    <p>Akademik literatür incelendiğinde, koordinat dönüşümü ve hassas konum analizi yapan sistemlerin genellikle bulut tabanlı merkezi sunuculara (cloud-based servers) muhtaç olduğu görülmektedir. Ancak sahadaki mühendislik çalışmalarında GSM şebekesinin olmadığı dağlık alanlar veya hücresel verinin çekmediği yer altı/ormanlık sahalar yaygın birer çalışma ortamıdır. İleri düzey 3-Parametreli Molodensky / Helmert öteleme dönüşümleri, yüksek dereceden Krüger projeksiyon serileri, Türkiye Geoidi (TG-20) interpolasyonu ve istatistiksel uyuşmazlık ve kümeleme testlerinin (Baarda veri snooping, K-Means filtreleri vb.) hiçbir harici sunucusal/internet bağlantısına ihtiyaç duymadan, doğrudan mobil tarayıcı (istemci tarafı) üzerinde "sunucusuz" ve "offline-first" bir yapıda koşturulmasına dair literatürde derin bir eksiklik bulunmaktadır.</p>
-
-    <h2>1.4. Çalışmanın Amaçları ve Yapısı</h2>
-    <p>Bu araştırmanın ve geliştirilen ${FULL_BRAND} v5.0 platformunun temel amacı, söz konusu literatür boşluğunu doldurarak harita mühendisliği alanında yüksek doğruluklu hesaplamaları tamamen internetsiz, sunucusuz ve platformdan bağımsız bir taşınabilir masaüstü kalitesinde koşturmaktır. Platformun literatüre sunduğu yenilikler ve çalışma prensipleri takip eden bölümlerde sırasıyla; sistem mimari stack tasarımı, jeodezik dönüştürme motoru matematiği, 6 farklı gelişmiş istatistiksel filtreleme süzgeci, yapay zeka ile kooperatif yazılım geliştirme metodolojisi ve arazi uygulama grafikleri başlıkları altında akademik olarak irdelenmektedir.</p>
+    <h2>1.3. Çalışmanın Amacı ve Araştırma Boşluğu</h2>
+    <p>Literatür incelendiğinde, koordinat ölçümü, anlık koordinat dönüşümü, arazi aplikasyonu ve koordinat verilerin global yazılımlara (CAD/CBS) aktarılmasını sağlayan sistemlerin genellikle bulut tabanlı merkezi sunuculara muhtaç olduğu, bilgisayar tabanlı programlar ile yapıldığı veya akıllı telefonlar için kurulum gerektirdiği görülmektedir.
+    İleri düzey 7 parametreli Bursa-Wolf matris dönüşümleri, yüksek dereceden Krüger projeksiyon serileri, Türkiye Geoidi (TG-20) enterpolasyonu ve istatistiksel uyuşmazlık ve kümeleme testlerinin hiçbir harici sunucu bağlantısına ihtiyaç duymadan ve kurulumsuz olarak doğrudan akıllı telefon tarayıcısı üzerinde bir yapıda çalıştırılmasına dair literatürde derin bir eksiklik bulunmaktadır.
+    Bu akademik çalışmanın ve geliştirilen “ACB Maps - GPS Plus” isimli uygulamanın temel amacı, söz konusu literatür boşluğunu doldurarak harita mühendisliği alanında yüksek doğruluklu hesaplamaları tamamen internetsiz, sunucusuz ve platformdan bağımsız bir taşınabilir masaüstü kalitesinde yapmaktır. Platformun literatüre sunduğu yenilikler ve çalışma prensipleri, Türkiye özelinde web tabanlı bir uygulama geliştirilerek incelenmiştir.</p>
 
     <div class="page-break"></div>
 
     <h1>2. MALZEMELER, YÖNTEMLER VE YAZILIM MİMARİSİ (MATERIALS, METHODS, AND SOFTWARE ARCHITECTURE)</h1>
     <p>Geliştirilen sistemin kararlılığı, hem yazılım mühendisliği disiplinlerinin hem de jeometri mühendisliği standartlarının harmanlanmasıyla elde edilmiştir.</p>
 
-    <h2>2.1. PWA Altyapısı ve Sunucusuz Paradigma</h2>
-    <p>Mühendislik motorunun kesintisiz ve internetten bağımsız çalışabilmesi için bilgisayar bilimleri mimarisinde "Progressive Web Application (PWA)" standardı benimsenmiştir. Bu paradigma kapsamında kullanılan altyapı bileşenleri şöyledir:</p>
-    <ul>
-      <li><span class="bold">React 19 & Vite Derleme Motoru:</span> Arayüz performansı ve saniyelik veri akışlarının kullanıcıyı yormadan gecikmesiz olarak ekrana yansıtılabilmesi için modern sanal DOM rendering sunan React 19 ve ultra hızlı paketleyici Vite entegrasyonu kullanılmıştır.</li>
-      <li><span class="bold">Katı (Strict) TypeScript Kuralları:</span> Jeodezik formüller Double Precision (çift duyarlıklı 64-bit kayan nokta) standartlarında yürütülmelidir. Koordinat değerlerinin ve matris katsayılarının veri tipleri arasındaki kontrolsüz dönüşümlerle hassasiyet kaybetmesini önlemek amacıyla projede katı TypeScript tiplemesi zorunlu kılınmıştır.</li>
-      <li><span class="bold">Background Service Worker:</span> Uygulama dosyalarının tarayıcı önbelleğine kalıcı yazılmasını sağlayan ve şebeke hattının kesildiği arazilerde uygulamanın bir mobil yerel aplikasyon gibi anında açılmasını sağlayan arka plan servis yöneticisidir.</li>
-      <li><span class="bold">Yazılım Dağıtım ve Otomasyon (CI/CD):</span> Proje, GitHub üzerinde sürekli entegrasyon ve otomatik dağıtım (GitHub Actions) süreçleriyle denetlenerek her yeni özelliğin jeodezik bütünlüğünün korunması sağlanmaktadır.</li>
-    </ul>
+    <h2>2.1. Progressive Web Application (PWA) Altyapısı</h2>
+    <p>Geliştirilen mühendislik motorunun arazide kesintisiz, yüksek performanslı ve internet şebekesinden bağımsız (çevrimdışı) çalışabilmesi amacıyla, bilgisayar bilimleri literatüründe modern bir yaklaşım olan Progressive Web Application (PWA) mimarisi benimsenmiştir.
+    Saniyelik veri akışlarının kullanıcıyı yormadan, gecikmesiz olarak ekrana yansıtılabilmesi için modern sanal DOM rendering sunan React kütüphanesi ve ultra hızlı derleme motoru Vite entegrasyonu tercih edilmiştir [4,5]. Sistem arayüzünde yüksek okunabilirlik sağlamak adına Plus Jakarta Sans ve JetBrains Mono yazı tipleri, hassas CAD simgeleri ve uydu durum göstergeleri için ise Lucide ve FontAwesome kütüphaneleri kullanılmıştır [6,7,8].
+    Projenin sürdürülebilirliği ve kod kalitesi, GitHub Actions üzerinden yürütülen Sürekli Entegrasyon ve Sürekli Dağıtım (CI/CD) süreçleriyle denetlenmektedir [9]. Ayrıca, jeodezik formüllerin Double Precision standartlarında yürütülmesi gerektiğinden; koordinat değerlerinin ve matris katsayılarının kontrolsüz veri tipi dönüşümleriyle hassasiyet kaybetmesini önlemek amacıyla projede katı (Strict) TypeScript tiplemesi zorunlu kılınmıştır [10].
+    Saha operasyonlarının kalbini oluşturan vektörel haritacılık işlemleri, Leaflet çekirdeği ve Leaflet.draw kütüphanesi üzerine inşa edilen interaktif bir Web-CAD platformu aracılığıyla yürütülmektedir [11]. Bu modül, tarayıcının hardware accelerated grafik motorunu tetikleyerek tamamen çevrimdışı çalışmaktadır.
+    Harita altlığı olarak Google Maps API ve OpenStreetMap servisleri entegre edilerek gerçek zamanlı uydu fotoğrafları ve topografik katmanlar kullanılmıştır [12,13]. Ölçüm esnasında toplanan koordinatların hata yayılım profilleri ve regresyon eğrileri ise Recharts kütüphanesiyle dinamik olarak grafikleştirilmektedir [14].
+    Klasik tarayıcıların localStorage limitlerini (5mb) aşan büyük boyutlu mühendislik dosyalarını ve arazide toplanan on binlerce noktayı sıfır veri kaybıyla saklayabilmek amacıyla, asenkron ve nesne tabanlı IndexedDB veritabanı katmanı kullanılmıştır [15]. PWA mimarisinin temel taşı olan Background Service Worker sayesinde, uygulamanın çekirdek dosyaları tarayıcı önbelleğine kalıcı olarak yazılmakta ve şebeke hattının olmadığı kırsal arazilerde dahi sistem yerel bir mobil aplikasyon hızında açılabilmektedir [16].
+    İstemci tarafında toplanan verilerin dışa aktarımı için SheetJS (xlsx) motoru kullanılarak sunucu bağımsız dosyalar üretilmektedir [17]. Üretilen bu çıktıların arka planda paketlenerek indirilebilmesi için JSZip ve FileSaver.js kütüphaneleri kullanılmıştır [18,19].
+    Uygulama, akıllı mobil cihazların ham uydu verilerine ve entegre GNSS alıcısı donanım katmanına doğrudan erişebilmek için W3C Geolocation API standartlarını kullanmaktadır [3]. Donanımdan alınan konum verilerinin ve jeoid modellerinin istemci tarafında hızlı, dinamik ve yüksek duyarlılıkla işlenmesi, datum ve koordinat projeksiyon dönüşümlerinin milimetrik hassasiyetle gerçekleştirilmesi için Proj4js kütüphanesi kullanılmaktadır [20].</p>
 
-    <h2>2.2. Kalıcı İstemci Taraflı Depolama ve Etkileşimli Web-CAD</h2>
-    <p>Arazide toplanan binlerce nokta, öznitelik bilgisi ve vektörel CAD çizimlerinin internet kesildiğinde dahi kaybolmaması hayati bir gereksinimdir:</p>
-    <ul>
-      <li><span class="bold">IndexedDB Tabanlı Veri Katmanı:</span> Tarayıcıların klasik localStorage / sessionStorage limitlerini (5MB) aşan mühendislik dosyalarını depolayabilmek için tarayıcının asenkron nesne tabanlı ilişkisel olmayan veritabanı IndexedDB kullanılmıştır. Bu sayede arazide on binlerce nokta sıfır veri kaybı garantisiyle saklanır.</li>
-      <li><span class="bold">Interactive Web-CAD Platformu:</span> Leaflet çekirdeği üzerine kurulan, Leaflet.draw kütüphanesiyle zenginleştirilen CAD çizim editörü, sahadaki vektörel haritacılık işlemlerini (nokta atma, çizgi çizme, alan kapatma, DXF üretme) donanım ivmeli (hardware accelerated) grafik motorunu tetikleyerek tarayıcı üzerinden tamamen çevrimdışı yürütür.</li>
-    </ul>
-
-    <h2>2.3. Jeodezik Hesaplama Motoru (Geodetic Computational Engine)</h2>
+    <h2>2.2. Jeodezik Hesaplama Yöntemleri</h2>
     <p>Hassas jeodezi motoru, elipsoidal ve düzlemsel koordinat dönüşüm denklemlerini tamamen istemci tarafında saniyeler içinde çözer.</p>
 
-    <h3>2.3.1. 3-Parametreli Molodensky / Helmert Öteleme Dönüşümü</h3>
-    <p>Küresel WGS 84 coğrafi koordinatları ile yerel datumlar (ED 50 veya ITRF 96) arasındaki dönüşümler, 7-parametreli Bursa-Wolf modelinde rotasyon ve ölçek katsayılarının sıfır (0) kabul edildiği 3-Parametreli Molodensky (veya sadece 3 öteleme parametreli Helmert) dönüşüm modeli ve Proj4js projeksiyon formülasyonu ile koşturulur. Bu model; ED50 sistemi için 3 boyutlu koordinat ötelemesi (dX, dY, dZ) kullanarak koordinat dönüşümünü pratik, kararlı ve uyuşumsuzluk risklerinden arındırılmış bir şekilde gerçekleştirir. Rotasyon (Rx, Ry, Rz) ve ölçek farkı (dS) parametreleri yerel çalışmalarda genellikle sıfır olarak sabitlendiğinden, sistem karmaşık rotasyonlardan etkilenmeden doğrudan 3 öteleme katsayısıyla (+towgs84=-87,-98,-121,0,0,0,0) çalışır. ITRF96 ve WGS84 datumları, pratik mühendislik uygulamalarında milimetrik-santimetrik düzeyde birbirine yakın ve uyumlu kabul edildiğinden (her ikisinde de GRS80/WGS84 elipsoidal referansları temel alınmıştır), aralarında ek bir Helmert öteleme vektörüne ihtiyaç duyulmadan doğrudan projeksiyon denklemleri ve dönüşüm formülasyonu ile koordinat düzlemine izdüşürülür. Uygulamada Proj4js kütüphanesi ile entegre edilen ED50 ve ITRF96 tanımları aşağıdaki kod satırlarında açıkça görülmektedir:</p>
+    <h3>2.2.1. Koordinat Dönüşümleri</h3>
+    <p>Küresel WGS84 coğrafi koordinatları ile yerel datumlar (ED50/ITRF96) arasındaki dönüşümler, 7-parametreli Bursa-Wolf modelinde rotasyon ve ölçek katsayılarının sıfır (0) kabul edildiği 3 öteleme parametreli Helmert dönüşüm modeli ve Proj4js projeksiyon formülasyonu ile koşturulur [21,22,23,40]. ITRF96 ve WGS84 datumları, pratik mühendislik uygulamalarında milimetrik düzeyde birbirine yakın ve uyumlu kabul edildiğinden, aralarında ek bir Helmert öteleme vektörüne ihtiyaç duyulmadan doğrudan projeksiyon denklemleri ve dönüşüm formülasyonu ile koordinat düzlemine izdüşürülür. Uygulamada Proj4js kütüphanesi ile entegre edilen ED50 ve ITRF96 tanımları aşağıdaki kod satırlarında açıkça görülmektedir:</p>
     <pre class="code-block">
-// Define Destination Projection (ED50 UTM) with 3-parameter Helmert translations (rotation/scale set to 0):
 destProj_ed50 = "+proj=tmerc +lat_0=0 +lon_0=" + dom + " +k=1 +x_0=500000 +y_0=0 +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs";
-
-// Define Destination Projection (ITRF96 UTM / TM3) using GRS80 ellipsoid (structurally aligned with WGS84):
 destProj_itrf96 = "+proj=tmerc +lat_0=0 +lon_0=" + dom + " +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs";
     </pre>
 
-    <h3>2.3.2. Transverse Mercator (Gauss-Krüger) ve Standart UTM Projeksiyon Dönüşüm Formülasyonu</h3>
-    <p>Coğrafi koordinatların (Enlem, Boylam) düzlemsel Gauss-Krüger (Transverse Mercator - TM 3°) ve küresel UTM (6°) koordinatlarına dönüştürülmesinde, meridyen yay uzunluklarını milimetrik hassasiyetle hesaplayan ve Proj4js motorunda gömülü olan yüksek duyarlıklı geleneksel serisel eşitlikler (Snyder, 1987 ve klasik Krüger serileri) kullanılmaktadır. Matematiksel bütünlük ve ölçek doğruluğu açısından dilim genişliklerine göre şu standartlar işletilir:</p>
-    <ul>
-      <li><span class="bold">3 Derecelik Dilimler (TM3):</span> Yerel kadastro çalışmalarında ölçek bozulmalarını en aza indirmek için Dilim Orta Meridyeninde ölçek faktörü <span class="bold">k<sub>0</sub> = 1.0</span> olarak sabitlenmiş ve Gauss-Krüger izdüşümü doğrudan <span class="bold">+proj=tmerc</span> parametreleri ile formüle edilmiştir. Dilim Orta Meridyeni (DOM) şu dinamik eşitlikle tayin edilir: <span class="bold">DOM = Round(Boylam / 3) * 3</span></li>
-      <li><span class="bold">6 Derecelik Dilimler (UTM6):</span> Küresel ve ulusal ölçekli askeri/mühendislik projelerinde standart uyumluluk için Dilim Orta Meridyeninde ölçek faktörü <span class="bold">k<sub>0</sub> = 0.9996</span> olarak uygulanan resmi UTM projeksiyon standardı (<span class="bold">+proj=utm</span>) tercih edilmiştir. Dilim numarası (Zone) ve karşılık gelen orta meridyen şu denklemlerle dinamik olarak çıkartılır: <span class="bold">Dilim No = Floor((Boylam + 180) / 6) + 1</span></li>
-    </ul>
-    <p class="no-indent">Bu projeksiyon ve ölçek farklılıklarını gözeterek dinamik DOM ve Zone değerleri üreten, ardından Proj4js motoruna bu parametreleri aktaran hesaplama çekirdeği şu şekildedir:</p>
+    <h3>2.2.2. Projeksiyon Dönüşümleri</h3>
+    <p>WGS84 Coğrafi koordinatların (Enlem, Boylam) düzlemsel Gauss-Krüger (Transverse Mercator - TM 3°) ve küresel UTM (6°) koordinatlarına dönüştürülmesinde, meridyen yay uzunluklarını milimetrik hassasiyetle hesaplayan ve Proj4js motorunda gömülü olan yüksek duyarlıklı geleneksel serisel eşitlikler kullanılmaktadır [22,24,25]. Matematiksel bütünlük ve ölçek doğruluğu açısından dilim genişliklerinde BÖHHBÜY [26] standartları işletilir. Bu projeksiyon ve ölçek farklılıklarını gözeterek dinamik DOM ve Zone değerleri üreten, ardından Proj4js motoruna bu parametreleri aktaran hesaplama çekirdeği şu şekildedir:</p>
     <pre class="code-block">
 const getDom3 = (lon: number): number => {
   return Math.round(lon / 3) * 3;
@@ -181,8 +159,9 @@ export const convertCoordinate = (lat: number, lng: number, system: string) => {
 };
     </pre>
 
-    <h3>2.3.3. Düşey Datum Modellemesi ve Türkiye Geoidi (TG-20)</h3>
-    <p>GNSS uydularından doğrudan alınan yükseklik verisi, referans elipsoidine göre tanımlanan elipsoidal yüksekliktir. Ancak mühendislik projelerinde yerçekimi tabanlı fiziksel yükseklik olan ortometrik yükseklik kullanılmalıdır. Bu iki yükseklik arasındaki fark ondülasyon olarak adlandırılır. Uygulama, Türkiye Ulusal Geoidi (TG-20) grid verilerini ve küresel EGM96 modellerini kendi hafızasında barındırır. Ölçüm yapılan koordinatın etrafındaki en yakın 4 grid düğüm noktası tespit edilerek "Bilineer İnterpolasyon" yöntemiyle o noktadaki net ondülasyon değeri saniyede bir kez dinamik olarak türetilir. Bu sayede, arazide ek bir ölçü aletine ihtiyaç duymadan gerçek zamanlı ortometrik kot üretilmiş olunur. Bilineer geoid interpolasyon servisinin hesap çekirdeği, koordinatın ilgili grid hücresi içindeki normalleştirilmiş göreceli pozisyonlarını da hesaplayacak biçimde, kod satırlarında aşağıdaki şekilde sergilenmektedir:</p>
+    <h3>2.2.3. Jeoid Ondülasyonu</h3>
+    <p>GNSS alıcılarından doğrudan elde edilen yükseklik verisi, referans elipsoidine (WGS84/GRS80) dik olan geometrik (h-Elipsoidal) yüksekliktir. Ancak mühendislik projelerinde, yeryüzünün fiziki yapısını ve çekim alanını temsil eden yerçekimi tabanlı (H-Ortometrik) yüksekliklerin kullanılması zorunludur. Bu iki yüzey arasındaki düşey açıklık jeoit ondülasyonu (N) olarak tanımlanmakta ve “ H=h-N ” jeodezik bağıntısı ile hesaplanmaktadır [27].
+    Geliştirilen yazılım mimarisi, ulusal sınırlarda açık kaynaklı 5’x5’ çözünürlüklü Türkiye Ulusal Jeoidi 2020 (TG20) grid verilerini; küresel ölçekte ise 15’x15’ çözünürlüklü küresel katsayılara dayanan enterpole edilmiş Earth Gravitational Model 1996 (EGM96) verisetini lokal katmanında barındırmaktadır [28,29,30]. Gerçek zamanlı konumlandırma esnasında, ölçüm yapılan koordinatı çevreleyen en yakın dört grid düğüm noktası tespit edilerek, boyutsuz lokal koordinatlar üzerinden "Bilineer İnterpolasyon" yöntemi uygulanmaktadır [31]. Bilineer geoid interpolasyon fonksiyonunun hesap çekirdeği aşağıda sunulmuştur:</p>
     <pre class="code-block">
 // Retrieve geoid undulation coefficients from the four bounding grid nodes
 const n00 = grid[latIdx][lngIdx];
@@ -198,15 +177,51 @@ const N = (1 - u) * (1 - v) * n00
         + u * v * n11;
     </pre>
 
-    <h2>2.4. Gerçek Zamanlı İstatistiksel Süzme Çerçevesi (5 Farklı Süzme Modülü)</h2>
-    <p>Sahada toplanan her bir saniyelik GNSS verisi, çevresel yansımalar ve uydu konfigürasyonlarındaki anlık değişimler nedeniyle rastgele ve sistemsel hatalar barındırır. ${FULL_BRAND}, bu hataları ayıklamak ve kararlı sonuçlar elde etmek amacıyla arazide ve ACB - Labs modülünde toplamda 5 farklı ileri düzey istatistiksel filtreleme kütüphanesini doğrudan kaynak kod yapısında barındırır:</p>
+    <h2>2.3. Sinyal Güvenilirlik Filtresi</h2>
+    <p>Akıllı telefonların entegre konum sensörleri doğrudan ham GNSS gözlemleri yerine tarayıcı düzlemine filtrelenmiş tahminler sunar. Bu sebeple donanımın ürettiği konumsal doğruluk kestirimleri (Geolocation API Accuracy Radius), her zaman sahada karşılaşılan fiziki çoklu yansıma (multipath) og atmosferik gecikme etkilerini bütünüyle yansıtamaz [3,32]. Bu sebeple uygulama ile birlikte “Sinyal Güvenirlik Filtresi” geliştirilmiştir. Literatüre kazandırılan bu yöntem, toplanan örneklem havuzunun uzaysal dağılımını matematiksel kriterlere göre denetleyerek sinyal kalitesini derecelendirir.
+    Akıllı konumlandırma motoru, statik ölçüm sırasında Geolocation API'nin standart saniyelik güncelleme hızı olan 1 Hz varsayılan frekansı ile veri toplar. İstatistiksel çıkarım için; yerel çevresel engeller, bina yansımaları og ağaç örtüsünden kaynaklanan anlık multipath sapmalarını, sinyal saçılmalarını og yüksek frekanslı beyaz gürültüyü sönümleyerek verilerin kararlılığını güvene almak gerekmektedir. Bu sebeple uygulama içerisine en az 15 epok veri toplanması zorunluğu getirilmiştir.
+    Yöntem, güvenilirlik derecelendirmesini Geolocation API tarafından üretilen iki temel parametre üzerinden gerçekleştirmektedir.
+    1-Ortalama Donanımsal Sensör Hassasiyeti: Alıcı cihazın her bir saniye bazında bağımsız olarak bildirdiği geometrik hata yarıçap değerlerinin aritmetik ortalamasıdır.
+    2-Veri Saçılımı Genişliği: Statik ölçüm havuzunda yer alan en uzak iki koordinat arasındaki geometrik mesafedir.
+    Hesaplanan bu veriler ışığında, ölçüm sonucu üç ana kategori altında sınıflandırılarak kullanıcıya bildirilir.
+    1-Güvenilir Veri: Ortalama Donanımsal Sensör Hassasiyetinin 5m og altında olması, Veri Saçılımı Genişliğinin 5m og altında kalması, toplanan statik epok sayısının en az 15 olması og Veri Saçılımı Genişliğinin, Ortalama Donanımsal Sensör Hassasiyeti sınırlarında kalması koşuluyla verilir. Gerçeğe en yakın nitelikteki temiz sinyali temsil eder.
+    2-Güvensiz Veri: Ortalama Donanımsal Sensör Hassasiyeti 20m'den büyük olması, Veri Saçılımı Genişliğinin 20m'den büyük olması ya da Veri Saçılımı Genişliğinin Ortalama Donanımsal Sensör Hassasiyetinin 3 katından fazla olması durumunda tetiklenir. Sahada ciddi multipath etkisi olduğunu gösterir. Bu sınıftaki veri tamamen güvensizdir og ölçümün tekrarlanması önerilir.
+    3-Orta Güvenli Veri: Güvenilir veri sınıfı ölçütlerini sağlayamayan ancak güvensiz veri sınıfı ölçütlerinden de iyi olan durumlar için kullanılır. İki veri sınıfı arasındaki geçiş sınıfıdır. Multipath etkisi barındırdığı için ölçümün tekrarlanması önerilir.
+    Bu akıllı “Sinyal Güvenirlik Filtresi” sınıflarını hesaplayan TypeScript kütüphane fonksiyonu şu şekildedir:</p>
+    <pre class="code-block">
+export function analyzeSignalReliability(samples: Coordinate[]): SignalAnalysis {
+  if (samples.length === 0) return { signalQuality: 'low', maxSpread: 0, avgSensorAcc: 99 };
+  const maxSpread = calculateMaxDistance(samples);
+  const avgSensorAcc = samples.reduce((sum, s) => sum + s.accuracy, 0) / samples.length;
+  const ratio = maxSpread / (avgSensorAcc || 0.1);
+  const samplesCount = samples.length;
+  const meanLat = samples.reduce((sum, s) => sum + s.lat, 0) / samples.length;
+  const meanLng = samples.reduce((sum, s) => sum + s.lng, 0) / samples.length;
+  const { latCoeff, lngCoeff } = getWGS84Coefficients(meanLat);
+  const residuals = samples.map(s => {
+    const dLat = (s.lat - meanLat) * latCoeff;
+    const dLng = (s.lng - meanLng) * lngCoeff;
+    return dLat * dLat + dLng * dLng;
+  });
+  const variance = residuals.reduce((sum, val) => sum + val, 0) / Math.max(1, samples.length - 1);
+  const stdDev = Math.sqrt(variance);
+  const isRed = avgSensorAcc > 20 || maxSpread > 20 || ratio > 3.0;
+  const isGreen = !isRed && avgSensorAcc <= 5 && maxSpread <= 5 && samplesCount >= 15 && ratio <= 1.0;
+  const signalQuality: 'safe' | 'medium' | 'low' = isRed ? 'low' : isGreen ? 'safe' : 'medium';
+  return {
+    maxSpread,
+    avgSensorAcc,
+    stdDev,
+    ratio,
+    signalQuality,
+    samplesCount
+  };
+}
+    </pre>
 
-    <div class="case-container" style="background-color: #f8fafc; border-left: 4px solid #0284c7; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
-      <p class="bold" style="color: #0369a1; margin-bottom: 6px;">İleri Düzey Süzgeçlerin Çalışma Prensibi</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Giriş Verisi Kalifikasyonu:</span> Gelen tüm ölçüler öncelikle doğruluk dairesi yarıçaplarına göre (en fazla 100m) filtrelenir. Eğer yeterli epok varsa (seçilen yönteme göre en az 30 veya 60), sisteme profesyonel süzgeç silsilesi atanır; aksi halde doğrudan Ağırlıklı LSE (WLS) güvenli geçişine teslim edilir.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Stokastik Sıralama:</span> KMeans gibi kümeleme süzgeçleri öncesinde tüm veriler fiziksel konumsal uyum testinden geçirilir, kaba hata kontrolü jeodezik standartlara göre yapılır.</p>
-      <p class="no-indent"><span class="bold">3. Veri Saklama Limitleri:</span> 120 epok tavan tampon bellek sınırı dahilinde en son veriler saklanır, milisaniyelik gecikme analizleri anlık yürütülür.</p>
-    </div>
+    <h2>2.4. İstatistiksel Veri Filtreleme Yöntemleri</h2>
+    <p>Sahada toplanan GNSS verisi, çevresel yansımalar og uydulardaki anlık değişimler nedeniyle rastgele og sistemsel hatalar barındırır. Geliştirilen uygulama, bu hataları ayıklamak og kararlı sonuçlar elde etmek amacıyla toplamda 5 farklı istatistiksel filtreleme kütüphanesini doğrudan kaynak kod yapısında barındırır og tarayıcı tabanlı olarak çalıştırır. Bu yöntemler sadece yatay konumsal hesaplamalarda kullanılır. 
+    Uygulama, düşey yükseklik hesaplamalarında ise standart aritmetik ortalamayı kullanır. Akıllı telefonların tarayıcı düzeyindeki Geolocation API tarafından sağlanan yükseklik verileri yüksek gürültülü og kesintili olmasının yanı sıra, ayrıca her epok için güvenilir bir hata yarıçapı barındırmaz [3]. Bu akademik gerçeğe dayanarak, düşey yüksekliklerin belirlenmesinde tüm aktif dönemdeki epokların doğrudan aritmetik ortalaması tercih edilmiştir.</p>
 
     <h3>2.4.1. Stokastik Tek Nokta Dengelemesi ve Ölçülerin Ağırlıklı Merkezileştirilmesi (Weighted Centroid)</h3>
     <p>En Küçük Kareler (LSE) prensibine göre, jeodezik bir ölçünün ağırlığı (p), o ölçünün karesel ortalama hatasının (veya standart sapmasının) karesiyle ters orantılıdır (p = 1 / &sigma;<sup>2</sup>). Akıllı konum sensörlerinde tarayıcı düzeyinde elde edilen Geolocation API hassasiyet dairesi yarıçapı (<i>accuracy</i>), doğrudan ham standart sapmayı (&sigma;) değil; pratik kestirim dünyasında %95 güven aralığına karşılık gelen bir dairesel hata olasılığını (Circular Error Probable - CEP veya yaklaşık 2-sigma) temsil eder. CEP değeri standart sapma ile doğrusal bağıntılı olduğundan, bu dairesel hata yarıçaplarının karesiyle ters orantılı ağırlıkların atanması (p<sub>i</sub> = 1 / accuracy<sub>i</sub><sup>2</sup>), teorik jeodezik ağırlıklandırma modeliyle tam bir stokastik uyum sergiler.</p>
@@ -387,34 +402,6 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
     },
     usedIndices
   };
-}
-    </pre>nCenter.lng) * 111320 * Math.cos(subMedianCenter.lat * Math.PI / 180);
-    const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-    const huberWeight = dist &lt;= huberLimit ? 1.0 : huberLimit / Math.max(0.01, dist);
-    const hardwareWeight = accuracyLimit / Math.max(0.1, s.accuracy);
-    return hardwareWeight * huberWeight;
-  });
-
-  const sumW = finalWeights.reduce((a, b) =&gt; a + b, 0) || 1.0;
-  const finalLat = finalSamplesToUse.reduce((sum, p, i) =&gt; sum + p.lat * finalWeights[i], 0) / sumW;
-  const finalLng = finalSamplesToUse.reduce((sum, p, i) =&gt; sum + p.lng * finalWeights[i], 0) / sumW;
-
-  const avgCoords = calculateAverage(finalSamplesToUse);
-  const finalResult = {
-    ...finalSamplesToUse[0],
-    lat: finalLat,
-    lng: finalLng,
-    accuracy: avgCoords.accuracy,
-    timestamp: Date.now()
-  };
-
-  const validAlts = finalSamplesToUse.filter(s =&gt; s.altitude !== null);
-  finalResult.altitude = validAlts.length &gt; 0 ? validAlts.reduce((a, b) =&gt; a + (b.altitude || 0), 0) / validAlts.length : null;
-
-  const validAltAccs = finalSamplesToUse.filter(s =&gt; s.altitudeAccuracy !== null);
-  finalResult.altitudeAccuracy = validAltAccs.length &gt; 0 ? validAltAccs.reduce((a, b) =&gt; a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length : null;
-
-  return { result: finalResult, usedIndices };
 }
     </pre>
 
