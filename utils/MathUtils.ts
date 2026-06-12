@@ -57,9 +57,11 @@ export function calculateResult(
 
   // Let's implement the constraint checks for professional mathematical models:
   // - HUBER and KMEANS_4 require en az 30 epok.
-  // - BAARDA and KMEANS_BAARDA_HUBER require en az 55 epok.
-  const requires55 = method === 'BAARDA' || method === 'KMEANS_BAARDA_HUBER';
+  // - KMEANS_BAARDA_HUBER (Hybrid) require en az 55 epok.
+  // - Standalone BAARDA only requires geodetic minimum of 4 epok.
+  const requires55 = method === 'KMEANS_BAARDA_HUBER';
   const requires30 = method === 'HUBER' || method === 'KMEANS_4';
+  const requires4 = method === 'BAARDA';
   
   let finalMethod = method;
   let fallbackApplied = false;
@@ -68,6 +70,9 @@ export function calculateResult(
     finalMethod = 'WEIGHTED_LSE';
     fallbackApplied = true;
   } else if (requires30 && samples.length < 30) {
+    finalMethod = 'WEIGHTED_LSE';
+    fallbackApplied = true;
+  } else if (requires4 && samples.length < 4) {
     finalMethod = 'WEIGHTED_LSE';
     fallbackApplied = true;
   }
@@ -105,7 +110,7 @@ export function calculateResult(
       clusters = kmeans4Res.clusters;
       break;
     case 'BAARDA':
-      const pureBaardaRes = calculateBaardaPure(sourceData);
+      const pureBaardaRes = calculateBaardaPureAcademic(sourceData);
       resultData = pureBaardaRes.result;
       finalCalculatedUsedIndices = pureBaardaRes.usedIndices;
       break;
@@ -601,6 +606,72 @@ function calculateBaardaPure(samples: Coordinate[]): { result: Coordinate; usedI
   }
   const baardaInput = samples.map((s, idx) => ({ ...s, _originalIdx: idx }));
   const baardaRes = calculateBaardaInternal(baardaInput);
+  return {
+    result: baardaRes.result,
+    usedIndices: baardaRes.usedIndices
+  };
+}
+
+function calculateBaardaInternalAcademic(samples: any[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length < 4) {
+    const lseResult = calculateWeightedLSE(samples);
+    return { result: lseResult.result, usedIndices: samples.map((_, i) => i) };
+  }
+
+  let currentSamples = samples.map((s, idx) => ({
+    ...s,
+    _originalIdx: s._originalIdx !== undefined ? s._originalIdx : idx
+  }));
+  const criticalValue = 3.29; // Critical limit for 99.9% confidence interval
+
+  while (currentSamples.length > 4) {
+    const weights = currentSamples.map(s => 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
+    const sumW = weights.reduce((a, b) => a + b, 0);
+    const meanLat = currentSamples.reduce((a, b, i) => a + b.lat * weights[i], 0) / sumW;
+    const meanLng = currentSamples.reduce((a, b, i) => a + b.lng * weights[i], 0) / sumW;
+
+    const residuals = currentSamples.map(s => {
+      return calculateDistanceMeter(s.lat, s.lng, meanLat, meanLng, meanLat);
+    });
+
+    const vTPv = residuals.reduce((a, v, i) => a + v * v * weights[i], 0);
+    
+    // Degree of freedom: f = n - u, where u = 2 (lat, lng) unknowns
+    const sigma0 = Math.sqrt(vTPv / (currentSamples.length - 2));
+
+    const standardizedResiduals = currentSamples.map((s, i) => {
+      const p_i = weights[i];
+      const q_ii = (1 - p_i / sumW); 
+      return residuals[i] / (sigma0 * Math.sqrt(q_ii) || 1e-9);
+    });
+
+    let maxW = -1;
+    let worstIdx = -1;
+    for (let i = 0; i < standardizedResiduals.length; i++) {
+        if (standardizedResiduals[i] > maxW) {
+            maxW = standardizedResiduals[i];
+            worstIdx = i;
+        }
+    }
+
+    if (maxW > criticalValue) {
+        currentSamples.splice(worstIdx, 1);
+    } else {
+        break; 
+    }
+  }
+
+  // Geodetically sound Weighted Least Squares solution of cleaned sample set
+  const lseResult = calculateWeightedLSE(currentSamples);
+  return { result: lseResult.result, usedIndices: currentSamples.map(s => s._originalIdx) };
+}
+
+function calculateBaardaPureAcademic(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length < 4) {
+    return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i) };
+  }
+  const baardaInput = samples.map((s, idx) => ({ ...s, _originalIdx: idx }));
+  const baardaRes = calculateBaardaInternalAcademic(baardaInput);
   return {
     result: baardaRes.result,
     usedIndices: baardaRes.usedIndices
