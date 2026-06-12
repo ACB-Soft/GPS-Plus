@@ -135,6 +135,17 @@ export function calculateResult(
   // Ensure it doesn't drop below a realistic threshold (0.1m)
   resultData.accuracy = Math.max(0.1, resultData.accuracy);
 
+  // Set altitude and altitudeAccuracy to the arithmetic average of all valid active samples
+  const validAltitudes = sourceData.filter(s => s.altitude !== null && s.altitude !== undefined);
+  resultData.altitude = validAltitudes.length > 0 
+    ? validAltitudes.reduce((sum, s) => sum + (s.altitude || 0), 0) / validAltitudes.length 
+    : null;
+
+  const validAltAccuracies = sourceData.filter(s => s.altitudeAccuracy !== null && s.altitudeAccuracy !== undefined);
+  resultData.altitudeAccuracy = validAltAccuracies.length > 0
+    ? validAltAccuracies.reduce((sum, s) => sum + (s.altitudeAccuracy || 0), 0) / validAltAccuracies.length
+    : null;
+
   return { 
     result: resultData, 
     usedIndices, 
