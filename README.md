@@ -1,4 +1,4 @@
-# GPS Plus v5.0 - Professional Geodetic Surveying & GNSS Analysis Tool
+# GPS Plus v5.0
 
 ## Overview
 
@@ -28,37 +28,37 @@ This software represents an active case study in Human-AI co-development, engine
 The repository is organized following modular *Separation of Concerns* principles, separating calculations from visual layouts:
 
 ```text
-├── .github/                 # GitHub workflows & CI/CD configs
-├── components/              # User Interface & Render Modules
-│   ├── Dashboard.tsx        # Dynamic home panel displaying core geodetic statuses
-│   ├── GPSCapture.tsx       # Live GNSS measurement & filtering terminal
-│   ├── StakeoutModule.tsx   # Visual field navigation, radar, & bubble leveling tools
-│   ├── DataAnalysisView.tsx # R&D analysis panel displaying scatter plots and filter curves
-│   ├── SavedLocationsList.tsx  # Interactive database/point notebook with folder groupings
-│   ├── SettingsView.tsx     # System tolerance configurations & Database Backup tools
-│   ├── Onboarding.tsx       # Sensor permission checks & technical welcome walkthrough
-│   ├── ExcelUtils.ts        # Engineered Excel exporter with custom metadata columns
-│   ├── KMLUtils.ts         # High-fidelity CAD & GIS-ready KML file builder
-│   ├── TxtUtils.ts          # Turkish character-safe CAD space exporter (X,Y,Z,No)
-│   ├── Header.tsx           # Global app navigator and connection status indicator
-│   ├── GlobalFooter.tsx     # Version information & brand footer
-│   └── Modal.tsx            # Contextual system alerts and confirmation windows
-├── hooks/                   # Custom React hooks (sensors, geosearch, etc.)
-├── services/                # Geoid grid services & background IO tasks
-│   └── GeoidService.ts      # Handles Bilinear Interpolation for TG-20 and EGM96 models
-├── utils/                   # Geodetic Mathematics & Computational Core
-│   ├── MathUtils.ts         # Computational core housing 9 filters (Huber, RANSAC, KDE, etc.)
-│   ├── CoordinateUtils.ts   # Projection Math (Gauss-Krüger, 3°/6° TM, Bursa-Wolf 7-Param)
-│   ├── GeoidUtils.ts        # Core parser for height corrections ($H = h - N$)
-│   ├── ReportUtils.ts       # Dynamic PDF/DOC-ready Technical Report generator
-│   ├── LanguageContext.tsx  # Dynamic Language provider supporting EN & TR
-│   ├── trtoentranslate.ts   # Academic geodetic dictionary definitions for localization
-│   └── browser.ts           # Hardware API capability verification hooks
-├── App.tsx                  # Core router, global state manager, and local storage syncer
-├── types.ts                 # Strong TypeScript type mappings (GNSS, Filtering, Matrix models)
-├── version.ts               # Brand configurations and build metadata
-├── index.html               # Main SPA DOM mount point
-└── tsconfig.json            # Strict TypeScript compilation rules
+├── .github/                 	# GitHub workflows & CI/CD configs
+├── components/              	# User Interface & Render Modules
+│   ├── Dashboard.tsx        	# Dynamic home panel displaying core geodetic statuses
+│   ├── GPSCapture.tsx       	# Live GNSS measurement & filtering terminal
+│   ├── StakeoutModule.tsx  	# Visual field navigation
+│   ├── DataAnalysisView.tsx 	# R&D analysis panel
+│   ├── SavedLocationsList.tsx  # Interactive database
+│   ├── SettingsView.tsx     	# System settings
+│   ├── Onboarding.tsx       	# Technical welcome walkthrough
+│   ├── ExcelUtils.ts        	# Engineered Excel exporter
+│   ├── KMLUtils.ts          	# High-fidelity CAD & GIS-ready KML file builder
+│   ├── TxtUtils.ts          	# Turkish character-safe CAD space exporter (X,Y,Z,No)
+│   ├── Header.tsx           	# Global app navigator and connection status indicator
+│   ├── GlobalFooter.tsx     	# Version information & brand footer
+│   └── Modal.tsx            	# Contextual system alerts and confirmation windows
+├── hooks/                   	# Custom React hooks (sensors, geosearch, etc.)
+├── services/                	# Geoid grid services & background IO tasks
+│   └── GeoidService.ts      	# Handles Bilinear Interpolation for Geoid models
+├── utils/                   	# Geodetic Mathematics & Computational Core
+│   ├── MathUtils.ts         	# Computational core housing 5 filters
+│   ├── CoordinateUtils.ts   	# Projection Math (Gauss-Krüger, Bursa-Wolf,…)
+│   ├── GeoidUtils.ts        	# Core parser for height corrections (H=h-N)
+│   ├── ReportUtils.ts       	# Dynamic DOC-ready Technical Report generator
+│   ├── LanguageContext.tsx  	# Dynamic Language provider supporting EN & TR
+│   ├── trtoentranslate.ts   	# Academic geodetic dictionary
+│   └── browser.ts           	# Hardware API capability verification hooks
+├── App.tsx                  	# Core router and local storage sync
+├── types.ts                 	# Strong TypeScript type mappings (GNSS, Filtering,…)
+├── version.ts              	# Brand configurations and build metadata
+├── index.html               	# Main SPA DOM mount point
+└── tsconfig.json            	# Strict TypeScript compilation rules
 ```
 
 ---

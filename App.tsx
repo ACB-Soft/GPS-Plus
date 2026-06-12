@@ -33,7 +33,31 @@ const App = () => {
     subViewRef.current = subView;
   }, [view, subView]);
 
-  const [locations, setLocations] = useState<SavedLocation[]>([]);
+  const [locations, setLocations] = useState<SavedLocation[]>(() => {
+    const CURRENT_KEY = 'gps_locations_v5.0';
+    const PREV_KEY = 'gps_locations_v7.8.8';
+    const OLD_KEY = 'gps_locations_v7.8.0';
+    let saved = localStorage.getItem(CURRENT_KEY);
+    if (!saved) {
+      const prevData = localStorage.getItem(PREV_KEY);
+      if (prevData) {
+        localStorage.setItem(CURRENT_KEY, prevData);
+        saved = prevData;
+      } else {
+        const oldData = localStorage.getItem(OLD_KEY);
+        if (oldData) {
+          localStorage.setItem(CURRENT_KEY, oldData);
+          saved = oldData;
+        }
+      }
+    }
+    try {
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Failed to parse saved locations:", e);
+      return [];
+    }
+  });
   const [lastResult, setLastResult] = useState<SavedLocation | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<{ type: 'capture' | 'stakeout'; continuing?: boolean } | null>(null);
@@ -250,26 +274,20 @@ const App = () => {
 
 
   useEffect(() => {
-    const CURRENT_KEY = 'gps_locations_v5.0';
-    const PREV_KEY = 'gps_locations_v7.8.8';
-    const OLD_KEY = 'gps_locations_v7.8.0';
-    
-    let saved = localStorage.getItem(CURRENT_KEY);
-    if (!saved) {
-      const prevData = localStorage.getItem(PREV_KEY);
-      if (prevData) {
-        localStorage.setItem(CURRENT_KEY, prevData);
-        saved = prevData;
-      } else {
-        const oldData = localStorage.getItem(OLD_KEY);
-        if (oldData) {
-          localStorage.setItem(CURRENT_KEY, oldData);
-          saved = oldData;
-        }
-      }
+    // Request persistent storage so browsers (especially iOS/Safari) don't auto-clear site data
+    if (navigator.storage && navigator.storage.persist) {
+      navigator.storage.persist()
+        .then((persisted) => {
+          if (persisted) {
+            console.log("Storage persistence granted successfully.");
+          } else {
+            console.warn("Storage persistence request denied by the browser.");
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to request storage persistence:", err);
+        });
     }
-    
-    if (saved) setLocations(JSON.parse(saved));
   }, []);
 
   useEffect(() => {

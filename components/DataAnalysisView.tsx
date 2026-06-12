@@ -1657,7 +1657,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               <div className="space-y-4">
                 <div className="flex justify-between items-center px-1.5">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    {t("Gelişmiş Kümeleme ve Geodezik Kalite Analizi")}
+                    Advanced Clustering & Geodetic Quality Analysis
                   </span>
                 </div>
 
@@ -1666,14 +1666,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   <div className="space-y-2">
                     <div className="flex justify-between items-center px-1">
                       <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">
-                        {t("K-Means Küme Sınıflandırma Grafiği")}
+                        K-Means Cluster Classification Plot
                       </span>
                       <button 
                         onClick={() => exportChart(clusterChartRef, 'gps-plus-kmeans-clusters')}
                         type="button"
                         className="bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 cursor-pointer flex items-center gap-1"
                       >
-                        <i className="fas fa-camera text-blue-400"></i> {t("PNG İndir")}
+                        <i className="fas fa-camera text-blue-400"></i> {t("Download PNG")}
                       </button>
                     </div>
 
@@ -1742,12 +1742,12 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                     return (
                                       <div className="bg-slate-900 border border-slate-800 text-white p-2.5 rounded-lg shadow-xl z-50 text-[8px] text-left">
                                         <p className="font-bold uppercase text-blue-400 mb-0.5 pb-0.5 border-b border-slate-800 leading-none">
-                                          {t("Epok")} #{data.id}
+                                          Epoch #{data.id}
                                         </p>
                                         <div className="space-y-0.5 font-mono">
                                           <div className="flex justify-between gap-2">
-                                            <span className="opacity-60 text-[7px] uppercase">{t("Uzaysal Kümesi")}:</span>
-                                            <span className="font-bold text-indigo-400">Küme {labels[data.clusterId % labels.length]}</span>
+                                            <span className="opacity-60 text-[7px] uppercase">Spatial Cluster:</span>
+                                            <span className="font-bold text-indigo-400">Cluster {labels[data.clusterId % labels.length]}</span>
                                           </div>
                                           <div className="flex justify-between gap-2">
                                             <span className="opacity-60 text-[7px] uppercase">ΔE (Easting):</span>
@@ -1758,9 +1758,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                             <span className="font-bold text-sky-400">{data.dy.toFixed(4)} m</span>
                                           </div>
                                           <div className="flex justify-between gap-2">
-                                            <span className="opacity-60 text-[7px] uppercase">Baarda Süzgeci:</span>
+                                            <span className="opacity-60 text-[7px] uppercase">Baarda Filter:</span>
                                             <span className={`font-bold ${data.passedBaarda ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                              {data.passedBaarda ? t("GEÇTİ") : t("ELENDİ")}
+                                              {data.passedBaarda ? "PASSED" : "REJECTED"}
                                             </span>
                                           </div>
                                         </div>
@@ -1778,11 +1778,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 <Scatter 
                                   name="GROUND TRUTH (REF)" 
                                   data={[{ dx: 0, dy: 0 }]} 
-                                  fill="#000000" 
+                                  fill="#10b981" 
                                   shape="diamond" 
                                   line={false}
                                 >
-                                  <Cell fill="#000000" stroke="#000000" strokeWidth={1.5} />
+                                  <Cell fill="#10b981" stroke="#059669" strokeWidth={1.5} />
                                 </Scatter>
                               )}
 
@@ -1796,7 +1796,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   return (
                                     <Scatter 
                                       key={`kmeans-scatter-${cIdx}`}
-                                      name={`${t("Küme")} ${labels[cIdx % labels.length]}`} 
+                                      name={`Cluster ${labels[cIdx % labels.length]}`} 
                                       data={ptsOfCluster} 
                                       fill={clusterColors[cIdx % clusterColors.length]}
                                       shape={<RawPointShape r={parseFloat(customDotSize)} />}
@@ -1809,7 +1809,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             </ScatterChart>
                           </ResponsiveContainer>
                         ) : (
-                          <div className="flex items-center justify-center h-full text-slate-400 font-bold text-xs uppercase tracking-widest">{t("Veri bulunamadı")}</div>
+                          <div className="flex items-center justify-center h-full text-slate-400 font-bold text-xs uppercase tracking-widest">NO DATA FOUND</div>
                         )}
                       </div>
 
@@ -1829,7 +1829,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               if (clusterIndices.length === 0) return null;
                               const color = clusterColors[cIdx % clusterColors.length];
                               return (
-                                <div key={`kmeans-legend-${cIdx}`} className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans font-sans">
+                                <div key={`kmeans-legend-${cIdx}`} className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
                                   <div className="flex items-center justify-center rounded font-black text-white shrink-0 shadow-xs" style={{ backgroundColor: color, width: badgeSize, height: badgeSize, fontSize: badgeFontSize }}>
                                     {labels[cIdx % labels.length]}
                                   </div>
@@ -1851,7 +1851,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 {analysisType === 'precise' && (
                                   <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
                                     <div 
-                                      className="flex items-center justify-center bg-[#000000] border border-[#000000] text-white font-black shrink-0 shadow-xs rotate-45" 
+                                      className="flex items-center justify-center bg-[#10b981] border border-[#059669] text-white font-black shrink-0 shadow-xs rotate-45" 
                                       style={{ 
                                         width: `${parseFloat(customScatterFontSize) + 2.5}px`, 
                                         height: `${parseFloat(customScatterFontSize) + 2.5}px`,
@@ -1866,7 +1866,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                       <p className="font-extrabold text-slate-800 uppercase tracking-wider truncate leading-none" style={{ fontSize: `${parseFloat(customScatterFontSize) - 0.5}px` }}>
                                         PRECISE
                                       </p>
-                                      <p className="font-bold text-black tracking-wider leading-none mt-0.5 truncate" style={{ fontSize: `${parseFloat(customScatterFontSize) - 1.5}px` }}>
+                                      <p className="font-bold text-emerald-600 tracking-wider leading-none mt-0.5 truncate" style={{ fontSize: `${parseFloat(customScatterFontSize) - 1.5}px` }}>
                                         COORDINATE
                                       </p>
                                     </div>
@@ -1884,14 +1884,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   <div className="space-y-2">
                     <div className="flex justify-between items-center px-1">
                       <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">
-                        {t("Baarda Güvenilirlik Süzgesi Grafiği")}
+                        Baarda Reliability Filter Plot
                       </span>
                       <button 
                         onClick={() => exportChart(baardaChartRef, 'gps-plus-baarda-reliability')}
                         type="button"
                         className="bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 cursor-pointer flex items-center gap-1"
                       >
-                        <i className="fas fa-camera text-emerald-400"></i> {t("PNG İndir")}
+                        <i className="fas fa-camera text-emerald-400"></i> {t("Download PNG")}
                       </button>
                     </div>
 
@@ -1965,12 +1965,12 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                     return (
                                       <div className="bg-slate-900 border border-slate-800 text-white p-2.5 rounded-lg shadow-xl z-50 text-[8px] text-left">
                                         <p className="font-bold uppercase text-blue-400 mb-0.5 pb-0.5 border-b border-slate-800 leading-none">
-                                          {t("Epok")} #{data.id}
+                                          Epoch #{data.id}
                                         </p>
                                         <div className="space-y-0.5 font-mono">
                                           <div className="flex justify-between gap-2">
-                                            <span className="opacity-60 text-[7px] uppercase">{t("Uzaysal Kümesi")}:</span>
-                                            <span className="font-bold text-indigo-400">Küme {labels[data.clusterId % labels.length]}</span>
+                                            <span className="opacity-60 text-[7px] uppercase">Spatial Cluster:</span>
+                                            <span className="font-bold text-indigo-400">Cluster {labels[data.clusterId % labels.length]}</span>
                                           </div>
                                           <div className="flex justify-between gap-2">
                                             <span className="opacity-60 text-[7px] uppercase">ΔE (Easting):</span>
@@ -1981,9 +1981,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                             <span className="font-bold text-sky-400">{data.dy.toFixed(4)} m</span>
                                           </div>
                                           <div className="flex justify-between gap-2">
-                                            <span className="opacity-60 text-[7px] uppercase">Baarda Süzgeci:</span>
+                                            <span className="opacity-60 text-[7px] uppercase">Baarda Filter:</span>
                                             <span className={`font-bold ${data.passedBaarda ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                              {data.passedBaarda ? t("GEÇTİ (GÜVENİLİR)") : t("ELENDİ (KABA HATA)")}
+                                              {data.passedBaarda ? "PASSED (RELIABLE)" : "OUTLIER (REJECTED)"}
                                             </span>
                                           </div>
                                         </div>
@@ -2001,11 +2001,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 <Scatter 
                                   name="GROUND TRUTH (REF)" 
                                   data={[{ dx: 0, dy: 0 }]} 
-                                  fill="#000000" 
+                                  fill="#10b981" 
                                   shape="diamond" 
                                   line={false}
                                 >
-                                  <Cell fill="#000000" stroke="#000000" strokeWidth={1.5} />
+                                  <Cell fill="#10b981" stroke="#059669" strokeWidth={1.5} />
                                 </Scatter>
                               )}
 
@@ -2031,7 +2031,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             </ScatterChart>
                           </ResponsiveContainer>
                         ) : (
-                          <div className="flex items-center justify-center h-full text-slate-400 font-bold text-xs uppercase tracking-widest">{t("Veri bulunamadı")}</div>
+                          <div className="flex items-center justify-center h-full text-slate-400 font-bold text-xs uppercase tracking-widest">NO DATA FOUND</div>
                         )}
                       </div>
 
@@ -2077,9 +2077,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 </div>
 
                                 {analysisType === 'precise' && (
-                                  <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans font-sans">
+                                  <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
                                     <div 
-                                      className="flex items-center justify-center bg-[#000000] border border-[#000000] text-white font-black shrink-0 shadow-xs rotate-45" 
+                                      className="flex items-center justify-center bg-[#10b981] border border-[#059669] text-white font-black shrink-0 shadow-xs rotate-45" 
                                       style={{ 
                                         width: `${parseFloat(customScatterFontSize) + 2.5}px`, 
                                         height: `${parseFloat(customScatterFontSize) + 2.5}px`,
@@ -2094,7 +2094,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                       <p className="font-extrabold text-slate-800 uppercase tracking-wider truncate leading-none" style={{ fontSize: `${parseFloat(customScatterFontSize) - 0.5}px` }}>
                                         PRECISE
                                       </p>
-                                      <p className="font-bold text-black tracking-wider leading-none mt-0.5 truncate" style={{ fontSize: `${parseFloat(customScatterFontSize) - 1.5}px` }}>
+                                      <p className="font-bold text-emerald-600 tracking-wider leading-none mt-0.5 truncate" style={{ fontSize: `${parseFloat(customScatterFontSize) - 1.5}px` }}>
                                         COORDINATE
                                       </p>
                                     </div>

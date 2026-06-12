@@ -438,7 +438,7 @@ export const downloadCombinedAnalysisReport = (
       getMethodName(res.method),
       res.calculated.x.toFixed(2),
       res.calculated.y.toFixed(2),
-      res.calculated.z.toFixed(2),
+      (res.calculated.z ?? 0).toFixed(2),
       res.errors.dx.toFixed(2),
       res.errors.dy.toFixed(2),
       res.errors.dhz.toFixed(2),
@@ -494,35 +494,37 @@ export const downloadCombinedAnalysisReport = (
     'KMEANS_BAARDA_HUBER'
   ];
 
-  timeSteps.forEach(t => {
-    const startTime = location.samples![0].timestamp;
-    const slice = location.samples!.filter(s => s.timestamp <= startTime + t * 1000 + 500);
-    if (slice.length < 2) return;
+  if (location.samples && location.samples.length > 0) {
+    timeSteps.forEach(t => {
+      const startTime = location.samples![0].timestamp;
+      const slice = location.samples!.filter(s => s.timestamp <= startTime + t * 1000 + 500);
+      if (slice.length < 2) return;
 
-    allMethods.forEach(mId => {
-      const { result } = calculateResult(slice, mId, accuracyLimit);
-      const convResult = convertCoordinate(result.lat, result.lng, testSys);
-      
-      // convResult.y is Northing, convResult.x is Easting
-      const dn = refNorth - convResult.y;
-      const de = refEast - convResult.x;
-      const dhz = Math.sqrt(dn*dn + de*de);
+      allMethods.forEach(mId => {
+        const { result } = calculateResult(slice, mId, accuracyLimit);
+        const convResult = convertCoordinate(result.lat, result.lng, testSys);
+        
+        // convResult.y is Northing, convResult.x is Easting
+        const dn = refNorth - convResult.y;
+        const de = refEast - convResult.x;
+        const dhz = Math.sqrt(dn*dn + de*de);
 
-      const dispConv = convertCoordinate(result.lat, result.lng, sys);
+        const dispConv = convertCoordinate(result.lat, result.lng, sys);
 
-      timeSeriesData.push([
-        `${t} sn`,
-        getMethodName(mId),
-        (sys === "WGS84" ? result.lat : dispConv.x).toFixed(2),
-        (sys === "WGS84" ? result.lng : dispConv.y).toFixed(2),
-        (result.altitude || 0).toFixed(2),
-        dhz.toFixed(2),
-        slice.length
-      ]);
+        timeSeriesData.push([
+          `${t} sn`,
+          getMethodName(mId),
+          (sys === "WGS84" ? result.lat : dispConv.x).toFixed(2),
+          (sys === "WGS84" ? result.lng : dispConv.y).toFixed(2),
+          (result.altitude || 0).toFixed(2),
+          dhz.toFixed(2),
+          slice.length
+        ]);
+      });
+      // Add an empty row for separation between time steps
+      timeSeriesData.push([]);
     });
-    // Add an empty row for separation between time steps
-    timeSeriesData.push([]);
-  });
+  }
 
   const wsTimeSeries = XLSX.utils.aoa_to_sheet(timeSeriesData);
   XLSX.utils.book_append_sheet(workbook, wsTimeSeries, "Zaman Bazlı Analiz");
