@@ -255,12 +255,12 @@ function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; used
     </pre>
 
     <h3>2.4.2. Gürbüz Adımlı Huber M-Tahmini Süzgeci (Robust Huber M-Estimation)</h3>
-    <p>Huber M-tahmini yöntemi, veri havuzundaki konumsal sıçramaları ve gürültüleri hassasiyete göre yumuşatan gürbüz (robust) bir istatistiksel yaklaşımı temsil eder. Geliştirilen bu saf Huber süzgeci, klasik Huber sönümlemesini donanımsal alıcı doğruluk ağırlıkları ile birleştirerek iteratif bir dengeleme yürütür. 2-sigma eşiğini aşan aşırı sapanlar elendikten sonra, hibrit modelimizdeki gibi <b>Donanım Duyarlılığı × Huber Robust Ağırlığı</b> ortak çarpımı kullanılarak nihai ağırlıklı koordinat çözümü üretilir.</p>
+    <p>Huber M-tahmini yöntemi, veri havuzundaki konumsal sıçramaları ve gürültüleri hassasiyete göre yumuşatan gürbüz (robust) bir istatistiksel yaklaşımı temsil eder. Geliştirilen bu saf Huber süzgeci, klasik Huber sönümlemesini donanımsal alıcı doğruluk ağırlıkları ile birleştirerek iteratif bir dengeleme yürütür. 1-sigma eşiğini aşan aşırı sapanlar elendikten sonra, hibrit modelimizdeki gibi <b>Donanım Duyarlılığı × Huber Robust Ağırlığı</b> ortak çarpımı kullanılarak nihai ağırlıklı koordinat çözümü üretilir.</p>
 
     <div class="case-container" style="background-color: #f8fafc; border-left: 4px solid #4f46e5; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
       <p class="bold" style="color: #4338ca; margin-bottom: 6px;">Huber Robust + Donanımsal Ağırlık Birleşim Mantığı</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. İteratif Yakınsama:</span> İlk etapta tüm gözlemlerin gürbüz <b>Medyan (Ortanca)</b> konumu referans alınarak ölçek parametresi olarak gürbüz <b>MAD (Median Absolute Deviation)</b> hesaplanır. Huber eşiği (1.345 * pseudo_sigma, sayısal kararlılık için en az 1e-7m) belirlenerek anlık ağırlıklar iteratif biçimde güncellenir ve merkez kayması tolerans değerinin (1 milimetre - 0.001m) altına inene kadar (max 15 adım) pivot yenilenir.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Kalın Hata Temizliği (2-sigma):</span> İterasyon sonunda nihai koordinat merkezinden en fazla 2-sigma (2 * final_pseudo_sigma) kadar uzaktaki gözlemler sisteme dahil edilir, bu sınırın dışındaki yansımalı kaba hatalar bütünüyle elenir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Kalın Hata Temizliği (1-sigma):</span> İterasyon sonunda nihai koordinat merkezinden en fazla 1-sigma (1 * final_pseudo_sigma) kadar uzaktaki gözlemler sisteme dahil edilir, bu sınırın dışındaki yansımalı kaba hatalar bütünüyle elenir.</p>
       <p class="no-indent"><span class="bold">3. Ortak Ağırlıklandırma Formülasyonu:</span> Süzgeçten geçen temiz gözlemlerin nihai ağırlıkları tayin edilirken hem donanımsal hassasiyet karesel varyans modeli (1 / accuracy²) hem de konumsal uzaklığa dayalı Huber sönümlemesi çarpan olarak yansıtılarak tam gürbüzlük ve fiziksel kararlılık elde edilir.</p>
     </div>
 
@@ -350,7 +350,7 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
   const finalMAD = calculateMADHuber(samples, currentLat, currentLng);
   const finalPseudoSigma = finalMAD * 1.4826;
   const stableFinalPseudoSigma = finalPseudoSigma &gt; 1e-7 ? finalPseudoSigma : 1e-7;
-  const outlierThreshold = 2.0 * stableFinalPseudoSigma;
+  const outlierThreshold = 1.0 * stableFinalPseudoSigma;
 
   const usedIndices: number[] = [];
   const cleanSamples: Coordinate[] = [];
