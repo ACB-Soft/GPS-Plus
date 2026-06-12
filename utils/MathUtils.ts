@@ -798,7 +798,9 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
   for (let iter = 0; iter < maxIterations; iter++) {
     const currentMAD = calculateMADHuber(samples, currentLat, currentLng);
     const pseudoSigma = currentMAD * 1.4826;
-    const huberLimit = 1.345 * Math.max(0.50, pseudoSigma);
+    // Numerical stability guard (machine-epsilon) instead of arbitrary spatial minimum
+    const stablePseudoSigma = pseudoSigma > 1e-7 ? pseudoSigma : 1e-7;
+    const huberLimit = 1.345 * stablePseudoSigma;
 
     let sumW = 0;
     let sumLatW = 0;
@@ -809,7 +811,7 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
       const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
 
       const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
-      const huberWeight = dist <= huberLimit ? 1.0 : huberLimit / Math.max(0.01, dist);
+      const huberWeight = dist <= huberLimit ? 1.0 : huberLimit / Math.max(0.001, dist);
       const combinedWeight = hardwareWeight * huberWeight;
 
       sumW += combinedWeight;
@@ -832,7 +834,9 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
 
   const finalMAD = calculateMADHuber(samples, currentLat, currentLng);
   const finalPseudoSigma = finalMAD * 1.4826;
-  const outlierThreshold = 3.0 * Math.max(3.0, finalPseudoSigma);
+  // Pure 3-sigma outlier threshold boundary
+  const stableFinalPseudoSigma = finalPseudoSigma > 1e-7 ? finalPseudoSigma : 1e-7;
+  const outlierThreshold = 3.0 * stableFinalPseudoSigma;
 
   const usedIndices: number[] = [];
   const cleanSamples: Coordinate[] = [];
@@ -856,7 +860,8 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
 
   const subMAD = calculateMADHuber(cleanSamples, currentLat, currentLng);
   const subPseudoSigma = subMAD * 1.4826;
-  const finalHuberLimit = 1.345 * Math.max(0.50, subPseudoSigma);
+  const stableSubPseudoSigma = subPseudoSigma > 1e-7 ? subPseudoSigma : 1e-7;
+  const finalHuberLimit = 1.345 * stableSubPseudoSigma;
 
   let finalSumW = 0;
   let finalLatW = 0;
@@ -866,7 +871,7 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
   for (const p of cleanSamples) {
     const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
     const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
-    const huberWeight = dist <= finalHuberLimit ? 1.0 : finalHuberLimit / Math.max(0.01, dist);
+    const huberWeight = dist <= finalHuberLimit ? 1.0 : finalHuberLimit / Math.max(0.001, dist);
     const combinedWeight = hardwareWeight * huberWeight;
 
     finalSumW += combinedWeight;
