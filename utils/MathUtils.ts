@@ -1284,83 +1284,10 @@ export function calculateParticleFilter(samples: Coordinate[]): { result: Coordi
     return { result: samples[0], usedIndices: [0] };
   }
 
-  // First step: Huber Robust Outlier Filtering pre-processing
-  let currentLat = calculateMedian(samples.map(s => s.lat));
-  let currentLng = calculateMedian(samples.map(s => s.lng));
-
-  const maxIterations = 15;
-  const toleranceMeter = 0.001;
-
-  for (let iter = 0; iter < maxIterations; iter++) {
-    const currentMAD = calculateMADHuber(samples, currentLat, currentLng);
-    const pseudoSigma = currentMAD * 1.4826;
-    const stablePseudoSigma = pseudoSigma > 1e-7 ? pseudoSigma : 1e-7;
-    const huberLimit = 1.345 * stablePseudoSigma;
-
-    let sumW = 0;
-    let sumLatW = 0;
-    let sumLngW = 0;
-
-    for (let i = 0; i < samples.length; i++) {
-      const p = samples[i];
-      const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
-
-      const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
-      const huberWeight = dist <= huberLimit ? 1.0 : huberLimit / Math.max(0.001, dist);
-      const combinedWeight = hardwareWeight * huberWeight;
-
-      sumW += combinedWeight;
-      sumLatW += p.lat * combinedWeight;
-      sumLngW += p.lng * combinedWeight;
-    }
-
-    if (sumW === 0) break;
-
-    const nextLat = sumLatW / sumW;
-    const nextLng = sumLngW / sumW;
-
-    const changeInMeter = calculateDistanceMeter(nextLat, nextLng, currentLat, currentLng, currentLat);
-
-    currentLat = nextLat;
-    currentLng = nextLng;
-
-    if (changeInMeter < toleranceMeter) break;
-  }
-
-  const finalMAD = calculateMADHuber(samples, currentLat, currentLng);
-  const finalPseudoSigma = finalMAD * 1.4826;
-  const stableFinalPseudoSigma = finalPseudoSigma > 1e-7 ? finalPseudoSigma : 1e-7;
-  const outlierThreshold = 2.0 * stableFinalPseudoSigma;
-
-  const cleanIndices: number[] = [];
-  const cleanSamples: Coordinate[] = [];
-
-  for (let i = 0; i < samples.length; i++) {
-    const p = samples[i];
-    const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
-
-    if (dist <= outlierThreshold) {
-      cleanIndices.push(i);
-      cleanSamples.push(p);
-    }
-  }
-
-  // If filtered too aggressively, preserve at least 50% of original samples closest to the Huber center
-  if (cleanSamples.length < Math.max(2, Math.floor(samples.length * 0.4))) {
-    const sortedWithIndex = samples.map((p, idx) => ({
-      p,
-      idx,
-      dist: calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat)
-    })).sort((a, b) => a.dist - b.dist);
-
-    const countToKeep = Math.max(2, Math.floor(samples.length * 0.5));
-    cleanIndices.length = 0;
-    cleanSamples.length = 0;
-    for (let i = 0; i < countToKeep; i++) {
-      cleanIndices.push(sortedWithIndex[i].idx);
-      cleanSamples.push(sortedWithIndex[i].p);
-    }
-  }
+  // First step: Huber Robust Outlier Filtering pre-processing using the pure academic Huber implementation
+  const huberRes = calculateHuberPure(samples);
+  const cleanIndices = huberRes.usedIndices;
+  const cleanSamples = cleanIndices.map(idx => samples[idx]);
 
   // Now perform Particle Filter on cleanSamples
   const avgLat = cleanSamples.reduce((sum, s) => sum + s.lat, 0) / cleanSamples.length;
