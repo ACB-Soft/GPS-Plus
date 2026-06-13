@@ -1038,15 +1038,12 @@ export function calculateIQRWLS(samples: Coordinate[]): { result: Coordinate; us
     y: (s.lat - avgLat) * latCoeff
   }));
 
-  // Identify Median
-  const medianX = calculateMedian(localPts.map(p => p.x));
-  const medianY = calculateMedian(localPts.map(p => p.y));
+  const xs = localPts.map(p => p.x);
+  const ys = localPts.map(p => p.y);
 
-  // Distance residuals to median
-  const distances = localPts.map(p => Math.sqrt(Math.pow(p.x - medianX, 2) + Math.pow(p.y - medianY, 2)));
-
-  // Statistical IQR calculations
-  const sortedDists = [...distances].sort((a, b) => a - b);
+  // Sort components for rigorous statistical quartile calculations
+  const sortedXs = [...xs].sort((a, b) => a - b);
+  const sortedYs = [...ys].sort((a, b) => a - b);
   
   function getPercentile(arr: number[], percentile: number): number {
     if (arr.length === 0) return 0;
@@ -1058,16 +1055,35 @@ export function calculateIQRWLS(samples: Coordinate[]): { result: Coordinate; us
     return arr[lower] * (1 - weight) + arr[upper] * weight;
   }
 
-  const q1 = getPercentile(sortedDists, 0.25);
-  const q3 = getPercentile(sortedDists, 0.75);
-  const iqr = q3 - q1;
-  const upperBound = q3 + 1.5 * iqr;
+  // Calculate IQR for X (Easting) and Y (Northing) separately
+  const q1_x = getPercentile(sortedXs, 0.25);
+  const q3_x = getPercentile(sortedXs, 0.75);
+  const iqr_x = q3_x - q1_x;
+
+  const q1_y = getPercentile(sortedYs, 0.25);
+  const q3_y = getPercentile(sortedYs, 0.75);
+  const iqr_y = q3_y - q1_y;
+
+  // Add an adaptive safety floor to prevent statistical collapse (over-elimination in highly static locks)
+  const avgHardwareAcc = samples.reduce((sum, s) => sum + s.accuracy, 0) / samples.length;
+  const minIQR = Math.max(0.1, avgHardwareAcc * 0.05); // 10 cm minimum floor or 5% of average hardware accuracy
+
+  const iqr_x_safe = Math.max(iqr_x, minIQR);
+  const iqr_y_safe = Math.max(iqr_y, minIQR);
+
+  const lowerX = q1_x - 1.5 * iqr_x_safe;
+  const upperX = q3_x + 1.5 * iqr_x_safe;
+
+  const lowerY = q1_y - 1.5 * iqr_y_safe;
+  const upperY = q3_y + 1.5 * iqr_y_safe;
 
   const usedIndices: number[] = [];
   const inlierSamples: Coordinate[] = [];
 
   for (let i = 0; i < samples.length; i++) {
-    if (distances[i] <= upperBound) {
+    const pt = localPts[i];
+    // A point must reside within the statistical gate on both orthogonal axes to be considered an inlier
+    if (pt.x >= lowerX && pt.x <= upperX && pt.y >= lowerY && pt.y <= upperY) {
       usedIndices.push(i);
       inlierSamples.push(samples[i]);
     }

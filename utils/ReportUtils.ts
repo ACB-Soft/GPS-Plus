@@ -838,32 +838,36 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
 
     <div class="case-container" style="background-color: #fff1f2; border-left: 4px solid #f43f5e; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
       <p class="bold" style="color: #9f1239; margin-bottom: 6px;">IQR ve Ağırlıklı En Küçük Kareler (WLS) Entegrasyon Modeli</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Medyan Tabanlı Merkez tespiti:</span> Ortalama koordinatların çok büyük saçılmalar içeren kaba hatalardan (blunders) olumsuz etkilenmesini önlemek amacıyla, tüm gözlem serisindeki yerel Cartesian X ve Y koordinatlarının <b>Medyan (Q2 - Ortanca)</b> konumu hesaplanır. Bu medyan nokta, sistemin robust referans asıllı nirengi noktasıdır.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Konumsal Artık Hesaplama:</span> Her bir <i>P<sub>i</sub></i> gözleminin bu medyan nirengi noktasına olan iki boyutlu Euclidean mesafesi (Residual) hesaplanır: <i>d<sub>i</sub> = &radic;((x<sub>i</sub> - x<sub>medyan</sub>)<sup>2</sup> + (y<sub>i</sub> - y<sub>medyan</sub>)<sup>2</sup>)</i>.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. Çeyrekler Açıklığı Sınırı:</span> Bu elde edilen mesafeler küçükten büyüğe sıralandıktan sonra Birinci Çeyreklik (<i>Q<sub>1</sub></i>, %25. yüzdelik) ve Üçüncü Çeyreklik (<i>Q<sub>3</sub></i>, %75. yüzdelik) konumları belirlenir. Çeyrekler Açıklığı ise şöyle bulunur: <i>IQR = Q<sub>3</sub> - Q<sub>1</sub></i>. Gözlemler için kabul edilebilir üst limit (Outlier Threshold Gate) şu şekilde tanımlanır:
-        <br/><span class="bold" style="display: block; text-align: center; margin: 8px 0; font-family: monospace;">Üst Sınır = Q<sub>3</sub> + 1.5 &times; IQR</span>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Rayleigh Dağılım Engeli ve Bileşen Ayrıştırması:</span> İki boyutlu Euclidean mesafeler <i>d = &radic;(dx<sup>2</sup> + dy<sup>2</sup>)</i> her zaman pozitif olup asimetrik ve sağa çarpık **Rayleigh Dağılımı** gösterir. Bu dağılım üzerinde doğrudan 1D IQR testinin yapılması yayılım sınırlarını (Boundaries) aşırı derece şişirmekte ve aykırı değerleri yakalamada yetersiz kalmaktadır. Bu sebeple IQR testi, X (Easting) ve Y (Northing) yerel düzlemsel koordinat bileşenleri üzerinde **bağımsız iki kanal** olarak koşturulur. Koordinat bileşenleri bağımsız **Gaussian (Normal) Dağılım** gösterdiğinden, klasik IQR formülleri buralarda teorik olarak kusursuz çalışır.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Çeyrekler Açıklığı ve Entegrasyon Sınırları:</span> X ve Y serileri küçükten büyüğe sıralandıktan sonra her bir eksen için birinci çeyreklik (<i>Q<sub>1</sub></i>, %25) ve üçüncü çeyreklik (<i>Q<sub>3</sub></i>, %75) bulunarak çeyrekler açıklamaları (<i>IQR<sub>x</sub> = Q<sub>3x</sub> - Q<sub>1x</sub></i>, <i>IQR<sub>y</sub> = Q<sub>3y</sub> - Q<sub>1y</sub></i>) hesaplanır. Güvenli kabul limitleri şu şekildedir:
+        <br/><span class="bold" style="display: block; text-align: center; margin: 8px 0; font-family: monospace;">
+          Alt Sınır = Q<sub>1</sub> - 1.5 &times; IQR_safe &nbsp;&nbsp;|&nbsp;&nbsp; Üst Sınır = Q<sub>3</sub> + 1.5 &times; IQR_safe
+        </span>
       </p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">4. Eleme Kartı ve WLS Çözümü:</span> Mesafesi belirlenen üst sınırın üzerinde olan koordinat gözlemleri sistem dışı bırakılır. Geriye kalan temiz ve güvenceli örneklemler (inliers) ile ağırlık matrisi <i>P = 1 / accuracy<sup>2</sup></i> olan <b>Ağırlıklı En Küçük Kareler (WLS)</b> doğrusal dengeleme matrisi koşturularak nokta konumu en yüksek hassasiyetle hesaplanır.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. Çökme Önleyici Hassasiyet Eşiği (Safety Floor):</span> GNSS alıcısının aşırı statik ve sıfır hata kilitlendiği senaryolarda IQR mesafeleri sıfıra veya milimetre seviyelerine çökebilir. Bu durumda normal rassal milimetrik gürültülerin kaba hata sayılarak elenmesini önlemek amacıyla, alıcının doğruluk kestirimine (UERE) paralel olarak her eksene bir <b>en küçük limit (minIQR = 10 cm vb.)</b> emniyet bariyeri yerleştirilir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">4. Dengeleme Çözümü:</span> Her iki orthogonal eksen için belirlenen sınırların dışında kalan noktalar sistem dışı (outlier) bırakılır. Geriye kalan temiz ve güvenceli örneklemler (inliers) ile <i>P = 1 / accuracy<sup>2</sup></i> ağırlıklı <b>Ağırlıklı En Küçük Kareler (WLS)</b> doğrusal dengeleme matrisi koşturularak nokta konumu en yüksek hassasiyetle hesaplanır.</p>
     </div>
 
-    <p class="no-indent">IQR + WLS koordinat süzme metodolojisinin TS programlama dili motorundaki kaynak kod yapısı aşağıdadır:</p>
+    <p class="no-indent">Bileşen tabanlı (Separate X/Y Axes) IQR + WLS koordinat süzme metodolojisinin kaynak kod yapısı aşağıdadır:</p>
     <pre class="code-block">
 function calculateIQRWLS(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  // Convert samples to 2D local Cartesian relative to overall mean
+  // Convert samples to 2D local Cartesian
   const localPts = samples.map(s => ({ x: (s.lng - avgLng) * lngCoeff, y: (s.lat - avgLat) * latCoeff }));
-  const medianX = calculateMedian(localPts.map(p => p.x));
-  const medianY = calculateMedian(localPts.map(p => p.y));
+  const sortedXs = [...localPts.map(p => p.x)].sort((a,b) => a - b);
+  const sortedYs = [...localPts.map(p => p.y)].sort((a,b) => a - b);
 
-  // Compute distance residuals to central median
-  const distances = localPts.map(p => Math.sqrt((p.x - medianX)**2 + (p.y - medianY)**2));
-  const sortedDists = [...distances].sort((a,b) => a - b);
+  const iqr_x = getPercentile(sortedXs, 0.75) - getPercentile(sortedXs, 0.25);
+  const iqr_y = getPercentile(sortedYs, 0.75) - getPercentile(sortedYs, 0.25);
 
-  const q1 = getPercentile(sortedDists, 0.25);
-  const q3 = getPercentile(sortedDists, 0.75);
-  const iqr = q3 - q1;
-  const upperBound = q3 + 1.5 * iqr;
+  const minIQR = Math.max(0.1, avgHardwareAcc * 0.05); // Safety floor
+  const iqr_x_safe = Math.max(iqr_x, minIQR);
+  const iqr_y_safe = Math.max(iqr_y, minIQR);
 
-  const inliers = samples.filter((_, i) => distances[i] <= upperBound);
+  const inliers = samples.filter((_, i) => {
+    const pt = localPts[i];
+    return pt.x >= (q1_x - 1.5 * iqr_x_safe) && pt.x <= (q3_x + 1.5 * iqr_x_safe) &&
+           pt.y >= (q1_y - 1.5 * iqr_y_safe) && pt.y <= (q3_y + 1.5 * iqr_y_safe);
+  });
   return calculateWeightedLSE(inliers);
 }
     </pre>
