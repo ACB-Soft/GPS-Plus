@@ -17,7 +17,8 @@ export type CalculationMethod =
   | 'KMEANS_BAARDA_HUBER'
   | 'IQR_WLS'
   | 'RANSAC'
-  | 'DBSCAN_WLS';
+  | 'MONTE_CARLO_PF'
+  | 'SENSOR_FUSION_DR';
 
 export interface SavedLocation extends Coordinate {
   id: string;

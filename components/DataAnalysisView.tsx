@@ -48,7 +48,8 @@ const METHOD_COLORS: Record<string, string> = {
   KMEANS_BAARDA_HUBER: '#10b981',
   IQR_WLS: '#e11d48',
   RANSAC: '#14b8a6',
-  DBSCAN_WLS: '#6366f1'
+  MONTE_CARLO_PF: '#6366f1',
+  SENSOR_FUSION_DR: '#f97316'
 };
 
 const CLUSTER_COLORS = [
@@ -221,7 +222,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     'KMEANS_BAARDA_HUBER',
     'IQR_WLS',
     'RANSAC',
-    'DBSCAN_WLS'
+    'MONTE_CARLO_PF',
+    'SENSOR_FUSION_DR'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
@@ -233,7 +235,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       'KMEANS_BAARDA_HUBER': t("5. Hibrit Yöntem (KMeans + Baarda + Huber)"),
       'IQR_WLS': t("6. IQR Aykırı Değer Eleme (WLS)"),
       'RANSAC': t("7. RANSAC Gözlem Ayıklama (WLS)"),
-      'DBSCAN_WLS': t("8. DBSCAN Yoğunluk Tabanlı Kümeleme (WLS)")
+      'MONTE_CARLO_PF': t("8. Monte Carlo Parçacık Filtresi"),
+      'SENSOR_FUSION_DR': t("9. Çoklu Sensör Füzyonu (Static)")
     };
     return labels[m] || m;
   };
@@ -1523,7 +1526,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
                                   'IQR_WLS': 'IQR + WLS',
                                   'RANSAC': 'RANSAC + WLS',
-                                  'DBSCAN_WLS': 'DBSCAN + WLS'
+                                  'MONTE_CARLO_PF': 'Particle Filter',
+                                  'SENSOR_FUSION_DR': 'Sensor Fusion + DR'
                                 };
                                 return labels[m] || m;
                               };
@@ -1592,7 +1596,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
                               'IQR_WLS': 'IQR + WLS',
                               'RANSAC': 'RANSAC + WLS',
-                              'DBSCAN_WLS': 'DBSCAN + WLS'
+                              'MONTE_CARLO_PF': 'Particle Filter',
+                              'SENSOR_FUSION_DR': 'Sensor Fusion + DR'
                             };
                             return labels[m] || m;
                           };
@@ -1630,7 +1635,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
                             'IQR_WLS': 'IQR + WLS',
                             'RANSAC': 'RANSAC + WLS',
-                            'DBSCAN_WLS': 'DBSCAN + WLS'
+                            'MONTE_CARLO_PF': 'Particle Filter',
+                            'SENSOR_FUSION_DR': 'Sensor Fusion + DR'
                           };
                           return labels[m] || m;
                         };

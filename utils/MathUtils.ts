@@ -59,10 +59,12 @@ export function calculateResult(
   // - HUBER and KMEANS_4 require en az 30 epok.
   // - KMEANS_BAARDA_HUBER (Hybrid) require en az 55 epok.
   // - Standalone BAARDA only requires geodetic minimum of 4 epok.
-  // - IQR_WLS, RANSAC and DBSCAN_WLS require en az 10 epok.
+  // - IQR_WLS and RANSAC require en az 10 epok.
+  // - MONTE_CARLO_PF and SENSOR_FUSION_DR require en az 15 epok.
   const requires55 = method === 'KMEANS_BAARDA_HUBER';
   const requires30 = method === 'HUBER' || method === 'KMEANS_4';
-  const requires10 = method === 'IQR_WLS' || method === 'RANSAC' || method === 'DBSCAN_WLS';
+  const requires15 = method === 'MONTE_CARLO_PF' || method === 'SENSOR_FUSION_DR';
+  const requires10 = method === 'IQR_WLS' || method === 'RANSAC';
   const requires4 = method === 'BAARDA';
   
   let finalMethod = method;
@@ -72,6 +74,9 @@ export function calculateResult(
     finalMethod = 'WEIGHTED_LSE';
     fallbackApplied = true;
   } else if (requires30 && samples.length < 30) {
+    finalMethod = 'WEIGHTED_LSE';
+    fallbackApplied = true;
+  } else if (requires15 && samples.length < 15) {
     finalMethod = 'WEIGHTED_LSE';
     fallbackApplied = true;
   } else if (requires10 && samples.length < 10) {
@@ -129,11 +134,15 @@ export function calculateResult(
       resultData = ransacRes.result;
       finalCalculatedUsedIndices = ransacRes.usedIndices;
       break;
-    case 'DBSCAN_WLS':
-      const dbscanRes = calculateDBSCAN(sourceData);
-      resultData = dbscanRes.result;
-      finalCalculatedUsedIndices = dbscanRes.usedIndices;
-      clusters = dbscanRes.clusters;
+    case 'MONTE_CARLO_PF':
+      const pfRes = calculateParticleFilter(sourceData);
+      resultData = pfRes.result;
+      finalCalculatedUsedIndices = pfRes.usedIndices;
+      break;
+    case 'SENSOR_FUSION_DR':
+      const sfRes = calculateSensorFusionDR(sourceData);
+      resultData = sfRes.result;
+      finalCalculatedUsedIndices = sfRes.usedIndices;
       break;
     default:
       const defaultLse = calculateWeightedLSE(sourceData);
@@ -1263,197 +1272,453 @@ export function calculateRANSAC(samples: Coordinate[]): { result: Coordinate; us
 }
 
 /**
- * 8. DBSCAN (Density-Based Spatial Clustering of Applications with Noise) + WLS
- * Specially designed and adapted for high-error smartphone single-frequency GNSS.
- * Successfully handles 1m and 5m typical L1 scatter by isolating the highest-density spatial consensus 
- * core cluster and discarding sparse multipath noise/drift prior to Weighted Least Squares.
+ * 9. Monte Carlo Particle Filter (Parçacık Filtresi)
+ * Specially designed for static smartphone survey measurements:
+ * - Local 2D state vector [x, y] is recursively estimated using a population of 500 particles.
+ * - Undergoes Gaussian state transition prediction modeled for static targets (extremely small process noise drift).
+ * - Multi-epoch sequential updating scales weight likelihoods recursively by measurement accuracy.
+ * - Systematic resampling prevents particle degeneracy while tracking observation likelihood levels to isolate outliers.
  */
-export function calculateDBSCAN(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
-  if (samples.length < 3) {
-    return { 
-      result: samples[0] || { lat: 0, lng: 0, accuracy: 1.0, altitude: null, altitudeAccuracy: null, timestamp: Date.now() }, 
-      usedIndices: samples.map((_, i) => i), 
-      clusters: [] 
-    };
+export function calculateParticleFilter(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length < 2) {
+    return { result: samples[0], usedIndices: [0] };
   }
 
   const avgLat = samples.reduce((sum, s) => sum + s.lat, 0) / samples.length;
   const avgLng = samples.reduce((sum, s) => sum + s.lng, 0) / samples.length;
   const { latCoeff, lngCoeff } = getWGS84Coefficients(avgLat);
 
-  // Convert to local Cartesian x, y (in meters)
+  // Convert to local 2D Cartesian coordinates (meters)
   const localPts = samples.map(s => ({
     x: (s.lng - avgLng) * lngCoeff,
     y: (s.lat - avgLat) * latCoeff
   }));
 
-  // Calculate coordinates' spatial standard deviation to estimate spatial dispersion of the noise
-  const meanX = localPts.reduce((sum, p) => sum + p.x, 0) / localPts.length;
-  const meanY = localPts.reduce((sum, p) => sum + p.y, 0) / localPts.length;
-  const varianceX = localPts.reduce((sum, p) => sum + Math.pow(p.x - meanX, 2), 0) / localPts.length;
-  const varianceY = localPts.reduce((sum, p) => sum + Math.pow(p.y - meanY, 2), 0) / localPts.length;
-  const spatialStdDev = Math.sqrt(varianceX + varianceY);
-
-  // Set adaptive search radius (Epsilon) based on spatial spread of measurements
-  // For tightly clustered high-quality GPS, Epsilon shrinks down to 0.75m
-  // For highly scattered L1 smartphone GNSS with multipath, Epsilon scale adaptive with the dispersion (bounded securely)
-  const Eps = Math.max(0.75, Math.min(4.5, spatialStdDev * 0.8));
-
-  // Set adaptive MinPts based on the dataset length (usually 15-20% of epochs)
-  const MinPts = Math.min(10, Math.max(3, Math.floor(samples.length * 0.15)));
-
-  // DBSCAN Label states:
-  // -1: Unclassified
-  // -2: Noise (outlier)
-  // >=0: Cluster ID
-  const labels = new Array<number>(samples.length).fill(-1);
-  let clusterId = 0;
-
-  function getNeighbors(idx: number): number[] {
-    const list: number[] = [];
-    const pt1 = localPts[idx];
-    for (let i = 0; i < localPts.length; i++) {
-      const pt2 = localPts[i];
-      const dist = Math.sqrt(Math.pow(pt1.x - pt2.x, 2) + Math.pow(pt1.y - pt2.y, 2));
-      if (dist <= Eps) {
-        list.push(i);
-      }
+  // Setup deterministic random generator for seed-reproducible Particle Filter
+  let seed = 999;
+  const randomGaussian = (): number => {
+    // Box-Muller transform
+    let u = 0, v = 0;
+    while(u === 0) {
+      const x = Math.sin(seed++) * 10000;
+      u = x - Math.floor(x);
     }
-    return list;
+    while(v === 0) {
+      const y = Math.sin(seed++) * 10000;
+      v = y - Math.floor(y);
+    }
+    return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+  };
+
+  const NUM_PARTICLES = 500;
+  const particles = new Array<{ x: number; y: number }>(NUM_PARTICLES);
+  let weights = new Array<number>(NUM_PARTICLES).fill(1 / NUM_PARTICLES);
+
+  // Initialize particles centered around the first measurement
+  const initPt = localPts[0];
+  const initSigma = Math.max(0.2, samples[0].accuracy / 1.96);
+  for (let i = 0; i < NUM_PARTICLES; i++) {
+    particles[i] = {
+      x: initPt.x + randomGaussian() * initSigma,
+      y: initPt.y + randomGaussian() * initSigma
+    };
   }
 
-  for (let i = 0; i < samples.length; i++) {
-    if (labels[i] !== -1) continue;
+  // Process noise standard deviation (static environment: extremely low random walk)
+  const qSigma = 0.015; // 1.5 cm process update noise per epoch
+  
+  const inlierIndices: number[] = [];
+  
+  // Standard Particle Filter loop
+  for (let j = 0; j < samples.length; j++) {
+    const obs = localPts[j];
+    const obsSigma = Math.max(0.1, samples[j].accuracy / 1.96);
+    const twoObsSigmaSq = 2.0 * obsSigma * obsSigma;
 
-    const neighbors = getNeighbors(i);
-    if (neighbors.length < MinPts) {
-      labels[i] = -2; // Mark as noise for now
-    } else {
-      labels[i] = clusterId;
+    // 1. Prediction stage: Propagate particles with tiny process noise (static)
+    for (let k = 0; k < NUM_PARTICLES; k++) {
+      particles[k].x += randomGaussian() * qSigma;
+      particles[k].y += randomGaussian() * qSigma;
+    }
+
+    // 2. Weight Update stage based on Gaussian Measurement Likelihood
+    let sumWeight = 0;
+    const stepWeights = new Array<number>(NUM_PARTICLES);
+    for (let k = 0; k < NUM_PARTICLES; k++) {
+      const dx = particles[k].x - obs.x;
+      const dy = particles[k].y - obs.y;
+      const distSq = dx * dx + dy * dy;
       
-      const queue = [...neighbors];
-      const visitedInQueue = new Set<number>();
-      for (const n of queue) visitedInQueue.add(n);
-
-      for (let j = 0; j < queue.length; j++) {
-        const currentIdx = queue[j];
-        
-        // If it was marked as noise, it's a border point for this cluster
-        if (labels[currentIdx] === -2) {
-          labels[currentIdx] = clusterId;
-        }
-        
-        if (labels[currentIdx] !== -1) continue;
-        
-        labels[currentIdx] = clusterId;
-        
-        const currentNeighbors = getNeighbors(currentIdx);
-        if (currentNeighbors.length >= MinPts) {
-          for (const cn of currentNeighbors) {
-            if (!visitedInQueue.has(cn)) {
-              visitedInQueue.add(cn);
-              queue.push(cn);
-            }
-          }
-        }
-      }
-      clusterId++;
+      // Likelihood L_k = exp(-dist² / (2 * sigma_obs²)) / (2 * PI * sigma_obs²)
+      const likelihood = Math.exp(-distSq / twoObsSigmaSq) / (Math.PI * twoObsSigmaSq);
+      stepWeights[k] = weights[k] * likelihood;
+      sumWeight += stepWeights[k];
     }
-  }
 
-  // Create list of cluster indices
-  const clusters: number[][] = Array.from({ length: clusterId }, () => []);
-  labels.forEach((lbl, idx) => {
-    if (lbl >= 0) {
-      clusters[lbl].push(idx);
-    }
-  });
-
-  // Pick the Champion Cluster (highest clean measurement density and lock)
-  let bestClusterIdx = -1;
-  let maxCount = 0;
-  for (let c = 0; c < clusters.length; c++) {
-    if (clusters[c].length > maxCount) {
-      maxCount = clusters[c].length;
-      bestClusterIdx = c;
-    } else if (clusters[c].length === maxCount && maxCount > 0) {
-      // Tie-breaker: choose the cluster with lower spatial coordinate variance
-      const var1 = getClusterVariance(clusters[c], localPts);
-      const var2 = getClusterVariance(clusters[bestClusterIdx], localPts);
-      if (var1 < var2) {
-        bestClusterIdx = c;
-      }
-    }
-  }
-
-  let finalUsedIndices: number[] = [];
-  if (bestClusterIdx !== -1) {
-    finalUsedIndices = clusters[bestClusterIdx];
-  } else {
-    // Elegant fallback: pick the point with the maximum neighbors, and treat its neighborhood as the core.
-    let bestPointIdx = 0;
-    let maxNeighbors = -1;
-    for (let i = 0; i < samples.length; i++) {
-      const neighbors = getNeighbors(i);
-      if (neighbors.length > maxNeighbors) {
-        maxNeighbors = neighbors.length;
-        bestPointIdx = i;
-      }
-    }
-    finalUsedIndices = getNeighbors(bestPointIdx);
+    // If weights collapse (e.g. extremely distant outlier), skip this measurement to preserve state
+    const averageStepLikelihood = sumWeight / NUM_PARTICLES;
     
-    // Safety absolute fallback:
-    if (finalUsedIndices.length === 0) {
-      finalUsedIndices = samples.map((_, i) => i);
+    // Outlier checking: relative threshold of average particle likelihood
+    // e^-4.5 corresponds to ~3 sigma spatial outlier limits
+    const thresholdLikelihood = Math.exp(-4.5) / (Math.PI * twoObsSigmaSq);
+
+    if (averageStepLikelihood > thresholdLikelihood && sumWeight > 1e-15) {
+      // Normalize weights
+      for (let k = 0; k < NUM_PARTICLES; k++) {
+        weights[k] = stepWeights[k] / sumWeight;
+      }
+      inlierIndices.push(j);
+
+      // 3. Resampling decision based on Effective Sample Size (N_eff)
+      let sumSqWeight = 0;
+      for (let k = 0; k < NUM_PARTICLES; k++) {
+        sumSqWeight += weights[k] * weights[k];
+      }
+      const nEff = 1.0 / sumSqWeight;
+
+      if (nEff < NUM_PARTICLES * 0.5) {
+        // Systematic Resampling
+        const cumWeights = new Array<number>(NUM_PARTICLES);
+        let cumSum = 0;
+        for (let k = 0; k < NUM_PARTICLES; k++) {
+          cumSum += weights[k];
+          cumWeights[k] = cumSum;
+        }
+
+        const step = 1.0 / NUM_PARTICLES;
+        // Seeded random for u0
+        const randVal = (() => {
+          const x = Math.sin(seed++) * 10000;
+          return x - Math.floor(x);
+        })();
+        let u = randVal * step;
+        let idx = 0;
+
+        const resampledParticles = new Array<{ x: number; y: number }>(NUM_PARTICLES);
+        for (let k = 0; k < NUM_PARTICLES; k++) {
+          while (u > cumWeights[idx] && idx < NUM_PARTICLES - 1) {
+            idx++;
+          }
+          resampledParticles[k] = { ...particles[idx] };
+          u += step;
+        }
+
+        // Copy back
+        for (let k = 0; k < NUM_PARTICLES; k++) {
+          particles[k] = resampledParticles[k];
+        }
+        weights.fill(1.0 / NUM_PARTICLES);
+      }
+    } else {
+      // Outlier model: keep the tracking state unchanged for this step (weights are untouched)
+      // Do not add to inlierIndices
     }
   }
 
-  const finalSamples = finalUsedIndices.map(idx => samples[idx]);
-
-  // Solve Weighted Least Squares (WLS) on the chosen DBSCAN core points
-  let finalSumW = 0;
-  let finalLatW = 0;
-  let finalLngW = 0;
-  let totalAccuracy = 0;
-
-  for (const p of finalSamples) {
-    const wHardware = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
-    finalSumW += wHardware;
-    finalLatW += p.lat * wHardware;
-    finalLngW += p.lng * wHardware;
-    totalAccuracy += p.accuracy;
+  // Fallback if all are marked as outliers
+  let finalIndices = inlierIndices;
+  if (finalIndices.length === 0) {
+    finalIndices = samples.map((_, i) => i);
   }
 
-  const validAlts = finalSamples.filter(s => s.altitude !== null && s.altitude !== undefined);
+  // Calculate posterior state estimation from the cloud centroid
+  let finalX = 0;
+  let finalY = 0;
+  for (let k = 0; k < NUM_PARTICLES; k++) {
+    finalX += particles[k].x * weights[k];
+    finalY += particles[k].y * weights[k];
+  }
+
+  const finalLat = avgLat + finalY / latCoeff;
+  const finalLng = avgLng + finalX / lngCoeff;
+
+  // Average altitude properties from inlying epochs
+  const inlierSamples = finalIndices.map(idx => samples[idx]);
+  const avgAcc = inlierSamples.reduce((sum, s) => sum + s.accuracy, 0) / inlierSamples.length;
+
+  const validAlts = inlierSamples.filter(s => s.altitude !== null && s.altitude !== undefined);
   const finalAlt = validAlts.length > 0 ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length : null;
 
-  const validAltAccs = finalSamples.filter(s => s.altitudeAccuracy !== null && s.altitudeAccuracy !== undefined);
+  const validAltAccs = inlierSamples.filter(s => s.altitudeAccuracy !== null && s.altitudeAccuracy !== undefined);
   const finalAltAcc = validAltAccs.length > 0 ? validAltAccs.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length : null;
 
   return {
     result: {
-      lat: finalLatW / (finalSumW || 1.0),
-      lng: finalLngW / (finalSumW || 1.0),
-      accuracy: totalAccuracy / (finalSamples.length || 1),
+      lat: finalLat,
+      lng: finalLng,
+      accuracy: avgAcc,
       altitude: finalAlt,
       altitudeAccuracy: finalAltAcc,
       timestamp: Date.now()
     },
-    usedIndices: finalUsedIndices,
-    clusters: clusters.filter(c => c.length > 0)
+    usedIndices: finalIndices
   };
 }
 
-// Helper to compute cluster variance
-function getClusterVariance(indices: number[], localPts: Array<{ x: number; y: number }>): number {
-  if (indices.length === 0) return 0;
-  const pts = indices.map(idx => localPts[idx]);
-  const mx = pts.reduce((sum, p) => sum + p.x, 0) / pts.length;
-  const my = pts.reduce((sum, p) => sum + p.y, 0) / pts.length;
-  const vx = pts.reduce((sum, p) => sum + Math.pow(p.x - mx, 2), 0) / pts.length;
-  const vy = pts.reduce((sum, p) => sum + Math.pow(p.y - my, 2), 0) / pts.length;
-  return vx + vy;
+/**
+ * 10. Multi-Sensor Fusion / Dead Reckoning (Çoklu Sensör Füzyon Modeli)
+ * Specially designed and adapted for static surveying with zero-velocity IMU assistance (ZUPT):
+ * - Implements an extended discrete-time state Kalman Filter vector mapping: X = [pos_x, pos_y, vel_x, vel_y]^T.
+ * - Dynamic process transition matrix operates under Newtonian equations with small step dt.
+ * - Synthesizes a high-accuracy, zero-velocity constraint (Zero Velocity Update - ZUPT) to simulate IMU static stability.
+ * - Filters noisy GNSS epochs by evaluating the Normalized Innovation Squared (NIS) against Pearson's Chi-Square limit.
+ */
+export function calculateSensorFusionDR(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length < 2) {
+    return { result: samples[0], usedIndices: [0] };
+  }
+
+  const avgLat = samples.reduce((sum, s) => sum + s.lat, 0) / samples.length;
+  const avgLng = samples.reduce((sum, s) => sum + s.lng, 0) / samples.length;
+  const { latCoeff, lngCoeff } = getWGS84Coefficients(avgLat);
+
+  // Convert to local 2D Cartesian coordinates (meters)
+  const localPts = samples.map(s => ({
+    x: (s.lng - avgLng) * lngCoeff,
+    y: (s.lat - avgLat) * latCoeff,
+    t: s.timestamp / 1000.0 // seconds
+  }));
+
+  // State Vector X = [x, y, vx, vy]^T
+  // Initial state centering around first sample coordinate
+  let X = [localPts[0].x, localPts[0].y, 0.0, 0.0];
+
+  // Covariance matrix P (4x4)
+  const initSigma = Math.max(0.5, samples[0].accuracy / 1.96);
+  let P = [
+    [initSigma * initSigma, 0.0, 0.0, 0.0],
+    [0.0, initSigma * initSigma, 0.0, 0.0],
+    [0.0, 0.0, 0.1, 0.0],
+    [0.0, 0.0, 0.0, 0.1]
+  ];
+
+  // Process noise covariance parameters (Static scenario)
+  const qPosVal = 0.0001; // Tiny spatial uncertainty drift (static)
+  const qVelVal = 0.005;  // Motion tremor covariance model (m/s²)
+  
+  const inlierIndices: number[] = [];
+
+  for (let i = 1; i < localPts.length; i++) {
+    const prev = localPts[i - 1];
+    const curr = localPts[i];
+    let dt = curr.t - prev.t;
+    // Safety clamp dt to reasonable bounds (e.g. 0.1s to 5s range)
+    if (dt <= 0 || dt > 10.0) dt = 1.0;
+
+    // 1. Kalman Prediction (State Transition)
+    // F is state transition matrix:
+    // [1, 0, dt,  0]
+    // [0, 1,  0, dt]
+    // [0, 0,  1,  0]
+    // [0, 0,  0,  1]
+    const predX = [
+      X[0] + X[2] * dt,
+      X[1] + X[3] * dt,
+      X[2],
+      X[3]
+    ];
+
+    // Predict covariance P_pred = F * P * F^T + Q
+    // We compute this directly to preserve speed and avoid matrix library dependencies:
+    const F_P_FT = [
+      [
+        P[0][0] + dt * (P[2][0] + P[0][2] + dt * P[2][2]),
+        P[0][1] + dt * (P[2][1] + P[0][3] + dt * P[2][3]),
+        P[0][2] + dt * P[2][2],
+        P[0][3] + dt * P[2][3]
+      ],
+      [
+        P[1][0] + dt * (P[3][0] + P[1][2] + dt * P[3][3]),
+        P[1][1] + dt * (P[3][1] + P[1][3] + dt * P[3][3]),
+        P[1][2] + dt * P[3][2],
+        P[1][3] + dt * P[3][3]
+      ],
+      [
+        P[2][0] + dt * P[2][2],
+        P[2][1] + dt * P[2][3],
+        P[2][2],
+        P[2][3]
+      ],
+      [
+        P[3][0] + dt * P[3][2],
+        P[3][1] + dt * P[3][3],
+        P[3][2],
+        P[3][3]
+      ]
+    ];
+
+    // Add Q Positional and Velocity process noises
+    const Q = [
+      [qPosVal * dt, 0.0, 0.0, 0.0],
+      [0.0, qPosVal * dt, 0.0, 0.0],
+      [0.0, 0.0, qVelVal * dt, 0.0],
+      [0.0, 0.0, 0.0, qVelVal * dt]
+    ];
+
+    let P_pred = [
+      [F_P_FT[0][0] + Q[0][0], F_P_FT[0][1], F_P_FT[0][2], F_P_FT[0][3]],
+      [F_P_FT[1][0], F_P_FT[1][1] + Q[1][1], F_P_FT[1][2], F_P_FT[1][3]],
+      [F_P_FT[2][0], F_P_FT[2][1], F_P_FT[2][2] + Q[2][2], F_P_FT[2][3]],
+      [F_P_FT[3][0], F_P_FT[3][1], F_P_FT[3][2], F_P_FT[3][3] + Q[3][3]]
+    ];
+
+    // 2. Zero Velocity Update (ZUPT) - Virtual Inertial measurement of Velocity = [0, 0]^T
+    // This stabilizes the velocity state from divergent spatial drifts
+    const zuptR = 0.005; // Tight IMU spatial velocity covariance constraint (0.005 m²/s²)
+    const H_zupt = [
+      [0, 0, 1, 0],
+      [0, 0, 0, 1]
+    ];
+
+    // ZUPT Innovation covariance: S_z = H * P_pred * H_T + R_z
+    // S_z = [[P_pred[2][2] + R_z, P_pred[2][3]], [P_pred[3][2], P_pred[3][3] + R_z]]
+    const s_z = [
+      [P_pred[2][2] + zuptR, P_pred[2][3]],
+      [P_pred[3][2], P_pred[3][3] + zuptR]
+    ];
+
+    // Matrix det for inversion
+    const det_z = s_z[0][0] * s_z[1][1] - s_z[0][1] * s_z[1][0];
+    const inv_s_z = [
+      [s_z[1][1] / det_z, -s_z[0][1] / det_z],
+      [-s_z[1][0] / det_z, s_z[0][0] / det_z]
+    ];
+
+    // Kalman Gain K_z = P_pred * H_zupt^T * inv_s_z
+    const K_z = [
+      [P_pred[0][2] * inv_s_z[0][0] + P_pred[0][3] * inv_s_z[1][0], P_pred[0][2] * inv_s_z[0][1] + P_pred[0][3] * inv_s_z[1][1]],
+      [P_pred[1][2] * inv_s_z[0][0] + P_pred[1][3] * inv_s_z[1][0], P_pred[1][2] * inv_s_z[0][1] + P_pred[1][3] * inv_s_z[1][1]],
+      [P_pred[2][2] * inv_s_z[0][0] + P_pred[2][3] * inv_s_z[1][0], P_pred[2][2] * inv_s_z[0][1] + P_pred[2][3] * inv_s_z[1][1]],
+      [P_pred[3][2] * inv_s_z[0][0] + P_pred[3][3] * inv_s_z[1][0], P_pred[3][2] * inv_s_z[0][1] + P_pred[3][3] * inv_s_z[1][1]]
+    ];
+
+    // Update ZUPT state
+    const z_y = [ -predX[2], -predX[3] ]; // target velocity is zero
+    X = [
+      predX[0] + K_z[0][0] * z_y[0] + K_z[0][1] * z_y[1],
+      predX[1] + K_z[1][0] * z_y[0] + K_z[1][1] * z_y[1],
+      predX[2] + K_z[2][0] * z_y[0] + K_z[2][1] * z_y[1],
+      predX[3] + K_z[3][0] * z_y[0] + K_z[3][1] * z_y[1]
+    ];
+
+    // Update covariance matrix: P = (I - K_z * H_z) * P_pred
+    const I_K_z_Hz = [
+      [1.0, 0.0, -K_z[0][0], -K_z[0][1]],
+      [0.0, 1.0, -K_z[1][0], -K_z[1][1]],
+      [0.0, 0.0, 1.0 - K_z[2][0], -K_z[2][1]],
+      [0.0, 0.0, -K_z[3][0], 1.0 - K_z[3][1]]
+    ];
+
+    let P_temp = Array.from({ length: 4 }, () => new Array<number>(4).fill(0.0));
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        P_temp[r][c] = I_K_z_Hz[r][0] * P_pred[0][c] +
+                       I_K_z_Hz[r][1] * P_pred[1][c] +
+                       I_K_z_Hz[r][2] * P_pred[2][c] +
+                       I_K_z_Hz[r][3] * P_pred[3][c];
+      }
+    }
+    P_pred = P_temp;
+
+    // 3. GNSS Position Measurement Update stage
+    const gpsSigma = Math.max(0.1, samples[i].accuracy / 1.96);
+    const R_gps = gpsSigma * gpsSigma;
+
+    // Innovation residual: y = Z - H * X
+    const y_gps = [ curr.x - X[0], curr.y - X[1] ];
+
+    // Innovation covariance: S_gps = H_gps * P_pred * H_gps^T + R_gps
+    const S_gps = [
+      [P_pred[0][0] + R_gps, P_pred[0][1]],
+      [P_pred[1][0], P_pred[1][1] + R_gps]
+    ];
+
+    // Det for Innovation Covariance
+    const det_gps = S_gps[0][0] * S_gps[1][1] - S_gps[0][1] * S_gps[1][0];
+    const inv_S_gps = [
+      [S_gps[1][1] / det_gps, -S_gps[0][1] / det_gps],
+      [-S_gps[1][0] / det_gps, S_gps[0][0] / det_gps]
+    ];
+
+    // Normalized Innovation Squared (NIS): d_nis = y_gps^T * inv_S_gps * y_gps
+    const d_nis = y_gps[0] * (inv_S_gps[0][0] * y_gps[0] + inv_S_gps[0][1] * y_gps[1]) +
+                  y_gps[1] * (inv_S_gps[1][0] * y_gps[0] + inv_S_gps[1][1] * y_gps[1]);
+
+    // Pearson's Chi-Square distribution threshold (2 DOF at 95% is 5.991)
+    // If the NIS exceeds 5.991, we reject the step (severe multipath outliers)
+    if (d_nis <= 5.991) {
+      // Valid update step: Compute GNSS Kalman gain K_gps = P_pred * H_gps^T * inv_S_gps
+      const K_gps = [
+        [P_pred[0][0] * inv_S_gps[0][0] + P_pred[0][1] * inv_S_gps[1][0], P_pred[0][0] * inv_S_gps[0][1] + P_pred[0][1] * inv_S_gps[1][1]],
+        [P_pred[1][0] * inv_S_gps[0][0] + P_pred[1][1] * inv_S_gps[1][0], P_pred[1][0] * inv_S_gps[0][1] + P_pred[1][1] * inv_S_gps[1][1]],
+        [P_pred[2][0] * inv_S_gps[0][0] + P_pred[2][1] * inv_S_gps[1][0], P_pred[2][0] * inv_S_gps[0][1] + P_pred[2][1] * inv_S_gps[1][1]],
+        [P_pred[3][0] * inv_S_gps[0][0] + P_pred[3][1] * inv_S_gps[1][0], P_pred[3][0] * inv_S_gps[0][1] + P_pred[3][1] * inv_S_gps[1][1]]
+      ];
+
+      // Update state vector X
+      X = [
+        X[0] + K_gps[0][0] * y_gps[0] + K_gps[0][1] * y_gps[1],
+        X[1] + K_gps[1][0] * y_gps[0] + K_gps[1][1] * y_gps[1],
+        X[2] + K_gps[2][0] * y_gps[0] + K_gps[2][1] * y_gps[1],
+        X[3] + K_gps[3][0] * y_gps[0] + K_gps[3][1] * y_gps[1]
+      ];
+
+      // Update Covariance: P = (I - K_gps * H_gps) * P_pred
+      const I_K_gps_Hgps = [
+        [1.0 - K_gps[0][0], -K_gps[0][1], 0.0, 0.0],
+        [-K_gps[1][0], 1.0 - K_gps[1][1], 0.0, 0.0],
+        [-K_gps[2][0], -K_gps[2][1], 1.0, 0.0],
+        [-K_gps[3][0], -K_gps[3][1], 0.0, 1.0]
+      ];
+
+      let P_final = Array.from({ length: 4 }, () => new Array<number>(4).fill(0.0));
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          P_final[r][c] = I_K_gps_Hgps[r][0] * P_pred[0][c] +
+                         I_K_gps_Hgps[r][1] * P_pred[1][c] +
+                         I_K_gps_Hgps[r][2] * P_pred[2][c] +
+                         I_K_gps_Hgps[r][3] * P_pred[3][c];
+        }
+      }
+      P = P_final;
+      inlierIndices.push(i);
+    } else {
+      // Reject step: Maintain predicted state, increment covariance to represent uncertainty.
+      P = P_pred;
+    }
+  }
+
+  // Ensure first element (seed) is marked as inlier too
+  inlierIndices.unshift(0);
+
+  // Convert local coordinates back to WGS84
+  const finalLat = avgLat + X[1] / latCoeff;
+  const finalLng = avgLng + X[0] / lngCoeff;
+
+  // Compute stats on inlying epochs
+  const inlierSamples = inlierIndices.map(idx => samples[idx]);
+  const avgAcc = inlierSamples.reduce((sum, s) => sum + s.accuracy, 0) / inlierSamples.length;
+
+  const validAlts = inlierSamples.filter(s => s.altitude !== null && s.altitude !== undefined);
+  const finalAlt = validAlts.length > 0 ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length : null;
+
+  const validAltAccs = inlierSamples.filter(s => s.altitudeAccuracy !== null && s.altitudeAccuracy !== undefined);
+  const finalAltAcc = validAltAccs.length > 0 ? validAltAccs.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length : null;
+
+  return {
+    result: {
+      lat: finalLat,
+      lng: finalLng,
+      accuracy: avgAcc,
+      altitude: finalAlt,
+      altitudeAccuracy: finalAltAcc,
+      timestamp: Date.now()
+    },
+    usedIndices: inlierIndices
+  };
 }
+
+
 
 
 
