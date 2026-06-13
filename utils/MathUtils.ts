@@ -59,10 +59,10 @@ export function calculateResult(
   // - HUBER and KMEANS_4 require en az 30 epok.
   // - KMEANS_BAARDA_HUBER (Hybrid) require en az 55 epok.
   // - Standalone BAARDA only requires geodetic minimum of 4 epok.
-  // - IQR_WLS and RANSAC require en az 10 epok.
+  // - IQR_WLS, RANSAC and DBSCAN_WLS require en az 10 epok.
   const requires55 = method === 'KMEANS_BAARDA_HUBER';
   const requires30 = method === 'HUBER' || method === 'KMEANS_4';
-  const requires10 = method === 'IQR_WLS' || method === 'RANSAC';
+  const requires10 = method === 'IQR_WLS' || method === 'RANSAC' || method === 'DBSCAN_WLS';
   const requires4 = method === 'BAARDA';
   
   let finalMethod = method;
@@ -128,6 +128,12 @@ export function calculateResult(
       const ransacRes = calculateRANSAC(sourceData);
       resultData = ransacRes.result;
       finalCalculatedUsedIndices = ransacRes.usedIndices;
+      break;
+    case 'DBSCAN_WLS':
+      const dbscanRes = calculateDBSCAN(sourceData);
+      resultData = dbscanRes.result;
+      finalCalculatedUsedIndices = dbscanRes.usedIndices;
+      clusters = dbscanRes.clusters;
       break;
     default:
       const defaultLse = calculateWeightedLSE(sourceData);
@@ -1254,6 +1260,199 @@ export function calculateRANSAC(samples: Coordinate[]): { result: Coordinate; us
     },
     usedIndices: bestInliers
   };
+}
+
+/**
+ * 8. DBSCAN (Density-Based Spatial Clustering of Applications with Noise) + WLS
+ * Specially designed and adapted for high-error smartphone single-frequency GNSS.
+ * Successfully handles 1m and 5m typical L1 scatter by isolating the highest-density spatial consensus 
+ * core cluster and discarding sparse multipath noise/drift prior to Weighted Least Squares.
+ */
+export function calculateDBSCAN(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
+  if (samples.length < 3) {
+    return { 
+      result: samples[0] || { lat: 0, lng: 0, accuracy: 1.0, altitude: null, altitudeAccuracy: null, timestamp: Date.now() }, 
+      usedIndices: samples.map((_, i) => i), 
+      clusters: [] 
+    };
+  }
+
+  const avgLat = samples.reduce((sum, s) => sum + s.lat, 0) / samples.length;
+  const avgLng = samples.reduce((sum, s) => sum + s.lng, 0) / samples.length;
+  const { latCoeff, lngCoeff } = getWGS84Coefficients(avgLat);
+
+  // Convert to local Cartesian x, y (in meters)
+  const localPts = samples.map(s => ({
+    x: (s.lng - avgLng) * lngCoeff,
+    y: (s.lat - avgLat) * latCoeff
+  }));
+
+  // Calculate coordinates' spatial standard deviation to estimate spatial dispersion of the noise
+  const meanX = localPts.reduce((sum, p) => sum + p.x, 0) / localPts.length;
+  const meanY = localPts.reduce((sum, p) => sum + p.y, 0) / localPts.length;
+  const varianceX = localPts.reduce((sum, p) => sum + Math.pow(p.x - meanX, 2), 0) / localPts.length;
+  const varianceY = localPts.reduce((sum, p) => sum + Math.pow(p.y - meanY, 2), 0) / localPts.length;
+  const spatialStdDev = Math.sqrt(varianceX + varianceY);
+
+  // Set adaptive search radius (Epsilon) based on spatial spread of measurements
+  // For tightly clustered high-quality GPS, Epsilon shrinks down to 0.75m
+  // For highly scattered L1 smartphone GNSS with multipath, Epsilon scale adaptive with the dispersion (bounded securely)
+  const Eps = Math.max(0.75, Math.min(4.5, spatialStdDev * 0.8));
+
+  // Set adaptive MinPts based on the dataset length (usually 15-20% of epochs)
+  const MinPts = Math.min(10, Math.max(3, Math.floor(samples.length * 0.15)));
+
+  // DBSCAN Label states:
+  // -1: Unclassified
+  // -2: Noise (outlier)
+  // >=0: Cluster ID
+  const labels = new Array<number>(samples.length).fill(-1);
+  let clusterId = 0;
+
+  function getNeighbors(idx: number): number[] {
+    const list: number[] = [];
+    const pt1 = localPts[idx];
+    for (let i = 0; i < localPts.length; i++) {
+      const pt2 = localPts[i];
+      const dist = Math.sqrt(Math.pow(pt1.x - pt2.x, 2) + Math.pow(pt1.y - pt2.y, 2));
+      if (dist <= Eps) {
+        list.push(i);
+      }
+    }
+    return list;
+  }
+
+  for (let i = 0; i < samples.length; i++) {
+    if (labels[i] !== -1) continue;
+
+    const neighbors = getNeighbors(i);
+    if (neighbors.length < MinPts) {
+      labels[i] = -2; // Mark as noise for now
+    } else {
+      labels[i] = clusterId;
+      
+      const queue = [...neighbors];
+      const visitedInQueue = new Set<number>();
+      for (const n of queue) visitedInQueue.add(n);
+
+      for (let j = 0; j < queue.length; j++) {
+        const currentIdx = queue[j];
+        
+        // If it was marked as noise, it's a border point for this cluster
+        if (labels[currentIdx] === -2) {
+          labels[currentIdx] = clusterId;
+        }
+        
+        if (labels[currentIdx] !== -1) continue;
+        
+        labels[currentIdx] = clusterId;
+        
+        const currentNeighbors = getNeighbors(currentIdx);
+        if (currentNeighbors.length >= MinPts) {
+          for (const cn of currentNeighbors) {
+            if (!visitedInQueue.has(cn)) {
+              visitedInQueue.add(cn);
+              queue.push(cn);
+            }
+          }
+        }
+      }
+      clusterId++;
+    }
+  }
+
+  // Create list of cluster indices
+  const clusters: number[][] = Array.from({ length: clusterId }, () => []);
+  labels.forEach((lbl, idx) => {
+    if (lbl >= 0) {
+      clusters[lbl].push(idx);
+    }
+  });
+
+  // Pick the Champion Cluster (highest clean measurement density and lock)
+  let bestClusterIdx = -1;
+  let maxCount = 0;
+  for (let c = 0; c < clusters.length; c++) {
+    if (clusters[c].length > maxCount) {
+      maxCount = clusters[c].length;
+      bestClusterIdx = c;
+    } else if (clusters[c].length === maxCount && maxCount > 0) {
+      // Tie-breaker: choose the cluster with lower spatial coordinate variance
+      const var1 = getClusterVariance(clusters[c], localPts);
+      const var2 = getClusterVariance(clusters[bestClusterIdx], localPts);
+      if (var1 < var2) {
+        bestClusterIdx = c;
+      }
+    }
+  }
+
+  let finalUsedIndices: number[] = [];
+  if (bestClusterIdx !== -1) {
+    finalUsedIndices = clusters[bestClusterIdx];
+  } else {
+    // Elegant fallback: pick the point with the maximum neighbors, and treat its neighborhood as the core.
+    let bestPointIdx = 0;
+    let maxNeighbors = -1;
+    for (let i = 0; i < samples.length; i++) {
+      const neighbors = getNeighbors(i);
+      if (neighbors.length > maxNeighbors) {
+        maxNeighbors = neighbors.length;
+        bestPointIdx = i;
+      }
+    }
+    finalUsedIndices = getNeighbors(bestPointIdx);
+    
+    // Safety absolute fallback:
+    if (finalUsedIndices.length === 0) {
+      finalUsedIndices = samples.map((_, i) => i);
+    }
+  }
+
+  const finalSamples = finalUsedIndices.map(idx => samples[idx]);
+
+  // Solve Weighted Least Squares (WLS) on the chosen DBSCAN core points
+  let finalSumW = 0;
+  let finalLatW = 0;
+  let finalLngW = 0;
+  let totalAccuracy = 0;
+
+  for (const p of finalSamples) {
+    const wHardware = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
+    finalSumW += wHardware;
+    finalLatW += p.lat * wHardware;
+    finalLngW += p.lng * wHardware;
+    totalAccuracy += p.accuracy;
+  }
+
+  const validAlts = finalSamples.filter(s => s.altitude !== null && s.altitude !== undefined);
+  const finalAlt = validAlts.length > 0 ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length : null;
+
+  const validAltAccs = finalSamples.filter(s => s.altitudeAccuracy !== null && s.altitudeAccuracy !== undefined);
+  const finalAltAcc = validAltAccs.length > 0 ? validAltAccs.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length : null;
+
+  return {
+    result: {
+      lat: finalLatW / (finalSumW || 1.0),
+      lng: finalLngW / (finalSumW || 1.0),
+      accuracy: totalAccuracy / (finalSamples.length || 1),
+      altitude: finalAlt,
+      altitudeAccuracy: finalAltAcc,
+      timestamp: Date.now()
+    },
+    usedIndices: finalUsedIndices,
+    clusters: clusters.filter(c => c.length > 0)
+  };
+}
+
+// Helper to compute cluster variance
+function getClusterVariance(indices: number[], localPts: Array<{ x: number; y: number }>): number {
+  if (indices.length === 0) return 0;
+  const pts = indices.map(idx => localPts[idx]);
+  const mx = pts.reduce((sum, p) => sum + p.x, 0) / pts.length;
+  const my = pts.reduce((sum, p) => sum + p.y, 0) / pts.length;
+  const vx = pts.reduce((sum, p) => sum + Math.pow(p.x - mx, 2), 0) / pts.length;
+  const vy = pts.reduce((sum, p) => sum + Math.pow(p.y - my, 2), 0) / pts.length;
+  return vx + vy;
 }
 
 

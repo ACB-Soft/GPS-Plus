@@ -536,6 +536,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
                   <option value="KMEANS_BAARDA_HUBER">{t("5. Hibrit Yöntem (KMeans + Baarda + Huber)")}</option>
                   <option value="IQR_WLS">{t("6. IQR Aykırı Değer Eleme (WLS)")}</option>
                   <option value="RANSAC">{t("7. RANSAC Gözlem Ayıklama (WLS)")}</option>
+                  <option value="DBSCAN_WLS">{t("8. DBSCAN Yoğunluk Tabanlı Kümeleme (WLS)")}</option>
                 </select>
               </div>
 

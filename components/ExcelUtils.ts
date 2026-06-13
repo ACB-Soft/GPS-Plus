@@ -15,6 +15,7 @@ const getMethodName = (m: CalculationMethod) => {
     case 'BAARDA': return "Baarda Eleme";
     case 'IQR_WLS': return "IQR Aykırı Değer Eleme (WLS)";
     case 'RANSAC': return "RANSAC Gözlem Ayıklama (WLS)";
+    case 'DBSCAN_WLS': return "DBSCAN Yoğunluk Tabanlı Kümeleme (WLS)";
     default: return m;
   }
 };
@@ -156,7 +157,8 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     'BAARDA',
     'KMEANS_BAARDA_HUBER',
     'IQR_WLS',
-    'RANSAC'
+    'RANSAC',
+    'DBSCAN_WLS'
   ];
   const methodResults = methods.map(method => {
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
@@ -497,7 +499,8 @@ export const downloadCombinedAnalysisReport = (
     'BAARDA',
     'KMEANS_BAARDA_HUBER',
     'IQR_WLS',
-    'RANSAC'
+    'RANSAC',
+    'DBSCAN_WLS'
   ];
 
   if (location.samples && location.samples.length > 0) {
