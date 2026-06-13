@@ -1065,6 +1065,25 @@ function getPopeTauCriticalValue(alpha: number, f: number): number {
 }
 
 /**
+ * Computes the robust Median Absolute Deviation (MAD) of residuals as a scale estimator.
+ * MAD = 1.4826 * median(|v_i - median(v_j)|)
+ */
+function calculateRobustSigmaMAD(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const medianVal = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  
+  const absDevs = values.map(v => Math.abs(v - medianVal));
+  const sortedDevs = absDevs.sort((a, b) => a - b);
+  const medianDev = sortedDevs.length % 2 !== 0 
+    ? sortedDevs[mid] 
+    : (sortedDevs[mid - 1] + sortedDevs[mid]) / 2;
+    
+  return 1.4826 * medianDev;
+}
+
+/**
  * Pope's Tau Test (Pope's L1/L2 Data Snooping) Outlier Detection
  * Specially designed and adapted for geodetic 2D coordinate network adjustment:
  * - Computes localized 2D coordinate-wise residuals.
@@ -1083,11 +1102,6 @@ export function calculatePopeTauAcademic(samples: Coordinate[]): { result: Coord
   const { latCoeff, lngCoeff } = getWGS84Coefficients(avgLat0);
 
   while (currentSamples.length >= 4) {
-    const currentSpread = calculateMaxDistance(currentSamples);
-    if (currentSpread < 0.50) {
-      break;
-    }
-
     const N = currentSamples.length;
     const weights = currentSamples.map(s => 1.0 / Math.pow(Math.max(0.1, s.accuracy), 2));
     const sumW = weights.reduce((a, b) => a + b, 0);
@@ -1100,12 +1114,9 @@ export function calculatePopeTauAcademic(samples: Coordinate[]): { result: Coord
       return { dx, dy, w: weights[i] };
     });
 
-    // Robust scale estimation of sigma0 via MAD to prevent outlier masking
-    const individualResiduals = localPts.map(pt => Math.sqrt(pt.dx * pt.dx + pt.dy * pt.dy) * Math.sqrt(pt.w));
-    individualResiduals.sort((a, b) => a - b);
-    const medianRes = individualResiduals[Math.floor(individualResiduals.length / 2)] || 0;
-    const robustSigma0 = Math.max(1.0, medianRes / 0.6745);
-    const sigma0 = robustSigma0;
+    const residuals = localPts.map(pt => Math.sqrt(pt.dx * pt.dx + pt.dy * pt.dy) * Math.sqrt(pt.w));
+    const sigma0 = Math.max(1e-6, calculateRobustSigmaMAD(residuals));
+    const f = 2 * N - 2;
 
     let maxTau = -1;
     let worstLocalIdx = -1;
@@ -1126,7 +1137,6 @@ export function calculatePopeTauAcademic(samples: Coordinate[]): { result: Coord
 
     const alpha = 0.05;
     const alpha_adj = alpha / N;
-    const f = 2 * N - 2;
     const tau_crit = getPopeTauCriticalValue(alpha_adj, f);
 
     if (maxTau > tau_crit) {
@@ -1171,11 +1181,6 @@ export function calculateDanishRobustAcademic(samples: Coordinate[]): { result: 
   const CONVERGENCE_LIMIT_M = 0.0001;
 
   for (let iter = 0; iter < MAX_ITER; iter++) {
-    const currentSpread = calculateMaxDistance(samples.filter((_, i) => currentWeights[i] / originalWeights[i] >= 0.1));
-    if (currentSpread < 0.50) {
-      break;
-    }
-
     const sumW = currentWeights.reduce((a, b) => a + b, 0);
     if (sumW <= 0) break;
 
@@ -1198,12 +1203,8 @@ export function calculateDanishRobustAcademic(samples: Coordinate[]): { result: 
       dy: (s.lat - currentLat) * latCoeff
     }));
 
-    // Robust scale estimation of sigma0 via MAD to prevent outlier masking
-    const individualResiduals = localPts.map((pt, i) => Math.sqrt(pt.dx * pt.dx + pt.dy * pt.dy) * Math.sqrt(currentWeights[i]));
-    individualResiduals.sort((a, b) => a - b);
-    const medianRes = individualResiduals[Math.floor(individualResiduals.length / 2)] || 0;
-    const robustSigma0 = Math.max(1.0, medianRes / 0.6745);
-    const sigma0 = robustSigma0;
+    const residuals = localPts.map((pt, i) => Math.sqrt(pt.dx * pt.dx + pt.dy * pt.dy) * Math.sqrt(currentWeights[i]));
+    const sigma0 = Math.max(1e-6, calculateRobustSigmaMAD(residuals));
 
     const L = 2.0;
     const a_decay = 0.15;
@@ -1214,7 +1215,6 @@ export function calculateDanishRobustAcademic(samples: Coordinate[]): { result: 
       const q_vv = Math.max(0.01, 1.0 - h_i);
       
       const dist_v = Math.sqrt(pt.dx * pt.dx + pt.dy * pt.dy);
-      // Normalized standardized residual
       const u_i = (dist_v * Math.sqrt(originalWeights[i])) / (sigma0 * Math.sqrt(q_vv));
 
       let multiplier = 1.0;
