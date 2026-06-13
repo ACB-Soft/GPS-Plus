@@ -1083,6 +1083,11 @@ export function calculatePopeTauAcademic(samples: Coordinate[]): { result: Coord
   const { latCoeff, lngCoeff } = getWGS84Coefficients(avgLat0);
 
   while (currentSamples.length >= 4) {
+    const currentSpread = calculateMaxDistance(currentSamples);
+    if (currentSpread < 0.50) {
+      break;
+    }
+
     const N = currentSamples.length;
     const weights = currentSamples.map(s => 1.0 / Math.pow(Math.max(0.1, s.accuracy), 2));
     const sumW = weights.reduce((a, b) => a + b, 0);
@@ -1095,14 +1100,12 @@ export function calculatePopeTauAcademic(samples: Coordinate[]): { result: Coord
       return { dx, dy, w: weights[i] };
     });
 
-    let vTPv = 0;
-    for (const pt of localPts) {
-      vTPv += (pt.dx * pt.dx + pt.dy * pt.dy) * pt.w;
-    }
-
-    const f = 2 * N - 2;
-    const sigma0_sq = vTPv / f;
-    const sigma0 = Math.sqrt(sigma0_sq > 1e-10 ? sigma0_sq : 1e-10);
+    // Robust scale estimation of sigma0 via MAD to prevent outlier masking
+    const individualResiduals = localPts.map(pt => Math.sqrt(pt.dx * pt.dx + pt.dy * pt.dy) * Math.sqrt(pt.w));
+    individualResiduals.sort((a, b) => a - b);
+    const medianRes = individualResiduals[Math.floor(individualResiduals.length / 2)] || 0;
+    const robustSigma0 = Math.max(1.0, medianRes / 0.6745);
+    const sigma0 = robustSigma0;
 
     let maxTau = -1;
     let worstLocalIdx = -1;
@@ -1123,6 +1126,7 @@ export function calculatePopeTauAcademic(samples: Coordinate[]): { result: Coord
 
     const alpha = 0.05;
     const alpha_adj = alpha / N;
+    const f = 2 * N - 2;
     const tau_crit = getPopeTauCriticalValue(alpha_adj, f);
 
     if (maxTau > tau_crit) {
@@ -1167,6 +1171,11 @@ export function calculateDanishRobustAcademic(samples: Coordinate[]): { result: 
   const CONVERGENCE_LIMIT_M = 0.0001;
 
   for (let iter = 0; iter < MAX_ITER; iter++) {
+    const currentSpread = calculateMaxDistance(samples.filter((_, i) => currentWeights[i] / originalWeights[i] >= 0.1));
+    if (currentSpread < 0.50) {
+      break;
+    }
+
     const sumW = currentWeights.reduce((a, b) => a + b, 0);
     if (sumW <= 0) break;
 
@@ -1189,14 +1198,12 @@ export function calculateDanishRobustAcademic(samples: Coordinate[]): { result: 
       dy: (s.lat - currentLat) * latCoeff
     }));
 
-    let vTPv = 0;
-    for (let i = 0; i < N; i++) {
-      const pt = localPts[i];
-      vTPv += (pt.dx * pt.dx + pt.dy * pt.dy) * currentWeights[i];
-    }
-
-    const sigma0_sq = vTPv / (2 * N - 2);
-    const sigma0 = Math.sqrt(sigma0_sq > 1e-10 ? sigma0_sq : 1e-10);
+    // Robust scale estimation of sigma0 via MAD to prevent outlier masking
+    const individualResiduals = localPts.map((pt, i) => Math.sqrt(pt.dx * pt.dx + pt.dy * pt.dy) * Math.sqrt(currentWeights[i]));
+    individualResiduals.sort((a, b) => a - b);
+    const medianRes = individualResiduals[Math.floor(individualResiduals.length / 2)] || 0;
+    const robustSigma0 = Math.max(1.0, medianRes / 0.6745);
+    const sigma0 = robustSigma0;
 
     const L = 2.0;
     const a_decay = 0.15;
@@ -1207,6 +1214,7 @@ export function calculateDanishRobustAcademic(samples: Coordinate[]): { result: 
       const q_vv = Math.max(0.01, 1.0 - h_i);
       
       const dist_v = Math.sqrt(pt.dx * pt.dx + pt.dy * pt.dy);
+      // Normalized standardized residual
       const u_i = (dist_v * Math.sqrt(originalWeights[i])) / (sigma0 * Math.sqrt(q_vv));
 
       let multiplier = 1.0;
