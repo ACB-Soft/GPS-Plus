@@ -1284,12 +1284,91 @@ export function calculateParticleFilter(samples: Coordinate[]): { result: Coordi
     return { result: samples[0], usedIndices: [0] };
   }
 
-  const avgLat = samples.reduce((sum, s) => sum + s.lat, 0) / samples.length;
-  const avgLng = samples.reduce((sum, s) => sum + s.lng, 0) / samples.length;
+  // First step: Huber Robust Outlier Filtering pre-processing
+  let currentLat = calculateMedian(samples.map(s => s.lat));
+  let currentLng = calculateMedian(samples.map(s => s.lng));
+
+  const maxIterations = 15;
+  const toleranceMeter = 0.001;
+
+  for (let iter = 0; iter < maxIterations; iter++) {
+    const currentMAD = calculateMADHuber(samples, currentLat, currentLng);
+    const pseudoSigma = currentMAD * 1.4826;
+    const stablePseudoSigma = pseudoSigma > 1e-7 ? pseudoSigma : 1e-7;
+    const huberLimit = 1.345 * stablePseudoSigma;
+
+    let sumW = 0;
+    let sumLatW = 0;
+    let sumLngW = 0;
+
+    for (let i = 0; i < samples.length; i++) {
+      const p = samples[i];
+      const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
+
+      const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
+      const huberWeight = dist <= huberLimit ? 1.0 : huberLimit / Math.max(0.001, dist);
+      const combinedWeight = hardwareWeight * huberWeight;
+
+      sumW += combinedWeight;
+      sumLatW += p.lat * combinedWeight;
+      sumLngW += p.lng * combinedWeight;
+    }
+
+    if (sumW === 0) break;
+
+    const nextLat = sumLatW / sumW;
+    const nextLng = sumLngW / sumW;
+
+    const changeInMeter = calculateDistanceMeter(nextLat, nextLng, currentLat, currentLng, currentLat);
+
+    currentLat = nextLat;
+    currentLng = nextLng;
+
+    if (changeInMeter < toleranceMeter) break;
+  }
+
+  const finalMAD = calculateMADHuber(samples, currentLat, currentLng);
+  const finalPseudoSigma = finalMAD * 1.4826;
+  const stableFinalPseudoSigma = finalPseudoSigma > 1e-7 ? finalPseudoSigma : 1e-7;
+  const outlierThreshold = 2.0 * stableFinalPseudoSigma;
+
+  const cleanIndices: number[] = [];
+  const cleanSamples: Coordinate[] = [];
+
+  for (let i = 0; i < samples.length; i++) {
+    const p = samples[i];
+    const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
+
+    if (dist <= outlierThreshold) {
+      cleanIndices.push(i);
+      cleanSamples.push(p);
+    }
+  }
+
+  // If filtered too aggressively, preserve at least 50% of original samples closest to the Huber center
+  if (cleanSamples.length < Math.max(2, Math.floor(samples.length * 0.4))) {
+    const sortedWithIndex = samples.map((p, idx) => ({
+      p,
+      idx,
+      dist: calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat)
+    })).sort((a, b) => a.dist - b.dist);
+
+    const countToKeep = Math.max(2, Math.floor(samples.length * 0.5));
+    cleanIndices.length = 0;
+    cleanSamples.length = 0;
+    for (let i = 0; i < countToKeep; i++) {
+      cleanIndices.push(sortedWithIndex[i].idx);
+      cleanSamples.push(sortedWithIndex[i].p);
+    }
+  }
+
+  // Now perform Particle Filter on cleanSamples
+  const avgLat = cleanSamples.reduce((sum, s) => sum + s.lat, 0) / cleanSamples.length;
+  const avgLng = cleanSamples.reduce((sum, s) => sum + s.lng, 0) / cleanSamples.length;
   const { latCoeff, lngCoeff } = getWGS84Coefficients(avgLat);
 
   // Convert to local 2D Cartesian coordinates (meters)
-  const localPts = samples.map(s => ({
+  const localPts = cleanSamples.map(s => ({
     x: (s.lng - avgLng) * lngCoeff,
     y: (s.lat - avgLat) * latCoeff
   }));
@@ -1314,9 +1393,9 @@ export function calculateParticleFilter(samples: Coordinate[]): { result: Coordi
   const particles = new Array<{ x: number; y: number }>(NUM_PARTICLES);
   let weights = new Array<number>(NUM_PARTICLES).fill(1 / NUM_PARTICLES);
 
-  // Initialize particles centered around the first measurement
+  // Initialize particles centered around the first measurement of cleanSamples
   const initPt = localPts[0];
-  const initSigma = Math.max(0.2, samples[0].accuracy / 1.96);
+  const initSigma = Math.max(0.2, cleanSamples[0].accuracy / 1.96);
   for (let i = 0; i < NUM_PARTICLES; i++) {
     particles[i] = {
       x: initPt.x + randomGaussian() * initSigma,
@@ -1327,12 +1406,12 @@ export function calculateParticleFilter(samples: Coordinate[]): { result: Coordi
   // Process noise standard deviation (static environment: extremely low random walk)
   const qSigma = 0.015; // 1.5 cm process update noise per epoch
   
-  const inlierIndices: number[] = [];
+  const inlierSubIndices: number[] = [];
   
-  // Standard Particle Filter loop
-  for (let j = 0; j < samples.length; j++) {
+  // Standard Particle Filter loop over cleanSamples
+  for (let j = 0; j < cleanSamples.length; j++) {
     const obs = localPts[j];
-    const obsSigma = Math.max(0.1, samples[j].accuracy / 1.96);
+    const obsSigma = Math.max(0.1, cleanSamples[j].accuracy / 1.96);
     const twoObsSigmaSq = 2.0 * obsSigma * obsSigma;
 
     // 1. Prediction stage: Propagate particles with tiny process noise (static)
@@ -1355,7 +1434,7 @@ export function calculateParticleFilter(samples: Coordinate[]): { result: Coordi
       sumWeight += stepWeights[k];
     }
 
-    // If weights collapse (e.g. extremely distant outlier), skip this measurement to preserve state
+    // If weights collapse, skip this measurement to preserve state
     const averageStepLikelihood = sumWeight / NUM_PARTICLES;
     
     // Outlier checking: relative threshold of average particle likelihood
@@ -1367,7 +1446,7 @@ export function calculateParticleFilter(samples: Coordinate[]): { result: Coordi
       for (let k = 0; k < NUM_PARTICLES; k++) {
         weights[k] = stepWeights[k] / sumWeight;
       }
-      inlierIndices.push(j);
+      inlierSubIndices.push(j);
 
       // 3. Resampling decision based on Effective Sample Size (N_eff)
       let sumSqWeight = 0;
@@ -1409,17 +1488,17 @@ export function calculateParticleFilter(samples: Coordinate[]): { result: Coordi
         }
         weights.fill(1.0 / NUM_PARTICLES);
       }
-    } else {
-      // Outlier model: keep the tracking state unchanged for this step (weights are untouched)
-      // Do not add to inlierIndices
     }
   }
 
-  // Fallback if all are marked as outliers
-  let finalIndices = inlierIndices;
-  if (finalIndices.length === 0) {
-    finalIndices = samples.map((_, i) => i);
+  // Fallback if all sub-samples are marked as outliers during particle tracking
+  let finalSubIndices = inlierSubIndices;
+  if (finalSubIndices.length === 0) {
+    finalSubIndices = cleanSamples.map((_, i) => i);
   }
+
+  // Map sub-indices back to the original indices in the input 'samples' array
+  const finalIndices = finalSubIndices.map(subIdx => cleanIndices[subIdx]);
 
   // Calculate posterior state estimation from the cloud centroid
   let finalX = 0;
@@ -1432,7 +1511,7 @@ export function calculateParticleFilter(samples: Coordinate[]): { result: Coordi
   const finalLat = avgLat + finalY / latCoeff;
   const finalLng = avgLng + finalX / lngCoeff;
 
-  // Average altitude properties from inlying epochs
+  // Average altitude properties from inlying epochs of cleanSamples
   const inlierSamples = finalIndices.map(idx => samples[idx]);
   const avgAcc = inlierSamples.reduce((sum, s) => sum + s.accuracy, 0) / inlierSamples.length;
 
