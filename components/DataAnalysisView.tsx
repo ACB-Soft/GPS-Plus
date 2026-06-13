@@ -46,10 +46,8 @@ const METHOD_COLORS: Record<string, string> = {
   KMEANS_4: '#06b6d4',
   BAARDA: '#f59e0b',
   KMEANS_BAARDA_HUBER: '#10b981',
-  IQR_WLS: '#e11d48',
-  RANSAC: '#14b8a6',
-  MONTE_CARLO_PF: '#6366f1',
-  SENSOR_FUSION_DR: '#f97316'
+  POPE_TAU: '#a855f7',
+  DANISH_ROBUST: '#6366f1'
 };
 
 const CLUSTER_COLORS = [
@@ -220,10 +218,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     'KMEANS_4',
     'BAARDA',
     'KMEANS_BAARDA_HUBER',
-    'IQR_WLS',
-    'RANSAC',
-    'MONTE_CARLO_PF',
-    'SENSOR_FUSION_DR'
+    'POPE_TAU',
+    'DANISH_ROBUST'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
@@ -233,10 +229,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       'KMEANS_4': t("3. Dinamik KMeans Kümeleme"),
       'BAARDA': t("4. Baarda Eleme"),
       'KMEANS_BAARDA_HUBER': t("5. Hibrit Yöntem (KMeans + Baarda + Huber)"),
-      'IQR_WLS': t("6. IQR Aykırı Değer Eleme (WLS)"),
-      'RANSAC': t("7. RANSAC Gözlem Ayıklama (WLS)"),
-      'MONTE_CARLO_PF': t("8. Monte Carlo Parçacık Filtresi"),
-      'SENSOR_FUSION_DR': t("9. Çoklu Sensör Füzyonu (Static)")
+      'POPE_TAU': t("6. Pope's Tau Testi"),
+      'DANISH_ROBUST': t("7. Danish Robust Tahmini")
     };
     return labels[m] || m;
   };
@@ -1524,10 +1518,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   'KMEANS_4': 'KMeans',
                                   'BAARDA': 'Baarda',
                                   'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
-                                  'IQR_WLS': 'IQR + WLS',
-                                  'RANSAC': 'RANSAC + WLS',
-                                  'MONTE_CARLO_PF': 'Particle Filter',
-                                  'SENSOR_FUSION_DR': 'Sensor Fusion + DR'
+                                  'POPE_TAU': "Pope's Tau",
+                                  'DANISH_ROBUST': 'Danish Robust'
                                 };
                                 return labels[m] || m;
                               };
@@ -1594,10 +1586,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               'KMEANS_4': 'KMeans',
                               'BAARDA': 'Baarda',
                               'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
-                              'IQR_WLS': 'IQR + WLS',
-                              'RANSAC': 'RANSAC + WLS',
-                              'MONTE_CARLO_PF': 'Particle Filter',
-                              'SENSOR_FUSION_DR': 'Sensor Fusion + DR'
+                              'POPE_TAU': "Pope's Tau",
+                              'DANISH_ROBUST': 'Danish Robust'
                             };
                             return labels[m] || m;
                           };
@@ -1633,10 +1623,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             'KMEANS_4': 'KMeans',
                             'BAARDA': 'Baarda',
                             'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
-                            'IQR_WLS': 'IQR + WLS',
-                            'RANSAC': 'RANSAC + WLS',
-                            'MONTE_CARLO_PF': 'Particle Filter',
-                            'SENSOR_FUSION_DR': 'Sensor Fusion + DR'
+                            'POPE_TAU': "Pope's Tau",
+                            'DANISH_ROBUST': 'Danish Robust'
                           };
                           return labels[m] || m;
                         };

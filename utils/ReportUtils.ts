@@ -785,7 +785,9 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
 
       // Hardware weight is proportional to inverse squared accuracy: 1 / (accuracy^2)
       const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, s.accuracy), 2);
-      return hardwareWeight * huberWeight * wCluster;
+      
+      // Combined Joint Weight
+      return wCluster * hardwareWeight * huberWeight;
     });
 
     const sumW = finalWeights.reduce((a, b) =&gt; a + b, 0) || 1.0;
@@ -833,90 +835,7 @@ function calculateKMeansBaardaHuber(samples: Coordinate[]): {
 }
     </pre>
 
-    <h3>2.4.6. IQR (Interquartile Range) Uzaysal Aykırı Değer Eleme ve WLS Dengelemesi</h3>
-    <p>Jeodezik ağlardaki ve GPS/GNSS gözlemlerindeki kaba hataların (outlier) temizlenmesinde kullanılan diğer bir yenilikçi ve robust yaklaşım ise <b>Interquartile Range (IQR - Çeyrekler Açıklığı)</b> tabanlı uzaysal eleme tekniğidir. Bu yöntem, verilerin olasılık dağılımından bağımsız (non-parametric) olması sebebiyle son derece güvenilirdir ve çoklu yol (multipath) yansımalarından ötürü saçılmış koordinat kümelerinin hızlıca elenmesinde geodezi mühendisliğinde sıklıkla tercih edilmektedir.</p>
-
-    <div class="case-container" style="background-color: #fff1f2; border-left: 4px solid #f43f5e; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
-      <p class="bold" style="color: #9f1239; margin-bottom: 6px;">IQR ve Ağırlıklı En Küçük Kareler (WLS) Entegrasyon Modeli</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Rayleigh Dağılım Engeli ve Bileşen Ayrıştırması:</span> İki boyutlu Euclidean mesafeler <i>d = &radic;(dx<sup>2</sup> + dy<sup>2</sup>)</i> her zaman pozitif olup asimetrik ve sağa çarpık **Rayleigh Dağılımı** gösterir. Bu dağılım üzerinde doğrudan 1D IQR testinin yapılması yayılım sınırlarını (Boundaries) aşırı derece şişirmekte ve aykırı değerleri yakalamada yetersiz kalmaktadır. Bu sebeple IQR testi, X (Easting) ve Y (Northing) yerel düzlemsel koordinat bileşenleri üzerinde **bağımsız iki kanal** olarak koşturulur. Koordinat bileşenleri bağımsız **Gaussian (Normal) Dağılım** gösterdiğinden, klasik IQR formülleri buralarda teorik olarak kusursuz çalışır.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Çeyrekler Açıklığı ve Entegrasyon Sınırları:</span> X ve Y serileri küçükten büyüğe sıralandıktan sonra her bir eksen için birinci çeyreklik (<i>Q<sub>1</sub></i>, %25) ve üçüncü çeyreklik (<i>Q<sub>3</sub></i>, %75) bulunarak çeyrekler açıklamaları (<i>IQR<sub>x</sub> = Q<sub>3x</sub> - Q<sub>1x</sub></i>, <i>IQR<sub>y</sub> = Q<sub>3y</sub> - Q<sub>1y</sub></i>) hesaplanır. Güvenli kabul limitleri şu şekildedir:
-        <br/><span class="bold" style="display: block; text-align: center; margin: 8px 0; font-family: monospace;">
-          Alt Sınır = Q<sub>1</sub> - 1.5 &times; IQR_safe &nbsp;&nbsp;|&nbsp;&nbsp; Üst Sınır = Q<sub>3</sub> + 1.5 &times; IQR_safe
-        </span>
-      </p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. Çökme Önleyici Hassasiyet Eşiği (Safety Floor):</span> GNSS alıcısının aşırı statik ve sıfır hata kilitlendiği senaryolarda IQR mesafeleri sıfıra veya milimetre seviyelerine çökebilir. Bu durumda normal rassal milimetrik gürültülerin kaba hata sayılarak elenmesini önlemek amacıyla, alıcının doğruluk kestirimine (UERE) paralel olarak her eksene bir <b>en küçük limit (minIQR = 10 cm vb.)</b> emniyet bariyeri yerleştirilir.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">4. Dengeleme Çözümü:</span> Her iki orthogonal eksen için belirlenen sınırların dışında kalan noktalar sistem dışı (outlier) bırakılır. Geriye kalan temiz ve güvenceli örneklemler (inliers) ile <i>P = 1 / accuracy<sup>2</sup></i> ağırlıklı <b>Ağırlıklı En Küçük Kareler (WLS)</b> doğrusal dengeleme matrisi koşturularak nokta konumu en yüksek hassasiyetle hesaplanır.</p>
-    </div>
-
-    <p class="no-indent">Bileşen tabanlı (Separate X/Y Axes) IQR + WLS koordinat süzme metodolojisinin kaynak kod yapısı aşağıdadır:</p>
-    <pre class="code-block">
-function calculateIQRWLS(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  // Convert samples to 2D local Cartesian
-  const localPts = samples.map(s => ({ x: (s.lng - avgLng) * lngCoeff, y: (s.lat - avgLat) * latCoeff }));
-  const sortedXs = [...localPts.map(p => p.x)].sort((a,b) => a - b);
-  const sortedYs = [...localPts.map(p => p.y)].sort((a,b) => a - b);
-
-  const iqr_x = getPercentile(sortedXs, 0.75) - getPercentile(sortedXs, 0.25);
-  const iqr_y = getPercentile(sortedYs, 0.75) - getPercentile(sortedYs, 0.25);
-
-  const minIQR = Math.max(0.1, avgHardwareAcc * 0.05); // Safety floor
-  const iqr_x_safe = Math.max(iqr_x, minIQR);
-  const iqr_y_safe = Math.max(iqr_y, minIQR);
-
-  const inliers = samples.filter((_, i) => {
-    const pt = localPts[i];
-    return pt.x >= (q1_x - 1.5 * iqr_x_safe) && pt.x <= (q3_x + 1.5 * iqr_x_safe) &&
-           pt.y >= (q1_y - 1.5 * iqr_y_safe) && pt.y <= (q3_y + 1.5 * iqr_y_safe);
-  });
-  return calculateWeightedLSE(inliers);
-}
-    </pre>
-
-    <h3>2.4.7. RANSAC (Random Sample Consensus) Kaba Hata Algılama ve WLS Dengelemesi</h3>
-    <p>Rassal Örneklem Konsensüsü (RANSAC - Random Sample Consensus), yüksek oranlı kaba hataların ve çoklu yol yansımalarından kaynaklanan aşırı saçılmış aykırı değerlerin (outliers) veri setinden ayıklanmasında kullanılan yenilikçi, robust ve iteratif bir jeodezik veri temizleme yöntemidir. Klasik en küçük kareler temelli yöntemler (LSE), tek bir kaba hatanın bile tüm dengeleme sistemini bozmasına neden olurken, RANSAC yüksek gürültülü GNSS gözlemlerinde dahi en büyük "tutarlı inlier (iç değer)" alt kümesini bularak eşsiz bir konumsal doğruluk sağlar.</p>
-
-    <div class="case-container" style="background-color: #f5f3ff; border-left: 4px solid #8b5cf6; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
-      <p class="bold" style="color: #5b21b6; margin-bottom: 6px;">İki Boyutlu Geodezik RANSAC + WLS Birleşik Modeli</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Minimum Model Boyutu (s = 1):</span> İki boyutlu statik tek nokta konum kestirimi için aranılan model parametreleri (X<sub>0</sub>, Y<sub>0</sub>) doğrudan bir koordinat noktası tanımladığından, modeli başlatmak için gereken en küçük örneklem büyüklüğü 1'dir. İterasyon döngüsünde rassal olarak seçilen her bir tekil <i>P<sub>model</sub></i> noktası, o iterasyonun aday konumsal asıllı nirengi parametresi sayılır.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Chi-Square (χ²) Tabanlı İstatistiksel Tolerans Limiti (T):</span> Bir noktanın aday modele ait tutarlı bir inlier olup olmadığını test etmek amacıyla iki boyutlu konumsal hata elipsi teoremi işletilir. Koordinat bileşenlerinin bağımsız normal dağılım gösterdiği kabulünden hareketle, iki boyutlu Euclidean artıkların karesinin varyansa oranı 2 serbestlik dereceli (DOF = 2) <b>Chi-Square (χ²)</b> dağılımını izler. %95 güven sınırındaki kritik χ² değeri 5.991'dir. Ortalama koordinat standart sapması <i>&sigma;<sub>avg</sub> = (1 / N) &times; &sum; (accuracy<sub>i</sub> / 1.96)</i> olarak hesaplandıktan sonra, kabul aralığı katsayısı şu şekilde bulunur:
-        <br/><span class="bold" style="display: block; text-align: center; margin: 8px 0; font-family: monospace;">T = &radic;(5.991 &times; &sigma;<sub>avg</sub><sup>2</sup>) &approx; 2.4477 &times; &sigma;<sub>avg</sub></span>
-      </p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. Konsensüs Havuzu ve Oylama Kararı:</span> Seçilen her aday model noktası için tüm veri setindeki noktaların düzlemsel mesafeleri <i>d<sub>i</sub> = &radic;((x<sub>i</sub> - x<sub>model</sub>)<sup>2</sup> + (y<sub>i</sub> - y<sub>model</sub>)<sup>2</sup>)</i> hesaplanır. Eğer <i>d<sub>i</sub> &le; T</i> ise bu nokta o modele destek veren inlier sayılır. $K$ adet iterasyon boyunca en fazla inlier toplayan (konsensüs sağlayan) şampiyon küme belirlenir. İnlier sayılarının eşitliği durumunda ise artık mesafelerin kareler toplamı (sum of squared residuals) en küçük olan model şampiyon seçilir (Tie-Breaker).</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">4. WLS ile Nihai Konumlandırma:</span> RANSAC tarafından kaba hatası elenmiş en büyük tutarlı inlier veri kümesi koşturularak <i>P = 1 / accuracy<sup>2</sup></i> ağırlıklı <b>Ağırlıklı En Küçük Kareler (WLS)</b> doğrusal matris çözümüyle nihai hassas nokta koordinatları elde edilir.</p>
-    </div>
-
-    <p class="no-indent">Rigor akademik 2D RANSAC + WLS koordinat süzme metodolojisinin kaynak kod yapısı aşağıdadır:</p>
-    <pre class="code-block">
-function calculateRANSAC(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  const avgSigma = samples.reduce((sum, s) => sum + (s.accuracy / 1.96), 0) / samples.length;
-  const T = Math.sqrt(5.991) * Math.max(0.05, avgSigma); // χ² radius limit
-  
-  let bestInliers: number[] = [];
-  let minResidual = Infinity;
-
-  for (let iter = 0; iter < Math.max(200, samples.length * 2); iter++) {
-    const modelPt = localPts[Math.floor(random() * samples.length)];
-    const inliers = [];
-    let residSum = 0;
-
-    for (let i = 0; i < samples.length; i++) {
-      const dist = Math.sqrt((localPts[i].x - modelPt.x)**2 + (localPts[i].y - modelPt.y)**2);
-      if (dist <= T) {
-        inliers.push(i);
-        residSum += dist * dist;
-      }
-    }
-
-    if (inliers.length > bestInliers.length || (inliers.length === bestInliers.length && residSum < minResidual)) {
-      bestInliers = inliers;
-      minResidual = residSum;
-    }
-  }
-  return calculateWeightedLSE(bestInliers.map(idx => samples[idx]));
-}
-    </pre>
-
-    <h3>2.4.8. Sinyal Güvenilirlik Analizi ve Veri Saçılım Metodolojisi</h3>
+    <h3>2.4.6. Sinyal Güvenilirlik Analizi ve Veri Saçılım Metodolojisi</h3>
     <p>Mobil donanımların ve akıllı telefonların entegre konum sensörleri doğrudan ham GNSS gözlemleri (taşıyıcı fazı vb.) yerine tarayıcı düzlemine filtrelenmiş tahminler sunar. Bu sebeple donanımın ürettiği konumsal doğruluk kestirimleri (UERE - User Equivalent Range Error tabanlı tahmini konum hatası veya Geolocation API Hassasiyet Çemberi / Accuracy Radius), her zaman sahada karşılaşılan fiziki çoklu yansıma (multipath) ve atmosferik gecikme etkilerini bütünüyle yansıtamaz. ${FULL_BRAND}, bu tip yetersiz veya iyimser bildirimlerden kaynaklı riskleri bertaraf etmek amacıyla <b>Konumsal Veri Saçılımı ve Sinyal Güvenilirlik Analiz Motorunu</b> çalıştırır. Bu motor, toplanan örneklem havuzunun uzaysal dağılımını matematiksel kriterlere göre denetleyerek sinyal kalitesini derecelendirir.</p>
 
     <p><span class="bold">Zaman Serisi ve Epok Aralığı (1 Hz Frekans Modeli):</span> Akıllı konumlandırma motoru, statik ölçüm sırasında Geolocation API'nin standart saniyelik güncelleme hızı olan 1 Hz varsayılan frekansı ile veri toplar. Güvenli bir istatistiksel çıkarım için en az 15 epok (yaklaşık 15 saniyelik kesintisiz zaman serisi dizisi) toplanması zorunluluğu getirilmiştir. Bu 15 saniyelik statik oturum, GNSS uydularının saatler içinde gerçekleşen yörünge/geometri değişimlerini (bölgesel DOP değişimini) modellemek yerine; yerel çevresel engeller, bina yansımaları ve ağaç örtüsünden kaynaklanan anlık çoklu yol (multipath) sapmalarını, sinyal saçılmalarını ve yüksek frekanslı beyaz gürültüyü sönümleyerek verilerin kararlılığını güvene almayı hedefler.</p>

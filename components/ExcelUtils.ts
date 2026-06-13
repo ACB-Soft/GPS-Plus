@@ -13,10 +13,8 @@ const getMethodName = (m: CalculationMethod) => {
     case 'KMEANS_BAARDA_HUBER': return "KMeans + Baarda + Huber";
     case 'KMEANS_4': return "K-Means (4 Küme)";
     case 'BAARDA': return "Baarda Eleme";
-    case 'IQR_WLS': return "IQR Aykırı Değer Eleme (WLS)";
-    case 'RANSAC': return "RANSAC Gözlem Ayıklama (WLS)";
-    case 'MONTE_CARLO_PF': return "Monte Carlo Parçacık Filtresi";
-    case 'SENSOR_FUSION_DR': return "Çoklu Sensör Füzyonu (Static)";
+    case 'POPE_TAU': return "Pope's Tau Testi";
+    case 'DANISH_ROBUST': return "Danish Robust Tahmini";
     default: return m;
   }
 };
@@ -157,10 +155,8 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     'KMEANS_4',
     'BAARDA',
     'KMEANS_BAARDA_HUBER',
-    'IQR_WLS',
-    'RANSAC',
-    'MONTE_CARLO_PF',
-    'SENSOR_FUSION_DR'
+    'POPE_TAU',
+    'DANISH_ROBUST'
   ];
   const methodResults = methods.map(method => {
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
@@ -500,10 +496,8 @@ export const downloadCombinedAnalysisReport = (
     'KMEANS_4',
     'BAARDA',
     'KMEANS_BAARDA_HUBER',
-    'IQR_WLS',
-    'RANSAC',
-    'MONTE_CARLO_PF',
-    'SENSOR_FUSION_DR'
+    'POPE_TAU',
+    'DANISH_ROBUST'
   ];
 
   if (location.samples && location.samples.length > 0) {
