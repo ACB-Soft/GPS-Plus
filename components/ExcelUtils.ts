@@ -14,6 +14,7 @@ const getMethodName = (m: CalculationMethod) => {
     case 'KMEANS_4': return "K-Means (4 Küme)";
     case 'BAARDA': return "Baarda Eleme";
     case 'IQR_WLS': return "IQR Aykırı Değer Eleme (WLS)";
+    case 'RANSAC': return "RANSAC Gözlem Ayıklama (WLS)";
     default: return m;
   }
 };
@@ -154,7 +155,8 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     'KMEANS_4',
     'BAARDA',
     'KMEANS_BAARDA_HUBER',
-    'IQR_WLS'
+    'IQR_WLS',
+    'RANSAC'
   ];
   const methodResults = methods.map(method => {
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
@@ -494,7 +496,8 @@ export const downloadCombinedAnalysisReport = (
     'KMEANS_4',
     'BAARDA',
     'KMEANS_BAARDA_HUBER',
-    'IQR_WLS'
+    'IQR_WLS',
+    'RANSAC'
   ];
 
   if (location.samples && location.samples.length > 0) {

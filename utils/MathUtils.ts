@@ -59,10 +59,10 @@ export function calculateResult(
   // - HUBER and KMEANS_4 require en az 30 epok.
   // - KMEANS_BAARDA_HUBER (Hybrid) require en az 55 epok.
   // - Standalone BAARDA only requires geodetic minimum of 4 epok.
-  // - IQR_WLS requires en az 10 epok.
+  // - IQR_WLS and RANSAC require en az 10 epok.
   const requires55 = method === 'KMEANS_BAARDA_HUBER';
   const requires30 = method === 'HUBER' || method === 'KMEANS_4';
-  const requires10 = method === 'IQR_WLS';
+  const requires10 = method === 'IQR_WLS' || method === 'RANSAC';
   const requires4 = method === 'BAARDA';
   
   let finalMethod = method;
@@ -123,6 +123,11 @@ export function calculateResult(
       const iqrRes = calculateIQRWLS(sourceData);
       resultData = iqrRes.result;
       finalCalculatedUsedIndices = iqrRes.usedIndices;
+      break;
+    case 'RANSAC':
+      const ransacRes = calculateRANSAC(sourceData);
+      resultData = ransacRes.result;
+      finalCalculatedUsedIndices = ransacRes.usedIndices;
       break;
     default:
       const defaultLse = calculateWeightedLSE(sourceData);
@@ -1123,6 +1128,131 @@ export function calculateIQRWLS(samples: Coordinate[]): { result: Coordinate; us
       timestamp: Date.now()
     },
     usedIndices
+  };
+}
+
+/**
+ * Standalone RANSAC (Random Sample Consensus) Outlier Detection + Weighted Least Squares (WLS) Adjustment
+ * Designed with absolute academic geodetic precision:
+ * 1. Converts WGS84 Geodetic coordinates (lat, lng) into local Cartesian 2D coordinates (x, y) relative to average.
+ * 2. Computes the statistical standard deviation threshold using the standard 2D continuous Chi-Squared (χ²)
+ *    distribution at a 95% confidence limit.
+ *    Average standard deviation (σ_avg) is derived from hardware accuracies: σ_i = accuracy_i / 1.96.
+ *    Critical χ² value for 2 Degrees of Freedom (X and Y coordinates) is 5.991.
+ *    Inlier Tolerance Threshold T = sqrt(5.991 * σ_avg²).
+ * 3. Executes the RANdom Sample Consensus iteration loop:
+ *    - In each draw, randomly selects a single sample coordinate to formulate the candidate point model.
+ *    - Measures the Euclidean distance residuals of all other coordinates to this candidate point.
+ *    - Points within distance residual <= T are added to the consensus inlier set.
+ *    - Evaluates the consensus set size. In case of ties, chooses the one with the lowest sum of squared residuals.
+ * 4. Multi-epoch consensus optimization yields the champion consensus (inlier) dataset.
+ * 5. Runs a robust geodetic Weighted Least Squares (WLS) adjustment using 1/(accuracy^2) on the final inlier set.
+ */
+export function calculateRANSAC(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length < 2) {
+    return { result: samples[0], usedIndices: [0] };
+  }
+
+  const avgLat = samples.reduce((sum, s) => sum + s.lat, 0) / samples.length;
+  const avgLng = samples.reduce((sum, s) => sum + s.lng, 0) / samples.length;
+  const { latCoeff, lngCoeff } = getWGS84Coefficients(avgLat);
+
+  // Compute local coordinates
+  const localPts = samples.map(s => ({
+    x: (s.lng - avgLng) * lngCoeff,
+    y: (s.lat - avgLat) * latCoeff
+  }));
+
+  // Calculate average standard deviation (assuming Google accuracy represents 95% confidence bound, i.e., 1.96 sigma)
+  const totalSigma = samples.reduce((sum, s) => sum + (s.accuracy / 1.96), 0);
+  const avgSigma = totalSigma / samples.length;
+  
+  // Safety standard deviation floor (5 cm) to avoid division/boundary collapse on static or identical simulated inputs
+  const safeAvgSigma = Math.max(0.05, avgSigma);
+
+  // Academic Chi-Square threshold for 2 DOF at 95% probability is 5.991
+  // T = sqrt(5.991) * safeAvgSigma
+  const T = Math.sqrt(5.991) * safeAvgSigma;
+
+  let bestInliers: number[] = [];
+  let minInlierResidualSum = Infinity;
+  const numIterations = Math.max(200, samples.length * 2);
+
+  // Seeded/Deterministic execution for reproducible UI checks
+  let seed = 42;
+  function random(): number {
+    const x = Math.sin(seed++) * 10000;
+    return x - Math.floor(x);
+  }
+
+  for (let iter = 0; iter < numIterations; iter++) {
+    // Pick a random single sample as candidate centroid model (Minimal Sample size = 1)
+    const randIdx = Math.floor(random() * samples.length);
+    const modelPt = localPts[randIdx];
+
+    const currentInliers: number[] = [];
+    let currentResidualSum = 0;
+
+    for (let i = 0; i < samples.length; i++) {
+      const pt = localPts[i];
+      const dist = Math.sqrt(Math.pow(pt.x - modelPt.x, 2) + Math.pow(pt.y - modelPt.y, 2));
+
+      if (dist <= T) {
+        currentInliers.push(i);
+        currentResidualSum += dist * dist;
+      }
+    }
+
+    // Check consensus
+    if (currentInliers.length > bestInliers.length) {
+      bestInliers = currentInliers;
+      minInlierResidualSum = currentResidualSum;
+    } else if (currentInliers.length === bestInliers.length) {
+      // Tie-breaker: choose the model with lower sum of squared distance residuals
+      if (currentResidualSum < minInlierResidualSum) {
+        bestInliers = currentInliers;
+        minInlierResidualSum = currentResidualSum;
+      }
+    }
+  }
+
+  // Safety fallback: if no consensus set was populated, use all samples
+  if (bestInliers.length === 0) {
+    bestInliers = samples.map((_, i) => i);
+  }
+
+  const inlierSamples = bestInliers.map(idx => samples[idx]);
+
+  // Rigorous hardware-weighted WLS Solution on inlying coordinates
+  let finalSumW = 0;
+  let finalLatW = 0;
+  let finalLngW = 0;
+  let totalAccuracy = 0;
+
+  for (const p of inlierSamples) {
+    const wHardware = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
+    finalSumW += wHardware;
+    finalLatW += p.lat * wHardware;
+    finalLngW += p.lng * wHardware;
+    totalAccuracy += p.accuracy;
+  }
+
+  const validAlts = inlierSamples.filter(s => s.altitude !== null && s.altitude !== undefined);
+  const finalAlt = validAlts.length > 0 ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length : null;
+
+  const validAltAccs = inlierSamples.filter(s => s.altitudeAccuracy !== null && s.altitudeAccuracy !== undefined);
+  const finalAltAcc = validAltAccs.length > 0 ? validAltAccs.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length : null;
+
+  return {
+    result: {
+      lat: finalLatW / (finalSumW || 1.0),
+      lng: finalLngW / (finalSumW || 1.0),
+      accuracy: totalAccuracy / (inlierSamples.length || 1),
+      altitude: finalAlt,
+      altitudeAccuracy: finalAltAcc,
+      timestamp: Date.now()
+    },
+    usedIndices: bestInliers
   };
 }
 
