@@ -60,6 +60,16 @@ const CLUSTER_COLORS = [
   '#10b981', // Emerald
 ];
 
+const getClusterLetterLabel = (idx: number): string => {
+  let label = '';
+  let temp = idx;
+  while (temp >= 0) {
+    label = String.fromCharCode((temp % 26) + 65) + label;
+    temp = Math.floor(temp / 26) - 1;
+  }
+  return label;
+};
+
 const CustomScatterLabel = (props: any) => {
   const { cx, cy, payload } = props;
   if (!payload || !payload.id) return null;
@@ -1751,7 +1761,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 content={({ active, payload }) => {
                                   if (active && payload && payload.length) {
                                     const data = payload[0].payload;
-                                    const labels = ['A', 'B', 'C', 'D', 'E', 'F'];
                                     return (
                                       <div className="bg-slate-900 border border-slate-800 text-white p-2.5 rounded-lg shadow-xl z-50 text-[8px] text-left">
                                         <p className="font-bold uppercase text-blue-400 mb-0.5 pb-0.5 border-b border-slate-800 leading-none">
@@ -1760,7 +1769,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                         <div className="space-y-0.5 font-mono">
                                           <div className="flex justify-between gap-2">
                                             <span className="opacity-60 text-[7px] uppercase">Spatial Cluster:</span>
-                                            <span className="font-bold text-indigo-400">Cluster {labels[data.clusterId % labels.length]}</span>
+                                            <span className="font-bold text-indigo-400">Cluster {getClusterLetterLabel(data.clusterId)}</span>
                                           </div>
                                           <div className="flex justify-between gap-2">
                                             <span className="opacity-60 text-[7px] uppercase">ΔE (Easting):</span>
@@ -1801,7 +1810,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
                               {/* Draw Each Cluster in its own color layer */}
                               {(() => {
-                                const labels = ['A', 'B', 'C', 'D', 'E', 'F'];
                                 const clusterColors = ['#3b82f6', '#a855f7', '#eab308', '#ec4899', '#14b8a6', '#f97316'];
                                 return hybridClusterChartData?.clusters.map((clusterIndices, cIdx) => {
                                   if (clusterIndices.length === 0) return null;
@@ -1809,7 +1817,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   return (
                                     <Scatter 
                                       key={`kmeans-scatter-${cIdx}`}
-                                      name={`Cluster ${labels[cIdx % labels.length]}`} 
+                                      name={`Cluster ${getClusterLetterLabel(cIdx)}`} 
                                       data={ptsOfCluster} 
                                       fill={clusterColors[cIdx % clusterColors.length]}
                                       shape={<RawPointShape r={parseFloat(customDotSize)} />}
@@ -1830,7 +1838,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       <div className="shrink-0 border-t border-slate-100 pt-3 flex flex-col gap-2 w-full">
                         <div className="grid grid-cols-3 gap-x-2 gap-y-1.5 font-sans">
                           {(() => {
-                            const labels = ['A', 'B', 'C', 'D', 'E', 'F'];
                             const clusterColors = ['#3b82f6', '#a855f7', '#eab308', '#ec4899', '#14b8a6', '#f97316'];
                             const fs = parseFloat(customScatterFontSize);
                             const badgeSize = `${fs + 6.5}px`;
@@ -1844,11 +1851,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               return (
                                 <div key={`kmeans-legend-${cIdx}`} className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
                                   <div className="flex items-center justify-center rounded font-black text-white shrink-0 shadow-xs" style={{ backgroundColor: color, width: badgeSize, height: badgeSize, fontSize: badgeFontSize }}>
-                                    {labels[cIdx % labels.length]}
+                                    {getClusterLetterLabel(cIdx)}
                                   </div>
                                   <div className="min-w-0 font-sans">
                                     <p className="font-extrabold text-slate-800 uppercase tracking-tight truncate leading-none" style={{ fontSize: titleFontSize }}>
-                                      CLUSTER {labels[cIdx % labels.length]}
+                                      CLUSTER {getClusterLetterLabel(cIdx)}
                                     </p>
                                     <p className="font-bold text-indigo-600 font-mono tracking-tight leading-none mt-0.5" style={{ fontSize: subFontSize }}>
                                       {clusterIndices.length} EPOCHS
@@ -1974,7 +1981,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 content={({ active, payload }) => {
                                   if (active && payload && payload.length) {
                                     const data = payload[0].payload;
-                                    const labels = ['A', 'B', 'C', 'D', 'E', 'F'];
                                     return (
                                       <div className="bg-slate-900 border border-slate-800 text-white p-2.5 rounded-lg shadow-xl z-50 text-[8px] text-left">
                                         <p className="font-bold uppercase text-blue-400 mb-0.5 pb-0.5 border-b border-slate-800 leading-none">
@@ -1983,7 +1989,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                         <div className="space-y-0.5 font-mono">
                                           <div className="flex justify-between gap-2">
                                             <span className="opacity-60 text-[7px] uppercase">Spatial Cluster:</span>
-                                            <span className="font-bold text-indigo-400">Cluster {labels[data.clusterId % labels.length]}</span>
+                                            <span className="font-bold text-indigo-400">Cluster {getClusterLetterLabel(data.clusterId)}</span>
                                           </div>
                                           <div className="flex justify-between gap-2">
                                             <span className="opacity-60 text-[7px] uppercase">ΔE (Easting):</span>
@@ -2138,13 +2144,12 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       const pt = hybridClusterChartData.points.find(p => p.id === activeClusterPointId);
                       if (!pt) return null;
                       const offsetMeters = Math.sqrt(pt.dx * pt.dx + pt.dy * pt.dy);
-                      const labels = ['A', 'B', 'C', 'D', 'E'];
                       return (
                         <div className="grid grid-cols-2 gap-x-4 gap-y-2 font-sans text-[10.5px]">
                           <div className="space-y-1">
                             <p className="text-slate-400 font-bold uppercase text-[8px] tracking-wider leading-none">{t("Uzaysal Kümesi")}</p>
                             <p className="font-extrabold text-slate-800 leading-snug">
-                              Küme {labels[pt.clusterId % labels.length]}
+                              Küme {getClusterLetterLabel(pt.clusterId)}
                             </p>
                           </div>
                           <div className="space-y-1">
