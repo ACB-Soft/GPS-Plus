@@ -46,8 +46,7 @@ const METHOD_COLORS: Record<string, string> = {
   KMEANS_4: '#06b6d4',
   BAARDA: '#f59e0b',
   KMEANS_BAARDA_HUBER: '#10b981',
-  POPE_TAU: '#a855f7',
-  DANISH_ROBUST: '#6366f1'
+  POPE_TAU: '#a855f7'
 };
 
 const CLUSTER_COLORS = [
@@ -218,8 +217,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     'KMEANS_4',
     'BAARDA',
     'KMEANS_BAARDA_HUBER',
-    'POPE_TAU',
-    'DANISH_ROBUST'
+    'POPE_TAU'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
@@ -229,8 +227,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       'KMEANS_4': t("3. Dinamik KMeans Kümeleme"),
       'BAARDA': t("4. Baarda Eleme"),
       'KMEANS_BAARDA_HUBER': t("5. Hibrit Yöntem (KMeans + Baarda + Huber)"),
-      'POPE_TAU': t("6. Pope's Tau Testi"),
-      'DANISH_ROBUST': t("7. Danish Robust Tahmini")
+      'POPE_TAU': t("6. Pope's Tau Testi")
     };
     return labels[m] || m;
   };
@@ -1518,8 +1515,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   'KMEANS_4': 'KMeans',
                                   'BAARDA': 'Baarda',
                                   'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
-                                  'POPE_TAU': "Pope's Tau",
-                                  'DANISH_ROBUST': 'Danish Robust'
+                                  'POPE_TAU': "Pope's Tau"
                                 };
                                 return labels[m] || m;
                               };
@@ -1586,8 +1582,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               'KMEANS_4': 'KMeans',
                               'BAARDA': 'Baarda',
                               'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
-                              'POPE_TAU': "Pope's Tau",
-                              'DANISH_ROBUST': 'Danish Robust'
+                              'POPE_TAU': "Pope's Tau"
                             };
                             return labels[m] || m;
                           };
@@ -1623,8 +1618,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             'KMEANS_4': 'KMeans',
                             'BAARDA': 'Baarda',
                             'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
-                            'POPE_TAU': "Pope's Tau",
-                            'DANISH_ROBUST': 'Danish Robust'
+                            'POPE_TAU': "Pope's Tau"
                           };
                           return labels[m] || m;
                         };

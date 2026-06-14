@@ -14,7 +14,6 @@ const getMethodName = (m: CalculationMethod) => {
     case 'KMEANS_4': return "K-Means (4 Küme)";
     case 'BAARDA': return "Baarda Eleme";
     case 'POPE_TAU': return "Pope's Tau Testi";
-    case 'DANISH_ROBUST': return "Danish Robust Tahmini";
     default: return m;
   }
 };
@@ -155,8 +154,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     'KMEANS_4',
     'BAARDA',
     'KMEANS_BAARDA_HUBER',
-    'POPE_TAU',
-    'DANISH_ROBUST'
+    'POPE_TAU'
   ];
   const methodResults = methods.map(method => {
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
@@ -496,8 +494,7 @@ export const downloadCombinedAnalysisReport = (
     'KMEANS_4',
     'BAARDA',
     'KMEANS_BAARDA_HUBER',
-    'POPE_TAU',
-    'DANISH_ROBUST'
+    'POPE_TAU'
   ];
 
   if (location.samples && location.samples.length > 0) {

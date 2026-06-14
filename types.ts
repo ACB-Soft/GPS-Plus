@@ -15,8 +15,7 @@ export type CalculationMethod =
   | 'KMEANS_4' 
   | 'BAARDA'
   | 'KMEANS_BAARDA_HUBER'
-  | 'POPE_TAU'
-  | 'DANISH_ROBUST';
+  | 'POPE_TAU';
 
 export interface SavedLocation extends Coordinate {
   id: string;

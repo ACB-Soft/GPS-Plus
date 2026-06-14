@@ -58,10 +58,10 @@ export function calculateResult(
   // Let's implement the constraint checks for professional mathematical models:
   // - HUBER and KMEANS_4 require en az 30 epok.
   // - KMEANS_BAARDA_HUBER (Hybrid) require en az 55 epok.
-  // - Standalone BAARDA, POPE_TAU, and DANISH_ROBUST only require geodetic minimum of 4 epok.
+  // - Standalone BAARDA and POPE_TAU only require geodetic minimum of 4 epok.
   const requires55 = method === 'KMEANS_BAARDA_HUBER';
   const requires30 = method === 'HUBER' || method === 'KMEANS_4';
-  const requires4 = method === 'BAARDA' || method === 'POPE_TAU' || method === 'DANISH_ROBUST';
+  const requires4 = method === 'BAARDA' || method === 'POPE_TAU';
   
   let finalMethod = method;
   let fallbackApplied = false;
@@ -118,11 +118,6 @@ export function calculateResult(
       const popeTauRes = calculatePopeTauAcademic(sourceData);
       resultData = popeTauRes.result;
       finalCalculatedUsedIndices = popeTauRes.usedIndices;
-      break;
-    case 'DANISH_ROBUST':
-      const danishRes = calculateDanishRobustAcademic(sourceData);
-      resultData = danishRes.result;
-      finalCalculatedUsedIndices = danishRes.usedIndices;
       break;
     default:
       const defaultLse = calculateWeightedLSE(sourceData);
@@ -1150,98 +1145,6 @@ export function calculatePopeTauAcademic(samples: Coordinate[]): { result: Coord
   return {
     result: finalResult.result,
     usedIndices: currentSamples.map(s => s._originalIdx)
-  };
-}
-
-/**
- * Danish Robust Estimation Method
- * Classic geodetic weight decay algorithm originating from the Danish Geodetic Institute:
- * - Solves parameters recursively using an iterative Weighted Least Squares (WLS) scheme.
- * - Normalizes residuals using the reference posterior unit variance (sigma0) and leverage coefficients (h_i) at each epoch.
- * - Iteratively reduces observation weights that exceed the Danish critical limit (L = 2.0) using exponential decay.
- * - Terminates dynamically upon convergence below the sub-millimeter threshold (0.1 mm) or max iterations limit.
- */
-export function calculateDanishRobustAcademic(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  if (samples.length < 4) {
-    return calculateWeightedLSE(samples);
-  }
-
-  const N = samples.length;
-  const originalWeights = samples.map(s => 1.0 / Math.pow(Math.max(0.1, s.accuracy), 2));
-  let currentWeights = [...originalWeights];
-
-  const avgLat = samples.reduce((sum, s) => sum + s.lat, 0) / samples.length;
-  const avgLng = samples.reduce((sum, s) => sum + s.lng, 0) / samples.length;
-  const { latCoeff, lngCoeff } = getWGS84Coefficients(avgLat);
-
-  let currentLat = avgLat;
-  let currentLng = avgLng;
-
-  const MAX_ITER = 20;
-  const CONVERGENCE_LIMIT_M = 0.0001;
-
-  for (let iter = 0; iter < MAX_ITER; iter++) {
-    const sumW = currentWeights.reduce((a, b) => a + b, 0);
-    if (sumW <= 0) break;
-
-    const nextLat = samples.reduce((a, s, i) => a + s.lat * currentWeights[i], 0) / sumW;
-    const nextLng = samples.reduce((a, s, i) => a + s.lng * currentWeights[i], 0) / sumW;
-
-    const dLat_m = (nextLat - currentLat) * latCoeff;
-    const dLng_m = (nextLng - currentLng) * lngCoeff;
-    const shift = Math.sqrt(dLat_m * dLat_m + dLng_m * dLng_m);
-
-    currentLat = nextLat;
-    currentLng = nextLng;
-
-    if (shift < CONVERGENCE_LIMIT_M && iter > 2) {
-      break;
-    }
-
-    const localPts = samples.map(s => ({
-      dx: (s.lng - currentLng) * lngCoeff,
-      dy: (s.lat - currentLat) * latCoeff
-    }));
-
-    const residuals = localPts.map((pt, i) => Math.sqrt(pt.dx * pt.dx + pt.dy * pt.dy) * Math.sqrt(currentWeights[i]));
-    const sigma0 = Math.max(1e-6, calculateRobustSigmaMAD(residuals));
-
-    const L = 2.0;
-    const a_decay = 0.15;
-
-    for (let i = 0; i < N; i++) {
-      const pt = localPts[i];
-      const h_i = currentWeights[i] / sumW;
-      const q_vv = Math.max(0.01, 1.0 - h_i);
-      
-      const dist_v = Math.sqrt(pt.dx * pt.dx + pt.dy * pt.dy);
-      const u_i = (dist_v * Math.sqrt(originalWeights[i])) / (sigma0 * Math.sqrt(q_vv));
-
-      let multiplier = 1.0;
-      if (u_i > L) {
-        multiplier = Math.exp(-a_decay * (u_i - L));
-      }
-      currentWeights[i] = originalWeights[i] * Math.max(1e-5, multiplier);
-    }
-  }
-
-  const usedIndices: number[] = [];
-  for (let i = 0; i < N; i++) {
-    const ratio = currentWeights[i] / originalWeights[i];
-    if (ratio >= 0.1) {
-      usedIndices.push(i);
-    }
-  }
-
-  let finalUsedIndices = usedIndices;
-  if (finalUsedIndices.length < 2) {
-    finalUsedIndices = samples.map((_, i) => i);
-  }
-
-  const finalRes = calculateWeightedLSE(finalUsedIndices.map(idx => samples[idx]));
-  return {
-    result: finalRes.result,
-    usedIndices: finalUsedIndices
   };
 }
 
