@@ -44,6 +44,7 @@ const METHOD_COLORS: Record<string, string> = {
   WEIGHTED_LSE: '#8b5cf6',
   HUBER: '#3b82f6',
   KMEANS_4: '#06b6d4',
+  ST_DBSCAN: '#eab308',
   BAARDA: '#f59e0b',
   KMEANS_BAARDA_HUBER: '#10b981',
   POPE_TAU: '#a855f7',
@@ -144,6 +145,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const timeErrorChartRef = React.useRef<HTMLDivElement>(null);
   const hybridClusterChartRef = React.useRef<HTMLDivElement>(null);
   const clusterChartRef = React.useRef<HTMLDivElement>(null);
+  const stDbscanChartRef = React.useRef<HTMLDivElement>(null);
   const baardaChartRef = React.useRef<HTMLDivElement>(null);
 
   const [preciseN, setPreciseN] = useState<string>(''); // Northing (X)
@@ -215,6 +217,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const methods = useMemo<CalculationMethod[]>(() => [
     'WEIGHTED_LSE',
     'KMEANS_4',
+    'ST_DBSCAN',
     'BAARDA',
     'POPE_TAU',
     'HUBER',
@@ -226,11 +229,12 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     const labels: Record<string, string> = {
       'WEIGHTED_LSE': t("1. Ağırlıklı En Küçük Kareler"),
       'KMEANS_4': t("2. K-Means Dinamik Kümeleme"),
-      'BAARDA': t("3. Baarda's w-Testi"),
-      'POPE_TAU': t("4. Pope’s Tau Testi"),
-      'HUBER': t("5. Robust Huber"),
-      'HAMPEL': t("6. Robust Hampel"),
-      'KMEANS_BAARDA_HUBER': t("7. Hibrit Yöntem (KMeans+Baarda)")
+      'ST_DBSCAN': t("3. ST-DBSCAN Mekansal-Zamansal Kümeleme"),
+      'BAARDA': t("4. Baarda's w-Testi"),
+      'POPE_TAU': t("5. Pope’s Tau Testi"),
+      'HUBER': t("6. Robust Huber"),
+      'HAMPEL': t("7. Robust Hampel"),
+      'KMEANS_BAARDA_HUBER': t("8. Hibrit Yöntem (KMeans+Baarda)")
     };
     return labels[m] || m;
   };
@@ -556,6 +560,109 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       const passedBaarda = usedIndices ? usedIndices.includes(p.idx) : true;
       
       let clusterId = 0;
+      if (clusters) {
+        clusters.forEach((cluster, cIndex) => {
+          if (cluster.includes(p.idx)) {
+            clusterId = cIndex;
+          }
+        });
+      }
+
+      return {
+        id: p.idx + 1,
+        name: `${t("Epok")} #${p.idx + 1}`,
+        dx,
+        dy,
+        lat: p.lat,
+        lng: p.lng,
+        passedBaarda,
+        clusterId,
+        accuracy: p.accuracy,
+        time: new Date(p.timestamp).toLocaleTimeString()
+      };
+    });
+
+    return {
+      points: relativePoints,
+      clusters: clusters || [],
+      usedIndices: usedIndices || []
+    };
+  }, [location, t, analysisType, appliedPreciseN, appliedPreciseE, useLocal]);
+
+  const stDbscanClusterChartData = useMemo(() => {
+    if (!location || !location.samples || location.samples.length < 1) return null;
+    const accuracyLimit = location.accuracyLimit || 5.0;
+    
+    // Calculate results for the ST-DBSCAN method
+    const { clusters, usedIndices } = calculateResult(
+      location.samples,
+      'ST_DBSCAN',
+      accuracyLimit
+    );
+    
+    const sys = location.coordinateSystem || 'ITRF96_3';
+    
+    const accuracyFilteredIndices = location.samples
+      .map((s, idx) => s.accuracy <= accuracyLimit ? idx : -1)
+      .filter(idx => idx !== -1);
+
+    if (accuracyFilteredIndices.length === 0) return null;
+
+    let sumX = 0;
+    let sumY = 0;
+    const convertedPoints = accuracyFilteredIndices.map(idx => {
+      const s = location.samples![idx];
+      const conv = convertCoordinate(s.lat, s.lng, sys);
+      sumX += conv.x;
+      sumY += conv.y;
+      return {
+        idx,
+        x: conv.x,
+        y: conv.y,
+        lat: s.lat,
+        lng: s.lng,
+        accuracy: s.accuracy,
+        timestamp: s.timestamp
+      };
+    });
+
+    const meanX = sumX / accuracyFilteredIndices.length;
+    const meanY = sumY / accuracyFilteredIndices.length;
+
+    // Determine the Center (Reference)
+    let refCenterX = 0;
+    let refCenterY = 0;
+    let isPrecise = false;
+
+    if (analysisType === 'precise') {
+      const pn = parseFloat(appliedPreciseN); // Yukarı (X)
+      const pe = parseFloat(appliedPreciseE); // Sağa (Y)
+      
+      if (!isNaN(pn) && !isNaN(pe)) {
+        if (useLocal) {
+          refCenterX = pe; // Easting (Sağa/Y)
+          refCenterY = pn; // Northing (Yukarı/X)
+        } else {
+          const conv = convertCoordinate(pn, pe, sys);
+          refCenterX = conv.x; // Easting (Sağa/Y)
+          refCenterY = conv.y; // Northing (Yukarı/X)
+        }
+        isPrecise = true;
+      }
+    }
+
+    if (!isPrecise) {
+      refCenterX = meanX;
+      refCenterY = meanY;
+    }
+
+    const relativePoints = convertedPoints.map(p => {
+      const dx = p.x - refCenterX; // Easting offset in meters relative to reference
+      const dy = p.y - refCenterY; // Northing offset in meters relative to reference
+      
+      const passedBaarda = usedIndices ? usedIndices.includes(p.idx) : true;
+      
+      let clusterId = -1; // -1 is noise
       if (clusters) {
         clusters.forEach((cluster, cIndex) => {
           if (cluster.includes(p.idx)) {
@@ -1516,6 +1623,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   'WEIGHTED_LSE': 'Weighted LSE',
                                   'HUBER': 'Huber',
                                   'KMEANS_4': 'KMeans',
+                                  'ST_DBSCAN': 'ST-DBSCAN',
                                   'BAARDA': 'Baarda',
                                   'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
                                   'POPE_TAU': "Pope's Tau",
@@ -1584,6 +1692,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               'WEIGHTED_LSE': 'Weighted LSE',
                               'HUBER': 'Huber',
                               'KMEANS_4': 'KMeans',
+                              'ST_DBSCAN': 'ST-DBSCAN',
                               'BAARDA': 'Baarda',
                               'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
                               'POPE_TAU': "Pope's Tau",
@@ -1621,6 +1730,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             'WEIGHTED_LSE': 'Weighted LSE',
                             'HUBER': 'Huber',
                             'KMEANS_4': 'KMeans',
+                            'ST_DBSCAN': 'ST-DBSCAN',
                             'BAARDA': 'Baarda',
                             'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
                             'POPE_TAU': "Pope's Tau",
@@ -1868,6 +1978,257 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             return (
                               <>
                                 {elements}
+                                {analysisType === 'precise' && (
+                                  <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
+                                    <div 
+                                      className="flex items-center justify-center bg-[#10b981] border border-[#059669] text-white font-black shrink-0 shadow-xs rotate-45" 
+                                      style={{ 
+                                        width: `${parseFloat(customScatterFontSize) + 2.5}px`, 
+                                        height: `${parseFloat(customScatterFontSize) + 2.5}px`,
+                                        borderRadius: '3px',
+                                        marginLeft: '2px',
+                                        marginRight: '2px'
+                                      }}
+                                    >
+                                      <span className="text-[6px] font-black -rotate-45 block transform">REF</span>
+                                    </div>
+                                    <div className="min-w-0 font-sans">
+                                      <p className="font-extrabold text-slate-800 uppercase tracking-wider truncate leading-none" style={{ fontSize: `${parseFloat(customScatterFontSize) - 0.5}px` }}>
+                                        PRECISE
+                                      </p>
+                                      <p className="font-bold text-emerald-600 tracking-wider leading-none mt-0.5 truncate" style={{ fontSize: `${parseFloat(customScatterFontSize) - 1.5}px` }}>
+                                        COORDINATE
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 1.5. ST-DBSCAN Spatial-Temporal Clustering Scatter Chart */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center px-1">
+                      <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">
+                        ST-DBSCAN Spatial-Temporal Clustering Plot
+                      </span>
+                      <button 
+                        onClick={() => exportChart(stDbscanChartRef, 'gps-plus-stdbscan-clusters')}
+                        type="button"
+                        className="bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 cursor-pointer flex items-center gap-1"
+                      >
+                        <i className="fas fa-camera text-blue-400"></i> {t("Download PNG")}
+                      </button>
+                    </div>
+
+                    <div 
+                      ref={stDbscanChartRef}
+                      className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] aspect-square mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
+                    >
+                      {/* Header */}
+                      <div className="flex justify-between items-center border-b border-slate-900/10 pb-1.5 min-h-0 shrink-0">
+                        <div className="min-w-0">
+                          <h2 className="text-slate-900 font-extrabold text-[9px] uppercase tracking-wider leading-none font-sans">
+                            ACB LABS ST-DBSCAN CLUSTERING PLAN
+                          </h2>
+                          <p className="text-slate-400 text-[6px] font-bold uppercase tracking-widest mt-0.5 font-mono">
+                            SPATIAL-TEMPORAL TRAJECTORY DENSITY GROUPS
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Scatter Plot */}
+                      <div className="flex-1 min-h-0 min-w-0 w-full relative">
+                        {stDbscanClusterChartData && stDbscanClusterChartData.points.length > 0 ? (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <ScatterChart margin={{ top: 12, right: 12, bottom: 20, left: -5 }}>
+                              <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" horizontal={true} vertical={true} />
+                              <XAxis 
+                                type="number" 
+                                dataKey="dx" 
+                                name="ΔE" 
+                                domain={[-maxTickLimit + xOffset, maxTickLimit + xOffset]} 
+                                ticks={xTicks}
+                                interval={0}
+                                angle={-90}
+                                textAnchor="end"
+                                height={32}
+                                tickFormatter={(val) => {
+                                  const isInteger = Math.abs(val - Math.round(val)) < 0.01;
+                                  return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
+                                }}
+                                tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155', dy: 2.5, dx: -3}}
+                                axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
+                                tickLine={{ stroke: '#475569', strokeWidth: 1 }}
+                              />
+                              <YAxis 
+                                type="number" 
+                                dataKey="dy" 
+                                name="ΔN" 
+                                domain={[-maxTickLimit + yOffset, maxTickLimit + yOffset]} 
+                                ticks={yTicks}
+                                interval={0}
+                                tickFormatter={(val) => {
+                                  const isInteger = Math.abs(val - Math.round(val)) < 0.01;
+                                  return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
+                                }}
+                                tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155'}} 
+                                axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
+                                tickLine={{ stroke: '#475569', strokeWidth: 1 }}
+                              />
+                              <ZAxis type="number" range={[15, 15]} />
+                              <Tooltip 
+                                cursor={{ strokeDasharray: '3 3', stroke: '#475569' }} 
+                                content={({ active, payload }) => {
+                                  if (active && payload && payload.length) {
+                                    const data = payload[0].payload;
+                                    return (
+                                      <div className="bg-slate-900 border border-slate-800 text-white p-2.5 rounded-lg shadow-xl z-50 text-[8px] text-left">
+                                        <p className="font-bold uppercase text-blue-400 mb-0.5 pb-0.5 border-b border-slate-800 leading-none">
+                                          Epoch #{data.id}
+                                        </p>
+                                        <div className="space-y-0.5 font-mono">
+                                          <div className="flex justify-between gap-2">
+                                            <span className="opacity-60 text-[7px] uppercase">ST-DBSCAN:</span>
+                                            <span className="font-bold text-indigo-400">
+                                              {data.clusterId === -1 ? "Noise / Outlier" : `Cluster ${getClusterLetterLabel(data.clusterId)}`}
+                                            </span>
+                                          </div>
+                                          <div className="flex justify-between gap-2">
+                                            <span className="opacity-60 text-[7px] uppercase">ΔE (Easting):</span>
+                                            <span className="font-bold text-emerald-400">{data.dx.toFixed(4)} m</span>
+                                          </div>
+                                          <div className="flex justify-between gap-2">
+                                            <span className="opacity-60 text-[7px] uppercase">ΔN (Northing):</span>
+                                            <span className="font-bold text-sky-400">{data.dy.toFixed(4)} m</span>
+                                          </div>
+                                          <div className="flex justify-between gap-2">
+                                            <span className="opacity-60 text-[7px] uppercase">Baarda Filter:</span>
+                                            <span className={`font-bold ${data.passedBaarda ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                              {data.passedBaarda ? "PASSED" : "REJECTED"}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                }}
+                              />
+                              <ReferenceLine x={0} stroke="#475569" strokeWidth={1} strokeDasharray="3 3" />
+                              <ReferenceLine y={0} stroke="#475569" strokeWidth={1} strokeDasharray="3 3" />
+                              
+                              {/* Reference Point / Ground Truth (REF) */}
+                              {analysisType === 'precise' && (
+                                <Scatter 
+                                  name="GROUND TRUTH (REF)" 
+                                  data={[{ dx: 0, dy: 0 }]} 
+                                  fill="#10b981" 
+                                  shape="diamond" 
+                                  line={false}
+                                >
+                                  <Cell fill="#10b981" stroke="#059669" strokeWidth={1.5} />
+                                </Scatter>
+                              )}
+
+                              {/* Draw Each Cluster in its own color layer */}
+                              {(() => {
+                                const clusterColors = ['#eab308', '#a855f7', '#3b82f6', '#ec4899', '#14b8a6', '#f97316'];
+                                return stDbscanClusterChartData?.clusters.map((clusterIndices, cIdx) => {
+                                  if (clusterIndices.length === 0) return null;
+                                  const ptsOfCluster = stDbscanClusterChartData.points.filter(p => clusterIndices.includes(p.id - 1));
+                                  return (
+                                    <Scatter 
+                                      key={`stdbscan-scatter-${cIdx}`}
+                                      name={`Cluster ${getClusterLetterLabel(cIdx)}`} 
+                                      data={ptsOfCluster} 
+                                      fill={clusterColors[cIdx % clusterColors.length]}
+                                      shape={<RawPointShape r={parseFloat(customDotSize)} />}
+                                      onClick={(pt) => setActiveClusterPointId(pt.id)}
+                                      className="cursor-pointer"
+                                    />
+                                  );
+                                });
+                              })()}
+
+                              {/* Draw Noisy/Discarded Points (ST-DBSCAN Noise) */}
+                              {(() => {
+                                const noisePts = stDbscanClusterChartData?.points.filter(p => p.clusterId === -1) || [];
+                                if (noisePts.length === 0) return null;
+                                return (
+                                  <Scatter 
+                                    key="stdbscan-scatter-noise"
+                                    name="Noise / Outliers" 
+                                    data={noisePts} 
+                                    fill="#94a3b8"
+                                    shape={<RawPointShape r={parseFloat(customDotSize)} />}
+                                    onClick={(pt) => setActiveClusterPointId(pt.id)}
+                                    className="cursor-pointer opacity-30 hover:opacity-100"
+                                  />
+                                );
+                              })()}
+                            </ScatterChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <div className="flex items-center justify-center h-full text-slate-400 font-bold text-xs uppercase tracking-widest">NO DATA FOUND</div>
+                        )}
+                      </div>
+
+                      {/* Bottom Panel: Shrunk & Very Compact Legend */}
+                      <div className="shrink-0 border-t border-slate-100 pt-3 flex flex-col gap-2 w-full">
+                        <div className="grid grid-cols-3 gap-x-2 gap-y-1.5 font-sans">
+                          {(() => {
+                            const clusterColors = ['#eab308', '#a855f7', '#3b82f6', '#ec4899', '#14b8a6', '#f97316'];
+                            const fs = parseFloat(customScatterFontSize);
+                            const badgeSize = `${fs + 6.5}px`;
+                            const badgeFontSize = `${fs - 0.5}px`;
+                            const titleFontSize = `${fs - 1}px`;
+                            const subFontSize = `${fs - 2}px`;
+                            
+                            const elements = (stDbscanClusterChartData?.clusters || []).map((clusterIndices, cIdx) => {
+                              if (clusterIndices.length === 0) return null;
+                              const color = clusterColors[cIdx % clusterColors.length];
+                              return (
+                                <div key={`stdbscan-legend-${cIdx}`} className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
+                                  <div className="flex items-center justify-center rounded font-black text-white shrink-0 shadow-xs" style={{ backgroundColor: color, width: badgeSize, height: badgeSize, fontSize: badgeFontSize }}>
+                                    {getClusterLetterLabel(cIdx)}
+                                  </div>
+                                  <div className="min-w-0 font-sans">
+                                    <p className="font-extrabold text-slate-800 uppercase tracking-tight truncate leading-none" style={{ fontSize: titleFontSize }}>
+                                      CLUSTER {getClusterLetterLabel(cIdx)}
+                                    </p>
+                                    <p className="font-bold text-indigo-600 font-mono tracking-tight leading-none mt-0.5" style={{ fontSize: subFontSize }}>
+                                      {clusterIndices.length} EPOCHS
+                                    </p>
+                                  </div>
+                                </div>
+                              );
+                            }).filter(Boolean);
+
+                            const totalNoise = stDbscanClusterChartData?.points.filter(p => p.clusterId === -1).length || 0;
+
+                            return (
+                              <>
+                                {elements}
+                                {totalNoise > 0 && (
+                                  <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
+                                    <div className="flex items-center justify-center rounded font-black text-white bg-slate-400 shrink-0 shadow-xs" style={{ width: badgeSize, height: badgeSize, fontSize: badgeFontSize }}>
+                                      Ø
+                                    </div>
+                                    <div className="min-w-0 font-sans">
+                                      <p className="font-extrabold text-slate-500 uppercase tracking-tight truncate leading-none" style={{ fontSize: titleFontSize }}>
+                                        NOISE
+                                      </p>
+                                      <p className="font-bold text-slate-500 font-mono tracking-tight leading-none mt-0.5" style={{ fontSize: subFontSize }}>
+                                        {totalNoise} EPOCHS
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
                                 {analysisType === 'precise' && (
                                   <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
                                     <div 

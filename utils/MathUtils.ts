@@ -58,10 +58,10 @@ export function calculateResult(
   // Let's implement the constraint checks for professional mathematical models:
   // - HUBER and KMEANS_4 require en az 30 epok.
   // - KMEANS_BAARDA_HUBER (Hybrid) require en az 55 epok.
-  // - Standalone BAARDA, POPE_TAU and HAMPEL only require geodetic minimum of 4 epok.
+  // - Standalone BAARDA, POPE_TAU, HAMPEL and ST_DBSCAN only require geodetic minimum of 4 epok.
   const requires55 = method === 'KMEANS_BAARDA_HUBER';
   const requires30 = method === 'HUBER' || method === 'KMEANS_4';
-  const requires4 = method === 'BAARDA' || method === 'POPE_TAU' || method === 'HAMPEL';
+  const requires4 = method === 'BAARDA' || method === 'POPE_TAU' || method === 'HAMPEL' || method === 'ST_DBSCAN';
   
   let finalMethod = method;
   let fallbackApplied = false;
@@ -109,6 +109,12 @@ export function calculateResult(
       finalCalculatedUsedIndices = kmeans4Res.usedIndices;
       clusters = kmeans4Res.clusters;
       break;
+    case 'ST_DBSCAN':
+      const stDbscanRes = calculateST_DBSCAN(sourceData, accuracyLimit);
+      resultData = stDbscanRes.result;
+      finalCalculatedUsedIndices = stDbscanRes.usedIndices;
+      clusters = stDbscanRes.clusters;
+      break;
     case 'BAARDA':
       const pureBaardaRes = calculateBaardaPureAcademic(sourceData);
       resultData = pureBaardaRes.result;
@@ -136,7 +142,10 @@ export function calculateResult(
       .map((s, idx) => finalSamples.includes(s) ? idx : -1)
       .filter(idx => idx !== -1);
   } else {
-    usedIndices = finalCalculatedUsedIndices;
+    usedIndices = finalCalculatedUsedIndices.map(srcIdx => {
+      const srcSample = sourceData[srcIdx];
+      return samples.indexOf(srcSample);
+    }).filter(idx => idx !== -1);
   }
 
   // CRITICAL: Calculate max distance between any two points in the unfiltered samples
@@ -548,6 +557,162 @@ function calculateKMeans(samples: Coordinate[]): { result: Coordinate; usedIndic
   const championPoints = championIndices.map(idx => samples[idx]);
 
   // 5. Şampiyon Küme Elemanları ile Ağırlıklı En Küçük Kareler (WLS) Çözümü
+  let finalSumW = 0;
+  let finalLatW = 0;
+  let finalLngW = 0;
+  let totalAccuracy = 0;
+
+  for (const p of championPoints) {
+    const wHardware = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
+    finalSumW += wHardware;
+    finalLatW += p.lat * wHardware;
+    finalLngW += p.lng * wHardware;
+    totalAccuracy += p.accuracy;
+  }
+
+  const validAlts = championPoints.filter(s => s.altitude !== null && s.altitude !== undefined);
+  const finalAlt = validAlts.length > 0 ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length : null;
+
+  const validAltAccs = championPoints.filter(s => s.altitudeAccuracy !== null && s.altitudeAccuracy !== undefined);
+  const finalAltAcc = validAltAccs.length > 0 ? validAltAccs.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length : null;
+
+  return {
+    result: {
+      lat: finalLatW / (finalSumW || 1.0),
+      lng: finalLngW / (finalSumW || 1.0),
+      accuracy: totalAccuracy / (championIndices.length || 1),
+      altitude: finalAlt,
+      altitudeAccuracy: finalAltAcc,
+      timestamp: Date.now()
+    },
+    usedIndices: championIndices,
+    clusters: validClusters
+  };
+}
+
+/**
+ * Spatial-Temporal Density-Based Spatial Clustering of Applications with Noise (ST-DBSCAN)
+ * Pure geodetic academic trajectory block formulation:
+ * - Employs dual neighborhood thresholds: Ep-1 (Spatial Epsilon in meters) and Ep-2 (Temporal Epsilon in milliseconds).
+ * - Identifies spatial-temporal core points with density degree >= MinPts.
+ * - Clusters are expanded iteratively via density-connectivity.
+ * - Discards outliers/multipath noise (residual noise = cluster ID -1).
+ * - Implements Weighted Least Squares (WLS) adjustment on the champion cluster (highest density) for coordinate estimation.
+ */
+function calculateST_DBSCAN(samples: Coordinate[], accuracyLimit: number): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
+  if (samples.length < 2) {
+    return {
+      result: samples[0] || { lat: 0, lng: 0, accuracy: 0, timestamp: Date.now(), altitude: null, altitudeAccuracy: null },
+      usedIndices: samples.map((_, i) => i),
+      clusters: []
+    };
+  }
+
+  // 1. Map input samples with their original indices to ensure correct tracing of clusters
+  const mappedSamples = samples.map((s, idx) => ({
+    ...s,
+    _originalIdx: (s as any)._originalIdx !== undefined ? (s as any)._originalIdx : idx
+  }));
+
+  const n = mappedSamples.length;
+  const avgLat = mappedSamples.reduce((sum, s) => sum + s.lat, 0) / n;
+  
+  // 2. Adaptive geodetic clustering thresholds
+  const avgAccuracy = mappedSamples.reduce((sum, s) => sum + s.accuracy, 0) / n;
+  const eps_spatial = Math.max(1.5, avgAccuracy * 0.84); // Adaptive spatial epsilon (Eps1) in meters
+  const eps_temporal = 12000; // Temporal epsilon (Eps2) in milliseconds (12 seconds)
+  const MinPts = 4; // Geodetic minimum observations for redundancy
+
+  const visited = new Array(n).fill(false);
+  const clusterAssignments = new Array(n).fill(-1); // -1 remains Noise
+  let currentClusterId = 0;
+
+  // Spatial-Temporal Neighborhood criteria solver
+  const getSTNeighbors = (i: number): number[] => {
+    const neighbors: number[] = [];
+    const p1 = mappedSamples[i];
+    for (let j = 0; j < n; j++) {
+      const p2 = mappedSamples[j];
+      const distS = calculateDistanceMeter(p1.lat, p1.lng, p2.lat, p2.lng, avgLat);
+      const distT = Math.abs(p1.timestamp - p2.timestamp);
+      if (distS <= eps_spatial && distT <= eps_temporal) {
+        neighbors.push(j);
+      }
+    }
+    return neighbors;
+  };
+
+  for (let i = 0; i < n; i++) {
+    if (visited[i]) continue;
+    visited[i] = true;
+
+    const neighbors = getSTNeighbors(i);
+    if (neighbors.length < MinPts) {
+      clusterAssignments[i] = -1; // Noise point
+    } else {
+      const clusterId = currentClusterId++;
+      clusterAssignments[i] = clusterId;
+      
+      const queue = [...neighbors];
+      for (let q = 0; q < queue.length; q++) {
+        const nextIdx = queue[q];
+        if (!visited[nextIdx]) {
+          visited[nextIdx] = true;
+          const nextNeighbors = getSTNeighbors(nextIdx);
+          if (nextNeighbors.length >= MinPts) {
+            for (const nid of nextNeighbors) {
+              if (!queue.includes(nid)) {
+                queue.push(nid);
+              }
+            }
+          }
+        }
+        if (clusterAssignments[nextIdx] === -1) {
+          clusterAssignments[nextIdx] = clusterId;
+        }
+      }
+    }
+  }
+
+  // Construct clusters of sourceData elements mapped with their index of sourceData
+  const clustersMap = new Map<number, number[]>();
+  for (let i = 0; i < n; i++) {
+    const cid = clusterAssignments[i];
+    if (cid !== -1) {
+      if (!clustersMap.has(cid)) {
+        clustersMap.set(cid, []);
+      }
+      clustersMap.get(cid)!.push(i); // Push index of sourceData (the function argument)
+    }
+  }
+
+  const validClusters = Array.from(clustersMap.values());
+
+  // Fail-safe fallback if no clusters are formed: treat all as one cluster
+  if (validClusters.length === 0) {
+    const allIndices = Array.from({ length: n }, (_, i) => i);
+    const lseResult = calculateWeightedLSE(samples);
+    return {
+      result: lseResult.result,
+      usedIndices: allIndices,
+      clusters: [allIndices]
+    };
+  }
+
+  // Champion Cluster: Highest density cluster (most epochs)
+  let bestClusterIdx = 0;
+  let maxCount = -1;
+  for (let i = 0; i < validClusters.length; i++) {
+    if (validClusters[i].length > maxCount) {
+      maxCount = validClusters[i].length;
+      bestClusterIdx = i;
+    }
+  }
+
+  const championIndices = validClusters[bestClusterIdx];
+  const championPoints = championIndices.map(idx => mappedSamples[idx]);
+
+  // Geodetically sound Weighted Least Squares (WLS) adjustment for coordinate estimation
   let finalSumW = 0;
   let finalLatW = 0;
   let finalLngW = 0;

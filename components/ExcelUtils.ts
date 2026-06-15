@@ -12,6 +12,7 @@ const getMethodName = (m: CalculationMethod) => {
     case 'HUBER': return "Huber M-Tahmini";
     case 'KMEANS_BAARDA_HUBER': return "KMeans + Baarda + Huber";
     case 'KMEANS_4': return "K-Means (4 Küme)";
+    case 'ST_DBSCAN': return "ST-DBSCAN (Mekansal-Zamansal)";
     case 'BAARDA': return "Baarda Eleme";
     case 'POPE_TAU': return "Pope's Tau Testi";
     case 'HAMPEL': return "Hampel Yöntemi (Robust MAD)";
@@ -153,6 +154,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     'WEIGHTED_LSE', 
     'HUBER',
     'KMEANS_4',
+    'ST_DBSCAN',
     'BAARDA',
     'KMEANS_BAARDA_HUBER',
     'POPE_TAU',
@@ -545,6 +547,7 @@ export const downloadCombinedAnalysisReport = (
     'WEIGHTED_LSE', 
     'HUBER',
     'KMEANS_4',
+    'ST_DBSCAN',
     'BAARDA',
     'KMEANS_BAARDA_HUBER',
     'POPE_TAU',
