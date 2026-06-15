@@ -836,70 +836,15 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       </div>
 
       {showLiveMap && (
-        <div className="fixed inset-0 z-[9999] bg-slate-900 flex flex-col animate-in fade-in">
-          {/* Header Bar */}
-          <div className="absolute top-4 left-4 z-[10000] flex items-center gap-3">
+        <div className="fixed inset-0 z-[9999] bg-black flex flex-col animate-in fade-in">
+          {/* Back Button on top-left */}
+          <div className="absolute top-6 left-6 z-[10000]">
             <button 
               onClick={() => setShowLiveMap(false)}
-              className="w-12 h-12 bg-white/95 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl text-slate-900 active:scale-95 transition-all outline-none cursor-pointer"
+              className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all cursor-pointer"
             >
-              <i className="fas fa-arrow-left text-lg"></i>
+              <i className="fas fa-arrow-left"></i>
             </button>
-            <div className="bg-white/95 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-xl flex flex-col text-left">
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider leading-none mb-1">
-                {folderName}
-              </span>
-              <span className="text-sm font-black text-slate-900 leading-tight">
-                {pointName || t("Nokta")}
-              </span>
-            </div>
-          </div>
-
-          <div className="absolute top-4 right-4 z-[10000] flex flex-col gap-2">
-            <div className="bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl shadow-xl text-right flex flex-col">
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider leading-none mb-1">
-                {t("Ölçüm Süresi")}
-              </span>
-              <span className="text-lg font-black text-blue-600 leading-none">
-                {sampleCount} / {measurementDuration}
-              </span>
-            </div>
-
-            {instantAccuracy !== null && (
-              <div className={`backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-xl text-right flex items-center gap-2 border ${
-                instantAccuracy <= accuracyLimit ? 'bg-emerald-50/95 border-emerald-200 text-emerald-800' : 'bg-amber-50/95 border-amber-200 text-amber-800'
-              }`}>
-                <div className={`w-1.5 h-1.5 rounded-full ${instantAccuracy <= accuracyLimit ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`}></div>
-                <span className="text-xs font-black mono-font">
-                  ±{instantAccuracy.toFixed(1)}m
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Floating Legend */}
-          <div className="absolute bottom-6 left-6 right-6 z-[10000]">
-            <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl p-4 max-w-sm mx-auto flex flex-col gap-2 border border-slate-100">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-1">
-                <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                  <i className="fas fa-map-location-dot text-blue-600 mr-2"></i>
-                  {t("Canlı Veri Haritası")}
-                </span>
-                <span className="text-[9px] font-black uppercase text-blue-600 animate-pulse bg-blue-50 px-2.5 py-1 rounded-full">
-                  GPS LIVE
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-3 text-left">
-                <div className="flex items-center gap-2">
-                  <div className="w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full shadow-sm shrink-0"></div>
-                  <span className="text-[10px] font-bold text-slate-600">{t("Filtrelenmiş Örnekler")}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3.5 h-3.5 bg-blue-500 border-2 border-white rounded-full shadow-sm shrink-0"></div>
-                  <span className="text-[10px] font-bold text-slate-600">{t("Tüm Ham Gözlemler (Raw)")}</span>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Map Content */}
@@ -920,56 +865,73 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
               />
               <MapResizer />
               
-              {/* Draw All Raw Samples */}
-              {rawSamplesRef.current.map((s, idx) => (
-                <Circle 
-                  key={`raw-${idx}`}
-                  center={[s.lat, s.lng]}
-                  radius={0.3}
-                  pathOptions={{
-                    color: '#3b82f6',
-                    fillColor: '#3b82f6',
-                    fillOpacity: 0.6,
-                    weight: 1
-                  }}
-                />
-              ))}
+              {/* Draw All Raw Samples in the same color, thin lines, only the last is thick */}
+              {rawSamplesRef.current.map((s, idx) => {
+                const isLast = idx === rawSamplesRef.current.length - 1;
+                return (
+                   <Circle 
+                     key={`raw-${idx}`}
+                     center={[s.lat, s.lng]}
+                     radius={isLast ? 0.3 : 0.1}
+                     pathOptions={{
+                       color: '#2563eb',
+                       fillColor: '#2563eb',
+                       fillOpacity: isLast ? 0.8 : 0.3,
+                       weight: isLast ? 1.5 : 0.5
+                     }}
+                   />
+                );
+              })}
 
-              {/* Draw Accepted Filtered Samples */}
-              {samplesRef.current.map((s, idx) => (
-                <Circle 
-                  key={`filtered-${idx}`}
-                  center={[s.lat, s.lng]}
-                  radius={0.4}
-                  pathOptions={{
-                    color: '#10b981',
-                    fillColor: '#10b981',
-                    fillOpacity: 0.8,
-                    weight: 1.5
-                  }}
-                />
-              ))}
-
-              {/* Draw Instant Location Marker & Accuracy Circle */}
+              {/* Draw Instant Location Accuracy Circle with a constant blue shade, and custom small marker dot */}
               {lastPositionRef.current && (
                 <>
+                  {/* Constant Blue Accuracy Circle */}
                   <Circle 
                     center={[lastPositionRef.current.coords.latitude, lastPositionRef.current.coords.longitude]}
                     radius={lastPositionRef.current.coords.accuracy}
                     pathOptions={{
-                      color: lastPositionRef.current.coords.accuracy <= accuracyLimit ? '#10b981' : '#f59e0b',
-                      fillColor: lastPositionRef.current.coords.accuracy <= accuracyLimit ? '#10b981' : '#f59e0b',
+                      color: '#3b82f6',
+                      fillColor: '#3b82f6',
                       fillOpacity: 0.15,
-                      weight: 1,
-                      dashArray: '4, 4'
+                      weight: 1.5,
+                      dashArray: '3, 4'
                     }}
                   />
-                  <Marker 
-                    position={[lastPositionRef.current.coords.latitude, lastPositionRef.current.coords.longitude]}
+                  {/* Constant Blue center marker dot with white border */}
+                  <Circle 
+                    center={[lastPositionRef.current.coords.latitude, lastPositionRef.current.coords.longitude]}
+                    radius={0.25}
+                    pathOptions={{
+                      color: '#ffffff',
+                      fillColor: '#3b82f6',
+                      fillOpacity: 0.9,
+                      weight: 1.5
+                    }}
                   />
                 </>
               )}
             </MapContainer>
+          </div>
+
+          {/* Bottom Info Card matching 'Show on Map' layout */}
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[10000] w-full max-w-xs px-6">
+            <div className="bg-white/90 backdrop-blur-md p-5 rounded-2xl shadow-2xl border border-slate-200 flex items-center justify-between gap-4">
+              <div className="flex flex-col">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">{t("Hassasiyet")}</p>
+                <p className={`text-base font-black mono-font leading-none ${
+                  instantAccuracy !== null ? getAccuracyColor(instantAccuracy) : 'text-slate-600'
+                }`}>
+                  ±{instantAccuracy !== null ? instantAccuracy.toFixed(1) : '---'}m
+                </p>
+              </div>
+              <div className="text-right flex-1 min-w-0">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">{t("Nokta Adı")}</p>
+                <p className="text-sm font-black text-slate-900 truncate leading-none">
+                  {pointName || t("Nokta")}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}
