@@ -22,7 +22,8 @@ export function calculateResult(
   samples: Coordinate[],
   method: CalculationMethod,
   accuracyLimit: number,
-  gnssOnly: boolean = false
+  gnssOnly: boolean = false,
+  options?: { dbscanEpsSpatial?: string; dbscanEpsTemporal?: string; dbscanMinPts?: string }
 ): { 
   result: Coordinate; 
   usedIndices: number[]; 
@@ -110,7 +111,7 @@ export function calculateResult(
       clusters = kmeans4Res.clusters;
       break;
     case 'ST_DBSCAN':
-      const stDbscanRes = calculateST_DBSCAN(sourceData, accuracyLimit);
+      const stDbscanRes = calculateST_DBSCAN(sourceData, accuracyLimit, options);
       resultData = stDbscanRes.result;
       finalCalculatedUsedIndices = stDbscanRes.usedIndices;
       clusters = stDbscanRes.clusters;
@@ -599,7 +600,11 @@ function calculateKMeans(samples: Coordinate[]): { result: Coordinate; usedIndic
  * - Discards outliers/multipath noise (residual noise = cluster ID -1).
  * - Implements Weighted Least Squares (WLS) adjustment on the champion cluster (highest density) for coordinate estimation.
  */
-function calculateST_DBSCAN(samples: Coordinate[], accuracyLimit: number): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
+function calculateST_DBSCAN(
+  samples: Coordinate[],
+  accuracyLimit: number,
+  options?: { dbscanEpsSpatial?: string; dbscanEpsTemporal?: string; dbscanMinPts?: string }
+): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
   if (samples.length < 2) {
     return {
       result: samples[0] || { lat: 0, lng: 0, accuracy: 0, timestamp: Date.now(), altitude: null, altitudeAccuracy: null },
@@ -619,9 +624,57 @@ function calculateST_DBSCAN(samples: Coordinate[], accuracyLimit: number): { res
   
   // 2. Adaptive geodetic clustering thresholds
   const avgAccuracy = mappedSamples.reduce((sum, s) => sum + s.accuracy, 0) / n;
-  const eps_spatial = Math.max(1.5, avgAccuracy * 0.84); // Adaptive spatial epsilon (Eps1) in meters
-  const eps_temporal = 12000; // Temporal epsilon (Eps2) in milliseconds (12 seconds)
-  const MinPts = 4; // Geodetic minimum observations for redundancy
+  
+  // Adaptive spatial epsilon (Eps1) in meters
+  let eps_spatial = Math.max(1.5, avgAccuracy * 0.84);
+  if (options?.dbscanEpsSpatial && options.dbscanEpsSpatial !== 'auto') {
+    eps_spatial = parseFloat(options.dbscanEpsSpatial);
+  }
+
+  // Adaptive temporal epsilon (Eps2) in milliseconds
+  let eps_temporal = 12000; // default 12 seconds
+  if (options?.dbscanEpsTemporal && options.dbscanEpsTemporal !== 'auto') {
+    if (options.dbscanEpsTemporal === 'Infinity') {
+      eps_temporal = Infinity; // Pure spatial DBSCAN
+    } else {
+      eps_temporal = parseFloat(options.dbscanEpsTemporal) * 1000;
+    }
+  } else {
+    // Determine automatically from timestamps
+    const timestamps = mappedSamples.map(s => s.timestamp || 0).filter(t => t > 0);
+    if (timestamps.length < 2) {
+      eps_temporal = Infinity; // No valid intervals -> ignore temporal check
+    } else {
+      const minTime = Math.min(...timestamps);
+      const maxTime = Math.max(...timestamps);
+      const timeSpan = maxTime - minTime;
+      
+      if (timeSpan <= 2000) {
+        // Less than 2-second difference means static or identical timestamps
+        eps_temporal = Infinity;
+      } else {
+        const sortedTimes = [...timestamps].sort((a, b) => a - b);
+        let totalDelta = 0;
+        let deltaCount = 0;
+        for (let i = 1; i < sortedTimes.length; i++) {
+          const d = sortedTimes[i] - sortedTimes[i-1];
+          if (d > 0 && d < 3600000) { // disregard gaps larger than 1 hour which bias the average
+            totalDelta += d;
+            deltaCount++;
+          }
+        }
+        const avgDelta = deltaCount > 0 ? totalDelta / deltaCount : 1000;
+        // Let's set temporal tolerance to encompass about 10 epochs
+        eps_temporal = Math.max(12000, avgDelta * 10);
+      }
+    }
+  }
+
+  // Geodetic minimum observations for redundancy
+  let MinPts = 4;
+  if (options?.dbscanMinPts && options.dbscanMinPts !== 'auto') {
+    MinPts = parseInt(options.dbscanMinPts, 10);
+  }
 
   const visited = new Array(n).fill(false);
   const clusterAssignments = new Array(n).fill(-1); // -1 remains Noise
@@ -688,14 +741,14 @@ function calculateST_DBSCAN(samples: Coordinate[], accuracyLimit: number): { res
 
   const validClusters = Array.from(clustersMap.values());
 
-  // Fail-safe fallback if no clusters are formed: treat all as one cluster
+  // Fail-safe fallback if no clusters are formed:
   if (validClusters.length === 0) {
     const allIndices = Array.from({ length: n }, (_, i) => i);
     const lseResult = calculateWeightedLSE(samples);
     return {
       result: lseResult.result,
       usedIndices: allIndices,
-      clusters: [allIndices]
+      clusters: [] // Return empty clusters representing raw noise
     };
   }
 

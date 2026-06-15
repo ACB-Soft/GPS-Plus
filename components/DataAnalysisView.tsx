@@ -173,6 +173,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [customTimeSeriesFontSize, setCustomTimeSeriesFontSize] = useState<string>('7'); // '6', '7', '8', '9', '10', '12'
   const [customTimeSeriesDotSize, setCustomTimeSeriesDotSize] = useState<string>('2.5'); // '1.0', '1.5', '2.0', '2.5', '3.0', '4.0', '5.0', '6.0'
 
+  // DBSCAN Algoritma Ayarları
+  const [dbscanEpsSpatial, setDbscanEpsSpatial] = useState<string>('auto'); // 'auto', '0.5', '1.0', '2.0', '3.0', '5.0', '10.0'
+  const [dbscanEpsTemporal, setDbscanEpsTemporal] = useState<string>('auto'); // 'auto', '5', '10', '30', '60', '300', 'Infinity'
+  const [dbscanMinPts, setDbscanMinPts] = useState<string>('4'); // '2', '3', '4', '5', '10', '15'
+
   const bestMethod = useMemo(() => {
     if (!analysisResults || analysisResults.length === 0) return null;
     const sorted = [...analysisResults]
@@ -299,7 +304,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
     const results = methods.map(method => {
       // 1. Calculate point for this method
-      const { result, clusters, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
+      const { result, clusters, usedIndices } = calculateResult(location.samples!, method, accuracyLimit, false, {
+        dbscanEpsSpatial,
+        dbscanEpsTemporal,
+        dbscanMinPts
+      });
       
       if ((method === 'KMEANS_4' || method === 'KMEANS_BAARDA_HUBER') && clusters) {
         clusterResults = clusters;
@@ -597,7 +606,13 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     const { clusters, usedIndices } = calculateResult(
       location.samples,
       'ST_DBSCAN',
-      accuracyLimit
+      accuracyLimit,
+      false,
+      {
+        dbscanEpsSpatial,
+        dbscanEpsTemporal,
+        dbscanMinPts
+      }
     );
     
     const sys = location.coordinateSystem || 'ITRF96_3';
@@ -690,7 +705,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       clusters: clusters || [],
       usedIndices: usedIndices || []
     };
-  }, [location, t, analysisType, appliedPreciseN, appliedPreciseE, useLocal]);
+  }, [location, t, analysisType, appliedPreciseN, appliedPreciseE, useLocal, dbscanEpsSpatial, dbscanEpsTemporal, dbscanMinPts]);
 
   const clusterBounds = useMemo(() => {
     if (!hybridClusterChartData || hybridClusterChartData.points.length === 0) {
@@ -1923,7 +1938,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 const clusterColors = ['#3b82f6', '#a855f7', '#eab308', '#ec4899', '#14b8a6', '#f97316'];
                                 return hybridClusterChartData?.clusters.map((clusterIndices, cIdx) => {
                                   if (clusterIndices.length === 0) return null;
-                                  const ptsOfCluster = hybridClusterChartData.points.filter(p => clusterIndices.includes(p.id - 1));
+                                  const ptsOfCluster = hybridClusterChartData?.points ? hybridClusterChartData.points.filter(p => clusterIndices.includes(p.id - 1)) : [];
                                   return (
                                     <Scatter 
                                       key={`kmeans-scatter-${cIdx}`}
@@ -2011,7 +2026,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   </div>
 
                   {/* 1.5. ST-DBSCAN Spatial-Temporal Clustering Scatter Chart */}
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <div className="flex justify-between items-center px-1">
                       <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">
                         ST-DBSCAN Spatial-Temporal Clustering Plot
@@ -2023,6 +2038,67 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       >
                         <i className="fas fa-camera text-blue-400"></i> {t("Download PNG")}
                       </button>
+                    </div>
+
+                    {/* ST-DBSCAN Parameter Tuning Panel */}
+                    <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3 flex flex-col gap-2.5 shadow-xs">
+                      <div className="flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
+                        <i className="fas fa-cogs text-[10px] text-indigo-500"></i>
+                        <span className="text-[8.5px] font-black text-slate-700 uppercase tracking-wider">{t("ST-DBSCAN INCE AYAR PANELI")}</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[8px] font-extrabold text-slate-400 uppercase">{t("Menzil Eşiği (Eps1)")}</span>
+                          <select 
+                            value={dbscanEpsSpatial} 
+                            onChange={(e) => setDbscanEpsSpatial(e.target.value)}
+                            className="bg-white hover:bg-slate-50 border border-slate-200/80 text-[9px] font-extrabold rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
+                          >
+                            <option value="auto">Auto (Adaptive)</option>
+                            <option value="0.5">±0.5m (Çok Hassas)</option>
+                            <option value="1.0">±1.0m (Hassas)</option>
+                            <option value="1.5">±1.5m</option>
+                            <option value="2.0">±2.0m (Varsayılan)</option>
+                            <option value="3.0">±3.0m</option>
+                            <option value="5.0">±5.0m</option>
+                            <option value="7.5">±7.5m</option>
+                            <option value="10.0">±10.0m (Dağınık)</option>
+                          </select>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[8px] font-extrabold text-slate-400 uppercase">{t("Zaman Eşiği (Eps2)")}</span>
+                          <select 
+                            value={dbscanEpsTemporal} 
+                            onChange={(e) => setDbscanEpsTemporal(e.target.value)}
+                            className="bg-white hover:bg-slate-50 border border-slate-200/80 text-[9px] font-extrabold rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
+                          >
+                            <option value="auto">Auto (Suksesif Delta)</option>
+                            <option value="5">5 saniye</option>
+                            <option value="12">12 saniye</option>
+                            <option value="30">30 saniye</option>
+                            <option value="60">1 dakika</option>
+                            <option value="300">5 dakika</option>
+                            <option value="600">10 dakika</option>
+                            <option value="Infinity">Yok Say (Sadece Konumsal)</option>
+                          </select>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[8px] font-extrabold text-slate-400 uppercase">{t("Yoğunluk Sınırı (MinPts)")}</span>
+                          <select 
+                            value={dbscanMinPts} 
+                            onChange={(e) => setDbscanMinPts(e.target.value)}
+                            className="bg-white hover:bg-slate-50 border border-slate-200/80 text-[9px] font-extrabold rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
+                          >
+                            <option value="2">2 (Min Gözlem)</option>
+                            <option value="3">3</option>
+                            <option value="4">4 (Geodezik Min)</option>
+                            <option value="5">5</option>
+                            <option value="8">8</option>
+                            <option value="12">12</option>
+                            <option value="15">15</option>
+                          </select>
+                        </div>
+                      </div>
                     </div>
 
                     <div 
@@ -2140,7 +2216,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 const clusterColors = ['#eab308', '#a855f7', '#3b82f6', '#ec4899', '#14b8a6', '#f97316'];
                                 return stDbscanClusterChartData?.clusters.map((clusterIndices, cIdx) => {
                                   if (clusterIndices.length === 0) return null;
-                                  const ptsOfCluster = stDbscanClusterChartData.points.filter(p => clusterIndices.includes(p.id - 1));
+                                  const ptsOfCluster = stDbscanClusterChartData?.points ? stDbscanClusterChartData.points.filter(p => clusterIndices.includes(p.id - 1)) : [];
                                   return (
                                     <Scatter 
                                       key={`stdbscan-scatter-${cIdx}`}
@@ -2157,7 +2233,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
                               {/* Draw Noisy/Discarded Points (ST-DBSCAN Noise) */}
                               {(() => {
-                                const noisePts = stDbscanClusterChartData?.points.filter(p => p.clusterId === -1) || [];
+                                const noisePts = stDbscanClusterChartData?.points ? stDbscanClusterChartData.points.filter(p => p.clusterId === -1) : [];
                                 if (noisePts.length === 0) return null;
                                 return (
                                   <Scatter 
@@ -2209,7 +2285,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               );
                             }).filter(Boolean);
 
-                            const totalNoise = stDbscanClusterChartData?.points.filter(p => p.clusterId === -1).length || 0;
+                            const totalNoise = stDbscanClusterChartData?.points ? stDbscanClusterChartData.points.filter(p => p.clusterId === -1).length : 0;
 
                             return (
                               <>
@@ -2424,8 +2500,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             const badgeFontSize = `${fs - 0.5}px`;
                             const titleFontSize = `${fs - 1}px`;
                             const subFontSize = `${fs - 2}px`;
-                            const approvedCount = hybridClusterChartData.points.filter(p => p.passedBaarda).length;
-                            const rejectedCount = hybridClusterChartData.points.filter(p => !p.passedBaarda).length;
+                            const approvedCount = hybridClusterChartData?.points ? hybridClusterChartData.points.filter(p => p.passedBaarda).length : 0;
+                            const rejectedCount = hybridClusterChartData?.points ? hybridClusterChartData.points.filter(p => !p.passedBaarda).length : 0;
                             return (
                               <>
                                 <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
