@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { MapContainer, TileLayer, Marker, Circle, useMap } from 'react-leaflet';
+import L from 'leaflet';
 import { Coordinate, SavedLocation, CalculationMethod } from '../types';
 import { calculateResult, calculateMaxDistance } from '../utils/MathUtils';
 import { convertToMSL } from './GeoidUtils';
@@ -6,6 +8,17 @@ import { getAccuracyColor, getAccuracyBg } from '../utils/StyleUtils';
 import GlobalFooter from './GlobalFooter';
 import Header from './Header';
 import { useLanguage } from '../utils/LanguageContext';
+
+// Map rendering helper to invalidate size on dynamic render
+const MapResizer = () => {
+  const map = useMap();
+  useEffect(() => {
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 250);
+  }, [map]);
+  return null;
+};
 
 interface Props {
   onComplete: (
@@ -61,6 +74,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   const [instantAccuracy, setInstantAccuracy] = useState<number | null>(null);
   const [waitingForSignal, setWaitingForSignal] = useState(true);
   const [captureError, setCaptureError] = useState<string | null>(null);
+  const [showLiveMap, setShowLiveMap] = useState(false);
   
   const samplesRef = useRef<Coordinate[]>([]);
   const rawSamplesRef = useRef<Coordinate[]>([]);
@@ -624,6 +638,23 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
     </div>
   );
 
+  const getMapCenter = (): [number, number] => {
+    if (lastPositionRef.current) {
+      return [lastPositionRef.current.coords.latitude, lastPositionRef.current.coords.longitude];
+    }
+    if (samplesRef.current && samplesRef.current.length > 0) {
+      return [samplesRef.current[0].lat, samplesRef.current[0].lng];
+    }
+    return [39.9334, 32.8597];
+  };
+
+  const getMapProviderInfo = () => {
+    switch (localStorage.getItem('default_map_provider')) {
+      case 'OpenTopoMap': return { url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", maxNativeZoom: 17 };
+      default: return { url: "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", maxNativeZoom: 22 };
+    }
+  };
+
   return (
     <div className="w-full flex flex-col bg-slate-200 h-full animate-in overflow-hidden">
       <Header 
@@ -789,12 +820,159 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                   <i className="fas fa-check-circle"></i>
                   {t("Hemen Bitir ve Kaydet")}
                 </button>
+
+                <button 
+                  onClick={() => setShowLiveMap(true)}
+                  className="mx-auto mt-2 py-3 px-8 bg-slate-100 text-slate-800 border border-slate-300 rounded-2xl font-black text-[11px] md:text-[12px] active:scale-[0.96] transition-all uppercase tracking-[0.2em] leading-none flex items-center justify-center gap-2 whitespace-nowrap w-full max-w-[280px] hover:bg-slate-200 cursor-pointer"
+                >
+                  <i className="fas fa-map-location-dot text-blue-600"></i>
+                  {t("Canlı Veri İzleme")}
+                </button>
               </div>
             )}
           </div>
         </div>
         <GlobalFooter />
       </div>
+
+      {showLiveMap && (
+        <div className="fixed inset-0 z-[9999] bg-slate-900 flex flex-col animate-in fade-in">
+          {/* Header Bar */}
+          <div className="absolute top-4 left-4 z-[10000] flex items-center gap-3">
+            <button 
+              onClick={() => setShowLiveMap(false)}
+              className="w-12 h-12 bg-white/95 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-xl text-slate-900 active:scale-95 transition-all outline-none cursor-pointer"
+            >
+              <i className="fas fa-arrow-left text-lg"></i>
+            </button>
+            <div className="bg-white/95 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-xl flex flex-col text-left">
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider leading-none mb-1">
+                {folderName}
+              </span>
+              <span className="text-sm font-black text-slate-900 leading-tight">
+                {pointName || t("Nokta")}
+              </span>
+            </div>
+          </div>
+
+          <div className="absolute top-4 right-4 z-[10000] flex flex-col gap-2">
+            <div className="bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl shadow-xl text-right flex flex-col">
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider leading-none mb-1">
+                {t("Ölçüm Süresi")}
+              </span>
+              <span className="text-lg font-black text-blue-600 leading-none">
+                {sampleCount} / {measurementDuration}
+              </span>
+            </div>
+
+            {instantAccuracy !== null && (
+              <div className={`backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-xl text-right flex items-center gap-2 border ${
+                instantAccuracy <= accuracyLimit ? 'bg-emerald-50/95 border-emerald-200 text-emerald-800' : 'bg-amber-50/95 border-amber-200 text-amber-800'
+              }`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${instantAccuracy <= accuracyLimit ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`}></div>
+                <span className="text-xs font-black mono-font">
+                  ±{instantAccuracy.toFixed(1)}m
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Floating Legend */}
+          <div className="absolute bottom-6 left-6 right-6 z-[10000]">
+            <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl p-4 max-w-sm mx-auto flex flex-col gap-2 border border-slate-100">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-1">
+                <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                  <i className="fas fa-map-location-dot text-blue-600 mr-2"></i>
+                  {t("Canlı Veri Haritası")}
+                </span>
+                <span className="text-[9px] font-black uppercase text-blue-600 animate-pulse bg-blue-50 px-2.5 py-1 rounded-full">
+                  GPS LIVE
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-left">
+                <div className="flex items-center gap-2">
+                  <div className="w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full shadow-sm shrink-0"></div>
+                  <span className="text-[10px] font-bold text-slate-600">{t("Filtrelenmiş Örnekler")}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3.5 h-3.5 bg-blue-500 border-2 border-white rounded-full shadow-sm shrink-0"></div>
+                  <span className="text-[10px] font-bold text-slate-600">{t("Tüm Ham Gözlemler (Raw)")}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Map Content */}
+          <div className="flex-1 w-full h-full">
+            <MapContainer 
+              center={getMapCenter()} 
+              zoom={getMapProviderInfo().maxNativeZoom - 1} 
+              maxZoom={22}
+              style={{ height: '100%', width: '100%' }}
+              zoomControl={false}
+              attributionControl={false}
+            >
+              <TileLayer
+                url={getMapProviderInfo().url}
+                attribution={localStorage.getItem('default_map_provider') === 'OpenTopoMap' ? '&copy; OpenTopoMap' : '&copy; Google'}
+                maxZoom={22}
+                maxNativeZoom={getMapProviderInfo().maxNativeZoom}
+              />
+              <MapResizer />
+              
+              {/* Draw All Raw Samples */}
+              {rawSamplesRef.current.map((s, idx) => (
+                <Circle 
+                  key={`raw-${idx}`}
+                  center={[s.lat, s.lng]}
+                  radius={0.3}
+                  pathOptions={{
+                    color: '#3b82f6',
+                    fillColor: '#3b82f6',
+                    fillOpacity: 0.6,
+                    weight: 1
+                  }}
+                />
+              ))}
+
+              {/* Draw Accepted Filtered Samples */}
+              {samplesRef.current.map((s, idx) => (
+                <Circle 
+                  key={`filtered-${idx}`}
+                  center={[s.lat, s.lng]}
+                  radius={0.4}
+                  pathOptions={{
+                    color: '#10b981',
+                    fillColor: '#10b981',
+                    fillOpacity: 0.8,
+                    weight: 1.5
+                  }}
+                />
+              ))}
+
+              {/* Draw Instant Location Marker & Accuracy Circle */}
+              {lastPositionRef.current && (
+                <>
+                  <Circle 
+                    center={[lastPositionRef.current.coords.latitude, lastPositionRef.current.coords.longitude]}
+                    radius={lastPositionRef.current.coords.accuracy}
+                    pathOptions={{
+                      color: lastPositionRef.current.coords.accuracy <= accuracyLimit ? '#10b981' : '#f59e0b',
+                      fillColor: lastPositionRef.current.coords.accuracy <= accuracyLimit ? '#10b981' : '#f59e0b',
+                      fillOpacity: 0.15,
+                      weight: 1,
+                      dashArray: '4, 4'
+                    }}
+                  />
+                  <Marker 
+                    position={[lastPositionRef.current.coords.latitude, lastPositionRef.current.coords.longitude]}
+                  />
+                </>
+              )}
+            </MapContainer>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
