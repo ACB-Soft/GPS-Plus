@@ -58,10 +58,10 @@ export function calculateResult(
   // Let's implement the constraint checks for professional mathematical models:
   // - HUBER and KMEANS_4 require en az 30 epok.
   // - KMEANS_BAARDA_HUBER (Hybrid) require en az 55 epok.
-  // - Standalone BAARDA and POPE_TAU only require geodetic minimum of 4 epok.
+  // - Standalone BAARDA, POPE_TAU and HAMPEL only require geodetic minimum of 4 epok.
   const requires55 = method === 'KMEANS_BAARDA_HUBER';
   const requires30 = method === 'HUBER' || method === 'KMEANS_4';
-  const requires4 = method === 'BAARDA' || method === 'POPE_TAU';
+  const requires4 = method === 'BAARDA' || method === 'POPE_TAU' || method === 'HAMPEL';
   
   let finalMethod = method;
   let fallbackApplied = false;
@@ -118,6 +118,11 @@ export function calculateResult(
       const popeTauRes = calculatePopeTauAcademic(sourceData);
       resultData = popeTauRes.result;
       finalCalculatedUsedIndices = popeTauRes.usedIndices;
+      break;
+    case 'HAMPEL':
+      const hampelRes = calculateHampelAcademic(sourceData);
+      resultData = hampelRes.result;
+      finalCalculatedUsedIndices = hampelRes.usedIndices;
       break;
     default:
       const defaultLse = calculateWeightedLSE(sourceData);
@@ -453,9 +458,9 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
   const criticalValue = 3.29; // Critical limit for 99.9% confidence interval
 
   while (currentSamples.length > 4) {
-    // Kalan verinin saçılım genişliği 1.0m'nin altına düştüğünde veri elemesini durdur
+    // Kalan verinin saçılım genişliği 0.50m'nin altına düştüğünde veri elemesini durdur
     const currentSpread = calculateMaxDistance(currentSamples);
-    if (currentSpread < 1.0) {
+    if (currentSpread < 0.50) {
       break;
     }
 
@@ -724,42 +729,56 @@ function calculateBaardaInternalAcademic(samples: any[]): { result: Coordinate; 
     ...s,
     _originalIdx: s._originalIdx !== undefined ? s._originalIdx : idx
   }));
-  const criticalValue = 3.29; // Critical limit for 99.9% confidence interval
+  const criticalValue = 3.29; // Critical limit for 99.9% confidence interval (alpha = 0.001)
 
-  while (currentSamples.length > 4) {
-    const weights = currentSamples.map(s => 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
+  const avgLat0 = samples.reduce((sum, s) => sum + s.lat, 0) / samples.length;
+  const { latCoeff, lngCoeff } = getWGS84Coefficients(avgLat0);
+
+  while (currentSamples.length >= 4) {
+    const N = currentSamples.length;
+    const weights = currentSamples.map(s => 1.0 / Math.pow(Math.max(0.1, s.accuracy), 2));
     const sumW = weights.reduce((a, b) => a + b, 0);
-    const meanLat = currentSamples.reduce((a, b, i) => a + b.lat * weights[i], 0) / sumW;
-    const meanLng = currentSamples.reduce((a, b, i) => a + b.lng * weights[i], 0) / sumW;
+    const meanLat = currentSamples.reduce((a, s, i) => a + s.lat * weights[i], 0) / sumW;
+    const meanLng = currentSamples.reduce((a, s, i) => a + s.lng * weights[i], 0) / sumW;
 
-    const residuals = currentSamples.map(s => {
-      return calculateDistanceMeter(s.lat, s.lng, meanLat, meanLng, meanLat);
+    const localPts = currentSamples.map((s, i) => {
+      const dx = (s.lng - meanLng) * lngCoeff;
+      const dy = (s.lat - meanLat) * latCoeff;
+      return { dx, dy, w: weights[i] };
     });
 
-    const vTPv = residuals.reduce((a, v, i) => a + v * v * weights[i], 0);
-    
-    // Degree of freedom: f = n - u, where u = 2 (lat, lng) unknowns
-    const sigma0 = Math.sqrt(vTPv / (currentSamples.length - 2));
+    let vTPv = 0;
+    for (const pt of localPts) {
+      vTPv += (pt.dx * pt.dx + pt.dy * pt.dy) * pt.w;
+    }
 
-    const standardizedResiduals = currentSamples.map((s, i) => {
-      const p_i = weights[i];
-      const q_ii = (1 - p_i / sumW); 
-      return residuals[i] / (sigma0 * Math.sqrt(q_ii) || 1e-9);
-    });
+    // Degree of freedom for 2D positioning adjustment with 2N coordinate measurements and 2 unknowns: f = 2N - 2
+    const f = 2 * N - 2;
+    const sigma0_sq = vTPv / f;
+    const sigma0 = Math.sqrt(sigma0_sq > 1e-10 ? sigma0_sq : 1e-10);
 
     let maxW = -1;
-    let worstIdx = -1;
-    for (let i = 0; i < standardizedResiduals.length; i++) {
-        if (standardizedResiduals[i] > maxW) {
-            maxW = standardizedResiduals[i];
-            worstIdx = i;
-        }
+    let worstLocalIdx = -1;
+
+    for (let i = 0; i < N; i++) {
+      const pt = localPts[i];
+      const h_i = pt.w / sumW;
+      const q_vv = Math.max(0.001, 1.0 - h_i);
+      
+      const dist_v = Math.sqrt(pt.dx * pt.dx + pt.dy * pt.dy);
+      // Pure Baarda's standardized residual incorporating observation weight p_i: w_i = (v_i * sqrt(p_i)) / (sigma0 * sqrt(1 - h_i))
+      const w_i = (dist_v * Math.sqrt(pt.w)) / (sigma0 * Math.sqrt(q_vv));
+
+      if (w_i > maxW) {
+        maxW = w_i;
+        worstLocalIdx = i;
+      }
     }
 
     if (maxW > criticalValue) {
-        currentSamples.splice(worstIdx, 1);
+      currentSamples.splice(worstLocalIdx, 1);
     } else {
-        break; 
+      break; 
     }
   }
 
@@ -1109,9 +1128,14 @@ export function calculatePopeTauAcademic(samples: Coordinate[]): { result: Coord
       return { dx, dy, w: weights[i] };
     });
 
-    const residuals = localPts.map(pt => Math.sqrt(pt.dx * pt.dx + pt.dy * pt.dy) * Math.sqrt(pt.w));
-    const sigma0 = Math.max(1e-6, calculateRobustSigmaMAD(residuals));
+    let vTPv = 0;
+    for (const pt of localPts) {
+      vTPv += (pt.dx * pt.dx + pt.dy * pt.dy) * pt.w;
+    }
+
     const f = 2 * N - 2;
+    const sigma0_sq = vTPv / f;
+    const sigma0 = Math.sqrt(sigma0_sq > 1e-10 ? sigma0_sq : 1e-10);
 
     let maxTau = -1;
     let worstLocalIdx = -1;
@@ -1145,6 +1169,81 @@ export function calculatePopeTauAcademic(samples: Coordinate[]): { result: Coord
   return {
     result: finalResult.result,
     usedIndices: currentSamples.map(s => s._originalIdx)
+  };
+}
+
+/**
+ * Hampel Identifier for Outlier Detection
+ * Pure academic implementation for 2D spatial coordinate datasets:
+ * - Computes the spatial median center (median of Latitudes and Longitudes separately).
+ * - Identifies the Euclidean distance of each sample from this median point in meters.
+ * - Computes the Median Absolute Deviation (MAD) of these distances.
+ * - Scales the MAD with the standard consistency factor (1.4826) to obtain the robust estimate of scale (sigma).
+ * - Discards samples whose absolute distance from the median distance exceeds 3.0 * sigma.
+ * - Guarantees a minimum of 2 samples are kept (falling back to those with minimum deviations) to avoid rank deficiency.
+ */
+export function calculateHampelAcademic(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length < 4) {
+    return calculateWeightedLSE(samples);
+  }
+
+  const N = samples.length;
+  // Spatial median coordinates
+  const sortedLats = samples.map(s => s.lat).sort((a, b) => a - b);
+  const sortedLngs = samples.map(s => s.lng).sort((a, b) => a - b);
+  const mid = Math.floor(N / 2);
+  const medianLat = N % 2 !== 0 ? sortedLats[mid] : (sortedLats[mid - 1] + sortedLats[mid]) / 2;
+  const medianLng = N % 2 !== 0 ? sortedLngs[mid] : (sortedLngs[mid - 1] + sortedLngs[mid]) / 2;
+
+  // Distances to spatial median in meters
+  const dists = samples.map(s => calculateDistanceMeter(s.lat, s.lng, medianLat, medianLng, medianLat));
+  
+  // Median distance
+  const sortedDists = [...dists].sort((a, b) => a - b);
+  const medianDist = N % 2 !== 0 ? sortedDists[mid] : (sortedDists[mid - 1] + sortedDists[mid]) / 2;
+
+  // Absolute deviations from the median distance
+  const absDevs = dists.map(d => Math.abs(d - medianDist));
+  const sortedDevs = [...absDevs].sort((a, b) => a - b);
+  const medianDev = N % 2 !== 0 ? sortedDevs[mid] : (sortedDevs[mid - 1] + sortedDevs[mid]) / 2;
+
+  const mad = medianDev;
+  const scaleSigma = 1.4826 * mad;
+
+  // If robust scale is virtually zero, all points are extremely clustered. No outliers should be removed.
+  const minSigmaBoundary = 1e-6; // 1 micrometer
+
+  const inlierIndices: number[] = [];
+  
+  if (scaleSigma < minSigmaBoundary) {
+    // Keep all
+    return {
+      result: calculateWeightedLSE(samples).result,
+      usedIndices: samples.map((_, i) => i)
+    };
+  }
+
+  for (let i = 0; i < N; i++) {
+    if (absDevs[i] <= 3.0 * scaleSigma) {
+      inlierIndices.push(i);
+    }
+  }
+
+  // Fallback protection: ensure we keep at least 2 samples with the lowest deviations
+  let finalUsedIndices = inlierIndices;
+  if (finalUsedIndices.length < 2) {
+    const sortedSampleIndices = samples
+      .map((_, idx) => ({ idx, dev: absDevs[idx] }))
+      .sort((a, b) => a.dev - b.dev);
+    finalUsedIndices = [sortedSampleIndices[0].idx, sortedSampleIndices[1].idx];
+  }
+
+  const filteredSamples = finalUsedIndices.map(idx => samples[idx]);
+  const finalResult = calculateWeightedLSE(filteredSamples);
+
+  return {
+    result: finalResult.result,
+    usedIndices: finalUsedIndices
   };
 }
 

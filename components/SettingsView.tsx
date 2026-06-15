@@ -535,6 +535,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
                   <option value="BAARDA">{t("4. Baarda Eleme")}</option>
                   <option value="KMEANS_BAARDA_HUBER">{t("5. Hibrit Yöntem (KMeans + Baarda + Huber)")}</option>
                   <option value="POPE_TAU">{t("6. Pope's Tau Testi")}</option>
+                  <option value="HAMPEL">{t("7. Hampel Yöntemi (Robust MAD)")}</option>
                 </select>
               </div>
 

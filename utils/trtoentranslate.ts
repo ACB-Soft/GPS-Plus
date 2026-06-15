@@ -446,6 +446,7 @@ export const trToEnMap: Record<string, string> = {
   "4. Baarda Eleme": "4. Baarda Outlier Elimination",
   "5. Hibrit Yöntem (KMeans + Baarda + Huber)": "5. Hybrid Method (KMeans + Baarda + Huber)",
   "6. Pope's Tau Testi": "6. Pope's Tau Test",
+  "7. Hampel Yöntemi (Robust MAD)": "7. Hampel Method (Robust MAD)",
   "GÜRBÜZ / ROBUST": "ROBUST",
   "AMİRAL GEMİSİ / HİBRİT": "FLAGSHIP / HYBRID",
   "Aktif edildiğinde, sadece yükseklik verisi içeren uydu tabanlı konumlar ölçüme dahil edilir. Açık alanlarda hassasiyeti artırır.": "When enabled, only satellite-based positions with altitude data are included in measurements. Increases accuracy in open areas.",

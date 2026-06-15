@@ -14,6 +14,7 @@ const getMethodName = (m: CalculationMethod) => {
     case 'KMEANS_4': return "K-Means (4 Küme)";
     case 'BAARDA': return "Baarda Eleme";
     case 'POPE_TAU': return "Pope's Tau Testi";
+    case 'HAMPEL': return "Hampel Yöntemi (Robust MAD)";
     default: return m;
   }
 };
@@ -154,7 +155,8 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     'KMEANS_4',
     'BAARDA',
     'KMEANS_BAARDA_HUBER',
-    'POPE_TAU'
+    'POPE_TAU',
+    'HAMPEL'
   ];
   const methodResults = methods.map(method => {
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
@@ -494,7 +496,8 @@ export const downloadCombinedAnalysisReport = (
     'KMEANS_4',
     'BAARDA',
     'KMEANS_BAARDA_HUBER',
-    'POPE_TAU'
+    'POPE_TAU',
+    'HAMPEL'
   ];
 
   if (location.samples && location.samples.length > 0) {
