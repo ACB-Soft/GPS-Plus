@@ -214,23 +214,23 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
   const methods = useMemo<CalculationMethod[]>(() => [
     'WEIGHTED_LSE',
-    'HUBER',
     'KMEANS_4',
     'BAARDA',
-    'KMEANS_BAARDA_HUBER',
     'POPE_TAU',
-    'HAMPEL'
+    'HUBER',
+    'HAMPEL',
+    'KMEANS_BAARDA_HUBER'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
     const labels: Record<string, string> = {
       'WEIGHTED_LSE': t("1. Ağırlıklı En Küçük Kareler"),
-      'HUBER': t("2. Huber M-Tahmini"),
-      'KMEANS_4': t("3. Dinamik KMeans Kümeleme"),
-      'BAARDA': t("4. Baarda Eleme"),
-      'KMEANS_BAARDA_HUBER': t("5. Hibrit Yöntem (KMeans + Baarda + Huber)"),
-      'POPE_TAU': t("6. Pope's Tau Testi"),
-      'HAMPEL': t("7. Hampel Yöntemi (Robust MAD)")
+      'KMEANS_4': t("2. K-Means Dinamik Kümeleme"),
+      'BAARDA': t("3. Baarda's w-Testi"),
+      'POPE_TAU': t("4. Pope’s Tau Testi"),
+      'HUBER': t("5. Robust Huber"),
+      'HAMPEL': t("6. Robust Hampel"),
+      'KMEANS_BAARDA_HUBER': t("7. Hibrit Yöntem (KMeans+Baarda)")
     };
     return labels[m] || m;
   };

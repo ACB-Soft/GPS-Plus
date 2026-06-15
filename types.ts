@@ -6,6 +6,14 @@ export interface Coordinate {
   altitude: number | null;
   altitudeAccuracy: number | null;
   timestamp: number;
+  speed?: number | null;
+  heading?: number | null;
+  accelX?: number | null;
+  accelY?: number | null;
+  accelZ?: number | null;
+  gyroAlpha?: number | null;
+  gyroBeta?: number | null;
+  gyroGamma?: number | null;
 }
 
 export type CalculationMethod = 
@@ -27,6 +35,7 @@ export interface SavedLocation extends Coordinate {
   measurementDuration?: number;
   calculationMethod?: CalculationMethod;
   samples?: Coordinate[];
+  rawSamples?: Coordinate[];
   usedSampleIndices?: number[];
   accuracyLimit?: number;
   gnssOnlyMode?: boolean;

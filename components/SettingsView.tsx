@@ -530,12 +530,12 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
                   <option value="WEIGHTED_LSE">{t("1. Ağırlıklı En Küçük Kareler")}</option>
-                  <option value="HUBER">{t("2. Huber M-Tahmini")}</option>
-                  <option value="KMEANS_4">{t("3. Dinamik KMeans Kümeleme")}</option>
-                  <option value="BAARDA">{t("4. Baarda Eleme")}</option>
-                  <option value="KMEANS_BAARDA_HUBER">{t("5. Hibrit Yöntem (KMeans + Baarda + Huber)")}</option>
-                  <option value="POPE_TAU">{t("6. Pope's Tau Testi")}</option>
-                  <option value="HAMPEL">{t("7. Hampel Yöntemi (Robust MAD)")}</option>
+                  <option value="KMEANS_4">{t("2. K-Means Dinamik Kümeleme")}</option>
+                  <option value="BAARDA">{t("3. Baarda's w-Testi")}</option>
+                  <option value="POPE_TAU">{t("4. Pope’s Tau Testi")}</option>
+                  <option value="HUBER">{t("5. Robust Huber")}</option>
+                  <option value="HAMPEL">{t("6. Robust Hampel")}</option>
+                  <option value="KMEANS_BAARDA_HUBER">{t("7. Hibrit Yöntem (KMeans+Baarda)")}</option>
                 </select>
               </div>
 

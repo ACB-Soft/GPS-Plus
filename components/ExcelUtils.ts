@@ -227,28 +227,48 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     });
   });
 
-  const dataRows = location.samples.map((s, idx) => {
+  const rawList = location.rawSamples && location.rawSamples.length > 0 ? location.rawSamples : (location.samples || []);
+
+  const dataRows = rawList.map((s, idx) => {
     const { x, y } = convertCoordinate(s.lat, s.lng, sys);
-    const val1 = isWGS84 ? s.lat.toFixed(2) : x.toFixed(2);
-    const val2 = isWGS84 ? s.lng.toFixed(2) : y.toFixed(2);
+    const val1 = isWGS84 ? s.lat.toFixed(5) : x.toFixed(3);
+    const val2 = isWGS84 ? s.lng.toFixed(5) : y.toFixed(3);
     
-    let status = "Kullanıldı";
+    let status = "Kayıtlı (Ham)";
     if (s.accuracy > accuracyLimit) {
-      status = `Düşük Hass. (> ${accuracyLimit.toFixed(2)}m)`;
+      status = `Yüksek Sapma (> ${accuracyLimit.toFixed(2)}m)`;
     }
 
     const hValue = isOrthometricSetting 
       ? getCorrectedHeight(s.lat, s.lng, s.altitude) 
       : getEllipsoidalHeight(s.lat, s.lng, s.altitude);
 
+    const speedVal = s.speed !== null && s.speed !== undefined ? s.speed.toFixed(2) : '---';
+    const headingVal = s.heading !== null && s.heading !== undefined ? s.heading.toFixed(1) : '---';
+
+    const accelXVal = s.accelX !== null && s.accelX !== undefined ? s.accelX.toFixed(3) : '---';
+    const accelYVal = s.accelY !== null && s.accelY !== undefined ? s.accelY.toFixed(3) : '---';
+    const accelZVal = s.accelZ !== null && s.accelZ !== undefined ? s.accelZ.toFixed(3) : '---';
+    const gyroAVal = s.gyroAlpha !== null && s.gyroAlpha !== undefined ? s.gyroAlpha.toFixed(2) : '---';
+    const gyroBVal = s.gyroBeta !== null && s.gyroBeta !== undefined ? s.gyroBeta.toFixed(2) : '---';
+    const gyroGVal = s.gyroGamma !== null && s.gyroGamma !== undefined ? s.gyroGamma.toFixed(2) : '---';
+
     return [
       idx + 1,
       new Date(s.timestamp).toLocaleTimeString('tr-TR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
       val1,
       val2,
-      hValue !== null ? hValue.toFixed(2) : '---',
-      s.accuracy.toFixed(2),
-      s.altitudeAccuracy !== null ? s.altitudeAccuracy.toFixed(2) : '---',
+      hValue !== null ? hValue.toFixed(3) : '---',
+      s.accuracy.toFixed(3),
+      s.altitudeAccuracy !== null ? s.altitudeAccuracy.toFixed(3) : '---',
+      speedVal,
+      headingVal,
+      accelXVal,
+      accelYVal,
+      accelZVal,
+      gyroAVal,
+      gyroBVal,
+      gyroGVal,
       status
     ];
   });
@@ -268,7 +288,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   }
 
   const ws_data = [
-    ["ÖLÇÜM RAPORU"],
+    ["ÖLÇÜM RAPORU (TÜM HAM VERİLER - RAW)"],
     ["Nokta Adı:", location.name],
     ["Proje Adı:", location.folderName],
     ["Koordinat Sistemi:", getSystemDisplayLabel(sys)],
@@ -281,7 +301,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     ["Ortalama Sensör Hassasiyeti:", `${avgAccAll.toFixed(2)} m`],
     ["Yayılım / Hassasiyet Oranı:", spreadRatio.toFixed(2)],
     [],
-    ["No", "Saat", header1, header2, isOrthometricSetting ? "Yükseklik (m)" : "Elipsoidal Yükseklik (m)", "Hassasiyet (m)", "Dikey Hass. (m)", "Durum"],
+    ["No", "Saat", header1, header2, isOrthometricSetting ? "Yükseklik (m)" : "Elipsoidal Yükseklik (m)", "Hassasiyet (m)", "Dikey Hass. (m)", "Hız (m/s)", "Yön (Derece)", "İvme X (m/s²)", "İvme Y (m/s²)", "İvme Z (m/s²)", "Yönelim Alpha (°)", "Eğim Beta (°)", "Eğim Gamma (°)", "Durum"],
     ...dataRows,
     [],
     ["ANLİZ YÖNTEMLERİ KARŞILAŞTIRMALI SONUÇLAR"],
@@ -304,11 +324,22 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     { wch: 12 }, // Saat
     { wch: 20 }, // Val1
     { wch: 20 }, // Val2
-    { wch: 15 } // Yükseklik
+    { wch: 15 }, // Yükseklik
+    { wch: 15 }, // Hassasiyet
+    { wch: 15 }, // Dikey Hass
+    { wch: 12 }, // Hız
+    { wch: 12 }, // Yön
+    { wch: 14 }, // İvme X
+    { wch: 14 }, // İvme Y
+    { wch: 14 }, // İvme Z
+    { wch: 18 }, // Alpha
+    { wch: 14 }, // Beta
+    { wch: 14 }, // Gamma
+    { wch: 18 }  // Durum
   ];
 
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Ham Veriler");
+  XLSX.utils.book_append_sheet(workbook, worksheet, "RAW");
   
   const fileName = `Teknik_Rapor_${location.name}.xlsx`;
   XLSX.writeFile(workbook, fileName);
@@ -333,7 +364,7 @@ export const downloadCombinedAnalysisReport = (
   const headerY = isWgsPoint ? "Boylam (Lng)" : "Yukarı (X)";
 
   const rawData: any[][] = [
-    ["HAM ÖLÇÜM VE GÖZLEM KAYITLARI"],
+    ["HAM ÖLÇÜM VE GÖZLEM KAYITLARI (RAW)"],
     ["Nokta Adı:", location.name],
     ["Klasör:", location.folderName],
     ["Kayıt Tarihi:", new Date(location.timestamp).toLocaleString('tr-TR')],
@@ -341,30 +372,50 @@ export const downloadCombinedAnalysisReport = (
     ["Dilim Numarası:", convertCoordinate(location.lat, location.lng, sys).zone || "---"],
     ["Yükseklik Tipi:", isOrthometric ? "Ortometrik (Jeoid)" : "Elipsoidal"],
     [],
-    ["GÖZLEM LİSTESİ (Tüm Örnekler)"],
-    ["No", headerX, headerY, isOrthometric ? "Kot (H)" : "Alt (h)", "Hassasiyet (m)", "Zaman"]
+    ["GÖZLEM LİSTESİ (Tüm Örnekler - Ham)"],
+    ["No", headerX, headerY, isOrthometric ? "Kot (H)" : "Alt (h)", "Hassasiyet (m)", "Hız (m/s)", "Yön (Derece)", "İvme X (m/s²)", "İvme Y (m/s²)", "İvme Z (m/s²)", "Yönelim Alpha (°)", "Eğim Beta (°)", "Eğim Gamma (°)", "Zaman"]
   ];
 
-  if (location.samples && location.samples.length > 0) {
-    location.samples.forEach((s, idx) => {
+  const reportRawList = location.rawSamples && location.rawSamples.length > 0 ? location.rawSamples : (location.samples || []);
+
+  if (reportRawList.length > 0) {
+    reportRawList.forEach((s, idx) => {
       const conv = convertCoordinate(s.lat, s.lng, sys);
       const hVal = isOrthometric 
         ? getCorrectedHeight(s.lat, s.lng, s.altitude) 
         : getEllipsoidalHeight(s.lat, s.lng, s.altitude);
 
+      const speedVal = s.speed !== null && s.speed !== undefined ? s.speed.toFixed(2) : '---';
+      const headingVal = s.heading !== null && s.heading !== undefined ? s.heading.toFixed(1) : '---';
+
+      const accelXVal = s.accelX !== null && s.accelX !== undefined ? s.accelX.toFixed(3) : '---';
+      const accelYVal = s.accelY !== null && s.accelY !== undefined ? s.accelY.toFixed(3) : '---';
+      const accelZVal = s.accelZ !== null && s.accelZ !== undefined ? s.accelZ.toFixed(3) : '---';
+      const gyroAVal = s.gyroAlpha !== null && s.gyroAlpha !== undefined ? s.gyroAlpha.toFixed(2) : '---';
+      const gyroBVal = s.gyroBeta !== null && s.gyroBeta !== undefined ? s.gyroBeta.toFixed(2) : '---';
+      const gyroGVal = s.gyroGamma !== null && s.gyroGamma !== undefined ? s.gyroGamma.toFixed(2) : '---';
+
       rawData.push([
         idx + 1, 
-        isWgsPoint ? s.lat.toFixed(2) : conv.x.toFixed(2), 
-        isWgsPoint ? s.lng.toFixed(2) : conv.y.toFixed(2), 
-        hVal !== null ? hVal.toFixed(2) : (s.altitude || 0).toFixed(2), 
-        s.accuracy.toFixed(2), 
+        isWgsPoint ? s.lat.toFixed(5) : conv.x.toFixed(3), 
+        isWgsPoint ? s.lng.toFixed(5) : conv.y.toFixed(3), 
+        hVal !== null ? hVal.toFixed(3) : (s.altitude || 0).toFixed(3), 
+        s.accuracy.toFixed(3), 
+        speedVal,
+        headingVal,
+        accelXVal,
+        accelYVal,
+        accelZVal,
+        gyroAVal,
+        gyroBVal,
+        gyroGVal,
         new Date(s.timestamp).toLocaleTimeString('tr-TR')
       ]);
     });
   }
 
   const wsRaw = XLSX.utils.aoa_to_sheet(rawData);
-  XLSX.utils.book_append_sheet(workbook, wsRaw, "Ölçüm Kayıtları");
+  XLSX.utils.book_append_sheet(workbook, wsRaw, "RAW");
 
   // --- SAYFA 2: İSTATİSTİKSEL ANALİZ VE AR-GE SONUÇLARI ---
   const calculationMethod = location.calculationMethod || 'WEIGHTED_LSE';

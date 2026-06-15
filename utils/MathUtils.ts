@@ -981,9 +981,9 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
 
   const finalMAD = calculateMADHuber(samples, currentLat, currentLng);
   const finalPseudoSigma = finalMAD * 1.4826;
-  // Pure 1-sigma outlier threshold boundary (ultra-strict rejection gate)
+  // Pure 1.345-sigma Huber outlier threshold boundary (95% asymptotic efficiency academic gate)
   const stableFinalPseudoSigma = finalPseudoSigma > 1e-7 ? finalPseudoSigma : 1e-7;
-  const outlierThreshold = 1.0 * stableFinalPseudoSigma;
+  const outlierThreshold = 1.345 * stableFinalPseudoSigma;
 
   const usedIndices: number[] = [];
   const cleanSamples: Coordinate[] = [];

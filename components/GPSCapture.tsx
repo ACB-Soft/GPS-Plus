@@ -8,7 +8,20 @@ import Header from './Header';
 import { useLanguage } from '../utils/LanguageContext';
 
 interface Props {
-  onComplete: (coord: Coordinate, folderName: string, pointName: string, description: string, coordinateSystem: string, duration: number, samples: Coordinate[], usedIndices: number[], accuracyLimit: number, method: CalculationMethod) => void;
+  onComplete: (
+    coord: Coordinate, 
+    folderName: string, 
+    pointName: string, 
+    description: string, 
+    coordinateSystem: string, 
+    duration: number, 
+    samples: Coordinate[], 
+    usedIndices: number[], 
+    accuracyLimit: number, 
+    method: CalculationMethod,
+    gnssOnly: boolean,
+    rawSamples?: Coordinate[]
+  ) => void;
   onCancel: () => void;
   isContinuing?: boolean;
   existingLocations: SavedLocation[];
@@ -50,6 +63,17 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   const [captureError, setCaptureError] = useState<string | null>(null);
   
   const samplesRef = useRef<Coordinate[]>([]);
+  const rawSamplesRef = useRef<Coordinate[]>([]);
+  const latestMotionRef = useRef<{ accelX: number | null; accelY: number | null; accelZ: number | null }>({
+    accelX: null,
+    accelY: null,
+    accelZ: null
+  });
+  const latestOrientationRef = useRef<{ gyroAlpha: number | null; gyroBeta: number | null; gyroGamma: number | null }>({
+    gyroAlpha: null,
+    gyroBeta: null,
+    gyroGamma: null
+  });
   const lastPositionRef = useRef<GeolocationPosition | null>(null);
   const lastSavedPositionRef = useRef<{lat: number, lng: number, accuracy: number} | null>(null);
   const lastSaveTimestampRef = useRef<number>(0);
@@ -88,6 +112,44 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
     startGPSWarmup();
     return () => {
       releaseWakeLock();
+    };
+  }, []);
+
+  // Listen for device motion and orientation sensors
+  useEffect(() => {
+    const handleMotion = (e: DeviceMotionEvent) => {
+      const acc = e.acceleration || e.accelerationIncludingGravity;
+      if (acc) {
+        latestMotionRef.current = {
+          accelX: acc.x !== undefined && acc.x !== null ? acc.x : null,
+          accelY: acc.y !== undefined && acc.y !== null ? acc.y : null,
+          accelZ: acc.z !== undefined && acc.z !== null ? acc.z : null,
+        };
+      }
+    };
+
+    const handleOrientation = (e: DeviceOrientationEvent) => {
+      latestOrientationRef.current = {
+        gyroAlpha: e.alpha !== undefined && e.alpha !== null ? e.alpha : null,
+        gyroBeta: e.beta !== undefined && e.beta !== null ? e.beta : null,
+        gyroGamma: e.gamma !== undefined && e.gamma !== null ? e.gamma : null,
+      };
+    };
+
+    try {
+      window.addEventListener('devicemotion', handleMotion);
+      window.addEventListener('deviceorientation', handleOrientation);
+    } catch (err) {
+      console.warn("Sensor event listeners failed to attach:", err);
+    }
+
+    return () => {
+      try {
+        window.removeEventListener('devicemotion', handleMotion);
+        window.removeEventListener('deviceorientation', handleOrientation);
+      } catch (err) {
+        console.warn("Sensor event listeners removal failed:", err);
+      }
     };
   }, []);
 
@@ -166,6 +228,24 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
           setCaptureError(null);
           
           if (step === 'COUNTDOWN') {
+            // Unconditionally save raw geolocation update with speed and heading
+            rawSamplesRef.current.push({
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              accuracy: pos.coords.accuracy,
+              altitude: pos.coords.altitude,
+              altitudeAccuracy: pos.coords.altitudeAccuracy,
+              speed: pos.coords.speed,
+              heading: pos.coords.heading,
+              timestamp: Date.now(),
+              accelX: latestMotionRef.current.accelX,
+              accelY: latestMotionRef.current.accelY,
+              accelZ: latestMotionRef.current.accelZ,
+              gyroAlpha: latestOrientationRef.current.gyroAlpha,
+              gyroBeta: latestOrientationRef.current.gyroBeta,
+              gyroGamma: latestOrientationRef.current.gyroGamma,
+            });
+
             // --- HİBRİT MANTIK: Farklı Veri Gelirse Kaydet ---
             const current = {
               lat: pos.coords.latitude,
@@ -190,7 +270,15 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                   accuracy: pos.coords.accuracy, 
                   altitude: pos.coords.altitude, 
                   altitudeAccuracy: pos.coords.altitudeAccuracy,
-                  timestamp: Date.now()
+                  timestamp: Date.now(),
+                  speed: pos.coords.speed,
+                  heading: pos.coords.heading,
+                  accelX: latestMotionRef.current.accelX,
+                  accelY: latestMotionRef.current.accelY,
+                  accelZ: latestMotionRef.current.accelZ,
+                  gyroAlpha: latestOrientationRef.current.gyroAlpha,
+                  gyroBeta: latestOrientationRef.current.gyroBeta,
+                  gyroGamma: latestOrientationRef.current.gyroGamma,
                 });
                 lastSavedPositionRef.current = current;
                 lastSaveTimestampRef.current = Date.now();
@@ -261,7 +349,15 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
           accuracy: p.coords.accuracy, 
           altitude: p.coords.altitude, 
           altitudeAccuracy: p.coords.altitudeAccuracy,
-          timestamp: Date.now() 
+          timestamp: Date.now(),
+          speed: p.coords.speed,
+          heading: p.coords.heading,
+          accelX: latestMotionRef.current.accelX,
+          accelY: latestMotionRef.current.accelY,
+          accelZ: latestMotionRef.current.accelZ,
+          gyroAlpha: latestOrientationRef.current.gyroAlpha,
+          gyroBeta: latestOrientationRef.current.gyroBeta,
+          gyroGamma: latestOrientationRef.current.gyroGamma,
         });
       }
     }
@@ -300,7 +396,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       }
     }
 
-    onComplete(avg, folderName, pointName, '', coordinateSystem, actualDuration, samples, usedIndices, accuracyLimit, calculationMethod);
+    onComplete(avg, folderName, pointName, '', coordinateSystem, actualDuration, samples, usedIndices, accuracyLimit, calculationMethod, settings.gnssOnlyMode, rawSamplesRef.current);
     releaseWakeLock();
   }, [folderName, pointName, coordinateSystem, measurementDuration, seconds, onComplete, accuracyLimit, settings.gnssOnlyMode, settings.calculationMethod, settings.alertsEnabled, settings.vibrationEnabled]);
 
@@ -333,7 +429,15 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
             accuracy: p.coords.accuracy, 
             altitude: p.coords.altitude, 
             altitudeAccuracy: p.coords.altitudeAccuracy,
-            timestamp: now
+            timestamp: now,
+            speed: p.coords.speed,
+            heading: p.coords.heading,
+            accelX: latestMotionRef.current.accelX,
+            accelY: latestMotionRef.current.accelY,
+            accelZ: latestMotionRef.current.accelZ,
+            gyroAlpha: latestOrientationRef.current.gyroAlpha,
+            gyroBeta: latestOrientationRef.current.gyroBeta,
+            gyroGamma: latestOrientationRef.current.gyroGamma,
           });
           lastSaveTimestampRef.current = now;
           lastSavedPositionRef.current = {
@@ -383,6 +487,31 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
 
   const handleStartMeasurement = () => {
     requestWakeLock();
+    
+    // Request permission for iOS sensors if needed
+    if (
+      typeof DeviceMotionEvent !== 'undefined' &&
+      typeof (DeviceMotionEvent as any).requestPermission === 'function'
+    ) {
+      try {
+        (DeviceMotionEvent as any).requestPermission()
+          .catch((err: any) => console.warn('DeviceMotion permission error:', err));
+      } catch (e) {
+        console.warn('DeviceMotion requestPermission sync error:', e);
+      }
+    }
+    if (
+      typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof (DeviceOrientationEvent as any).requestPermission === 'function'
+    ) {
+      try {
+        (DeviceOrientationEvent as any).requestPermission()
+          .catch((err: any) => console.warn('DeviceOrientation permission error:', err));
+      } catch (e) {
+        console.warn('DeviceOrientation requestPermission sync error:', e);
+      }
+    }
+
     // Start with the last known position as the first sample
     if (lastPositionRef.current) {
       const p = lastPositionRef.current;
@@ -392,9 +521,18 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
         accuracy: p.coords.accuracy, 
         altitude: p.coords.altitude, 
         altitudeAccuracy: p.coords.altitudeAccuracy,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        speed: p.coords.speed,
+        heading: p.coords.heading,
+        accelX: latestMotionRef.current.accelX,
+        accelY: latestMotionRef.current.accelY,
+        accelZ: latestMotionRef.current.accelZ,
+        gyroAlpha: latestOrientationRef.current.gyroAlpha,
+        gyroBeta: latestOrientationRef.current.gyroBeta,
+        gyroGamma: latestOrientationRef.current.gyroGamma,
       };
       samplesRef.current = [initialSample];
+      rawSamplesRef.current = [initialSample];
       lastSavedPositionRef.current = {
         lat: p.coords.latitude,
         lng: p.coords.longitude,
@@ -404,6 +542,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       setSampleCount(1);
     } else {
       samplesRef.current = [];
+      rawSamplesRef.current = [];
       lastSavedPositionRef.current = null;
       lastSaveTimestampRef.current = 0;
       setSampleCount(0);

@@ -299,7 +299,7 @@ const App = () => {
     navigateTo('dashboard');
   };
 
-  const handleGPSComplete = (coord: Coordinate, folderName: string, pointName: string, description: string, coordinateSystem: string, duration: number, samples: Coordinate[], usedIndices: number[], accLimit: number, method: any, gnssOnly: boolean) => {
+  const handleGPSComplete = (coord: Coordinate, folderName: string, pointName: string, description: string, coordinateSystem: string, duration: number, samples: Coordinate[], usedIndices: number[], accLimit: number, method: any, gnssOnly: boolean, rawSamples?: Coordinate[]) => {
     const { fallbackApplied, actualMethodUsed } = calculateResult(samples, method, accLimit, gnssOnly);
     const newLoc: SavedLocation = {
       ...coord,
@@ -312,6 +312,7 @@ const App = () => {
       calculationMethod: method,
       gnssOnlyMode: gnssOnly,
       samples: samples,
+      rawSamples: rawSamples && rawSamples.length > 0 ? rawSamples : samples,
       usedSampleIndices: usedIndices,
       accuracyLimit: accLimit,
       fallbackApplied,

@@ -261,7 +261,37 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
 
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("2. Huber M-Tahmini")}</h4>
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("2. K-Means Dinamik Kümeleme")}</h4>
+                    <span className="text-[11px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full font-bold">{t("KÜMELEME")}</span>
+                  </div>
+                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                    {t("Gözlemleri mekansal yakınlıklarına göre dinamik sayıda yoğunluk grubuna ayırarak küme merkezini belirler.")} <span className="text-amber-600 font-black">{t("En az 30 epok veri gerektirir.")}</span>
+                  </p>
+                </div>
+
+                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("3. Baarda's w-Testi")}</h4>
+                    <span className="text-[11px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">{t("İSTATİSTİK")}</span>
+                  </div>
+                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                    {t("Baarda kalın hata eleme teorisini kullanarak uyuşumsuz ve kaba hatalı koordinatları sistemden temizler.")} <span className="text-amber-600 font-black">{t("En az 60 epok veri gerektirir.")}</span>
+                  </p>
+                </div>
+
+                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("4. Pope’s Tau Testi")}</h4>
+                    <span className="text-[11px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full font-bold">{t("ÖLÇÜ KONTROL")}</span>
+                  </div>
+                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                    {t("Örneklem büyüklüğünün sınırlı olduğu durumlarda, uyuşmazlıkları Tau dağılımına tabi tutarak uç değer tespiti yapar.")} <span className="text-amber-600 font-black">{t("En az 30 epok veri gerektirir.")}</span>
+                  </p>
+                </div>
+
+                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("5. Robust Huber")}</h4>
                     <span className="text-[11px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">{t("GÜRBÜZ / ROBUST")}</span>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed">
@@ -271,27 +301,17 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
 
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("3. Dinamik KMeans Kümeleme")}</h4>
-                    <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">{t("KÜMELEME")}</span>
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("6. Robust Hampel")}</h4>
+                    <span className="text-[11px] bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full font-bold">{t("MEDYAN MUTLAK SAPMA")}</span>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                    {t("Gözlemleri mekansal yakınlıklarına göre dinamik sayıda yoğunluk grubuna ayırarak küme merkezini belirler.")} <span className="text-amber-600 font-black">{t("En az 30 epok veri gerektirir.")}</span>
-                  </p>
-                </div>
-
-                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("4. Baarda Eleme")}</h4>
-                    <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">{t("İSTATİSTİK")}</span>
-                  </div>
-                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                    {t("Baarda kalın hata eleme teorisini kullanarak uyuşumsuz ve kaba hatalı koordinatları sistemden temizler.")} <span className="text-amber-600 font-black">{t("En az 60 epok veri gerektirir.")}</span>
+                    {t("Medyan Mutlak Sapma (MAD) süzgecini baz alarak gürültü pencerelerini gürbüz sınır değerlerle dışlar.")} <span className="text-amber-600 font-black">{t("En az 30 epok veri gerektirir.")}</span>
                   </p>
                 </div>
 
                 <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm ring-1 ring-emerald-50">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-emerald-700 uppercase tracking-tight">{t("5. Hibrit Yöntem (KMeans + Baarda + Huber)")}</h4>
+                    <h4 className="text-sm font-black text-emerald-700 uppercase tracking-tight">{t("7. Hibrit Yöntem (KMeans+Baarda)")}</h4>
                     <span className="text-[11px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">{t("İLERİ HİBRİT")}</span>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed mb-3">

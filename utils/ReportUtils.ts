@@ -350,7 +350,7 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
   const finalMAD = calculateMADHuber(samples, currentLat, currentLng);
   const finalPseudoSigma = finalMAD * 1.4826;
   const stableFinalPseudoSigma = finalPseudoSigma &gt; 1e-7 ? finalPseudoSigma : 1e-7;
-  const outlierThreshold = 1.0 * stableFinalPseudoSigma;
+  const outlierThreshold = 1.345 * stableFinalPseudoSigma;
 
   const usedIndices: number[] = [];
   const cleanSamples: Coordinate[] = [];
