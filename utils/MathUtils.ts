@@ -464,24 +464,38 @@ function calculateBaardaInternal(samples: any[]): { result: Coordinate; usedIndi
       break;
     }
 
+    const avgLat0 = currentSamples.reduce((sum, s) => sum + s.lat, 0) / currentSamples.length;
+    const { latCoeff, lngCoeff } = getWGS84Coefficients(avgLat0);
+
     const weights = currentSamples.map(s => 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
     const sumW = weights.reduce((a, b) => a + b, 0);
     const meanLat = currentSamples.reduce((a, b, i) => a + b.lat * weights[i], 0) / sumW;
     const meanLng = currentSamples.reduce((a, b, i) => a + b.lng * weights[i], 0) / sumW;
 
-    const residuals = currentSamples.map(s => {
-      return calculateDistanceMeter(s.lat, s.lng, meanLat, meanLng, meanLat);
+    const localPts = currentSamples.map((s, i) => {
+      const dx = (s.lng - meanLng) * lngCoeff;
+      const dy = (s.lat - meanLat) * latCoeff;
+      return { dx, dy, w: weights[i] };
     });
 
-    const vTPv = residuals.reduce((a, v, i) => a + v * v * weights[i], 0);
-    
-    // Corrected degree of freedom: f = n - u, where u = 2 (lat, lng) unknowns in 2D adjustments.
-    const sigma0 = Math.sqrt(vTPv / (currentSamples.length - 2));
+    let vTPv = 0;
+    for (const pt of localPts) {
+      vTPv += (pt.dx * pt.dx + pt.dy * pt.dy) * pt.w;
+    }
+
+    const N = currentSamples.length;
+    const f = 2 * N - 2; // Degrees of freedom: 2N - 2 parameters (meanLat, meanLng)
+    const sigma0_sq = vTPv / (f > 0 ? f : 1);
+    const sigma0 = Math.sqrt(sigma0_sq > 1e-10 ? sigma0_sq : 1e-10);
 
     const standardizedResiduals = currentSamples.map((s, i) => {
+      const pt = localPts[i];
       const p_i = weights[i];
-      const q_ii = (1 - p_i / sumW); 
-      return residuals[i] / (sigma0 * Math.sqrt(q_ii) || 1e-9);
+      const q_ii = Math.max(1e-4, 1.0 - (p_i / sumW)); // Redundancy component r_i or cofactor q_vv
+      const dist_v = Math.sqrt(pt.dx * pt.dx + pt.dy * pt.dy); // actual residual in meters
+      
+      // Standart geodezik Baarda w-testi formülü: w_i = (v_i * sqrt(p_i)) / (sigma0 * sqrt(1 - h_i))
+      return (dist_v * Math.sqrt(p_i)) / (sigma0 * Math.sqrt(q_ii));
     });
 
     let maxW = -1;
@@ -732,24 +746,37 @@ function calculateBaardaInternalAcademic(samples: any[]): { result: Coordinate; 
   const criticalValue = 3.29; // Critical limit for 99.9% confidence interval
 
   while (currentSamples.length > 4) {
+    const avgLat0 = currentSamples.reduce((sum, s) => sum + s.lat, 0) / currentSamples.length;
+    const { latCoeff, lngCoeff } = getWGS84Coefficients(avgLat0);
+
     const weights = currentSamples.map(s => 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
     const sumW = weights.reduce((a, b) => a + b, 0);
     const meanLat = currentSamples.reduce((a, b, i) => a + b.lat * weights[i], 0) / sumW;
     const meanLng = currentSamples.reduce((a, b, i) => a + b.lng * weights[i], 0) / sumW;
 
-    const residuals = currentSamples.map(s => {
-      return calculateDistanceMeter(s.lat, s.lng, meanLat, meanLng, meanLat);
+    const localPts = currentSamples.map((s, i) => {
+      const dx = (s.lng - meanLng) * lngCoeff;
+      const dy = (s.lat - meanLat) * latCoeff;
+      return { dx, dy, w: weights[i] };
     });
 
-    const vTPv = residuals.reduce((a, v, i) => a + v * v * weights[i], 0);
-    
-    // Degree of freedom: f = n - u, where u = 2 (lat, lng) unknowns
-    const sigma0 = Math.sqrt(vTPv / (currentSamples.length - 2));
+    let vTPv = 0;
+    for (const pt of localPts) {
+      vTPv += (pt.dx * pt.dx + pt.dy * pt.dy) * pt.w;
+    }
+
+    const N = currentSamples.length;
+    const f = 2 * N - 2; // Degrees of freedom: 2N - 2 parameters (meanLat, meanLng)
+    const sigma0_sq = vTPv / (f > 0 ? f : 1);
+    const sigma0 = Math.sqrt(sigma0_sq > 1e-10 ? sigma0_sq : 1e-10);
 
     const standardizedResiduals = currentSamples.map((s, i) => {
+      const pt = localPts[i];
       const p_i = weights[i];
-      const q_ii = (1 - p_i / sumW); 
-      return residuals[i] / (sigma0 * Math.sqrt(q_ii) || 1e-9);
+      const q_ii = Math.max(1e-4, 1.0 - (p_i / sumW));
+      const dist_v = Math.sqrt(pt.dx * pt.dx + pt.dy * pt.dy);
+      // Standart geodezik Baarda w-testi formülü: w_i = (v_i * sqrt(p_i)) / (sigma0 * sqrt(1 - h_i))
+      return (dist_v * Math.sqrt(p_i)) / (sigma0 * Math.sqrt(q_ii));
     });
 
     let maxW = -1;
