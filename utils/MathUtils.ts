@@ -729,56 +729,42 @@ function calculateBaardaInternalAcademic(samples: any[]): { result: Coordinate; 
     ...s,
     _originalIdx: s._originalIdx !== undefined ? s._originalIdx : idx
   }));
-  const criticalValue = 3.29; // Critical limit for 99.9% confidence interval (alpha = 0.001)
+  const criticalValue = 3.29; // Critical limit for 99.9% confidence interval
 
-  const avgLat0 = samples.reduce((sum, s) => sum + s.lat, 0) / samples.length;
-  const { latCoeff, lngCoeff } = getWGS84Coefficients(avgLat0);
-
-  while (currentSamples.length >= 4) {
-    const N = currentSamples.length;
-    const weights = currentSamples.map(s => 1.0 / Math.pow(Math.max(0.1, s.accuracy), 2));
+  while (currentSamples.length > 4) {
+    const weights = currentSamples.map(s => 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
     const sumW = weights.reduce((a, b) => a + b, 0);
-    const meanLat = currentSamples.reduce((a, s, i) => a + s.lat * weights[i], 0) / sumW;
-    const meanLng = currentSamples.reduce((a, s, i) => a + s.lng * weights[i], 0) / sumW;
+    const meanLat = currentSamples.reduce((a, b, i) => a + b.lat * weights[i], 0) / sumW;
+    const meanLng = currentSamples.reduce((a, b, i) => a + b.lng * weights[i], 0) / sumW;
 
-    const localPts = currentSamples.map((s, i) => {
-      const dx = (s.lng - meanLng) * lngCoeff;
-      const dy = (s.lat - meanLat) * latCoeff;
-      return { dx, dy, w: weights[i] };
+    const residuals = currentSamples.map(s => {
+      return calculateDistanceMeter(s.lat, s.lng, meanLat, meanLng, meanLat);
     });
 
-    let vTPv = 0;
-    for (const pt of localPts) {
-      vTPv += (pt.dx * pt.dx + pt.dy * pt.dy) * pt.w;
-    }
+    const vTPv = residuals.reduce((a, v, i) => a + v * v * weights[i], 0);
+    
+    // Degree of freedom: f = n - u, where u = 2 (lat, lng) unknowns
+    const sigma0 = Math.sqrt(vTPv / (currentSamples.length - 2));
 
-    // Degree of freedom for 2D positioning adjustment with 2N coordinate measurements and 2 unknowns: f = 2N - 2
-    const f = 2 * N - 2;
-    const sigma0_sq = vTPv / f;
-    const sigma0 = Math.sqrt(sigma0_sq > 1e-10 ? sigma0_sq : 1e-10);
+    const standardizedResiduals = currentSamples.map((s, i) => {
+      const p_i = weights[i];
+      const q_ii = (1 - p_i / sumW); 
+      return residuals[i] / (sigma0 * Math.sqrt(q_ii) || 1e-9);
+    });
 
     let maxW = -1;
-    let worstLocalIdx = -1;
-
-    for (let i = 0; i < N; i++) {
-      const pt = localPts[i];
-      const h_i = pt.w / sumW;
-      const q_vv = Math.max(0.001, 1.0 - h_i);
-      
-      const dist_v = Math.sqrt(pt.dx * pt.dx + pt.dy * pt.dy);
-      // Pure Baarda's standardized residual incorporating observation weight p_i: w_i = (v_i * sqrt(p_i)) / (sigma0 * sqrt(1 - h_i))
-      const w_i = (dist_v * Math.sqrt(pt.w)) / (sigma0 * Math.sqrt(q_vv));
-
-      if (w_i > maxW) {
-        maxW = w_i;
-        worstLocalIdx = i;
-      }
+    let worstIdx = -1;
+    for (let i = 0; i < standardizedResiduals.length; i++) {
+        if (standardizedResiduals[i] > maxW) {
+            maxW = standardizedResiduals[i];
+            worstIdx = i;
+        }
     }
 
     if (maxW > criticalValue) {
-      currentSamples.splice(worstLocalIdx, 1);
+        currentSamples.splice(worstIdx, 1);
     } else {
-      break; 
+        break; 
     }
   }
 
