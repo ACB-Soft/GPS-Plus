@@ -21,7 +21,6 @@ export type CalculationMethod =
   | 'WEIGHTED_LSE' 
   | 'HUBER'
   | 'KMEANS_4' 
-  | 'ST_DBSCAN'
   | 'BAARDA'
   | 'KMEANS_BAARDA_HUBER'
   | 'POPE_TAU'

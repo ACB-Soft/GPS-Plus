@@ -44,7 +44,6 @@ const METHOD_COLORS: Record<string, string> = {
   WEIGHTED_LSE: '#8b5cf6',
   HUBER: '#3b82f6',
   KMEANS_4: '#06b6d4',
-  ST_DBSCAN: '#eab308',
   BAARDA: '#f59e0b',
   KMEANS_BAARDA_HUBER: '#10b981',
   POPE_TAU: '#a855f7',
@@ -222,7 +221,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const methods = useMemo<CalculationMethod[]>(() => [
     'WEIGHTED_LSE',
     'KMEANS_4',
-    'ST_DBSCAN',
     'BAARDA',
     'POPE_TAU',
     'HUBER',
@@ -234,12 +232,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     const labels: Record<string, string> = {
       'WEIGHTED_LSE': t("1. Ağırlıklı En Küçük Kareler"),
       'KMEANS_4': t("2. K-Means Dinamik Kümeleme"),
-      'ST_DBSCAN': t("3. ST-DBSCAN Mekansal-Zamansal Kümeleme"),
-      'BAARDA': t("4. Baarda's w-Testi"),
-      'POPE_TAU': t("5. Pope’s Tau Testi"),
-      'HUBER': t("6. Robust Huber"),
-      'HAMPEL': t("7. Robust Hampel"),
-      'KMEANS_BAARDA_HUBER': t("8. Hibrit Yöntem (KMeans+Baarda)")
+      'BAARDA': t("3. Baarda's w-Testi"),
+      'POPE_TAU': t("4. Pope’s Tau Testi"),
+      'HUBER': t("5. Robust Huber"),
+      'HAMPEL': t("6. Robust Hampel"),
+      'KMEANS_BAARDA_HUBER': t("7. Hibrit Yöntem (KMeans+Baarda)")
     };
     return labels[m] || m;
   };
@@ -598,114 +595,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     };
   }, [location, t, analysisType, appliedPreciseN, appliedPreciseE, useLocal]);
 
-  const stDbscanClusterChartData = useMemo(() => {
-    if (!location || !location.samples || location.samples.length < 1) return null;
-    const accuracyLimit = location.accuracyLimit || 5.0;
-    
-    // Calculate results for the ST-DBSCAN method
-    const { clusters, usedIndices } = calculateResult(
-      location.samples,
-      'ST_DBSCAN',
-      accuracyLimit,
-      false,
-      {
-        dbscanEpsSpatial,
-        dbscanEpsTemporal,
-        dbscanMinPts
-      }
-    );
-    
-    const sys = location.coordinateSystem || 'ITRF96_3';
-    
-    const accuracyFilteredIndices = location.samples
-      .map((s, idx) => s.accuracy <= accuracyLimit ? idx : -1)
-      .filter(idx => idx !== -1);
 
-    if (accuracyFilteredIndices.length === 0) return null;
-
-    let sumX = 0;
-    let sumY = 0;
-    const convertedPoints = accuracyFilteredIndices.map(idx => {
-      const s = location.samples![idx];
-      const conv = convertCoordinate(s.lat, s.lng, sys);
-      sumX += conv.x;
-      sumY += conv.y;
-      return {
-        idx,
-        x: conv.x,
-        y: conv.y,
-        lat: s.lat,
-        lng: s.lng,
-        accuracy: s.accuracy,
-        timestamp: s.timestamp
-      };
-    });
-
-    const meanX = sumX / accuracyFilteredIndices.length;
-    const meanY = sumY / accuracyFilteredIndices.length;
-
-    // Determine the Center (Reference)
-    let refCenterX = 0;
-    let refCenterY = 0;
-    let isPrecise = false;
-
-    if (analysisType === 'precise') {
-      const pn = parseFloat(appliedPreciseN); // Yukarı (X)
-      const pe = parseFloat(appliedPreciseE); // Sağa (Y)
-      
-      if (!isNaN(pn) && !isNaN(pe)) {
-        if (useLocal) {
-          refCenterX = pe; // Easting (Sağa/Y)
-          refCenterY = pn; // Northing (Yukarı/X)
-        } else {
-          const conv = convertCoordinate(pn, pe, sys);
-          refCenterX = conv.x; // Easting (Sağa/Y)
-          refCenterY = conv.y; // Northing (Yukarı/X)
-        }
-        isPrecise = true;
-      }
-    }
-
-    if (!isPrecise) {
-      refCenterX = meanX;
-      refCenterY = meanY;
-    }
-
-    const relativePoints = convertedPoints.map(p => {
-      const dx = p.x - refCenterX; // Easting offset in meters relative to reference
-      const dy = p.y - refCenterY; // Northing offset in meters relative to reference
-      
-      const passedBaarda = usedIndices ? usedIndices.includes(p.idx) : true;
-      
-      let clusterId = -1; // -1 is noise
-      if (clusters) {
-        clusters.forEach((cluster, cIndex) => {
-          if (cluster.includes(p.idx)) {
-            clusterId = cIndex;
-          }
-        });
-      }
-
-      return {
-        id: p.idx + 1,
-        name: `${t("Epok")} #${p.idx + 1}`,
-        dx,
-        dy,
-        lat: p.lat,
-        lng: p.lng,
-        passedBaarda,
-        clusterId,
-        accuracy: p.accuracy,
-        time: new Date(p.timestamp).toLocaleTimeString()
-      };
-    });
-
-    return {
-      points: relativePoints,
-      clusters: clusters || [],
-      usedIndices: usedIndices || []
-    };
-  }, [location, t, analysisType, appliedPreciseN, appliedPreciseE, useLocal, dbscanEpsSpatial, dbscanEpsTemporal, dbscanMinPts]);
 
   const clusterBounds = useMemo(() => {
     if (!hybridClusterChartData || hybridClusterChartData.points.length === 0) {
@@ -1707,7 +1597,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               'WEIGHTED_LSE': 'Weighted LSE',
                               'HUBER': 'Huber',
                               'KMEANS_4': 'KMeans',
-                              'ST_DBSCAN': 'ST-DBSCAN',
                               'BAARDA': 'Baarda',
                               'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
                               'POPE_TAU': "Pope's Tau",
@@ -1745,7 +1634,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             'WEIGHTED_LSE': 'Weighted LSE',
                             'HUBER': 'Huber',
                             'KMEANS_4': 'KMeans',
-                            'ST_DBSCAN': 'ST-DBSCAN',
                             'BAARDA': 'Baarda',
                             'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
                             'POPE_TAU': "Pope's Tau",
