@@ -156,15 +156,15 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   
   const methods: CalculationMethod[] = [
     'WEIGHTED_LSE', 
-    'HUBER',
     'KMEANS_4',
     'BAARDA',
-    'KMEANS_BAARDA_HUBER',
     'POPE_TAU',
+    'HUBER',
     'HAMPEL',
     'ANDREWS_WAVE',
     'TUKEYS_BIWEIGHT',
     'DANISH',
+    'KMEANS_BAARDA_HUBER',
     'GNSS_IMU_STATIONARY',
     'HODGES_LEHMANN'
   ];
@@ -553,15 +553,15 @@ export const downloadCombinedAnalysisReport = (
 
   const allMethods: CalculationMethod[] = [
     'WEIGHTED_LSE', 
-    'HUBER',
     'KMEANS_4',
     'BAARDA',
-    'KMEANS_BAARDA_HUBER',
     'POPE_TAU',
+    'HUBER',
     'HAMPEL',
     'ANDREWS_WAVE',
     'TUKEYS_BIWEIGHT',
     'DANISH',
+    'KMEANS_BAARDA_HUBER',
     'GNSS_IMU_STATIONARY',
     'HODGES_LEHMANN'
   ];

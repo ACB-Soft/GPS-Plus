@@ -227,9 +227,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     'ANDREWS_WAVE',
     'TUKEYS_BIWEIGHT',
     'DANISH',
+    'KMEANS_BAARDA_HUBER',
     'GNSS_IMU_STATIONARY',
-    'HODGES_LEHMANN',
-    'KMEANS_BAARDA_HUBER'
+    'HODGES_LEHMANN'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
@@ -243,9 +243,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       'ANDREWS_WAVE': t("7. Andrew's Wave Kestiricisi"),
       'TUKEYS_BIWEIGHT': t("8. Tukey's Biweight Kestiricisi"),
       'DANISH': t("9. Danimarka (Danish) Kestiricisi"),
+      'KMEANS_BAARDA_HUBER': t("10. Hibrit Yöntem (KMeans+Baarda)"),
       'GNSS_IMU_STATIONARY': t("11. GNSS+IMU Sabitlik Kısıtlı Filtre"),
-      'HODGES_LEHMANN': t("12. Hodges-Lehmann Kestiricisi"),
-      'KMEANS_BAARDA_HUBER': t("10. Hibrit Yöntem (KMeans+Baarda)")
+      'HODGES_LEHMANN': t("12. Hodges-Lehmann Kestiricisi")
     };
     return labels[m] || m;
   };
