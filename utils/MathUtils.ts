@@ -161,7 +161,12 @@ export function calculateResult(
       .map((s, idx) => finalSamples.includes(s) ? idx : -1)
       .filter(idx => idx !== -1);
   } else {
-    usedIndices = finalCalculatedUsedIndices;
+    // CRITICAL: Map local indices of sourceData back to original indices of samples array
+    usedIndices = finalCalculatedUsedIndices.map(localIdx => {
+      const matchSample = sourceData[localIdx];
+      const parentIdx = samples.indexOf(matchSample);
+      return parentIdx !== -1 ? parentIdx : localIdx;
+    });
   }
 
   // CRITICAL: Calculate max distance between any two points in the unfiltered samples
@@ -1690,11 +1695,31 @@ export function calculateGnssImuStationary(samples: Coordinate[]): { result: Coo
     return calculateWeightedLSE(samples);
   }
 
-  // 1. Filter out raw data where speed is 1.0 m/s or above to eliminate dynamic and multipath-affected points
-  const speedFilteredSamples = samples.filter(s => s.speed === null || s.speed === undefined || s.speed < 1.0);
+  // 1. Filter out raw data where speed is >= 1.0 m/s OR heading is present (and speed is not zero) to eliminate dynamic and multipath-affected points
+  const checkIsMoving = (s: Coordinate) => {
+    if (s.speed !== null && s.speed !== undefined) {
+      const speedNum = typeof s.speed === 'string' ? parseFloat(s.speed) : Number(s.speed);
+      if (!isNaN(speedNum) && speedNum >= 1.0) {
+        return true; // Exclude since it is moving (>= 1.0 m/s)
+      }
+    }
+    if (s.heading !== null && s.heading !== undefined) {
+      const headingNum = typeof s.heading === 'string' ? parseFloat(s.heading) : Number(s.heading);
+      if (!isNaN(headingNum)) {
+        const speedNum = s.speed !== null && s.speed !== undefined ? (typeof s.speed === 'string' ? parseFloat(s.speed) : Number(s.speed)) : 0;
+        // If they report heading and speed is not static 0 (e.g. >= 0.5 m/s), eliminate them
+        if (!isNaN(speedNum) && speedNum >= 0.5) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  const speedFilteredSamples = samples.filter(s => !checkIsMoving(s));
   const speedFilteredIndices = samples
     .map((s, idx) => ({ s, idx }))
-    .filter(item => item.s.speed === null || item.s.speed === undefined || item.s.speed < 1.0)
+    .filter(item => !checkIsMoving(item.s))
     .map(item => item.idx);
 
   let activeSamples = speedFilteredSamples;
@@ -1703,7 +1728,10 @@ export function calculateGnssImuStationary(samples: Coordinate[]): { result: Coo
   // Safeguard: if filtering left us with fewer than 4 points, select the 4 samples with the lowest speed
   if (activeSamples.length < 4) {
     const sortedBySpeed = samples
-      .map((s, idx) => ({ s, idx, speedVal: (s.speed === null || s.speed === undefined) ? 0 : s.speed }))
+      .map((s, idx) => {
+        const sVal = s.speed !== null && s.speed !== undefined ? (typeof s.speed === 'string' ? parseFloat(s.speed) : Number(s.speed)) : 0;
+        return { s, idx, speedVal: isNaN(sVal) ? 0 : sVal };
+      })
       .sort((a, b) => a.speedVal - b.speedVal);
     
     activeSamples = sortedBySpeed.slice(0, 4).map(item => item.s);
