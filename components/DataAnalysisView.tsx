@@ -50,7 +50,8 @@ const METHOD_COLORS: Record<string, string> = {
   HAMPEL: '#6366f1',
   ANDREWS_WAVE: '#f43f5e',
   TUKEYS_BIWEIGHT: '#14b8a6',
-  DANISH: '#eab308'
+  DANISH: '#eab308',
+  GNSS_IMU_STATIONARY: '#0284c7'
 };
 
 const CLUSTER_COLORS = [
@@ -225,6 +226,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     'ANDREWS_WAVE',
     'TUKEYS_BIWEIGHT',
     'DANISH',
+    'GNSS_IMU_STATIONARY',
     'KMEANS_BAARDA_HUBER'
   ], []);
 
@@ -239,6 +241,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       'ANDREWS_WAVE': t("7. Andrew's Wave Kestiricisi"),
       'TUKEYS_BIWEIGHT': t("8. Tukey's Biweight Kestiricisi"),
       'DANISH': t("9. Danimarka (Danish) Kestiricisi"),
+      'GNSS_IMU_STATIONARY': t("11. GNSS+IMU Sabitlik Kısıtlı Filtre"),
       'KMEANS_BAARDA_HUBER': t("10. Hibrit Yöntem (KMeans+Baarda)")
     };
     return labels[m] || m;
@@ -1531,7 +1534,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   'HAMPEL': 'Hampel MAD',
                                   'ANDREWS_WAVE': "Andrew's Wave",
                                   'TUKEYS_BIWEIGHT': "Tukey's Biweight",
-                                  'DANISH': 'Danish Estimator'
+                                  'DANISH': 'Danish Estimator',
+                                  'GNSS_IMU_STATIONARY': 'GNSS+IMU Stationary Filter'
                                 };
                                 return labels[m] || m;
                               };
@@ -1602,7 +1606,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               'HAMPEL': 'Hampel MAD',
                               'ANDREWS_WAVE': "Andrew's Wave",
                               'TUKEYS_BIWEIGHT': "Tukey's Biweight",
-                              'DANISH': 'Danish Estimator'
+                              'DANISH': 'Danish Estimator',
+                              'GNSS_IMU_STATIONARY': 'GNSS+IMU Stationary Filter'
                             };
                             return labels[m] || m;
                           };
@@ -1642,7 +1647,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             'HAMPEL': 'Hampel MAD',
                             'ANDREWS_WAVE': "Andrew's Wave",
                             'TUKEYS_BIWEIGHT': "Tukey's Biweight",
-                            'DANISH': 'Danish Estimator'
+                            'DANISH': 'Danish Estimator',
+                            'GNSS_IMU_STATIONARY': 'GNSS+IMU Stationary Filter'
                           };
                           return labels[m] || m;
                         };

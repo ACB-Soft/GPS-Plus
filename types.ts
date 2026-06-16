@@ -27,7 +27,8 @@ export type CalculationMethod =
   | 'HAMPEL'
   | 'ANDREWS_WAVE'
   | 'TUKEYS_BIWEIGHT'
-  | 'DANISH';
+  | 'DANISH'
+  | 'GNSS_IMU_STATIONARY';
 
 export interface SavedLocation extends Coordinate {
   id: string;

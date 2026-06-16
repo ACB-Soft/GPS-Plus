@@ -538,6 +538,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
                   <option value="ANDREWS_WAVE">{t("7. Andrew's Wave Kestiricisi")}</option>
                   <option value="TUKEYS_BIWEIGHT">{t("8. Tukey's Biweight Kestiricisi")}</option>
                   <option value="DANISH">{t("9. Danimarka (Danish) Kestiricisi")}</option>
+                  <option value="GNSS_IMU_STATIONARY">{t("11. GNSS+IMU Sabitlik Kısıtlı Filtre")}</option>
                   <option value="KMEANS_BAARDA_HUBER">{t("10. Hibrit Yöntem (KMeans+Baarda)")}</option>
                 </select>
               </div>

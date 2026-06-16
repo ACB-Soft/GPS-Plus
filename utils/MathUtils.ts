@@ -61,7 +61,7 @@ export function calculateResult(
   // - Standalone BAARDA, POPE_TAU and HAMPEL only require geodetic minimum of 4 epok.
   const requires55 = method === 'KMEANS_BAARDA_HUBER';
   const requires30 = method === 'HUBER' || method === 'KMEANS_4';
-  const requires4 = method === 'BAARDA' || method === 'POPE_TAU' || method === 'HAMPEL' || method === 'ANDREWS_WAVE' || method === 'TUKEYS_BIWEIGHT' || method === 'DANISH';
+  const requires4 = method === 'BAARDA' || method === 'POPE_TAU' || method === 'HAMPEL' || method === 'ANDREWS_WAVE' || method === 'TUKEYS_BIWEIGHT' || method === 'DANISH' || method === 'GNSS_IMU_STATIONARY';
   
   let finalMethod = method;
   let fallbackApplied = false;
@@ -138,6 +138,11 @@ export function calculateResult(
       const danishRes = calculateDanishPure(sourceData);
       resultData = danishRes.result;
       finalCalculatedUsedIndices = danishRes.usedIndices;
+      break;
+    case 'GNSS_IMU_STATIONARY':
+      const stationaryRes = calculateGnssImuStationary(sourceData);
+      resultData = stationaryRes.result;
+      finalCalculatedUsedIndices = stationaryRes.usedIndices;
       break;
     default:
       const defaultLse = calculateWeightedLSE(sourceData);
@@ -1666,6 +1671,89 @@ export function calculateDanishPure(samples: Coordinate[]): { result: Coordinate
       timestamp: Date.now()
     },
     usedIndices
+  };
+}
+
+/**
+ * GNSS + IMU Static Stationary Constraint Filter
+ * Uses the temporal variation of 3D acceleration vectors to identify stationary state epochs,
+ * filters out epochs with high vibration/motion (dynamic elements), and applies WLS for final coordinate solution.
+ */
+export function calculateGnssImuStationary(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  // If we have extremely few samples, fallback directly to weighted LSE
+  if (samples.length < 4) {
+    return calculateWeightedLSE(samples);
+  }
+
+  // Filter samples that have IMU data
+  const validSamples = samples.filter(s => 
+    s.accelX !== null && s.accelX !== undefined && 
+    s.accelY !== null && s.accelY !== undefined && 
+    s.accelZ !== null && s.accelZ !== undefined
+  );
+
+  // If there's no samples containing IMU data, print warning and use standard Weighted LSE
+  if (validSamples.length < 4) {
+    console.warn("GNSS+IMU Stationary: Not enough samples with accelerometer data. Falling back to standard WLS.");
+    return calculateWeightedLSE(samples);
+  }
+
+  // Step A: Calculate Robust Median state vector for acceleration
+  const medianX = calculateMedian(validSamples.map(s => s.accelX as number));
+  const medianY = calculateMedian(validSamples.map(s => s.accelY as number));
+  const medianZ = calculateMedian(validSamples.map(s => s.accelZ as number));
+
+  // Step B: Calculate Euclidean 3D residual acceleration (vibration/relative motion component)
+  const residuals: number[] = [];
+  const validIndicesMap: number[] = [];
+
+  for (let i = 0; i < samples.length; i++) {
+    const s = samples[i];
+    if (s.accelX !== null && s.accelX !== undefined && 
+        s.accelY !== null && s.accelY !== undefined && 
+        s.accelZ !== null && s.accelZ !== undefined) {
+      const dx = s.accelX - medianX;
+      const dy = s.accelY - medianY;
+      const dz = s.accelZ - medianZ;
+      const r = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      residuals.push(r);
+      validIndicesMap.push(i);
+    }
+  }
+
+  // Step C: Establish Nominal Noise Floor & MAD-based gate bounds
+  const medianRes = calculateMedian(residuals);
+  const absoluteDeviations = residuals.map(r => Math.abs(r - medianRes));
+  const madRes = calculateMedian(absoluteDeviations) * 1.4826;
+  
+  // High quality stationary devices have very low deviation. Noise floor defined as 0.04 m/s^2.
+  const stableMadRes = madRes > 0.04 ? madRes : 0.04; 
+  
+  // Statistical threshold: median + 2.5 * MAD (standard threshold for robust scale estimation)
+  const threshold = medianRes + 2.5 * stableMadRes;
+
+  // Step D: Separate samples based on stationary boundary
+  let stationaryIndices: number[] = [];
+  for (let i = 0; i < residuals.length; i++) {
+    if (residuals[i] <= threshold) {
+      stationaryIndices.push(validIndicesMap[i]);
+    }
+  }
+
+  // Safe Guard: If threshold filtered too many points, dynamically retrieve 4 most stationary records
+  if (stationaryIndices.length < 4) {
+    const sortedMap = residuals.map((r, i) => ({ originalIndex: validIndicesMap[i], residual: r }));
+    sortedMap.sort((a, b) => a.residual - b.residual);
+    stationaryIndices = sortedMap.slice(0, Math.min(4, sortedMap.length)).map(x => x.originalIndex);
+  }
+
+  // Step E: Apply Weighted Least Squares strictly on stationary-constrained epochs
+  const filteredSamples = stationaryIndices.map(idx => samples[idx]);
+  const lseResult = calculateWeightedLSE(filteredSamples);
+
+  return {
+    result: lseResult.result,
+    usedIndices: stationaryIndices
   };
 }
 
