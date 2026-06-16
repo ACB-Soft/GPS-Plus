@@ -58,7 +58,7 @@ export function calculateResult(
   // Let's implement the constraint checks for professional mathematical models:
   // - HUBER and KMEANS_4 require en az 30 epok.
   // - KMEANS_BAARDA_HUBER (Hybrid) require en az 55 epok.
-  // - Standalone BAARDA, POPE_TAU, HAMPEL only require geodetic minimum of 4 epok.
+  // - Standalone BAARDA, POPE_TAU and HAMPEL only require geodetic minimum of 4 epok.
   const requires55 = method === 'KMEANS_BAARDA_HUBER';
   const requires30 = method === 'HUBER' || method === 'KMEANS_4';
   const requires4 = method === 'BAARDA' || method === 'POPE_TAU' || method === 'HAMPEL';
@@ -136,10 +136,7 @@ export function calculateResult(
       .map((s, idx) => finalSamples.includes(s) ? idx : -1)
       .filter(idx => idx !== -1);
   } else {
-    usedIndices = finalCalculatedUsedIndices.map(srcIdx => {
-      const srcSample = sourceData[srcIdx];
-      return samples.indexOf(srcSample);
-    }).filter(idx => idx !== -1);
+    usedIndices = finalCalculatedUsedIndices;
   }
 
   // CRITICAL: Calculate max distance between any two points in the unfiltered samples
@@ -583,8 +580,6 @@ function calculateKMeans(samples: Coordinate[]): { result: Coordinate; usedIndic
     clusters: validClusters
   };
 }
-
-
 
 /**
  * Reusable dynamic G-Means (Gaussian Means) clustering helper.

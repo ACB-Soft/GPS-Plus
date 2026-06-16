@@ -144,7 +144,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const timeErrorChartRef = React.useRef<HTMLDivElement>(null);
   const hybridClusterChartRef = React.useRef<HTMLDivElement>(null);
   const clusterChartRef = React.useRef<HTMLDivElement>(null);
-  const stDbscanChartRef = React.useRef<HTMLDivElement>(null);
   const baardaChartRef = React.useRef<HTMLDivElement>(null);
 
   const [preciseN, setPreciseN] = useState<string>(''); // Northing (X)
@@ -171,11 +170,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [customTimeSeriesStep, setCustomTimeSeriesStep] = useState<string>('auto'); // 'auto', '0.1', '0.2', '0.5', '1.0', '2.0'
   const [customTimeSeriesFontSize, setCustomTimeSeriesFontSize] = useState<string>('7'); // '6', '7', '8', '9', '10', '12'
   const [customTimeSeriesDotSize, setCustomTimeSeriesDotSize] = useState<string>('2.5'); // '1.0', '1.5', '2.0', '2.5', '3.0', '4.0', '5.0', '6.0'
-
-  // DBSCAN Algoritma Ayarları
-  const [dbscanEpsSpatial, setDbscanEpsSpatial] = useState<string>('auto'); // 'auto', '0.5', '1.0', '2.0', '3.0', '5.0', '10.0'
-  const [dbscanEpsTemporal, setDbscanEpsTemporal] = useState<string>('auto'); // 'auto', '5', '10', '30', '60', '300', 'Infinity'
-  const [dbscanMinPts, setDbscanMinPts] = useState<string>('4'); // '2', '3', '4', '5', '10', '15'
 
   const bestMethod = useMemo(() => {
     if (!analysisResults || analysisResults.length === 0) return null;
@@ -301,11 +295,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
     const results = methods.map(method => {
       // 1. Calculate point for this method
-      const { result, clusters, usedIndices } = calculateResult(location.samples!, method, accuracyLimit, false, {
-        dbscanEpsSpatial,
-        dbscanEpsTemporal,
-        dbscanMinPts
-      });
+      const { result, clusters, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
       
       if ((method === 'KMEANS_4' || method === 'KMEANS_BAARDA_HUBER') && clusters) {
         clusterResults = clusters;
@@ -594,8 +584,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       usedIndices: usedIndices || []
     };
   }, [location, t, analysisType, appliedPreciseN, appliedPreciseE, useLocal]);
-
-
 
   const clusterBounds = useMemo(() => {
     if (!hybridClusterChartData || hybridClusterChartData.points.length === 0) {
@@ -1528,7 +1516,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   'WEIGHTED_LSE': 'Weighted LSE',
                                   'HUBER': 'Huber',
                                   'KMEANS_4': 'KMeans',
-                                  'ST_DBSCAN': 'ST-DBSCAN',
                                   'BAARDA': 'Baarda',
                                   'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
                                   'POPE_TAU': "Pope's Tau",
@@ -1826,7 +1813,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 const clusterColors = ['#3b82f6', '#a855f7', '#eab308', '#ec4899', '#14b8a6', '#f97316'];
                                 return hybridClusterChartData?.clusters.map((clusterIndices, cIdx) => {
                                   if (clusterIndices.length === 0) return null;
-                                  const ptsOfCluster = hybridClusterChartData?.points ? hybridClusterChartData.points.filter(p => clusterIndices.includes(p.id - 1)) : [];
+                                  const ptsOfCluster = hybridClusterChartData.points.filter(p => clusterIndices.includes(p.id - 1));
                                   return (
                                     <Scatter 
                                       key={`kmeans-scatter-${cIdx}`}
@@ -1881,318 +1868,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             return (
                               <>
                                 {elements}
-                                {analysisType === 'precise' && (
-                                  <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
-                                    <div 
-                                      className="flex items-center justify-center bg-[#10b981] border border-[#059669] text-white font-black shrink-0 shadow-xs rotate-45" 
-                                      style={{ 
-                                        width: `${parseFloat(customScatterFontSize) + 2.5}px`, 
-                                        height: `${parseFloat(customScatterFontSize) + 2.5}px`,
-                                        borderRadius: '3px',
-                                        marginLeft: '2px',
-                                        marginRight: '2px'
-                                      }}
-                                    >
-                                      <span className="text-[6px] font-black -rotate-45 block transform">REF</span>
-                                    </div>
-                                    <div className="min-w-0 font-sans">
-                                      <p className="font-extrabold text-slate-800 uppercase tracking-wider truncate leading-none" style={{ fontSize: `${parseFloat(customScatterFontSize) - 0.5}px` }}>
-                                        PRECISE
-                                      </p>
-                                      <p className="font-bold text-emerald-600 tracking-wider leading-none mt-0.5 truncate" style={{ fontSize: `${parseFloat(customScatterFontSize) - 1.5}px` }}>
-                                        COORDINATE
-                                      </p>
-                                    </div>
-                                  </div>
-                                )}
-                              </>
-                            );
-                          })()}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 1.5. ST-DBSCAN Spatial-Temporal Clustering Scatter Chart */}
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center px-1">
-                      <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">
-                        ST-DBSCAN Spatial-Temporal Clustering Plot
-                      </span>
-                      <button 
-                        onClick={() => exportChart(stDbscanChartRef, 'gps-plus-stdbscan-clusters')}
-                        type="button"
-                        className="bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 cursor-pointer flex items-center gap-1"
-                      >
-                        <i className="fas fa-camera text-blue-400"></i> {t("Download PNG")}
-                      </button>
-                    </div>
-
-                    {/* ST-DBSCAN Parameter Tuning Panel */}
-                    <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3 flex flex-col gap-2.5 shadow-xs">
-                      <div className="flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
-                        <i className="fas fa-cogs text-[10px] text-indigo-500"></i>
-                        <span className="text-[8.5px] font-black text-slate-700 uppercase tracking-wider">{t("ST-DBSCAN INCE AYAR PANELI")}</span>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[8px] font-extrabold text-slate-400 uppercase">{t("Menzil Eşiği (Eps1)")}</span>
-                          <select 
-                            value={dbscanEpsSpatial} 
-                            onChange={(e) => setDbscanEpsSpatial(e.target.value)}
-                            className="bg-white hover:bg-slate-50 border border-slate-200/80 text-[9px] font-extrabold rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
-                          >
-                            <option value="auto">Auto (Adaptive)</option>
-                            <option value="0.5">±0.5m (Çok Hassas)</option>
-                            <option value="1.0">±1.0m (Hassas)</option>
-                            <option value="1.5">±1.5m</option>
-                            <option value="2.0">±2.0m (Varsayılan)</option>
-                            <option value="3.0">±3.0m</option>
-                            <option value="5.0">±5.0m</option>
-                            <option value="7.5">±7.5m</option>
-                            <option value="10.0">±10.0m (Dağınık)</option>
-                          </select>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[8px] font-extrabold text-slate-400 uppercase">{t("Zaman Eşiği (Eps2)")}</span>
-                          <select 
-                            value={dbscanEpsTemporal} 
-                            onChange={(e) => setDbscanEpsTemporal(e.target.value)}
-                            className="bg-white hover:bg-slate-50 border border-slate-200/80 text-[9px] font-extrabold rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
-                          >
-                            <option value="auto">Auto (Suksesif Delta)</option>
-                            <option value="5">5 saniye</option>
-                            <option value="12">12 saniye</option>
-                            <option value="30">30 saniye</option>
-                            <option value="60">1 dakika</option>
-                            <option value="300">5 dakika</option>
-                            <option value="600">10 dakika</option>
-                            <option value="Infinity">Yok Say (Sadece Konumsal)</option>
-                          </select>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[8px] font-extrabold text-slate-400 uppercase">{t("Yoğunluk Sınırı (MinPts)")}</span>
-                          <select 
-                            value={dbscanMinPts} 
-                            onChange={(e) => setDbscanMinPts(e.target.value)}
-                            className="bg-white hover:bg-slate-50 border border-slate-200/80 text-[9px] font-extrabold rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
-                          >
-                            <option value="2">2 (Min Gözlem)</option>
-                            <option value="3">3</option>
-                            <option value="4">4 (Geodezik Min)</option>
-                            <option value="5">5</option>
-                            <option value="8">8</option>
-                            <option value="12">12</option>
-                            <option value="15">15</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div 
-                      ref={stDbscanChartRef}
-                      className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] aspect-square mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
-                    >
-                      {/* Header */}
-                      <div className="flex justify-between items-center border-b border-slate-900/10 pb-1.5 min-h-0 shrink-0">
-                        <div className="min-w-0">
-                          <h2 className="text-slate-900 font-extrabold text-[9px] uppercase tracking-wider leading-none font-sans">
-                            ACB LABS ST-DBSCAN CLUSTERING PLAN
-                          </h2>
-                          <p className="text-slate-400 text-[6px] font-bold uppercase tracking-widest mt-0.5 font-mono">
-                            SPATIAL-TEMPORAL TRAJECTORY DENSITY GROUPS
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Scatter Plot */}
-                      <div className="flex-1 min-h-0 min-w-0 w-full relative">
-                        {stDbscanClusterChartData && stDbscanClusterChartData.points.length > 0 ? (
-                          <ResponsiveContainer width="100%" height="100%">
-                            <ScatterChart margin={{ top: 12, right: 12, bottom: 20, left: -5 }}>
-                              <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" horizontal={true} vertical={true} />
-                              <XAxis 
-                                type="number" 
-                                dataKey="dx" 
-                                name="ΔE" 
-                                domain={[-maxTickLimit + xOffset, maxTickLimit + xOffset]} 
-                                ticks={xTicks}
-                                interval={0}
-                                angle={-90}
-                                textAnchor="end"
-                                height={32}
-                                tickFormatter={(val) => {
-                                  const isInteger = Math.abs(val - Math.round(val)) < 0.01;
-                                  return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
-                                }}
-                                tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155', dy: 2.5, dx: -3}}
-                                axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
-                                tickLine={{ stroke: '#475569', strokeWidth: 1 }}
-                              />
-                              <YAxis 
-                                type="number" 
-                                dataKey="dy" 
-                                name="ΔN" 
-                                domain={[-maxTickLimit + yOffset, maxTickLimit + yOffset]} 
-                                ticks={yTicks}
-                                interval={0}
-                                tickFormatter={(val) => {
-                                  const isInteger = Math.abs(val - Math.round(val)) < 0.01;
-                                  return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
-                                }}
-                                tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155'}} 
-                                axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
-                                tickLine={{ stroke: '#475569', strokeWidth: 1 }}
-                              />
-                              <ZAxis type="number" range={[15, 15]} />
-                              <Tooltip 
-                                cursor={{ strokeDasharray: '3 3', stroke: '#475569' }} 
-                                content={({ active, payload }) => {
-                                  if (active && payload && payload.length) {
-                                    const data = payload[0].payload;
-                                    return (
-                                      <div className="bg-slate-900 border border-slate-800 text-white p-2.5 rounded-lg shadow-xl z-50 text-[8px] text-left">
-                                        <p className="font-bold uppercase text-blue-400 mb-0.5 pb-0.5 border-b border-slate-800 leading-none">
-                                          Epoch #{data.id}
-                                        </p>
-                                        <div className="space-y-0.5 font-mono">
-                                          <div className="flex justify-between gap-2">
-                                            <span className="opacity-60 text-[7px] uppercase">ST-DBSCAN:</span>
-                                            <span className="font-bold text-indigo-400">
-                                              {data.clusterId === -1 ? "Noise / Outlier" : `Cluster ${getClusterLetterLabel(data.clusterId)}`}
-                                            </span>
-                                          </div>
-                                          <div className="flex justify-between gap-2">
-                                            <span className="opacity-60 text-[7px] uppercase">ΔE (Easting):</span>
-                                            <span className="font-bold text-emerald-400">{data.dx.toFixed(4)} m</span>
-                                          </div>
-                                          <div className="flex justify-between gap-2">
-                                            <span className="opacity-60 text-[7px] uppercase">ΔN (Northing):</span>
-                                            <span className="font-bold text-sky-400">{data.dy.toFixed(4)} m</span>
-                                          </div>
-                                          <div className="flex justify-between gap-2">
-                                            <span className="opacity-60 text-[7px] uppercase">Baarda Filter:</span>
-                                            <span className={`font-bold ${data.passedBaarda ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                              {data.passedBaarda ? "PASSED" : "REJECTED"}
-                                            </span>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    );
-                                  }
-                                  return null;
-                                }}
-                              />
-                              <ReferenceLine x={0} stroke="#475569" strokeWidth={1} strokeDasharray="3 3" />
-                              <ReferenceLine y={0} stroke="#475569" strokeWidth={1} strokeDasharray="3 3" />
-                              
-                              {/* Reference Point / Ground Truth (REF) */}
-                              {analysisType === 'precise' && (
-                                <Scatter 
-                                  name="GROUND TRUTH (REF)" 
-                                  data={[{ dx: 0, dy: 0 }]} 
-                                  fill="#10b981" 
-                                  shape="diamond" 
-                                  line={false}
-                                >
-                                  <Cell fill="#10b981" stroke="#059669" strokeWidth={1.5} />
-                                </Scatter>
-                              )}
-
-                              {/* Draw Each Cluster in its own color layer */}
-                              {(() => {
-                                const clusterColors = ['#eab308', '#a855f7', '#3b82f6', '#ec4899', '#14b8a6', '#f97316'];
-                                return stDbscanClusterChartData?.clusters.map((clusterIndices, cIdx) => {
-                                  if (clusterIndices.length === 0) return null;
-                                  const ptsOfCluster = stDbscanClusterChartData?.points ? stDbscanClusterChartData.points.filter(p => clusterIndices.includes(p.id - 1)) : [];
-                                  return (
-                                    <Scatter 
-                                      key={`stdbscan-scatter-${cIdx}`}
-                                      name={`Cluster ${getClusterLetterLabel(cIdx)}`} 
-                                      data={ptsOfCluster} 
-                                      fill={clusterColors[cIdx % clusterColors.length]}
-                                      shape={<RawPointShape r={parseFloat(customDotSize)} />}
-                                      onClick={(pt) => setActiveClusterPointId(pt.id)}
-                                      className="cursor-pointer"
-                                    />
-                                  );
-                                });
-                              })()}
-
-                              {/* Draw Noisy/Discarded Points (ST-DBSCAN Noise) */}
-                              {(() => {
-                                const noisePts = stDbscanClusterChartData?.points ? stDbscanClusterChartData.points.filter(p => p.clusterId === -1) : [];
-                                if (noisePts.length === 0) return null;
-                                return (
-                                  <Scatter 
-                                    key="stdbscan-scatter-noise"
-                                    name="Noise / Outliers" 
-                                    data={noisePts} 
-                                    fill="#94a3b8"
-                                    shape={<RawPointShape r={parseFloat(customDotSize)} />}
-                                    onClick={(pt) => setActiveClusterPointId(pt.id)}
-                                    className="cursor-pointer opacity-30 hover:opacity-100"
-                                  />
-                                );
-                              })()}
-                            </ScatterChart>
-                          </ResponsiveContainer>
-                        ) : (
-                          <div className="flex items-center justify-center h-full text-slate-400 font-bold text-xs uppercase tracking-widest">NO DATA FOUND</div>
-                        )}
-                      </div>
-
-                      {/* Bottom Panel: Shrunk & Very Compact Legend */}
-                      <div className="shrink-0 border-t border-slate-100 pt-3 flex flex-col gap-2 w-full">
-                        <div className="grid grid-cols-3 gap-x-2 gap-y-1.5 font-sans">
-                          {(() => {
-                            const clusterColors = ['#eab308', '#a855f7', '#3b82f6', '#ec4899', '#14b8a6', '#f97316'];
-                            const fs = parseFloat(customScatterFontSize);
-                            const badgeSize = `${fs + 6.5}px`;
-                            const badgeFontSize = `${fs - 0.5}px`;
-                            const titleFontSize = `${fs - 1}px`;
-                            const subFontSize = `${fs - 2}px`;
-                            
-                            const elements = (stDbscanClusterChartData?.clusters || []).map((clusterIndices, cIdx) => {
-                              if (clusterIndices.length === 0) return null;
-                              const color = clusterColors[cIdx % clusterColors.length];
-                              return (
-                                <div key={`stdbscan-legend-${cIdx}`} className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
-                                  <div className="flex items-center justify-center rounded font-black text-white shrink-0 shadow-xs" style={{ backgroundColor: color, width: badgeSize, height: badgeSize, fontSize: badgeFontSize }}>
-                                    {getClusterLetterLabel(cIdx)}
-                                  </div>
-                                  <div className="min-w-0 font-sans">
-                                    <p className="font-extrabold text-slate-800 uppercase tracking-tight truncate leading-none" style={{ fontSize: titleFontSize }}>
-                                      CLUSTER {getClusterLetterLabel(cIdx)}
-                                    </p>
-                                    <p className="font-bold text-indigo-600 font-mono tracking-tight leading-none mt-0.5" style={{ fontSize: subFontSize }}>
-                                      {clusterIndices.length} EPOCHS
-                                    </p>
-                                  </div>
-                                </div>
-                              );
-                            }).filter(Boolean);
-
-                            const totalNoise = stDbscanClusterChartData?.points ? stDbscanClusterChartData.points.filter(p => p.clusterId === -1).length : 0;
-
-                            return (
-                              <>
-                                {elements}
-                                {totalNoise > 0 && (
-                                  <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
-                                    <div className="flex items-center justify-center rounded font-black text-white bg-slate-400 shrink-0 shadow-xs" style={{ width: badgeSize, height: badgeSize, fontSize: badgeFontSize }}>
-                                      Ø
-                                    </div>
-                                    <div className="min-w-0 font-sans">
-                                      <p className="font-extrabold text-slate-500 uppercase tracking-tight truncate leading-none" style={{ fontSize: titleFontSize }}>
-                                        NOISE
-                                      </p>
-                                      <p className="font-bold text-slate-500 font-mono tracking-tight leading-none mt-0.5" style={{ fontSize: subFontSize }}>
-                                        {totalNoise} EPOCHS
-                                      </p>
-                                    </div>
-                                  </div>
-                                )}
                                 {analysisType === 'precise' && (
                                   <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
                                     <div 
@@ -2388,8 +2063,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             const badgeFontSize = `${fs - 0.5}px`;
                             const titleFontSize = `${fs - 1}px`;
                             const subFontSize = `${fs - 2}px`;
-                            const approvedCount = hybridClusterChartData?.points ? hybridClusterChartData.points.filter(p => p.passedBaarda).length : 0;
-                            const rejectedCount = hybridClusterChartData?.points ? hybridClusterChartData.points.filter(p => !p.passedBaarda).length : 0;
+                            const approvedCount = hybridClusterChartData.points.filter(p => p.passedBaarda).length;
+                            const rejectedCount = hybridClusterChartData.points.filter(p => !p.passedBaarda).length;
                             return (
                               <>
                                 <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
