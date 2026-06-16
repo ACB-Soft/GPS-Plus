@@ -176,6 +176,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [customTimeSeriesFontSize, setCustomTimeSeriesFontSize] = useState<string>('7'); // '6', '7', '8', '9', '10', '12'
   const [customTimeSeriesDotSize, setCustomTimeSeriesDotSize] = useState<string>('2.5'); // '1.0', '1.5', '2.0', '2.5', '3.0', '4.0', '5.0', '6.0'
 
+  // Kümeleme Grafiği özelleştirme seçenekleri (Bağımsızlaştırma için)
+  const [customClusterRange, setCustomClusterRange] = useState<string>('auto');
+  const [customClusterStep, setCustomClusterStep] = useState<string>('auto');
+  const [customClusterFontSize, setCustomClusterFontSize] = useState<string>('7.5');
+  const [customClusterDotSize, setCustomClusterDotSize] = useState<string>('2.5');
+  const [clusterXOffset, setClusterXOffset] = useState<number>(0);
+  const [clusterYOffset, setClusterYOffset] = useState<number>(0);
+
   const bestMethod = useMemo(() => {
     if (!analysisResults || analysisResults.length === 0) return null;
     const sorted = [...analysisResults]
@@ -796,6 +804,67 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     }
     return ticks;
   }, [maxTickLimit, customScatterStep]);
+
+  const maxClusterTickLimit = useMemo(() => {
+    if (customClusterRange !== 'auto') {
+      return parseFloat(customClusterRange);
+    }
+    return Math.max(3.0, Math.ceil(distributionData.range * 2) / 2);
+  }, [distributionData.range, customClusterRange]);
+
+  const clusterXTicks = useMemo(() => {
+    let step = 0.5;
+    if (customClusterStep !== 'auto') {
+      step = parseFloat(customClusterStep);
+    } else {
+      if (maxClusterTickLimit <= 1.0) step = 0.2;
+      else if (maxClusterTickLimit <= 2.0) step = 0.5;
+      else if (maxClusterTickLimit <= 4.0) step = 0.5;
+      else if (maxClusterTickLimit <= 10.0) step = 1.0;
+      else step = 2.0;
+    }
+    const ticks = [];
+    const minVal = -maxClusterTickLimit + clusterXOffset;
+    const maxVal = maxClusterTickLimit + clusterXOffset;
+    const start = Math.floor(minVal / step) * step;
+    let current = start;
+    let loops = 0;
+    while (current <= maxVal + 0.001 && loops < 200) {
+      if (current >= minVal - 0.001) {
+        ticks.push(parseFloat(current.toFixed(2)));
+      }
+      current += step;
+      loops++;
+    }
+    return ticks;
+  }, [maxClusterTickLimit, customClusterStep, clusterXOffset]);
+
+  const clusterYTicks = useMemo(() => {
+    let step = 0.5;
+    if (customClusterStep !== 'auto') {
+      step = parseFloat(customClusterStep);
+    } else {
+      if (maxClusterTickLimit <= 1.0) step = 0.2;
+      else if (maxClusterTickLimit <= 2.0) step = 0.5;
+      else if (maxClusterTickLimit <= 4.0) step = 0.5;
+      else if (maxClusterTickLimit <= 10.0) step = 1.0;
+      else step = 2.0;
+    }
+    const ticks = [];
+    const minVal = -maxClusterTickLimit + clusterYOffset;
+    const maxVal = maxClusterTickLimit + clusterYOffset;
+    const start = Math.floor(minVal / step) * step;
+    let current = start;
+    let loops = 0;
+    while (current <= maxVal + 0.001 && loops < 200) {
+      if (current >= minVal - 0.001) {
+        ticks.push(parseFloat(current.toFixed(2)));
+      }
+      current += step;
+      loops++;
+    }
+    return ticks;
+  }, [maxClusterTickLimit, customClusterStep, clusterYOffset]);
 
   const timeSeriesChartData = useMemo(() => {
     return chartData.map((point, index) => {
@@ -1709,6 +1778,138 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   </span>
                 </div>
 
+                {/* Kümeleme Grafiği Ayarları Config Panel */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-3 text-slate-800 flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between text-xs shadow-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500 shrink-0">
+                      <i className="fas fa-sliders-h text-[9px]"></i>
+                    </div>
+                    <span className="font-extrabold text-[9px] uppercase text-slate-700 tracking-wider font-sans">{t("KÜMELEME GRAFİK AYARLARI")}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2.5 items-center justify-start lg:justify-end">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase font-sans">{t("Eksen:")}</span>
+                      <select 
+                        value={customClusterRange} 
+                        onChange={(e) => setCustomClusterRange(e.target.value)}
+                        className="bg-slate-100 hover:bg-slate-200 border border-slate-200/60 text-[9px] font-black rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="1.0">±1.0m</option>
+                        <option value="2.0">±2.0m</option>
+                        <option value="3.0">±3.0m</option>
+                        <option value="4.0">±4.0m</option>
+                        <option value="5.0">±5.0m</option>
+                        <option value="10.0">±10.0m</option>
+                        <option value="15.0">±15.0m</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase font-sans">{t("Kılavuz Adımı:")}</span>
+                      <select 
+                        value={customClusterStep} 
+                        onChange={(e) => setCustomClusterStep(e.target.value)}
+                        className="bg-slate-100 hover:bg-slate-200 border border-slate-200/60 text-[9px] font-black rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="0.1">0.1m</option>
+                        <option value="0.2">0.2m</option>
+                        <option value="0.5">0.5m</option>
+                        <option value="1.0">1.0m</option>
+                        <option value="2.0">2.0m</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase font-sans">{t("Yazı Boyutu:")}</span>
+                      <select 
+                        value={customClusterFontSize} 
+                        onChange={(e) => setCustomClusterFontSize(e.target.value)}
+                        className="bg-slate-100 hover:bg-slate-200 border border-slate-200/60 text-[9px] font-black rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
+                      >
+                        <option value="6">6px</option>
+                        <option value="7">7px</option>
+                        <option value="7.5">7.5px</option>
+                        <option value="8">8px</option>
+                        <option value="9">9px</option>
+                        <option value="10">10px</option>
+                        <option value="12">12px</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase font-sans">{t("Nokta Boyutu:")}</span>
+                      <select 
+                        value={customClusterDotSize} 
+                        onChange={(e) => setCustomClusterDotSize(e.target.value)}
+                        className="bg-slate-100 hover:bg-slate-200 border border-slate-200/60 text-[9px] font-black rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
+                      >
+                        <option value="1.0">1.0px</option>
+                        <option value="1.5">1.5px</option>
+                        <option value="2.0">2.0px</option>
+                        <option value="2.5">2.5px</option>
+                        <option value="3.0">3.0px</option>
+                        <option value="3.5">3.5px</option>
+                        <option value="4.0">4.0px</option>
+                        <option value="5.0">5.0px</option>
+                        <option value="6.0">6.0px</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Kümeleme Eksen Kaydırma (Offset Navigation) Kontrolleri */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-3 text-slate-800 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between text-xs shadow-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 shrink-0">
+                      <i className="fas fa-arrows-alt text-[9px]"></i>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-extrabold text-[9px] uppercase text-slate-700 tracking-wider font-sans">{t("KÜMELEME EKSEN KAYDIRMA")}</span>
+                      <span className="text-[7.5px] font-bold text-slate-400 uppercase font-mono tracking-wide">
+                        OFFSET: X = {clusterXOffset >= 0 ? `+${clusterXOffset}` : clusterXOffset}m • Y = {clusterYOffset >= 0 ? `+${clusterYOffset}` : clusterYOffset}m
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-center gap-1.5 self-center">
+                    <button
+                      onClick={() => setClusterXOffset(prev => prev - 1.0)}
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-8 rounded-lg flex items-center justify-center transition-all active:scale-90"
+                      title={t("Sola Kaydır (X -1m)")}
+                    >
+                      <i className="fas fa-chevron-left"></i>
+                    </button>
+                    <div className="flex flex-col gap-1 items-center justify-center">
+                      <button
+                        onClick={() => setClusterYOffset(prev => prev + 1.0)}
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-3.5 rounded flex items-center justify-center transition-all active:scale-90 focus:outline-none"
+                        title={t("Yukarı Kaydır (Y +1m)")}
+                      >
+                        <i className="fas fa-chevron-up text-[7px]"></i>
+                      </button>
+                      <button
+                        onClick={() => setClusterYOffset(prev => prev - 1.0)}
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-3.5 rounded flex items-center justify-center transition-all active:scale-90 focus:outline-none"
+                        title={t("Aşağı Kaydır (Y -1m)")}
+                      >
+                        <i className="fas fa-chevron-down text-[7px]"></i>
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => setClusterXOffset(prev => prev + 1.0)}
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-8 rounded-lg flex items-center justify-center transition-all active:scale-90"
+                      title={t("Sağa Kaydır (X +1m)")}
+                    >
+                      <i className="fas fa-chevron-right"></i>
+                    </button>
+                    <button
+                      onClick={() => { setClusterXOffset(0); setClusterYOffset(0); }}
+                      className="ml-1 bg-rose-50 hover:bg-rose-100 text-rose-600 font-black text-[9px] uppercase px-2 py-2 rounded-lg flex items-center justify-center gap-1 transition-all active:scale-90"
+                      title={t("Eksenleri Sıfırla")}
+                    >
+                      <i className="fas fa-redo-alt"></i> <span className="text-[7.5px] font-extrabold">{t("SIFIRLA")}</span>
+                    </button>
+                  </div>
+                </div>
+
                 <div className="flex flex-col gap-6">
                   {/* 1. K-Means Cluster Classification Scatter Chart */}
                   <div className="space-y-2">
@@ -1751,8 +1952,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 type="number" 
                                 dataKey="dx" 
                                 name="ΔE" 
-                                domain={[-maxTickLimit + xOffset, maxTickLimit + xOffset]} 
-                                ticks={xTicks}
+                                domain={[-maxClusterTickLimit + clusterXOffset, maxClusterTickLimit + clusterXOffset]} 
+                                ticks={clusterXTicks}
                                 interval={0}
                                 angle={-90}
                                 textAnchor="end"
@@ -1761,7 +1962,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   const isInteger = Math.abs(val - Math.round(val)) < 0.01;
                                   return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
                                 }}
-                                tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155', dy: 2.5, dx: -3}}
+                                tick={{fontSize: parseFloat(customClusterFontSize), fontWeight: 700, fill: '#334155', dy: 2.5, dx: -3}}
                                 axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
                                 tickLine={{ stroke: '#475569', strokeWidth: 1 }}
                               />
@@ -1769,14 +1970,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 type="number" 
                                 dataKey="dy" 
                                 name="ΔN" 
-                                domain={[-maxTickLimit + yOffset, maxTickLimit + yOffset]} 
-                                ticks={yTicks}
+                                domain={[-maxClusterTickLimit + clusterYOffset, maxClusterTickLimit + clusterYOffset]} 
+                                ticks={clusterYTicks}
                                 interval={0}
                                 tickFormatter={(val) => {
                                   const isInteger = Math.abs(val - Math.round(val)) < 0.01;
                                   return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
                                 }}
-                                tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155'}} 
+                                tick={{fontSize: parseFloat(customClusterFontSize), fontWeight: 700, fill: '#334155'}} 
                                 axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
                                 tickLine={{ stroke: '#475569', strokeWidth: 1 }}
                               />
@@ -1845,7 +2046,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                       name={`Cluster ${getClusterLetterLabel(cIdx)}`} 
                                       data={ptsOfCluster} 
                                       fill={clusterColors[cIdx % clusterColors.length]}
-                                      shape={<RawPointShape r={parseFloat(customDotSize)} />}
+                                      shape={<RawPointShape r={parseFloat(customClusterDotSize)} />}
                                       onClick={(pt) => setActiveClusterPointId(pt.id)}
                                       className="cursor-pointer"
                                     />
@@ -1864,7 +2065,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         <div className="grid grid-cols-3 gap-x-2 gap-y-1.5 font-sans">
                           {(() => {
                             const clusterColors = ['#3b82f6', '#a855f7', '#eab308', '#ec4899', '#14b8a6', '#f97316'];
-                            const fs = parseFloat(customScatterFontSize);
+                            const fs = parseFloat(customClusterFontSize);
                             const badgeSize = `${fs + 6.5}px`;
                             const badgeFontSize = `${fs - 0.5}px`;
                             const titleFontSize = `${fs - 1}px`;
@@ -1898,8 +2099,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                     <div 
                                       className="flex items-center justify-center bg-[#10b981] border border-[#059669] text-white font-black shrink-0 shadow-xs rotate-45" 
                                       style={{ 
-                                        width: `${parseFloat(customScatterFontSize) + 2.5}px`, 
-                                        height: `${parseFloat(customScatterFontSize) + 2.5}px`,
+                                        width: `${parseFloat(customClusterFontSize) + 2.5}px`, 
+                                        height: `${parseFloat(customClusterFontSize) + 2.5}px`,
                                         borderRadius: '3px',
                                         marginLeft: '2px',
                                         marginRight: '2px'
@@ -1908,10 +2109,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                       <span className="text-[6px] font-black -rotate-45 block transform">REF</span>
                                     </div>
                                     <div className="min-w-0 font-sans">
-                                      <p className="font-extrabold text-slate-800 uppercase tracking-wider truncate leading-none" style={{ fontSize: `${parseFloat(customScatterFontSize) - 0.5}px` }}>
+                                      <p className="font-extrabold text-slate-800 uppercase tracking-wider truncate leading-none" style={{ fontSize: `${parseFloat(customClusterFontSize) - 0.5}px` }}>
                                         PRECISE
                                       </p>
-                                      <p className="font-bold text-emerald-600 tracking-wider leading-none mt-0.5 truncate" style={{ fontSize: `${parseFloat(customScatterFontSize) - 1.5}px` }}>
+                                      <p className="font-bold text-emerald-600 tracking-wider leading-none mt-0.5 truncate" style={{ fontSize: `${parseFloat(customClusterFontSize) - 1.5}px` }}>
                                         COORDINATE
                                       </p>
                                     </div>
@@ -1984,8 +2185,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 type="number" 
                                 dataKey="dx" 
                                 name="ΔE" 
-                                domain={[-maxTickLimit + xOffset, maxTickLimit + xOffset]} 
-                                ticks={xTicks}
+                                domain={[-maxClusterTickLimit + clusterXOffset, maxClusterTickLimit + clusterXOffset]} 
+                                ticks={clusterXTicks}
                                 interval={0}
                                 angle={-90}
                                 textAnchor="end"
@@ -1994,7 +2195,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   const isInteger = Math.abs(val - Math.round(val)) < 0.01;
                                   return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
                                 }}
-                                tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155', dy: 2.5, dx: -3}}
+                                tick={{fontSize: parseFloat(customClusterFontSize), fontWeight: 700, fill: '#334155', dy: 2.5, dx: -3}}
                                 axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
                                 tickLine={{ stroke: '#475569', strokeWidth: 1 }}
                               />
@@ -2002,14 +2203,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 type="number" 
                                 dataKey="dy" 
                                 name="ΔN" 
-                                domain={[-maxTickLimit + yOffset, maxTickLimit + yOffset]} 
-                                ticks={yTicks}
+                                domain={[-maxClusterTickLimit + clusterYOffset, maxClusterTickLimit + clusterYOffset]} 
+                                ticks={clusterYTicks}
                                 interval={0}
                                 tickFormatter={(val) => {
                                   const isInteger = Math.abs(val - Math.round(val)) < 0.01;
                                   return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
                                 }}
-                                tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155'}} 
+                                tick={{fontSize: parseFloat(customClusterFontSize), fontWeight: 700, fill: '#334155'}} 
                                 axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
                                 tickLine={{ stroke: '#475569', strokeWidth: 1 }}
                               />
@@ -2071,7 +2272,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 name="APPROVED" 
                                 data={hybridClusterChartData.points.filter(p => p.passedBaarda)} 
                                 fill="#10b981"
-                                shape={<RawPointShape r={parseFloat(customDotSize)} />}
+                                shape={<RawPointShape r={parseFloat(customClusterDotSize)} />}
                                 onClick={(pt) => setActiveClusterPointId(pt.id)}
                                 className="cursor-pointer"
                               />
@@ -2081,7 +2282,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 name="OUTLIERS" 
                                 data={hybridClusterChartData.points.filter(p => !p.passedBaarda)} 
                                 fill="#ef4444"
-                                shape={<RawPointShape r={parseFloat(customDotSize)} />}
+                                shape={<RawPointShape r={parseFloat(customClusterDotSize)} />}
                                 onClick={(pt) => setActiveClusterPointId(pt.id)}
                                 className="cursor-pointer"
                               />
@@ -2096,7 +2297,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       <div className="shrink-0 border-t border-slate-100 pt-3 flex flex-col gap-2 w-full">
                         <div className="grid grid-cols-3 gap-x-2 gap-y-1.5 font-sans">
                           {(() => {
-                            const fs = parseFloat(customScatterFontSize);
+                            const fs = parseFloat(customClusterFontSize);
                             const badgeSize = `${fs + 6.5}px`;
                             const badgeFontSize = `${fs - 0.5}px`;
                             const titleFontSize = `${fs - 1}px`;
@@ -2138,8 +2339,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                     <div 
                                       className="flex items-center justify-center bg-[#10b981] border border-[#059669] text-white font-black shrink-0 shadow-xs rotate-45" 
                                       style={{ 
-                                        width: `${parseFloat(customScatterFontSize) + 2.5}px`, 
-                                        height: `${parseFloat(customScatterFontSize) + 2.5}px`,
+                                        width: `${parseFloat(customClusterFontSize) + 2.5}px`, 
+                                        height: `${parseFloat(customClusterFontSize) + 2.5}px`,
                                         borderRadius: '3px',
                                         marginLeft: '2px',
                                         marginRight: '2px'
@@ -2148,10 +2349,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                       <span className="text-[6px] font-black -rotate-45 block transform">REF</span>
                                     </div>
                                     <div className="min-w-0 font-sans">
-                                      <p className="font-extrabold text-slate-800 uppercase tracking-wider truncate leading-none" style={{ fontSize: `${parseFloat(customScatterFontSize) - 0.5}px` }}>
+                                      <p className="font-extrabold text-slate-800 uppercase tracking-wider truncate leading-none" style={{ fontSize: `${parseFloat(customClusterFontSize) - 0.5}px` }}>
                                         PRECISE
                                       </p>
-                                      <p className="font-bold text-emerald-600 tracking-wider leading-none mt-0.5 truncate" style={{ fontSize: `${parseFloat(customScatterFontSize) - 1.5}px` }}>
+                                      <p className="font-bold text-emerald-600 tracking-wider leading-none mt-0.5 truncate" style={{ fontSize: `${parseFloat(customClusterFontSize) - 1.5}px` }}>
                                         COORDINATE
                                       </p>
                                     </div>
