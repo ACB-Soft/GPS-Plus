@@ -1690,24 +1690,50 @@ export function calculateGnssImuStationary(samples: Coordinate[]): { result: Coo
     return calculateWeightedLSE(samples);
   }
 
-  // Filter samples that have IMU data and speed under 1.0 m/s (stationary state constraint)
-  const validSamples = samples.filter(s => 
+  // 1. Filter out raw data where speed is 1.0 m/s or above to eliminate dynamic and multipath-affected points
+  const speedFilteredSamples = samples.filter(s => s.speed === null || s.speed === undefined || s.speed < 1.0);
+  const speedFilteredIndices = samples
+    .map((s, idx) => ({ s, idx }))
+    .filter(item => item.s.speed === null || item.s.speed === undefined || item.s.speed < 1.0)
+    .map(item => item.idx);
+
+  let activeSamples = speedFilteredSamples;
+  let activeIndices = speedFilteredIndices;
+
+  // Safeguard: if filtering left us with fewer than 4 points, select the 4 samples with the lowest speed
+  if (activeSamples.length < 4) {
+    const sortedBySpeed = samples
+      .map((s, idx) => ({ s, idx, speedVal: (s.speed === null || s.speed === undefined) ? 0 : s.speed }))
+      .sort((a, b) => a.speedVal - b.speedVal);
+    
+    activeSamples = sortedBySpeed.slice(0, 4).map(item => item.s);
+    activeIndices = sortedBySpeed.slice(0, 4).map(item => item.idx);
+  }
+
+  const activeIndicesSet = new Set(activeIndices);
+
+  // 2. Filter active samples that possess valid IMU (accelerometer) data
+  const imuSamples = activeSamples.filter(s => 
     s.accelX !== null && s.accelX !== undefined && 
     s.accelY !== null && s.accelY !== undefined && 
-    s.accelZ !== null && s.accelZ !== undefined &&
-    (s.speed === null || s.speed === undefined || s.speed < 1.0)
+    s.accelZ !== null && s.accelZ !== undefined
   );
 
-  // If there's no samples containing IMU data and meeting speed constraint, print warning and use standard Weighted LSE
-  if (validSamples.length < 4) {
-    console.warn("GNSS+IMU Stationary: Not enough samples with accelerometer data and speed < 1.0 m/s. Falling back to standard WLS.");
-    return calculateWeightedLSE(samples);
+  // If we have no or not enough IMU data, fallback to Weighted LSE on speed-filtered samples
+  if (imuSamples.length < 4) {
+    console.warn("GNSS+IMU Stationary: Not enough samples with accelerometer data. Running WLS on speed-filtered samples.");
+    const lseResult = calculateWeightedLSE(activeSamples);
+    const finalUsedIndices = lseResult.usedIndices.map(localIdx => activeIndices[localIdx]);
+    return {
+      result: lseResult.result,
+      usedIndices: finalUsedIndices
+    };
   }
 
   // Step A: Calculate Robust Median state vector for acceleration
-  const medianX = calculateMedian(validSamples.map(s => s.accelX as number));
-  const medianY = calculateMedian(validSamples.map(s => s.accelY as number));
-  const medianZ = calculateMedian(validSamples.map(s => s.accelZ as number));
+  const medianX = calculateMedian(imuSamples.map(s => s.accelX as number));
+  const medianY = calculateMedian(imuSamples.map(s => s.accelY as number));
+  const medianZ = calculateMedian(imuSamples.map(s => s.accelZ as number));
 
   // Step B: Calculate Euclidean 3D residual acceleration (vibration/relative motion component)
   const residuals: number[] = [];
@@ -1715,10 +1741,10 @@ export function calculateGnssImuStationary(samples: Coordinate[]): { result: Coo
 
   for (let i = 0; i < samples.length; i++) {
     const s = samples[i];
-    if (s.accelX !== null && s.accelX !== undefined && 
+    if (activeIndicesSet.has(i) &&
+        s.accelX !== null && s.accelX !== undefined && 
         s.accelY !== null && s.accelY !== undefined && 
-        s.accelZ !== null && s.accelZ !== undefined &&
-        (s.speed === null || s.speed === undefined || s.speed < 1.0)) {
+        s.accelZ !== null && s.accelZ !== undefined) {
       const dx = s.accelX - medianX;
       const dy = s.accelY - medianY;
       const dz = s.accelZ - medianZ;
