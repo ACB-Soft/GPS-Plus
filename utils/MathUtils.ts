@@ -57,19 +57,14 @@ export function calculateResult(
 
   // Let's implement the constraint checks for professional mathematical models:
   // - HUBER and KMEANS_4 require en az 30 epok.
-  // - KMEANS_BAARDA_HUBER (Hybrid) require en az 55 epok.
   // - Standalone BAARDA, POPE_TAU and HAMPEL only require geodetic minimum of 4 epok.
-  const requires55 = method === 'KMEANS_BAARDA_HUBER';
   const requires30 = method === 'HUBER' || method === 'KMEANS_4';
-  const requires4 = method === 'BAARDA' || method === 'POPE_TAU' || method === 'HAMPEL' || method === 'ANDREWS_WAVE' || method === 'TUKEYS_BIWEIGHT' || method === 'DANISH' || method === 'GNSS_IMU_STATIONARY' || method === 'HODGES_LEHMANN';
+  const requires4 = method === 'BAARDA' || method === 'POPE_TAU' || method === 'HAMPEL' || method === 'ANDREWS_WAVE' || method === 'TUKEYS_BIWEIGHT' || method === 'DANISH' || method === 'HODGES_LEHMANN' || method === 'HYBRID_v1';
   
   let finalMethod = method;
   let fallbackApplied = false;
 
-  if (requires55 && samples.length < 55) {
-    finalMethod = 'WEIGHTED_LSE';
-    fallbackApplied = true;
-  } else if (requires30 && samples.length < 30) {
+  if (requires30 && samples.length < 30) {
     finalMethod = 'WEIGHTED_LSE';
     fallbackApplied = true;
   } else if (requires4 && samples.length < 4) {
@@ -92,12 +87,12 @@ export function calculateResult(
       resultData = pureHuberRes.result;
       finalCalculatedUsedIndices = pureHuberRes.usedIndices;
       break;
-    case 'KMEANS_BAARDA_HUBER':
-      const huberRes = calculateKMeansBaardaHuber(sourceData);
-      resultData = huberRes.result;
-      finalCalculatedUsedIndices = huberRes.usedIndices;
-      clusters = huberRes.clusters;
-      if (huberRes.fallbackApplied) {
+    case 'HYBRID_v1':
+      const hybridRes = calculateHybridV1(sourceData);
+      resultData = hybridRes.result;
+      finalCalculatedUsedIndices = hybridRes.usedIndices;
+      clusters = hybridRes.clusters;
+      if (hybridRes.fallbackApplied) {
         fallbackApplied = true;
         // Mark that we fell back to the other model
         finalMethod = 'WEIGHTED_LSE';
@@ -138,11 +133,6 @@ export function calculateResult(
       const danishRes = calculateDanishPure(sourceData);
       resultData = danishRes.result;
       finalCalculatedUsedIndices = danishRes.usedIndices;
-      break;
-    case 'GNSS_IMU_STATIONARY':
-      const stationaryRes = calculateGnssImuStationary(sourceData);
-      resultData = stationaryRes.result;
-      finalCalculatedUsedIndices = stationaryRes.usedIndices;
       break;
     case 'HODGES_LEHMANN':
       const hlRes = calculateHodgesLehmannPure(sourceData);
@@ -843,111 +833,128 @@ function calculateBaardaPureAcademic(samples: Coordinate[]): { result: Coordinat
 }
 
 /**
- * G-Means + Baarda + Huber + WLS Hybrid Model
- * Processes raw coordinates concurrently through 3 analytical branches:
- * 1. Global Baarda Test (Geodetic Branch)
- * 2. Adaptive G-Means (Spatial Density Branch)
- * 3. Huber M-Estimation (Robust Scoring Branch)
- * Intersects all three branches. If >= 4 points remain, runs WLS Adjustment.
- * Otherwise, falls back to standard G-Means + Baarda + WLS method.
+ * HYBRID_v1 Model
+ * 1. Speed filtering: dynamic limit of speed < 1.0 m/s
+ * 2. Hodges-Lehmann robust estimation on the surviving epochs
+ * 3. G-Means spatial clustering on the HL-surviving epochs
+ * 4. Cluster density weight determination (cluster epoch count / total surviving epoch count)
+ * 5. Joint WLS solver using cluster density weights and hardware accuracy (p_i = wCluster * (1 / accuracy^2))
  */
-function calculateKMeansBaardaHuber(samples: Coordinate[]): { 
-  result: Coordinate; 
-  usedIndices: number[]; 
-  clusters?: number[][]; 
-  fallbackApplied?: boolean; 
-  actualMethodUsed?: CalculationMethod 
+export function calculateHybridV1(samples: Coordinate[]): {
+  result: Coordinate;
+  usedIndices: number[];
+  clusters?: number[][];
+  fallbackApplied?: boolean;
+  actualMethodUsed?: CalculationMethod;
 } {
-  if (samples.length < 5) {
-    return { result: calculateAverage(samples), usedIndices: samples.map((_, i) => i), clusters: [] };
-  }
-
-  // Calculate standard deviation of whole raw dataset
-  const average = calculateAverage(samples);
-  const variance = calculateVariance(samples, average);
-  const sigma = Math.sqrt(variance);
-
-  // 1. Column A (Geodetic Branch): General Baarda Outlier Elimination
-  const baardaRes = calculateBaardaPure(samples);
-  const baardaIndices = baardaRes.usedIndices;
-
-  // 2. Column B (Spatial Branch): Spatial Dynamic G-Means Clustering
-  const validClusters = getGMeansClusters(samples);
-
-  // 3. Huber Robust Weighting Scheme: Applied mathematically in the WLS step rather than hard-truncation
-  // No data points are hard-eliminated beyond the Baarda geodetic filter.
-  const intersectionIndices = baardaIndices;
-  const intersectionPoints = intersectionIndices.map(idx => samples[idx]);
-
-  // If we have at least 4 viable points, calculate Weighted Least Squares (WLS) adjustment using combined weights:
-  if (intersectionPoints.length >= 4) {
-    const subsetPoints = intersectionPoints;
-    const subLats = subsetPoints.map(p => p.lat);
-    const subLngs = subsetPoints.map(p => p.lng);
-    const subMedianCenter = {
-      lat: calculateMedian(subLats),
-      lng: calculateMedian(subLngs)
-    };
-    const subSigma = calculateMAD(subsetPoints, subMedianCenter);
-    const huberLimit = 1.345 * Math.max(0.05, subSigma);
-
-    const finalWeights = intersectionPoints.map((s, index) => {
-      const globalIndex = intersectionIndices[index];
-      const clusterIdx = validClusters.findIndex(c => c.includes(globalIndex));
-      const wCluster = clusterIdx !== -1 ? validClusters[clusterIdx].length / samples.length : 1.0 / samples.length;
-
-      const dist = calculateDistanceMeter(s.lat, s.lng, subMedianCenter.lat, subMedianCenter.lng, subMedianCenter.lat);
-      const huberWeight = dist <= huberLimit ? 1.0 : huberLimit / Math.max(0.01, dist);
-
-      // Hardware weight is proportional to inverse squared accuracy: 1 / (accuracy^2)
-      const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, s.accuracy), 2);
-      
-      // Combined Joint Weight: Cluster Density Weight * Hardware Weight * Huber Weight
-      return wCluster * hardwareWeight * huberWeight;
-    });
-
-    const sumW = finalWeights.reduce((a, b) => a + b, 0) || 1.0;
-    const finalLat = intersectionPoints.reduce((sum, p, i) => sum + p.lat * finalWeights[i], 0) / sumW;
-    const finalLng = intersectionPoints.reduce((sum, p, i) => sum + p.lng * finalWeights[i], 0) / sumW;
-
-    const avgCoords = calculateAverage(intersectionPoints);
-
-    const finalResult: Coordinate = {
-      ...intersectionPoints[0],
-      lat: finalLat,
-      lng: finalLng,
-      accuracy: avgCoords.accuracy,
-      timestamp: Date.now()
-    };
-
-    const validAlts = intersectionPoints.filter(s => s.altitude !== null);
-    finalResult.altitude = validAlts.length > 0
-      ? validAlts.reduce((a, b) => a + (b.altitude || 0), 0) / validAlts.length
-      : null;
-
-    const validAltAccs = intersectionPoints.filter(s => s.altitudeAccuracy !== null);
-    finalResult.altitudeAccuracy = validAltAccs.length > 0
-      ? validAltAccs.reduce((a, b) => a + (b.altitudeAccuracy || 0), 0) / validAltAccs.length
-      : null;
-
+  if (samples.length < 4) {
     return {
-      result: finalResult,
-      usedIndices: intersectionIndices,
-      clusters: validClusters,
-      fallbackApplied: false,
-      actualMethodUsed: 'KMEANS_BAARDA_HUBER'
-    };
-  } else {
-    // Graceful Fallback Strategy: Fall back to default Weighted Least Squares method
-    const fallbackRes = calculateWeightedLSE(samples);
-    return {
-      result: fallbackRes.result,
-      usedIndices: fallbackRes.usedIndices,
-      clusters: validClusters,
+      result: calculateWeightedLSE(samples).result,
+      usedIndices: samples.map((_, i) => i),
+      clusters: [],
       fallbackApplied: true,
       actualMethodUsed: 'WEIGHTED_LSE'
     };
   }
+
+  // 1. First Phase: Speed Filtering (epok hızı < 1.0 m/s)
+  const checkIsMoving = (s: Coordinate) => {
+    if (s.speed !== null && s.speed !== undefined) {
+      const speedNum = typeof s.speed === 'string' ? parseFloat(s.speed) : Number(s.speed);
+      if (!isNaN(speedNum) && speedNum >= 1.0) {
+        return true; // Moving, exclude
+      }
+    }
+    return false;
+  };
+
+  let speedFiltered = samples
+    .map((s, idx) => ({ s, idx }))
+    .filter(item => !checkIsMoving(item.s));
+
+  // Safeguard: if speed filtering leaves us with fewer than 4 points, get the 4 points with the lowest speed
+  if (speedFiltered.length < 4) {
+    const sortedBySpeed = samples
+      .map((s, idx) => {
+        const speedVal = s.speed !== null && s.speed !== undefined ? (typeof s.speed === 'string' ? parseFloat(s.speed) : Number(s.speed)) : 0;
+        return { s, idx, speedVal: isNaN(speedVal) ? 0 : speedVal };
+      })
+      .sort((a, b) => a.speedVal - b.speedVal);
+    speedFiltered = sortedBySpeed.slice(0, 4).map(item => ({ s: item.s, idx: item.idx }));
+  }
+
+  // 2. Second Phase: Hodges-Lehmann Filter
+  // Run Hodges-Lehmann on speed-filtered epochs to eliminate outliers
+  const hlInput = speedFiltered.map(x => x.s);
+  const hlRes = calculateHodgesLehmannPure(hlInput);
+
+  // Map HL used indices (local to speed-filtered array) back to the original index positions of the samples array
+  const hlFilteredIndices = hlRes.usedIndices.map(localIdx => speedFiltered[localIdx].idx);
+  const hlFilteredSamples = hlFilteredIndices.map(idx => samples[idx]);
+
+  if (hlFilteredSamples.length < 2) {
+    // Highly unlikely fallback, run WLS on speedFiltered
+    const fallbackLse = calculateWeightedLSE(speedFiltered.map(x => x.s));
+    return {
+      result: fallbackLse.result,
+      usedIndices: speedFiltered.map(x => x.idx),
+      clusters: [],
+      fallbackApplied: true,
+      actualMethodUsed: 'WEIGHTED_LSE'
+    };
+  }
+
+  // 3. Third Phase: G-Means Adaptive spatial clustering on the Hodges-Lehmann surviving epochs
+  const validClustersLocal = getGMeansClusters(hlFilteredSamples);
+
+  // Map local cluster assignments to original indices for reporting/plotting
+  const finalClusters = validClustersLocal.map(cluster => cluster.map(localIdx => hlFilteredIndices[localIdx]));
+
+  // 4. Fourth Phase: Cluster Weights & Joint Weighted Least Squares
+  const finalWeights = hlFilteredSamples.map((s, index) => {
+    // Cluster Density weight: cluster size / total remaining epochs
+    const clusterIdx = validClustersLocal.findIndex(c => c.includes(index));
+    const clusterSize = clusterIdx !== -1 ? validClustersLocal[clusterIdx].length : 1.0;
+    const wCluster = clusterSize / hlFilteredSamples.length;
+
+    // Hardware weight: 1.0 / (accuracy * accuracy)
+    const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, s.accuracy), 2);
+
+    // Joint Combined Weight
+    return wCluster * hardwareWeight;
+  });
+
+  const sumW = finalWeights.reduce((a, b) => a + b, 0) || 1.0;
+  const finalLat = hlFilteredSamples.reduce((sum, p, i) => sum + p.lat * finalWeights[i], 0) / sumW;
+  const finalLng = hlFilteredSamples.reduce((sum, p, i) => sum + p.lng * finalWeights[i], 0) / sumW;
+
+  const avgCoords = calculateAverage(hlFilteredSamples);
+
+  const finalResult: Coordinate = {
+    ...hlFilteredSamples[0],
+    lat: finalLat,
+    lng: finalLng,
+    accuracy: avgCoords.accuracy,
+    timestamp: Date.now()
+  };
+
+  const validAlts = hlFilteredSamples.filter(s => s.altitude !== null && s.altitude !== undefined);
+  finalResult.altitude = validAlts.length > 0
+    ? validAlts.reduce((sum, s) => sum + (s.altitude || 0), 0) / validAlts.length
+    : null;
+
+  const validAltAccs = hlFilteredSamples.filter(s => s.altitudeAccuracy !== null && s.altitudeAccuracy !== undefined);
+  finalResult.altitudeAccuracy = validAltAccs.length > 0
+    ? validAltAccs.reduce((sum, s) => sum + (s.altitudeAccuracy || 0), 0) / validAltAccs.length
+    : null;
+
+  return {
+    result: finalResult,
+    usedIndices: hlFilteredIndices,
+    clusters: finalClusters,
+    fallbackApplied: false,
+    actualMethodUsed: 'HYBRID_v1'
+  };
 }
 
 function calculateMADHuber(samples: Coordinate[], centerLat: number, centerLng: number): number {
@@ -1684,139 +1691,7 @@ export function calculateDanishPure(samples: Coordinate[]): { result: Coordinate
   };
 }
 
-/**
- * GNSS + IMU Static Stationary Constraint Filter
- * Uses the temporal variation of 3D acceleration vectors to identify stationary state epochs,
- * filters out epochs with high vibration/motion (dynamic elements), and applies WLS for final coordinate solution.
- */
-export function calculateGnssImuStationary(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  // If we have extremely few samples, fallback directly to weighted LSE
-  if (samples.length < 4) {
-    return calculateWeightedLSE(samples);
-  }
 
-  // 1. Filter out raw data where speed is >= 1.0 m/s OR heading is present (and speed is not zero) to eliminate dynamic and multipath-affected points
-  const checkIsMoving = (s: Coordinate) => {
-    if (s.speed !== null && s.speed !== undefined) {
-      const speedNum = typeof s.speed === 'string' ? parseFloat(s.speed) : Number(s.speed);
-      if (!isNaN(speedNum) && speedNum >= 1.0) {
-        return true; // Exclude since it is moving (>= 1.0 m/s)
-      }
-    }
-    if (s.heading !== null && s.heading !== undefined) {
-      const headingNum = typeof s.heading === 'string' ? parseFloat(s.heading) : Number(s.heading);
-      if (!isNaN(headingNum)) {
-        const speedNum = s.speed !== null && s.speed !== undefined ? (typeof s.speed === 'string' ? parseFloat(s.speed) : Number(s.speed)) : 0;
-        // If they report heading and speed is not static 0 (e.g. >= 0.5 m/s), eliminate them
-        if (!isNaN(speedNum) && speedNum >= 0.5) {
-          return true;
-        }
-      }
-    }
-    return false;
-  };
-
-  const speedFilteredSamples = samples.filter(s => !checkIsMoving(s));
-  const speedFilteredIndices = samples
-    .map((s, idx) => ({ s, idx }))
-    .filter(item => !checkIsMoving(item.s))
-    .map(item => item.idx);
-
-  let activeSamples = speedFilteredSamples;
-  let activeIndices = speedFilteredIndices;
-
-  // Safeguard: if filtering left us with fewer than 4 points, select the 4 samples with the lowest speed
-  if (activeSamples.length < 4) {
-    const sortedBySpeed = samples
-      .map((s, idx) => {
-        const sVal = s.speed !== null && s.speed !== undefined ? (typeof s.speed === 'string' ? parseFloat(s.speed) : Number(s.speed)) : 0;
-        return { s, idx, speedVal: isNaN(sVal) ? 0 : sVal };
-      })
-      .sort((a, b) => a.speedVal - b.speedVal);
-    
-    activeSamples = sortedBySpeed.slice(0, 4).map(item => item.s);
-    activeIndices = sortedBySpeed.slice(0, 4).map(item => item.idx);
-  }
-
-  const activeIndicesSet = new Set(activeIndices);
-
-  // 2. Filter active samples that possess valid IMU (accelerometer) data
-  const imuSamples = activeSamples.filter(s => 
-    s.accelX !== null && s.accelX !== undefined && 
-    s.accelY !== null && s.accelY !== undefined && 
-    s.accelZ !== null && s.accelZ !== undefined
-  );
-
-  // If we have no or not enough IMU data, fallback to Weighted LSE on speed-filtered samples
-  if (imuSamples.length < 4) {
-    console.warn("GNSS+IMU Stationary: Not enough samples with accelerometer data. Running WLS on speed-filtered samples.");
-    const lseResult = calculateWeightedLSE(activeSamples);
-    const finalUsedIndices = lseResult.usedIndices.map(localIdx => activeIndices[localIdx]);
-    return {
-      result: lseResult.result,
-      usedIndices: finalUsedIndices
-    };
-  }
-
-  // Step A: Calculate Robust Median state vector for acceleration
-  const medianX = calculateMedian(imuSamples.map(s => s.accelX as number));
-  const medianY = calculateMedian(imuSamples.map(s => s.accelY as number));
-  const medianZ = calculateMedian(imuSamples.map(s => s.accelZ as number));
-
-  // Step B: Calculate Euclidean 3D residual acceleration (vibration/relative motion component)
-  const residuals: number[] = [];
-  const validIndicesMap: number[] = [];
-
-  for (let i = 0; i < samples.length; i++) {
-    const s = samples[i];
-    if (activeIndicesSet.has(i) &&
-        s.accelX !== null && s.accelX !== undefined && 
-        s.accelY !== null && s.accelY !== undefined && 
-        s.accelZ !== null && s.accelZ !== undefined) {
-      const dx = s.accelX - medianX;
-      const dy = s.accelY - medianY;
-      const dz = s.accelZ - medianZ;
-      const r = Math.sqrt(dx * dx + dy * dy + dz * dz);
-      residuals.push(r);
-      validIndicesMap.push(i);
-    }
-  }
-
-  // Step C: Establish Nominal Noise Floor & MAD-based gate bounds
-  const medianRes = calculateMedian(residuals);
-  const absoluteDeviations = residuals.map(r => Math.abs(r - medianRes));
-  const madRes = calculateMedian(absoluteDeviations) * 1.4826;
-  
-  // High quality stationary devices have very low deviation. Noise floor defined as 0.04 m/s^2.
-  const stableMadRes = madRes > 0.04 ? madRes : 0.04; 
-  
-  // Statistical threshold: median + 2.5 * MAD (standard threshold for robust scale estimation)
-  const threshold = medianRes + 2.5 * stableMadRes;
-
-  // Step D: Separate samples based on stationary boundary
-  let stationaryIndices: number[] = [];
-  for (let i = 0; i < residuals.length; i++) {
-    if (residuals[i] <= threshold) {
-      stationaryIndices.push(validIndicesMap[i]);
-    }
-  }
-
-  // Safe Guard: If threshold filtered too many points, dynamically retrieve 4 most stationary records
-  if (stationaryIndices.length < 4) {
-    const sortedMap = residuals.map((r, i) => ({ originalIndex: validIndicesMap[i], residual: r }));
-    sortedMap.sort((a, b) => a.residual - b.residual);
-    stationaryIndices = sortedMap.slice(0, Math.min(4, sortedMap.length)).map(x => x.originalIndex);
-  }
-
-  // Step E: Apply Weighted Least Squares strictly on stationary-constrained epochs
-  const filteredSamples = stationaryIndices.map(idx => samples[idx]);
-  const lseResult = calculateWeightedLSE(filteredSamples);
-
-  return {
-    result: lseResult.result,
-    usedIndices: stationaryIndices
-  };
-}
 
 /**
  * Hodges-Lehmann Estimator (HL-Estimator)

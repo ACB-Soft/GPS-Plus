@@ -22,13 +22,12 @@ export type CalculationMethod =
   | 'HUBER'
   | 'KMEANS_4' 
   | 'BAARDA'
-  | 'KMEANS_BAARDA_HUBER'
+  | 'HYBRID_v1'
   | 'POPE_TAU'
   | 'HAMPEL'
   | 'ANDREWS_WAVE'
   | 'TUKEYS_BIWEIGHT'
   | 'DANISH'
-  | 'GNSS_IMU_STATIONARY'
   | 'HODGES_LEHMANN';
 
 export interface SavedLocation extends Coordinate {

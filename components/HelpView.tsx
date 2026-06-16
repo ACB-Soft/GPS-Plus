@@ -311,29 +311,26 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
 
                 <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm ring-1 ring-emerald-50">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-emerald-700 uppercase tracking-tight">{t("7. Hibrit Yöntem (KMeans+Baarda)")}</h4>
+                    <h4 className="text-sm font-black text-emerald-700 uppercase tracking-tight">{t("10. Hibrit Yöntem (HYBRID_v1)")}</h4>
                     <span className="text-[11px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">{t("İLERİ HİBRİT")}</span>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed mb-3">
-                    {t("KMeans, Baarda ve Huber M-Tahmini yöntemlerini paralel süzgeçler halinde çalıştıran ve 2'li kesişim kümesi üzerinde lokal Huber süzmesi yapan en üstün matematiksel modelimizdir.")} <span className="text-amber-600 font-black">{t("En az 60 epok veri gerektirir.")}</span>
+                    {t("Hız filtrelemesi, Hodges-Lehmann gürbüz kestirimi ve G-Means kümeleme modelini donanım hassasiyetiyle harmanlayan en gelişmiş hibrit konumlandırma modelimizdir.")} <span className="text-emerald-600 font-black">{t("En az 4 epok veri gerektirir.")}</span>
                   </p>
                   <div className="bg-emerald-50/50 rounded-lg p-3 space-y-2 border border-emerald-100/50">
                      <p className="text-sm font-black text-emerald-800 uppercase tracking-widest">{t("İşlem Adımları:")}</p>
                      <ul className="space-y-1.5">
                       <li className="text-sm text-slate-700 leading-tight">
-                        1-<b>{t("Jeodezik Kol (Küresel Baarda)")}:</b> {t("120 epokluk ham havuzun tamamında global uyuşmazlık araması yaparak sistemsel ve anlık sıçramaları varyans analiziyle ayıklar.")}
+                        1-<b>{t("Epok Hız Süzmesi")}:</b> {t("Anlık hızı 1.0 m/s'nin üzerinde olan kararsız/hareketli epokları tamamen filtreler.")}
                       </li>
                       <li className="text-sm text-slate-700 leading-tight">
-                        2-<b>{t("Uzaysal Kol (Adaptif KMeans)")}:</b> {t("Mekansal saçılıma göre k=2..6 kümesini dinamik hesaplar ve yansımalı sinyal öbeklerini ayrıştırıp en yoğun 'Şampiyon Küme'yi belirler.")}
+                        2-<b>{t("Hodges-Lehmann Robust Süzgeci")}:</b> {t("Hız filtresinden geçen temiz veriler üzerinde Hodges-Lehmann kestirimi ve MAD katsayısı (3-sigma) ile kaba hataları ayıklar.")}
                       </li>
                       <li className="text-sm text-slate-700 leading-tight">
-                        3-<b>{t("Gürbüz Kol (Lokal Huber M-Tahmini)")}:</b> {t("KMeans ve Baarda kesişiminden elde edilen temiz alt grupta, gürbüz varyans temel alınarak Lokal Huber M-Estimation (1.345σ) filtresi çalıştırılarak mikro gürültülü gözlemler de hassasça süzülür.")}
+                        3-<b>{t("G-Means Kümeleme")}:</b> {t("Kalan gözlemleri Anderson-Darling normal dağılım testini temel alan adaptif G-Means algoritması ile mekansal olarak küreler.")}
                       </li>
                       <li className="text-sm text-slate-700 leading-tight">
-                        4-<b>{t("Geri Çekilme Mekanizması (Fallback)")}:</b> {t("Filtreden başarıyla geçen nokta sayısı 4'ten az olursa, sistem otomatik olarak Ağırlıklı En Küçük Kareler (Weighted LSE) yöntemine geri çekilir.")}
-                      </li>
-                      <li className="text-sm text-slate-700 leading-tight">
-                        5-<b>{t("Ortak Ağırlıklı Dengeleme (Joint-WLS)")}:</b> {t("Ayıklanan nihai temiz noktalara donanım hassasiyeti ve Huber dıram ağırlıklarının ortak çarpımı (P_nihai = w_donanım * w_Huber) uygulanarak kusursuz milimetrik koordinat çözülür.")}
+                        4-<b>{t("Ortak Ağırlıklı WLS")}:</b> {t("Küme epok sayısının toplam epok sayısına oranı ile donanımsal hassasiyet katsayısının (1/acc²) ortak çarpımını alarak son konumlandırmayı Weighted Least Squares (WLS) ile yapar.")}
                       </li>
                     </ul>
                   </div>
@@ -341,7 +338,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
 
                 <div className="bg-amber-50/70 rounded-2xl p-4 border border-amber-200/50 text-amber-900 leading-relaxed text-xs font-semibold text-justify">
                   <span className="font-extrabold uppercase text-amber-700 block mb-1">⚠️ {t("UYARI / ÖNEMLİ KOŞUL:")}</span>
-                  {t("KMeans ve Huber yöntemleri için en az 30 epok; Baarda ve KMeans + Baarda + Huber hibrit yöntemleri için en az 60 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.")}
+                  {t("KMeans ve Huber yöntemleri için en az 30 epok; HYBRID_v1 dâhil diğer yöntemler için en az 4 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.")}
                 </div>
               </div>
             </div>

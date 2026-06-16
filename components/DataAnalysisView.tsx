@@ -45,13 +45,12 @@ const METHOD_COLORS: Record<string, string> = {
   HUBER: '#3b82f6',
   KMEANS_4: '#06b6d4',
   BAARDA: '#f59e0b',
-  KMEANS_BAARDA_HUBER: '#10b981',
+  HYBRID_v1: '#10b981',
   POPE_TAU: '#a855f7',
   HAMPEL: '#6366f1',
   ANDREWS_WAVE: '#f43f5e',
   TUKEYS_BIWEIGHT: '#14b8a6',
   DANISH: '#eab308',
-  GNSS_IMU_STATIONARY: '#0284c7',
   HODGES_LEHMANN: '#ec4899'
 };
 
@@ -121,6 +120,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [selectedFolder, setSelectedFolder] = useState<string>('');
   const [selectedPointId, setSelectedPointId] = useState<string>(initialSelectedId || '');
   const [showMap, setShowMap] = useState(false);
+  const [reliabilityPlotMethod, setReliabilityPlotMethod] = useState<CalculationMethod>(settings.calculationMethod || 'HYBRID_v1');
 
   const handleDownloadTechnicalReportAction = () => {
     generateTechnicalReport();
@@ -227,8 +227,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     'ANDREWS_WAVE',
     'TUKEYS_BIWEIGHT',
     'DANISH',
-    'KMEANS_BAARDA_HUBER',
-    'GNSS_IMU_STATIONARY',
+    'HYBRID_v1',
     'HODGES_LEHMANN'
   ], []);
 
@@ -243,9 +242,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       'ANDREWS_WAVE': t("7. Andrew's Wave Kestiricisi"),
       'TUKEYS_BIWEIGHT': t("8. Tukey's Biweight Kestiricisi"),
       'DANISH': t("9. Danimarka (Danish) Kestiricisi"),
-      'KMEANS_BAARDA_HUBER': t("10. Hibrit Yöntem (KMeans+Baarda)"),
-      'GNSS_IMU_STATIONARY': t("11. GNSS+IMU Sabitlik Kısıtlı Filtre"),
-      'HODGES_LEHMANN': t("12. Hodges-Lehmann Kestiricisi")
+      'HYBRID_v1': t("10. Hibrit Yöntem (HYBRID_v1)"),
+      'HODGES_LEHMANN': t("11. Hodges-Lehmann Kestiricisi")
     };
     return labels[m] || m;
   };
@@ -312,7 +310,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       // 1. Calculate point for this method
       const { result, clusters, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
       
-      if ((method === 'KMEANS_4' || method === 'KMEANS_BAARDA_HUBER') && clusters) {
+      if ((method === 'KMEANS_4' || method === 'HYBRID_v1') && clusters) {
         clusterResults = clusters;
       }
       
@@ -501,10 +499,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     if (!location || !location.samples || location.samples.length < 1) return null;
     const accuracyLimit = location.accuracyLimit || 5.0;
     
-    // Calculate results for the hybrid method
+    // Calculate results for the selected method
     const { clusters, usedIndices } = calculateResult(
       location.samples,
-      'KMEANS_BAARDA_HUBER',
+      reliabilityPlotMethod,
       accuracyLimit
     );
     
@@ -598,7 +596,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       clusters: clusters || [],
       usedIndices: usedIndices || []
     };
-  }, [location, t, analysisType, appliedPreciseN, appliedPreciseE, useLocal]);
+  }, [location, t, analysisType, appliedPreciseN, appliedPreciseE, useLocal, reliabilityPlotMethod]);
 
   const clusterBounds = useMemo(() => {
     if (!hybridClusterChartData || hybridClusterChartData.points.length === 0) {
@@ -911,7 +909,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
     const results = methods.map(method => {
       const { result, clusters, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
-      if (method === 'KMEANS_BAARDA_HUBER' && clusters) {
+      if (method === 'HYBRID_v1' && clusters) {
         clusterResults = clusters;
       }
       const conv = convertCoordinate(result.lat, result.lng, sys);
@@ -1532,13 +1530,12 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   'HUBER': 'Huber',
                                   'KMEANS_4': 'KMeans',
                                   'BAARDA': 'Baarda',
-                                  'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
+                                  'HYBRID_v1': 'HYBRID_v1',
                                   'POPE_TAU': "Pope's Tau",
                                   'HAMPEL': 'Hampel MAD',
                                   'ANDREWS_WAVE': "Andrew's Wave",
                                   'TUKEYS_BIWEIGHT': "Tukey's Biweight",
                                   'DANISH': 'Danish Estimator',
-                                  'GNSS_IMU_STATIONARY': 'GNSS+IMU Stationary Filter',
                                   'HODGES_LEHMANN': 'Hodges-Lehmann Estimator'
                                 };
                                 return labels[m] || m;
@@ -1605,13 +1602,12 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               'HUBER': 'Huber',
                               'KMEANS_4': 'KMeans',
                               'BAARDA': 'Baarda',
-                              'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
+                              'HYBRID_v1': 'HYBRID_v1',
                               'POPE_TAU': "Pope's Tau",
                               'HAMPEL': 'Hampel MAD',
                               'ANDREWS_WAVE': "Andrew's Wave",
                               'TUKEYS_BIWEIGHT': "Tukey's Biweight",
                               'DANISH': 'Danish Estimator',
-                              'GNSS_IMU_STATIONARY': 'GNSS+IMU Stationary Filter',
                               'HODGES_LEHMANN': 'Hodges-Lehmann Estimator'
                             };
                             return labels[m] || m;
@@ -1647,13 +1643,12 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             'HUBER': 'Huber',
                             'KMEANS_4': 'KMeans',
                             'BAARDA': 'Baarda',
-                            'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
+                            'HYBRID_v1': 'HYBRID_v1',
                             'POPE_TAU': "Pope's Tau",
                             'HAMPEL': 'Hampel MAD',
                             'ANDREWS_WAVE': "Andrew's Wave",
                             'TUKEYS_BIWEIGHT': "Tukey's Biweight",
                             'DANISH': 'Danish Estimator',
-                            'GNSS_IMU_STATIONARY': 'GNSS+IMU Stationary Filter',
                             'HODGES_LEHMANN': 'Hodges-Lehmann Estimator'
                           };
                           return labels[m] || m;
@@ -1930,14 +1925,27 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     </div>
                   </div>
 
-                  {/* 2. Baarda Outlier Filtering Scatter Chart */}
+                  {/* 2. Custom Method Outlier Filtering Scatter Chart */}
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center px-1">
-                      <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">
-                        Baarda Reliability Filter Plot
-                      </span>
+                    <div className="flex justify-between items-center px-1 gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest shrink-0">
+                          {t("SÜZGEÇ YÖNTEMİ:")}
+                        </label>
+                        <select
+                          className="bg-slate-100 border-2 border-slate-200 text-slate-800 text-[10px] font-extrabold rounded-lg px-2 py-0.5 max-w-[200px] focus:outline-none focus:ring-1 focus:ring-indigo-400 cursor-pointer"
+                          value={reliabilityPlotMethod}
+                          onChange={(e) => setReliabilityPlotMethod(e.target.value as CalculationMethod)}
+                        >
+                          {methods.map((m) => (
+                            <option key={m} value={m}>
+                              {getMethodLabel(m)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                       <button 
-                        onClick={() => exportChart(baardaChartRef, 'gps-plus-baarda-reliability')}
+                        onClick={() => exportChart(baardaChartRef, `gps-plus-${reliabilityPlotMethod.toLowerCase()}-reliability`)}
                         type="button"
                         className="bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 cursor-pointer flex items-center gap-1"
                       >
@@ -1952,8 +1960,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       {/* Header */}
                       <div className="flex justify-between items-center border-b border-slate-900/10 pb-1.5 min-h-0 shrink-0">
                         <div className="min-w-0">
-                          <h2 className="text-slate-900 font-extrabold text-[9px] uppercase tracking-wider leading-none font-sans">
-                            ACB LABS BAARDA ELIMINATION PLAN
+                          <h2 className="text-slate-900 font-extrabold text-[9px] uppercase tracking-wider leading-none font-sans truncate">
+                            ACB LABS {reliabilityPlotMethod} PLAN
                           </h2>
                           <p className="text-slate-400 text-[6px] font-bold uppercase tracking-widest mt-0.5 font-mono">
                             GEODETIC RELIABILITY & OUTLIER DETECTION
@@ -1961,7 +1969,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         </div>
                         <div className="text-right shrink-0">
                           <span className="bg-emerald-50 border border-emerald-100 text-emerald-600 font-mono text-[6px] font-black px-1.5 py-0.5 rounded">
-                            BAARDA ACTIVE
+                            {reliabilityPlotMethod} ACTIVE
                           </span>
                         </div>
                       </div>
@@ -2195,7 +2203,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             </p>
                           </div>
                           <div className="space-y-1">
-                            <p className="text-slate-400 font-bold uppercase text-[8px] tracking-wider leading-none">{t("Baarda Güvenilirlik Süzgeci")}</p>
+                            <p className="text-slate-400 font-bold uppercase text-[8px] tracking-wider leading-none">{getMethodLabel(reliabilityPlotMethod)} {t("Süzgeci")}</p>
                             <p className={`font-black uppercase text-[9px] leading-snug ${pt.passedBaarda ? 'text-emerald-600' : 'text-rose-600'}`}>
                               {pt.passedBaarda ? t("GEÇTİ (GÜVENİLİR)") : t("ELENDİ (KABA HATA)")}
                             </p>
@@ -2203,8 +2211,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           <div className="col-span-2 bg-white/70 p-2.5 rounded-xl border border-slate-150 mt-1">
                             <p className="text-slate-500 font-medium leading-relaxed font-sans">
                               {pt.passedBaarda 
-                                ? t("Bu veri noktası Baarda global varyans testi kriterlerini karşılayarak kaba hatalardan arındırılmış ve geodezik dengelemeye (Ağırlıklı LSE) dahil edilmiştir.")
-                                : t("Bu veri noktası varyans sınırlarının dışına taşarak konumsal sıçrama (outlier/multipath) tespitiyle elenmiştir. Hesaplamada ağırlığı sıfırlanmıştır.")
+                                ? t("Bu veri noktası seçilen yöntemin varyans/filtre test kriterlerini karşılayarak kaba hatalardan arındırılmış ve geodezik dengelemeye dahil edilmiştir.")
+                                : t("Bu veri noktası seçilen yöntemin filtre sınırlarının dışına taşarak konumsal sıçrama (outlier/multipath) tespitiyle elenmiştir. Hesaplamada ağırlığı sıfırlanmıştır.")
                               }
                             </p>
                           </div>

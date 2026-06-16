@@ -10,7 +10,7 @@ const getMethodName = (m: CalculationMethod) => {
   switch(m) {
     case 'WEIGHTED_LSE': return "Ağırlıklı En Küçük Kareler";
     case 'HUBER': return "Huber M-Tahmini";
-    case 'KMEANS_BAARDA_HUBER': return "KMeans + Baarda + Huber";
+    case 'HYBRID_v1': return "Hibrit Yöntem (HYBRID_v1)";
     case 'KMEANS_4': return "K-Means (4 Küme)";
     case 'BAARDA': return "Baarda Eleme";
     case 'POPE_TAU': return "Pope's Tau Testi";
@@ -18,7 +18,6 @@ const getMethodName = (m: CalculationMethod) => {
     case 'ANDREWS_WAVE': return "Andrew's Wave Kestiricisi";
     case 'TUKEYS_BIWEIGHT': return "Tukey's Biweight Kestiricisi";
     case 'DANISH': return "Danimarka (Danish) Kestiricisi";
-    case 'GNSS_IMU_STATIONARY': return "GNSS+IMU Sabitlik Kısıtlı Filtre";
     case 'HODGES_LEHMANN': return "Hodges-Lehmann Kestiricisi";
     default: return m;
   }
@@ -164,8 +163,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     'ANDREWS_WAVE',
     'TUKEYS_BIWEIGHT',
     'DANISH',
-    'KMEANS_BAARDA_HUBER',
-    'GNSS_IMU_STATIONARY',
+    'HYBRID_v1',
     'HODGES_LEHMANN'
   ];
   const methodResults = methods.map(method => {
@@ -561,8 +559,7 @@ export const downloadCombinedAnalysisReport = (
     'ANDREWS_WAVE',
     'TUKEYS_BIWEIGHT',
     'DANISH',
-    'KMEANS_BAARDA_HUBER',
-    'GNSS_IMU_STATIONARY',
+    'HYBRID_v1',
     'HODGES_LEHMANN'
   ];
 

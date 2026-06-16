@@ -242,23 +242,25 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
           setCaptureError(null);
           
           if (step === 'COUNTDOWN') {
-            // Unconditionally save raw geolocation update with speed and heading
-            rawSamplesRef.current.push({
-              lat: pos.coords.latitude,
-              lng: pos.coords.longitude,
-              accuracy: pos.coords.accuracy,
-              altitude: pos.coords.altitude,
-              altitudeAccuracy: pos.coords.altitudeAccuracy,
-              speed: pos.coords.speed,
-              heading: pos.coords.heading,
-              timestamp: Date.now(),
-              accelX: latestMotionRef.current.accelX,
-              accelY: latestMotionRef.current.accelY,
-              accelZ: latestMotionRef.current.accelZ,
-              gyroAlpha: latestOrientationRef.current.gyroAlpha,
-              gyroBeta: latestOrientationRef.current.gyroBeta,
-              gyroGamma: latestOrientationRef.current.gyroGamma,
-            });
+            // Only save raw geolocation update with speed and heading if it is within accuracy limit
+            if (pos.coords.accuracy <= accuracyLimit) {
+              rawSamplesRef.current.push({
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+                accuracy: pos.coords.accuracy,
+                altitude: pos.coords.altitude,
+                altitudeAccuracy: pos.coords.altitudeAccuracy,
+                speed: pos.coords.speed,
+                heading: pos.coords.heading,
+                timestamp: Date.now(),
+                accelX: latestMotionRef.current.accelX,
+                accelY: latestMotionRef.current.accelY,
+                accelZ: latestMotionRef.current.accelZ,
+                gyroAlpha: latestOrientationRef.current.gyroAlpha,
+                gyroBeta: latestOrientationRef.current.gyroBeta,
+                gyroGamma: latestOrientationRef.current.gyroGamma,
+              });
+            }
 
             // --- HİBRİT MANTIK: Farklı Veri Gelirse Kaydet ---
             const current = {
@@ -435,7 +437,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
           (lastPositionRef.current && lastPositionRef.current.coords.altitude !== null && lastPositionRef.current.coords.altitude !== 0);
 
         // --- HİBRİT MANTIK: 5 Saniyede Bir Zorunlu Kayıt (Farklı veri gelmediyse ve hassasiyet uygunsa) ---
-        if (isActuallySatellite && isAccuracyOkRef.current && lastPositionRef.current && (now - lastSaveTimestampRef.current >= 5000)) {
+        if (isActuallySatellite && isAccuracyOkRef.current && lastPositionRef.current && lastPositionRef.current.coords.accuracy <= accuracyLimit && (now - lastSaveTimestampRef.current >= 5000)) {
           const p = lastPositionRef.current;
           samplesRef.current.push({
             lat: p.coords.latitude, 
@@ -526,8 +528,8 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       }
     }
 
-    // Start with the last known position as the first sample
-    if (lastPositionRef.current) {
+    // Start with the last known position as the first sample if it satisfies the accuracyLimit and of course GNSS requirements
+    if (lastPositionRef.current && lastPositionRef.current.coords.accuracy <= accuracyLimit) {
       const p = lastPositionRef.current;
       const initialSample = {
         lat: p.coords.latitude, 
