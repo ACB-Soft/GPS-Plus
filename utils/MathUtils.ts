@@ -1690,16 +1690,17 @@ export function calculateGnssImuStationary(samples: Coordinate[]): { result: Coo
     return calculateWeightedLSE(samples);
   }
 
-  // Filter samples that have IMU data
+  // Filter samples that have IMU data and speed under 1.0 m/s (stationary state constraint)
   const validSamples = samples.filter(s => 
     s.accelX !== null && s.accelX !== undefined && 
     s.accelY !== null && s.accelY !== undefined && 
-    s.accelZ !== null && s.accelZ !== undefined
+    s.accelZ !== null && s.accelZ !== undefined &&
+    (s.speed === null || s.speed === undefined || s.speed < 1.0)
   );
 
-  // If there's no samples containing IMU data, print warning and use standard Weighted LSE
+  // If there's no samples containing IMU data and meeting speed constraint, print warning and use standard Weighted LSE
   if (validSamples.length < 4) {
-    console.warn("GNSS+IMU Stationary: Not enough samples with accelerometer data. Falling back to standard WLS.");
+    console.warn("GNSS+IMU Stationary: Not enough samples with accelerometer data and speed < 1.0 m/s. Falling back to standard WLS.");
     return calculateWeightedLSE(samples);
   }
 
@@ -1716,7 +1717,8 @@ export function calculateGnssImuStationary(samples: Coordinate[]): { result: Coo
     const s = samples[i];
     if (s.accelX !== null && s.accelX !== undefined && 
         s.accelY !== null && s.accelY !== undefined && 
-        s.accelZ !== null && s.accelZ !== undefined) {
+        s.accelZ !== null && s.accelZ !== undefined &&
+        (s.speed === null || s.speed === undefined || s.speed < 1.0)) {
       const dx = s.accelX - medianX;
       const dy = s.accelY - medianY;
       const dz = s.accelZ - medianZ;
