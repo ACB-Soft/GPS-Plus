@@ -9,14 +9,17 @@ import { useLanguage } from '../utils/LanguageContext';
 import { getAccuracyColor } from '../utils/StyleUtils';
 
 
-// Map rendering fix for modals
-const MapResizer = () => {
+// Map rendering fix for modals and dynamic recentering
+const MapResizer = ({ lat, lng }: { lat: number; lng: number }) => {
   const map = useMap();
   useEffect(() => {
-    setTimeout(() => {
-      map.invalidateSize();
-    }, 200);
-  }, [map]);
+    if (lat && lng) {
+      map.setView([lat, lng]);
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 150);
+    }
+  }, [map, lat, lng]);
   return null;
 };
 
@@ -233,7 +236,7 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
               radius={dynamicAccuracy} 
               pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.2 }} 
             />
-            <MapResizer />
+            <MapResizer lat={location.lat} lng={location.lng} />
           </MapContainer>
           
           <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[10000] w-full max-w-xs px-6">
