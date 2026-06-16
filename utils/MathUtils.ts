@@ -30,23 +30,82 @@ export function calculateResult(
   fallbackApplied?: boolean; 
   actualMethodUsed?: CalculationMethod;
 } {
+  if (!samples || samples.length === 0) {
+    return { result: { lat: 0, lng: 0, accuracy: 999, altitude: null, altitudeAccuracy: null, timestamp: Date.now() }, usedIndices: [] };
+  }
+
+  // Pre-calculate/estimate speed for all samples dynamically to prevent empty/null/0 values
+  const samplesWithSpeeds = samples.map((s, idx) => {
+    let speed = s.speed;
+    const hasNativeSpeed = speed !== null && speed !== undefined && !isNaN(Number(speed)) && Number(speed) > 0.01;
+    if (!hasNativeSpeed) {
+      let computedSpeed = 0;
+      if (samples.length >= 2) {
+        // Find chronologically adjacent points
+        const chronologicalIdxs = samples
+          .map((_, i) => i)
+          .sort((a, b) => (samples[a].timestamp || 0) - (samples[b].timestamp || 0));
+        
+        const cronPos = chronologicalIdxs.indexOf(idx);
+        if (cronPos > 0) {
+          const prevIdx = chronologicalIdxs[cronPos - 1];
+          const prev = samples[prevIdx];
+          const dt = ((s.timestamp || 0) - (prev.timestamp || 0)) / 1000; // in seconds
+          if (dt > 0.1) {
+            computedSpeed = calculateDistanceMeter(s.lat, s.lng, prev.lat, prev.lng, s.lat) / dt;
+          }
+        } else if (cronPos === 0 && chronologicalIdxs.length > 1) {
+          const nextIdx = chronologicalIdxs[cronPos + 1];
+          const next = samples[nextIdx];
+          const dt = ((next.timestamp || 0) - (s.timestamp || 0)) / 1000; // in seconds
+          if (dt > 0.1) {
+            computedSpeed = calculateDistanceMeter(s.lat, s.lng, next.lat, next.lng, s.lat) / dt;
+          }
+        }
+      }
+      speed = computedSpeed;
+    } else {
+      speed = typeof speed === 'string' ? parseFloat(speed) : Number(speed);
+    }
+    
+    // Return a new object with speed set, keeping track of its original index
+    return { s: { ...s, speed }, origIdx: idx };
+  });
+
   // Step 1: Filter by GNSS metadata if requested
-  // GNSS usually provides altitude, while Wi-Fi/Network often doesn't in browsers
-  let baseData = samples;
+  let baseData = samplesWithSpeeds;
   if (gnssOnly) {
-    const gnssData = samples.filter(s => s.altitude !== null && s.altitude !== 0);
+    const gnssData = samplesWithSpeeds.filter(item => item.s.altitude !== null && item.s.altitude !== 0);
     if (gnssData.length > 0) {
       baseData = gnssData;
     }
   }
 
   // Step 2: Filter by accuracy limit (pre-requisite for all methods)
-  const accuracyFiltered = baseData.filter(s => s.accuracy <= accuracyLimit);
-  const sourceData = accuracyFiltered.length > 0 ? accuracyFiltered : baseData;
+  const accuracyFiltered = baseData.filter(item => item.s.accuracy <= accuracyLimit);
+  const sourceDataBeforeSpeed = accuracyFiltered.length > 0 ? accuracyFiltered : baseData;
 
-  if (sourceData.length === 0) {
-    return { result: samples[0], usedIndices: [0] };
+  // Step 3: Speed Filtering as a general pre-filter stage (Static survey rule: speed < 1.0 m/s)
+  const speedFiltered = sourceDataBeforeSpeed.filter(item => {
+    const spVal = item.s.speed;
+    return spVal === null || spVal === undefined || isNaN(spVal) || spVal < 1.0;
+  });
+
+  // Safeguard: we need at least 4 epochs for geodetic methods, and 30 for other complex robust filters.
+  // If speed filtering leaves at least 4 points, keep it. Otherwise, fallback to points before speed filtering.
+  let finalPreFiltered = speedFiltered;
+  if (speedFiltered.length >= 4) {
+    finalPreFiltered = speedFiltered;
+  } else {
+    finalPreFiltered = sourceDataBeforeSpeed;
   }
+
+  if (finalPreFiltered.length === 0) {
+    finalPreFiltered = samplesWithSpeeds;
+  }
+
+  const sourceData = finalPreFiltered.map(item => item.s);
+  const sourceOrigIndices = finalPreFiltered.map(item => item.origIdx);
 
   let finalSamples = sourceData;
   let usedIndices: number[] = [];
@@ -148,14 +207,12 @@ export function calculateResult(
   // Determine which indices were used if not already determined by the method
   if (finalCalculatedUsedIndices === null) {
     usedIndices = samples
-      .map((s, idx) => finalSamples.includes(s) ? idx : -1)
+      .map((_, idx) => sourceOrigIndices.includes(idx) ? idx : -1)
       .filter(idx => idx !== -1);
   } else {
     // CRITICAL: Map local indices of sourceData back to original indices of samples array
     usedIndices = finalCalculatedUsedIndices.map(localIdx => {
-      const matchSample = sourceData[localIdx];
-      const parentIdx = samples.indexOf(matchSample);
-      return parentIdx !== -1 ? parentIdx : localIdx;
+      return sourceOrigIndices[localIdx];
     });
   }
 
@@ -183,10 +240,10 @@ export function calculateResult(
 
   return { 
     result: resultData, 
-    usedIndices, 
-    clusters, 
-    fallbackApplied, 
-    actualMethodUsed: finalMethod 
+    usedIndices,
+    clusters,
+    fallbackApplied,
+    actualMethodUsed: finalMethod
   };
 }
 export function calculateMaxDistance(samples: Coordinate[]): number {
