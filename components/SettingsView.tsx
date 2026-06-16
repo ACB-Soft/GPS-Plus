@@ -535,7 +535,10 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
                   <option value="POPE_TAU">{t("4. Pope’s Tau Testi")}</option>
                   <option value="HUBER">{t("5. Robust Huber")}</option>
                   <option value="HAMPEL">{t("6. Robust Hampel")}</option>
-                  <option value="KMEANS_BAARDA_HUBER">{t("7. Hibrit Yöntem (KMeans+Baarda)")}</option>
+                  <option value="ANDREWS_WAVE">{t("7. Andrew's Wave Kestiricisi")}</option>
+                  <option value="TUKEYS_BIWEIGHT">{t("8. Tukey's Biweight Kestiricisi")}</option>
+                  <option value="DANISH">{t("9. Danimarka (Danish) Kestiricisi")}</option>
+                  <option value="KMEANS_BAARDA_HUBER">{t("10. Hibrit Yöntem (KMeans+Baarda)")}</option>
                 </select>
               </div>
 

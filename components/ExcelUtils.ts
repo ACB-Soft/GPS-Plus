@@ -15,6 +15,9 @@ const getMethodName = (m: CalculationMethod) => {
     case 'BAARDA': return "Baarda Eleme";
     case 'POPE_TAU': return "Pope's Tau Testi";
     case 'HAMPEL': return "Hampel Yöntemi (Robust MAD)";
+    case 'ANDREWS_WAVE': return "Andrew's Wave Kestiricisi";
+    case 'TUKEYS_BIWEIGHT': return "Tukey's Biweight Kestiricisi";
+    case 'DANISH': return "Danimarka (Danish) Kestiricisi";
     default: return m;
   }
 };
@@ -156,7 +159,10 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     'BAARDA',
     'KMEANS_BAARDA_HUBER',
     'POPE_TAU',
-    'HAMPEL'
+    'HAMPEL',
+    'ANDREWS_WAVE',
+    'TUKEYS_BIWEIGHT',
+    'DANISH'
   ];
   const methodResults = methods.map(method => {
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
@@ -548,7 +554,10 @@ export const downloadCombinedAnalysisReport = (
     'BAARDA',
     'KMEANS_BAARDA_HUBER',
     'POPE_TAU',
-    'HAMPEL'
+    'HAMPEL',
+    'ANDREWS_WAVE',
+    'TUKEYS_BIWEIGHT',
+    'DANISH'
   ];
 
   if (location.samples && location.samples.length > 0) {

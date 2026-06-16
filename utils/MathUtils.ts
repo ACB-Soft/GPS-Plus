@@ -61,7 +61,7 @@ export function calculateResult(
   // - Standalone BAARDA, POPE_TAU and HAMPEL only require geodetic minimum of 4 epok.
   const requires55 = method === 'KMEANS_BAARDA_HUBER';
   const requires30 = method === 'HUBER' || method === 'KMEANS_4';
-  const requires4 = method === 'BAARDA' || method === 'POPE_TAU' || method === 'HAMPEL';
+  const requires4 = method === 'BAARDA' || method === 'POPE_TAU' || method === 'HAMPEL' || method === 'ANDREWS_WAVE' || method === 'TUKEYS_BIWEIGHT' || method === 'DANISH';
   
   let finalMethod = method;
   let fallbackApplied = false;
@@ -123,6 +123,21 @@ export function calculateResult(
       const hampelRes = calculateHampelAcademic(sourceData);
       resultData = hampelRes.result;
       finalCalculatedUsedIndices = hampelRes.usedIndices;
+      break;
+    case 'ANDREWS_WAVE':
+      const andrewsRes = calculateAndrewsWavePure(sourceData);
+      resultData = andrewsRes.result;
+      finalCalculatedUsedIndices = andrewsRes.usedIndices;
+      break;
+    case 'TUKEYS_BIWEIGHT':
+      const tukeyRes = calculateTukeysBiweightPure(sourceData);
+      resultData = tukeyRes.result;
+      finalCalculatedUsedIndices = tukeyRes.usedIndices;
+      break;
+    case 'DANISH':
+      const danishRes = calculateDanishPure(sourceData);
+      resultData = danishRes.result;
+      finalCalculatedUsedIndices = danishRes.usedIndices;
       break;
     default:
       const defaultLse = calculateWeightedLSE(sourceData);
@@ -1257,6 +1272,400 @@ export function calculateHampelAcademic(samples: Coordinate[]): { result: Coordi
   return {
     result: finalResult.result,
     usedIndices: finalUsedIndices
+  };
+}
+
+export function calculateAndrewsWavePure(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length < 4) {
+    const avgLat = samples.reduce((sum, p) => sum + p.lat, 0) / samples.length;
+    const avgLng = samples.reduce((sum, p) => sum + p.lng, 0) / samples.length;
+    const avgAcc = samples.reduce((sum, p) => sum + p.accuracy, 0) / samples.length;
+    return {
+      result: { lat: avgLat, lng: avgLng, accuracy: avgAcc, altitude: null, altitudeAccuracy: null, timestamp: Date.now() },
+      usedIndices: samples.map((_, i) => i)
+    };
+  }
+
+  let currentLat = calculateMedian(samples.map(s => s.lat));
+  let currentLng = calculateMedian(samples.map(s => s.lng));
+
+  const maxIterations = 15;
+  const toleranceMeter = 0.001;
+  const c = 1.339; // Andrews Wave constant
+
+  for (let iter = 0; iter < maxIterations; iter++) {
+    const currentMAD = calculateMADHuber(samples, currentLat, currentLng);
+    const pseudoSigma = currentMAD * 1.4826;
+    const stablePseudoSigma = pseudoSigma > 1e-7 ? pseudoSigma : 1e-7;
+    const limit = c * stablePseudoSigma;
+
+    let sumW = 0;
+    let sumLatW = 0;
+    let sumLngW = 0;
+
+    for (let i = 0; i < samples.length; i++) {
+      const p = samples[i];
+      const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
+      const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
+
+      const u = dist / stablePseudoSigma;
+      let andrewsWeight = 0;
+      if (dist <= limit * Math.PI) {
+        if (dist > 1e-5) {
+          const u_scaled = u / c;
+          andrewsWeight = Math.sin(u_scaled) / u_scaled;
+        } else {
+          andrewsWeight = 1.0;
+        }
+      } else {
+        andrewsWeight = 0;
+      }
+
+      const combinedWeight = hardwareWeight * andrewsWeight;
+
+      sumW += combinedWeight;
+      sumLatW += p.lat * combinedWeight;
+      sumLngW += p.lng * combinedWeight;
+    }
+
+    if (sumW === 0) break;
+
+    const nextLat = sumLatW / sumW;
+    const nextLng = sumLngW / sumW;
+
+    const changeInMeter = calculateDistanceMeter(nextLat, nextLng, currentLat, currentLng, currentLat);
+
+    currentLat = nextLat;
+    currentLng = nextLng;
+
+    if (changeInMeter < toleranceMeter) break;
+  }
+
+  const finalMAD = calculateMADHuber(samples, currentLat, currentLng);
+  const finalPseudoSigma = finalMAD * 1.4826;
+  const stableFinalPseudoSigma = finalPseudoSigma > 1e-7 ? finalPseudoSigma : 1e-7;
+  const outlierThreshold = c * Math.PI * stableFinalPseudoSigma;
+
+  const usedIndices: number[] = [];
+  const cleanSamples: Coordinate[] = [];
+
+  for (let i = 0; i < samples.length; i++) {
+    const p = samples[i];
+    const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
+
+    if (dist <= outlierThreshold) {
+      usedIndices.push(i);
+      cleanSamples.push(p);
+    }
+  }
+
+  if (cleanSamples.length === 0) {
+    return { 
+      result: { lat: currentLat, lng: currentLng, accuracy: 3.0, altitude: null, altitudeAccuracy: null, timestamp: Date.now() }, 
+      usedIndices: samples.map((_, i) => i) 
+    };
+  }
+
+  const subMAD = calculateMADHuber(cleanSamples, currentLat, currentLng);
+  const subPseudoSigma = subMAD * 1.4826;
+  const stableSubPseudoSigma = subPseudoSigma > 1e-7 ? subPseudoSigma : 1e-7;
+  const finalLimit = c * stableSubPseudoSigma;
+
+  let finalSumW = 0;
+  let finalLatW = 0;
+  let finalLngW = 0;
+  let totalAccuracy = 0;
+
+  for (const p of cleanSamples) {
+    const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
+    const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
+    
+    const u = dist / stableSubPseudoSigma;
+    let andrewsWeight = 0;
+    if (dist <= finalLimit * Math.PI) {
+      if (dist > 1e-5) {
+        const u_scaled = u / c;
+        andrewsWeight = Math.sin(u_scaled) / u_scaled;
+      } else {
+        andrewsWeight = 1.0;
+      }
+    } else {
+      andrewsWeight = 0;
+    }
+
+    const combinedWeight = hardwareWeight * andrewsWeight;
+
+    finalSumW += combinedWeight;
+    finalLatW += p.lat * combinedWeight;
+    finalLngW += p.lng * combinedWeight;
+    totalAccuracy += p.accuracy;
+  }
+
+  return {
+    result: {
+      lat: finalLatW / finalSumW,
+      lng: finalLngW / finalSumW,
+      accuracy: totalAccuracy / cleanSamples.length,
+      altitude: null,
+      altitudeAccuracy: null,
+      timestamp: Date.now()
+    },
+    usedIndices
+  };
+}
+
+export function calculateTukeysBiweightPure(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length < 4) {
+    const avgLat = samples.reduce((sum, p) => sum + p.lat, 0) / samples.length;
+    const avgLng = samples.reduce((sum, p) => sum + p.lng, 0) / samples.length;
+    const avgAcc = samples.reduce((sum, p) => sum + p.accuracy, 0) / samples.length;
+    return {
+      result: { lat: avgLat, lng: avgLng, accuracy: avgAcc, altitude: null, altitudeAccuracy: null, timestamp: Date.now() },
+      usedIndices: samples.map((_, i) => i)
+    };
+  }
+
+  let currentLat = calculateMedian(samples.map(s => s.lat));
+  let currentLng = calculateMedian(samples.map(s => s.lng));
+
+  const maxIterations = 15;
+  const toleranceMeter = 0.001;
+  const c = 4.685; // Tukey's constant for 95% efficiency
+
+  for (let iter = 0; iter < maxIterations; iter++) {
+    const currentMAD = calculateMADHuber(samples, currentLat, currentLng);
+    const pseudoSigma = currentMAD * 1.4826;
+    const stablePseudoSigma = pseudoSigma > 1e-7 ? pseudoSigma : 1e-7;
+    const limit = c * stablePseudoSigma;
+
+    let sumW = 0;
+    let sumLatW = 0;
+    let sumLngW = 0;
+
+    for (let i = 0; i < samples.length; i++) {
+      const p = samples[i];
+      const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
+      const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
+
+      const u = dist / stablePseudoSigma;
+      let tukeyWeight = 0;
+      if (dist <= limit) {
+        tukeyWeight = Math.pow(1.0 - Math.pow(u / c, 2), 2);
+      } else {
+        tukeyWeight = 0;
+      }
+
+      const combinedWeight = hardwareWeight * tukeyWeight;
+
+      sumW += combinedWeight;
+      sumLatW += p.lat * combinedWeight;
+      sumLngW += p.lng * combinedWeight;
+    }
+
+    if (sumW === 0) break;
+
+    const nextLat = sumLatW / sumW;
+    const nextLng = sumLngW / sumW;
+
+    const changeInMeter = calculateDistanceMeter(nextLat, nextLng, currentLat, currentLng, currentLat);
+
+    currentLat = nextLat;
+    currentLng = nextLng;
+
+    if (changeInMeter < toleranceMeter) break;
+  }
+
+  const finalMAD = calculateMADHuber(samples, currentLat, currentLng);
+  const finalPseudoSigma = finalMAD * 1.4826;
+  const stableFinalPseudoSigma = finalPseudoSigma > 1e-7 ? finalPseudoSigma : 1e-7;
+  const outlierThreshold = c * stableFinalPseudoSigma;
+
+  const usedIndices: number[] = [];
+  const cleanSamples: Coordinate[] = [];
+
+  for (let i = 0; i < samples.length; i++) {
+    const p = samples[i];
+    const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
+
+    if (dist <= outlierThreshold) {
+      usedIndices.push(i);
+      cleanSamples.push(p);
+    }
+  }
+
+  if (cleanSamples.length === 0) {
+    return { 
+      result: { lat: currentLat, lng: currentLng, accuracy: 3.0, altitude: null, altitudeAccuracy: null, timestamp: Date.now() }, 
+      usedIndices: samples.map((_, i) => i) 
+    };
+  }
+
+  const subMAD = calculateMADHuber(cleanSamples, currentLat, currentLng);
+  const subPseudoSigma = subMAD * 1.4826;
+  const stableSubPseudoSigma = subPseudoSigma > 1e-7 ? subPseudoSigma : 1e-7;
+  const finalLimit = c * stableSubPseudoSigma;
+
+  let finalSumW = 0;
+  let finalLatW = 0;
+  let finalLngW = 0;
+  let totalAccuracy = 0;
+
+  for (const p of cleanSamples) {
+    const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
+    const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
+    
+    const u = dist / stableSubPseudoSigma;
+    let tukeyWeight = 0;
+    if (dist <= finalLimit) {
+      tukeyWeight = Math.pow(1.0 - Math.pow(u / c, 2), 2);
+    } else {
+      tukeyWeight = 0;
+    }
+
+    const combinedWeight = hardwareWeight * tukeyWeight;
+
+    finalSumW += combinedWeight;
+    finalLatW += p.lat * combinedWeight;
+    finalLngW += p.lng * combinedWeight;
+    totalAccuracy += p.accuracy;
+  }
+
+  return {
+    result: {
+      lat: finalLatW / finalSumW,
+      lng: finalLngW / finalSumW,
+      accuracy: totalAccuracy / cleanSamples.length,
+      altitude: null,
+      altitudeAccuracy: null,
+      timestamp: Date.now()
+    },
+    usedIndices
+  };
+}
+
+export function calculateDanishPure(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length < 4) {
+    const avgLat = samples.reduce((sum, p) => sum + p.lat, 0) / samples.length;
+    const avgLng = samples.reduce((sum, p) => sum + p.lng, 0) / samples.length;
+    const avgAcc = samples.reduce((sum, p) => sum + p.accuracy, 0) / samples.length;
+    return {
+      result: { lat: avgLat, lng: avgLng, accuracy: avgAcc, altitude: null, altitudeAccuracy: null, timestamp: Date.now() },
+      usedIndices: samples.map((_, i) => i)
+    };
+  }
+
+  let currentLat = calculateMedian(samples.map(s => s.lat));
+  let currentLng = calculateMedian(samples.map(s => s.lng));
+
+  const maxIterations = 15;
+  const toleranceMeter = 0.001;
+  const c = 2.0; // Danish threshold parameter
+  const a = 1.0; // decay factor
+
+  for (let iter = 0; iter < maxIterations; iter++) {
+    const currentMAD = calculateMADHuber(samples, currentLat, currentLng);
+    const pseudoSigma = currentMAD * 1.4826;
+    const stablePseudoSigma = pseudoSigma > 1e-7 ? pseudoSigma : 1e-7;
+
+    let sumW = 0;
+    let sumLatW = 0;
+    let sumLngW = 0;
+
+    for (let i = 0; i < samples.length; i++) {
+      const p = samples[i];
+      const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
+      const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
+
+      const u = dist / stablePseudoSigma;
+      let danishWeight = 1.0;
+      if (u > c) {
+        danishWeight = Math.exp(-a * (u - c));
+      }
+
+      const combinedWeight = hardwareWeight * danishWeight;
+
+      sumW += combinedWeight;
+      sumLatW += p.lat * combinedWeight;
+      sumLngW += p.lng * combinedWeight;
+    }
+
+    if (sumW === 0) break;
+
+    const nextLat = sumLatW / sumW;
+    const nextLng = sumLngW / sumW;
+
+    const changeInMeter = calculateDistanceMeter(nextLat, nextLng, currentLat, currentLng, currentLat);
+
+    currentLat = nextLat;
+    currentLng = nextLng;
+
+    if (changeInMeter < toleranceMeter) break;
+  }
+
+  const finalMAD = calculateMADHuber(samples, currentLat, currentLng);
+  const finalPseudoSigma = finalMAD * 1.4826;
+  const stableFinalPseudoSigma = finalPseudoSigma > 1e-7 ? finalPseudoSigma : 1e-7;
+  
+  // Under Danish, outliers are gently downweighted but we filter them using a standard 3-sigma gate for final representation
+  const outlierThreshold = 3.0 * stableFinalPseudoSigma;
+
+  const usedIndices: number[] = [];
+  const cleanSamples: Coordinate[] = [];
+
+  for (let i = 0; i < samples.length; i++) {
+    const p = samples[i];
+    const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
+
+    if (dist <= outlierThreshold) {
+      usedIndices.push(i);
+      cleanSamples.push(p);
+    }
+  }
+
+  if (cleanSamples.length === 0) {
+    return { 
+      result: { lat: currentLat, lng: currentLng, accuracy: 3.0, altitude: null, altitudeAccuracy: null, timestamp: Date.now() }, 
+      usedIndices: samples.map((_, i) => i) 
+    };
+  }
+
+  const subMAD = calculateMADHuber(cleanSamples, currentLat, currentLng);
+  const subPseudoSigma = subMAD * 1.4826;
+  const stableSubPseudoSigma = subPseudoSigma > 1e-7 ? subPseudoSigma : 1e-7;
+
+  let finalSumW = 0;
+  let finalLatW = 0;
+  let finalLngW = 0;
+  let totalAccuracy = 0;
+
+  for (const p of cleanSamples) {
+    const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
+    const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
+    
+    const u = dist / stableSubPseudoSigma;
+    let danishWeight = 1.0;
+    if (u > c) {
+      danishWeight = Math.exp(-a * (u - c));
+    }
+
+    const combinedWeight = hardwareWeight * danishWeight;
+
+    finalSumW += combinedWeight;
+    finalLatW += p.lat * combinedWeight;
+    finalLngW += p.lng * combinedWeight;
+    totalAccuracy += p.accuracy;
+  }
+
+  return {
+    result: {
+      lat: finalLatW / finalSumW,
+      lng: finalLngW / finalSumW,
+      accuracy: totalAccuracy / cleanSamples.length,
+      altitude: null,
+      altitudeAccuracy: null,
+      timestamp: Date.now()
+    },
+    usedIndices
   };
 }
 

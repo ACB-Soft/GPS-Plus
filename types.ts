@@ -24,7 +24,10 @@ export type CalculationMethod =
   | 'BAARDA'
   | 'KMEANS_BAARDA_HUBER'
   | 'POPE_TAU'
-  | 'HAMPEL';
+  | 'HAMPEL'
+  | 'ANDREWS_WAVE'
+  | 'TUKEYS_BIWEIGHT'
+  | 'DANISH';
 
 export interface SavedLocation extends Coordinate {
   id: string;

@@ -47,7 +47,10 @@ const METHOD_COLORS: Record<string, string> = {
   BAARDA: '#f59e0b',
   KMEANS_BAARDA_HUBER: '#10b981',
   POPE_TAU: '#a855f7',
-  HAMPEL: '#6366f1'
+  HAMPEL: '#6366f1',
+  ANDREWS_WAVE: '#f43f5e',
+  TUKEYS_BIWEIGHT: '#14b8a6',
+  DANISH: '#eab308'
 };
 
 const CLUSTER_COLORS = [
@@ -219,6 +222,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     'POPE_TAU',
     'HUBER',
     'HAMPEL',
+    'ANDREWS_WAVE',
+    'TUKEYS_BIWEIGHT',
+    'DANISH',
     'KMEANS_BAARDA_HUBER'
   ], []);
 
@@ -230,7 +236,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       'POPE_TAU': t("4. Pope’s Tau Testi"),
       'HUBER': t("5. Robust Huber"),
       'HAMPEL': t("6. Robust Hampel"),
-      'KMEANS_BAARDA_HUBER': t("7. Hibrit Yöntem (KMeans+Baarda)")
+      'ANDREWS_WAVE': t("7. Andrew's Wave Kestiricisi"),
+      'TUKEYS_BIWEIGHT': t("8. Tukey's Biweight Kestiricisi"),
+      'DANISH': t("9. Danimarka (Danish) Kestiricisi"),
+      'KMEANS_BAARDA_HUBER': t("10. Hibrit Yöntem (KMeans+Baarda)")
     };
     return labels[m] || m;
   };
@@ -1519,7 +1528,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   'BAARDA': 'Baarda',
                                   'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
                                   'POPE_TAU': "Pope's Tau",
-                                  'HAMPEL': 'Hampel MAD'
+                                  'HAMPEL': 'Hampel MAD',
+                                  'ANDREWS_WAVE': "Andrew's Wave",
+                                  'TUKEYS_BIWEIGHT': "Tukey's Biweight",
+                                  'DANISH': 'Danish Estimator'
                                 };
                                 return labels[m] || m;
                               };
@@ -1587,7 +1599,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               'BAARDA': 'Baarda',
                               'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
                               'POPE_TAU': "Pope's Tau",
-                              'HAMPEL': 'Hampel MAD'
+                              'HAMPEL': 'Hampel MAD',
+                              'ANDREWS_WAVE': "Andrew's Wave",
+                              'TUKEYS_BIWEIGHT': "Tukey's Biweight",
+                              'DANISH': 'Danish Estimator'
                             };
                             return labels[m] || m;
                           };
@@ -1624,7 +1639,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             'BAARDA': 'Baarda',
                             'KMEANS_BAARDA_HUBER': 'KMeans + Baarda + Huber',
                             'POPE_TAU': "Pope's Tau",
-                            'HAMPEL': 'Hampel MAD'
+                            'HAMPEL': 'Hampel MAD',
+                            'ANDREWS_WAVE': "Andrew's Wave",
+                            'TUKEYS_BIWEIGHT': "Tukey's Biweight",
+                            'DANISH': 'Danish Estimator'
                           };
                           return labels[m] || m;
                         };
