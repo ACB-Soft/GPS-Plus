@@ -28,7 +28,8 @@ export type CalculationMethod =
   | 'ANDREWS_WAVE'
   | 'TUKEYS_BIWEIGHT'
   | 'DANISH'
-  | 'GNSS_IMU_STATIONARY';
+  | 'GNSS_IMU_STATIONARY'
+  | 'HODGES_LEHMANN';
 
 export interface SavedLocation extends Coordinate {
   id: string;

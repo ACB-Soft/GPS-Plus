@@ -51,7 +51,8 @@ const METHOD_COLORS: Record<string, string> = {
   ANDREWS_WAVE: '#f43f5e',
   TUKEYS_BIWEIGHT: '#14b8a6',
   DANISH: '#eab308',
-  GNSS_IMU_STATIONARY: '#0284c7'
+  GNSS_IMU_STATIONARY: '#0284c7',
+  HODGES_LEHMANN: '#ec4899'
 };
 
 const CLUSTER_COLORS = [
@@ -227,6 +228,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     'TUKEYS_BIWEIGHT',
     'DANISH',
     'GNSS_IMU_STATIONARY',
+    'HODGES_LEHMANN',
     'KMEANS_BAARDA_HUBER'
   ], []);
 
@@ -242,6 +244,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       'TUKEYS_BIWEIGHT': t("8. Tukey's Biweight Kestiricisi"),
       'DANISH': t("9. Danimarka (Danish) Kestiricisi"),
       'GNSS_IMU_STATIONARY': t("11. GNSS+IMU Sabitlik Kısıtlı Filtre"),
+      'HODGES_LEHMANN': t("12. Hodges-Lehmann Kestiricisi"),
       'KMEANS_BAARDA_HUBER': t("10. Hibrit Yöntem (KMeans+Baarda)")
     };
     return labels[m] || m;
@@ -1535,7 +1538,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   'ANDREWS_WAVE': "Andrew's Wave",
                                   'TUKEYS_BIWEIGHT': "Tukey's Biweight",
                                   'DANISH': 'Danish Estimator',
-                                  'GNSS_IMU_STATIONARY': 'GNSS+IMU Stationary Filter'
+                                  'GNSS_IMU_STATIONARY': 'GNSS+IMU Stationary Filter',
+                                  'HODGES_LEHMANN': 'Hodges-Lehmann Estimator'
                                 };
                                 return labels[m] || m;
                               };
@@ -1607,7 +1611,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               'ANDREWS_WAVE': "Andrew's Wave",
                               'TUKEYS_BIWEIGHT': "Tukey's Biweight",
                               'DANISH': 'Danish Estimator',
-                              'GNSS_IMU_STATIONARY': 'GNSS+IMU Stationary Filter'
+                              'GNSS_IMU_STATIONARY': 'GNSS+IMU Stationary Filter',
+                              'HODGES_LEHMANN': 'Hodges-Lehmann Estimator'
                             };
                             return labels[m] || m;
                           };
@@ -1648,7 +1653,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             'ANDREWS_WAVE': "Andrew's Wave",
                             'TUKEYS_BIWEIGHT': "Tukey's Biweight",
                             'DANISH': 'Danish Estimator',
-                            'GNSS_IMU_STATIONARY': 'GNSS+IMU Stationary Filter'
+                            'GNSS_IMU_STATIONARY': 'GNSS+IMU Stationary Filter',
+                            'HODGES_LEHMANN': 'Hodges-Lehmann Estimator'
                           };
                           return labels[m] || m;
                         };

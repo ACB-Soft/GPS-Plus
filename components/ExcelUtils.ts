@@ -19,6 +19,7 @@ const getMethodName = (m: CalculationMethod) => {
     case 'TUKEYS_BIWEIGHT': return "Tukey's Biweight Kestiricisi";
     case 'DANISH': return "Danimarka (Danish) Kestiricisi";
     case 'GNSS_IMU_STATIONARY': return "GNSS+IMU Sabitlik Kısıtlı Filtre";
+    case 'HODGES_LEHMANN': return "Hodges-Lehmann Kestiricisi";
     default: return m;
   }
 };
@@ -164,7 +165,8 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     'ANDREWS_WAVE',
     'TUKEYS_BIWEIGHT',
     'DANISH',
-    'GNSS_IMU_STATIONARY'
+    'GNSS_IMU_STATIONARY',
+    'HODGES_LEHMANN'
   ];
   const methodResults = methods.map(method => {
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
@@ -560,7 +562,8 @@ export const downloadCombinedAnalysisReport = (
     'ANDREWS_WAVE',
     'TUKEYS_BIWEIGHT',
     'DANISH',
-    'GNSS_IMU_STATIONARY'
+    'GNSS_IMU_STATIONARY',
+    'HODGES_LEHMANN'
   ];
 
   if (location.samples && location.samples.length > 0) {

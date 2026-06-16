@@ -61,7 +61,7 @@ export function calculateResult(
   // - Standalone BAARDA, POPE_TAU and HAMPEL only require geodetic minimum of 4 epok.
   const requires55 = method === 'KMEANS_BAARDA_HUBER';
   const requires30 = method === 'HUBER' || method === 'KMEANS_4';
-  const requires4 = method === 'BAARDA' || method === 'POPE_TAU' || method === 'HAMPEL' || method === 'ANDREWS_WAVE' || method === 'TUKEYS_BIWEIGHT' || method === 'DANISH' || method === 'GNSS_IMU_STATIONARY';
+  const requires4 = method === 'BAARDA' || method === 'POPE_TAU' || method === 'HAMPEL' || method === 'ANDREWS_WAVE' || method === 'TUKEYS_BIWEIGHT' || method === 'DANISH' || method === 'GNSS_IMU_STATIONARY' || method === 'HODGES_LEHMANN';
   
   let finalMethod = method;
   let fallbackApplied = false;
@@ -143,6 +143,11 @@ export function calculateResult(
       const stationaryRes = calculateGnssImuStationary(sourceData);
       resultData = stationaryRes.result;
       finalCalculatedUsedIndices = stationaryRes.usedIndices;
+      break;
+    case 'HODGES_LEHMANN':
+      const hlRes = calculateHodgesLehmannPure(sourceData);
+      resultData = hlRes.result;
+      finalCalculatedUsedIndices = hlRes.usedIndices;
       break;
     default:
       const defaultLse = calculateWeightedLSE(sourceData);
@@ -1754,6 +1759,137 @@ export function calculateGnssImuStationary(samples: Coordinate[]): { result: Coo
   return {
     result: lseResult.result,
     usedIndices: stationaryIndices
+  };
+}
+
+/**
+ * Hodges-Lehmann Estimator (HL-Estimator)
+ * 
+ * For a 1D dataset, the one-sample Hodges-Lehmann estimator is defined as the median
+ * of all pairwise (Walsh) averages: (X_i + X_j) / 2 for 1 <= i <= j <= N.
+ *
+ * For 2D geodetic coordinates:
+ * - We calculate the Hodges-Lehmann estimate of latitude (hlLat) and longitude (hlLng) independently
+ *   using pure Walsh averages.
+ * - To determine outliers (for visualization and consistency under usedIndices), we:
+ *   a. Find the Euclidean distance of all raw epochs to this HL center estimator in meters.
+ *   b. Obtain the Median Absolute Deviation (MAD) of those spatial distances.
+ *   c. Use a 3.0 * scaleSigma (where scaleSigma = 1.4826 * MAD) rejection threshold to identify inliers.
+ *   d. Guarantee at least 2 inliers (safeguard) to avoid rank deficiency.
+ * - Return the exact HL coordinates {lat: hlLat, lng: hlLng, accuracy: avgAccuracy, ...} and the inlier indices.
+ */
+export function calculateHodgesLehmannPure(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  // If we have extremely few samples, fallback directly to weighted LSE
+  if (samples.length < 4) {
+    return calculateWeightedLSE(samples);
+  }
+
+  const N = samples.length;
+
+  // Step A: Calculate all pairwise (Walsh) averages for Latitude
+  const walshLats: number[] = [];
+  for (let i = 0; i < N; i++) {
+    for (let j = i; j < N; j++) {
+      walshLats.push((samples[i].lat + samples[j].lat) / 2);
+    }
+  }
+  // Compute median of walshLats
+  walshLats.sort((a, b) => a - b);
+  const midLat = Math.floor(walshLats.length / 2);
+  const hlLat = walshLats.length % 2 !== 0 
+    ? walshLats[midLat] 
+    : (walshLats[midLat - 1] + walshLats[midLat]) / 2;
+
+  // Step B: Calculate all pairwise (Walsh) averages for Longitude
+  const walshLngs: number[] = [];
+  for (let i = 0; i < N; i++) {
+    for (let j = i; j < N; j++) {
+      walshLngs.push((samples[i].lng + samples[j].lng) / 2);
+    }
+  }
+  // Compute median of walshLngs
+  walshLngs.sort((a, b) => a - b);
+  const midLng = Math.floor(walshLngs.length / 2);
+  const hlLng = walshLngs.length % 2 !== 0 
+    ? walshLngs[midLng] 
+    : (walshLngs[midLng - 1] + walshLngs[midLng]) / 2;
+
+  // Step C: Identify Outliers relative to the Hodges-Lehmann Center (for usedIndices mapping)
+  // Distance of each raw coordinate point to the HL center in meters
+  const dists = samples.map(s => calculateDistanceMeter(s.lat, s.lng, hlLat, hlLng, hlLat));
+
+  // Compute Median of distances
+  const sortedDists = [...dists].sort((a, b) => a - b);
+  const midD = Math.floor(N / 2);
+  const medianDist = N % 2 !== 0 ? sortedDists[midD] : (sortedDists[midD - 1] + sortedDists[midD]) / 2;
+
+  // Absolute deviations of each distance from the median distance
+  const absDevs = dists.map(d => Math.abs(d - medianDist));
+  const sortedDevs = [...absDevs].sort((a, b) => a - b);
+  const medianDev = N % 2 !== 0 ? sortedDevs[midD] : (sortedDevs[midD - 1] + sortedDevs[midD]) / 2;
+
+  const mad = medianDev;
+  const scaleSigma = 1.4826 * mad;
+
+  // Rejection threshold boundaries (consistency safeguard)
+  const minSigmaBoundary = 1e-6; // 1 micrometer
+
+  const inlierIndices: number[] = [];
+
+  if (scaleSigma < minSigmaBoundary) {
+    // Standard output: all are close
+    return {
+      result: {
+        lat: hlLat,
+        lng: hlLng,
+        accuracy: samples.reduce((sum, s) => sum + s.accuracy, 0) / N,
+        altitude: samples.some(s => s.altitude !== null && s.altitude !== undefined)
+          ? samples.reduce((sum, s) => sum + (s.altitude || 0), 0) / N
+          : null,
+        altitudeAccuracy: samples.some(s => s.altitudeAccuracy !== null && s.altitudeAccuracy !== undefined)
+          ? samples.reduce((sum, s) => sum + (s.altitudeAccuracy || 0), 0) / N
+          : null,
+        timestamp: Date.now()
+      },
+      usedIndices: samples.map((_, i) => i)
+    };
+  }
+
+  for (let i = 0; i < N; i++) {
+    if (absDevs[i] <= 3.0 * scaleSigma) {
+      inlierIndices.push(i);
+    }
+  }
+
+  // Fallback protection: keep at least 2 samples with the lowest dev
+  let finalUsedIndices = inlierIndices;
+  if (finalUsedIndices.length < 2) {
+    const sortedSampleIndices = samples
+      .map((_, idx) => ({ idx, dev: absDevs[idx] }))
+      .sort((a, b) => a.dev - b.dev);
+    finalUsedIndices = [sortedSampleIndices[0].idx, sortedSampleIndices[1].idx];
+  }
+
+  // Average accuracy of the raw filtered elements
+  const activeInliers = finalUsedIndices.map(idx => samples[idx]);
+  const avgAccuracy = activeInliers.reduce((sum, s) => sum + s.accuracy, 0) / activeInliers.length;
+  const avgAltitude = activeInliers.some(s => s.altitude !== null && s.altitude !== undefined)
+    ? activeInliers.reduce((sum, s) => sum + (s.altitude || 0), 0) / activeInliers.length
+    : null;
+  const avgAltAccuracy = activeInliers.some(s => s.altitudeAccuracy !== null && s.altitudeAccuracy !== undefined)
+    ? activeInliers.reduce((sum, s) => sum + (s.altitudeAccuracy || 0), 0) / activeInliers.length
+    : null;
+
+  return {
+    result: {
+      lat: hlLat,
+      lng: hlLng,
+      accuracy: avgAccuracy,
+      altitude: avgAltitude,
+      altitudeAccuracy: avgAltAccuracy,
+      timestamp: Date.now()
+    },
+    usedIndices: finalUsedIndices
   };
 }
 
