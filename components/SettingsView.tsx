@@ -540,6 +540,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
                   <option value="DANISH">{t("9. Danimarka (Danish) Kestiricisi")}</option>
                   <option value="HYBRID_v1">{t("10. Hibrit Yöntem (HYBRID_v1)")}</option>
                   <option value="HODGES_LEHMANN">{t("11. Hodges-Lehmann Kestiricisi")}</option>
+                  <option value="TUKEYS_TRIMEAN">{t("12. Tukey's Trimean Kestiricisi")}</option>
                 </select>
               </div>
 

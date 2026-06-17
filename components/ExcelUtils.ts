@@ -19,6 +19,7 @@ const getMethodName = (m: CalculationMethod) => {
     case 'TUKEYS_BIWEIGHT': return "Tukey's Biweight Kestiricisi";
     case 'DANISH': return "Danimarka (Danish) Kestiricisi";
     case 'HODGES_LEHMANN': return "Hodges-Lehmann Kestiricisi";
+    case 'TUKEYS_TRIMEAN': return "Tukey's Trimean Kestiricisi";
     default: return m;
   }
 };
@@ -164,7 +165,8 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     'TUKEYS_BIWEIGHT',
     'DANISH',
     'HYBRID_v1',
-    'HODGES_LEHMANN'
+    'HODGES_LEHMANN',
+    'TUKEYS_TRIMEAN'
   ];
   const methodResults = methods.map(method => {
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
@@ -560,7 +562,8 @@ export const downloadCombinedAnalysisReport = (
     'TUKEYS_BIWEIGHT',
     'DANISH',
     'HYBRID_v1',
-    'HODGES_LEHMANN'
+    'HODGES_LEHMANN',
+    'TUKEYS_TRIMEAN'
   ];
 
   if (location.samples && location.samples.length > 0) {

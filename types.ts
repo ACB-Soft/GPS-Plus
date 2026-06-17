@@ -28,7 +28,8 @@ export type CalculationMethod =
   | 'ANDREWS_WAVE'
   | 'TUKEYS_BIWEIGHT'
   | 'DANISH'
-  | 'HODGES_LEHMANN';
+  | 'HODGES_LEHMANN'
+  | 'TUKEYS_TRIMEAN';
 
 export interface SavedLocation extends Coordinate {
   id: string;

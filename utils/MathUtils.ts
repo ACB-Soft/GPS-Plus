@@ -59,7 +59,7 @@ export function calculateResult(
   // - HUBER and KMEANS_4 require en az 30 epok.
   // - Standalone BAARDA, POPE_TAU and HAMPEL only require geodetic minimum of 4 epok.
   const requires30 = method === 'HUBER' || method === 'KMEANS_4';
-  const requires4 = method === 'BAARDA' || method === 'POPE_TAU' || method === 'HAMPEL' || method === 'ANDREWS_WAVE' || method === 'TUKEYS_BIWEIGHT' || method === 'DANISH' || method === 'HODGES_LEHMANN' || method === 'HYBRID_v1';
+  const requires4 = method === 'BAARDA' || method === 'POPE_TAU' || method === 'HAMPEL' || method === 'ANDREWS_WAVE' || method === 'TUKEYS_BIWEIGHT' || method === 'DANISH' || method === 'HODGES_LEHMANN' || method === 'TUKEYS_TRIMEAN' || method === 'HYBRID_v1';
   
   let finalMethod = method;
   let fallbackApplied = false;
@@ -138,6 +138,11 @@ export function calculateResult(
       const hlRes = calculateHodgesLehmannPure(sourceData);
       resultData = hlRes.result;
       finalCalculatedUsedIndices = hlRes.usedIndices;
+      break;
+    case 'TUKEYS_TRIMEAN':
+      const trimeanRes = calculateTukeysTrimeanPure(sourceData);
+      resultData = trimeanRes.result;
+      finalCalculatedUsedIndices = trimeanRes.usedIndices;
       break;
     default:
       const defaultLse = calculateWeightedLSE(sourceData);
@@ -1815,6 +1820,127 @@ export function calculateHodgesLehmannPure(samples: Coordinate[]): { result: Coo
     result: {
       lat: hlLat,
       lng: hlLng,
+      accuracy: avgAccuracy,
+      altitude: avgAltitude,
+      altitudeAccuracy: avgAltAccuracy,
+      timestamp: Date.now()
+    },
+    usedIndices: finalUsedIndices
+  };
+}
+
+/**
+ * Tukey's Trimean L-Estimation Method
+ *
+ * Tukey's Trimean is an L-estimator of location that is highly robust to outliers and contamination.
+ * It is defined as a weighted average of the first quartile (25th percentile), the median (50th percentile),
+ * and the third quartile (75th percentile):
+ *   Trimean = (Q1 + 2*Q2 + Q3) / 4
+ *
+ * For geodetic 2D coordinates:
+ * - We calculate the Tukey's Trimean of latitude (triLat) and longitude (triLng) independently.
+ * - To determine outlier status (for usedIndices visual tracking), we:
+ *   a. Find the Euclidean distance of all raw epochs to this Trimean center.
+ *   b. Obtain the Median Absolute Deviation (MAD) of those spatial distances.
+ *   c. Use a 3.0 * scaleSigma (scaleSigma = 1.4826 * MAD) boundary as the academic gate for inliers.
+ * - Return the Trimean coordinate and the valid, high-reliability inliers.
+ */
+export function calculateTukeysTrimeanPure(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  // If we have extremely few samples, fallback directly to weighted LSE
+  if (samples.length < 4) {
+    return calculateWeightedLSE(samples);
+  }
+
+  const N = samples.length;
+
+  // Helper to compute percentile/quartile of a sorted list of numbers
+  const getPercentileValue = (sorted: number[], p: number): number => {
+    const idx = (sorted.length - 1) * p;
+    const low = Math.floor(idx);
+    const high = Math.ceil(idx);
+    if (low === high) return sorted[low];
+    return sorted[low] + (sorted[high] - sorted[low]) * (idx - low);
+  };
+
+  // Step A: Tukey's Trimean for Latitude
+  const sortedLats = samples.map(s => s.lat).sort((a, b) => a - b);
+  const q1Lat = getPercentileValue(sortedLats, 0.25);
+  const q2Lat = getPercentileValue(sortedLats, 0.50);
+  const q3Lat = getPercentileValue(sortedLats, 0.75);
+  const triLat = (q1Lat + 2 * q2Lat + q3Lat) / 4;
+
+  // Step B: Tukey's Trimean for Longitude
+  const sortedLngs = samples.map(s => s.lng).sort((a, b) => a - b);
+  const q1Lng = getPercentileValue(sortedLngs, 0.25);
+  const q2Lng = getPercentileValue(sortedLngs, 0.50);
+  const q3Lng = getPercentileValue(sortedLngs, 0.75);
+  const triLng = (q1Lng + 2 * q2Lng + q3Lng) / 4;
+
+  // Step C: Identify Outliers relative to the Trimean Center
+  const dists = samples.map(s => calculateDistanceMeter(s.lat, s.lng, triLat, triLng, triLat));
+
+  // Compute Median of distances
+  const sortedDists = [...dists].sort((a, b) => a - b);
+  const midD = Math.floor(N / 2);
+  const medianDist = N % 2 !== 0 ? sortedDists[midD] : (sortedDists[midD - 1] + sortedDists[midD]) / 2;
+
+  // Absolute deviations from median distance
+  const absDevs = dists.map(d => Math.abs(d - medianDist));
+  const sortedDevs = [...absDevs].sort((a, b) => a - b);
+  const medianDev = N % 2 !== 0 ? sortedDevs[midD] : (sortedDevs[midD - 1] + sortedDevs[midD]) / 2;
+
+  const mad = medianDev;
+  const scaleSigma = 1.4826 * mad;
+  const minSigmaBoundary = 1e-6; // 1 micrometer
+
+  if (scaleSigma < minSigmaBoundary) {
+    return {
+      result: {
+        lat: triLat,
+        lng: triLng,
+        accuracy: samples.reduce((sum, s) => sum + s.accuracy, 0) / N,
+        altitude: samples.some(s => s.altitude !== null && s.altitude !== undefined)
+          ? samples.reduce((sum, s) => sum + (s.altitude || 0), 0) / N
+          : null,
+        altitudeAccuracy: samples.some(s => s.altitudeAccuracy !== null && s.altitudeAccuracy !== undefined)
+          ? samples.reduce((sum, s) => sum + (s.altitudeAccuracy || 0), 0) / N
+          : null,
+        timestamp: Date.now()
+      },
+      usedIndices: samples.map((_, i) => i)
+    };
+  }
+
+  const inlierIndices: number[] = [];
+  for (let i = 0; i < N; i++) {
+    if (absDevs[i] <= 3.0 * scaleSigma) {
+      inlierIndices.push(i);
+    }
+  }
+
+  // Fallback protection: keep at least 2 samples with the lowest dev
+  let finalUsedIndices = inlierIndices;
+  if (finalUsedIndices.length < 2) {
+    const sortedSampleIndices = samples
+      .map((_, idx) => ({ idx, dev: absDevs[idx] }))
+      .sort((a, b) => a.dev - b.dev);
+    finalUsedIndices = [sortedSampleIndices[0].idx, sortedSampleIndices[1].idx];
+  }
+
+  // Calculate average accuracy and altitude metadata
+  const activeInliers = finalUsedIndices.map(idx => samples[idx]);
+  const avgAccuracy = activeInliers.reduce((sum, s) => sum + s.accuracy, 0) / activeInliers.length;
+  const avgAltitude = activeInliers.some(s => s.altitude !== null && s.altitude !== undefined)
+    ? activeInliers.reduce((sum, s) => sum + (s.altitude || 0), 0) / activeInliers.length
+    : null;
+  const avgAltAccuracy = activeInliers.some(s => s.altitudeAccuracy !== null && s.altitudeAccuracy !== undefined)
+    ? activeInliers.reduce((sum, s) => sum + (s.altitudeAccuracy || 0), 0) / activeInliers.length
+    : null;
+
+  return {
+    result: {
+      lat: triLat,
+      lng: triLng,
       accuracy: avgAccuracy,
       altitude: avgAltitude,
       altitudeAccuracy: avgAltAccuracy,

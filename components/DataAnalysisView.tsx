@@ -51,7 +51,8 @@ const METHOD_COLORS: Record<string, string> = {
   ANDREWS_WAVE: '#f43f5e',
   TUKEYS_BIWEIGHT: '#14b8a6',
   DANISH: '#eab308',
-  HODGES_LEHMANN: '#ec4899'
+  HODGES_LEHMANN: '#ec4899',
+  TUKEYS_TRIMEAN: '#a855f7'
 };
 
 const CLUSTER_COLORS = [
@@ -236,7 +237,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     'TUKEYS_BIWEIGHT',
     'DANISH',
     'HYBRID_v1',
-    'HODGES_LEHMANN'
+    'HODGES_LEHMANN',
+    'TUKEYS_TRIMEAN'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
@@ -251,7 +253,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       'TUKEYS_BIWEIGHT': t("8. Tukey's Biweight Kestiricisi"),
       'DANISH': t("9. Danimarka (Danish) Kestiricisi"),
       'HYBRID_v1': t("10. Hibrit Yöntem (HYBRID_v1)"),
-      'HODGES_LEHMANN': t("11. Hodges-Lehmann Kestiricisi")
+      'HODGES_LEHMANN': t("11. Hodges-Lehmann Kestiricisi"),
+      'TUKEYS_TRIMEAN': t("12. Tukey's Trimean Kestiricisi")
     };
     return labels[m] || m;
   };
@@ -1605,7 +1608,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   'ANDREWS_WAVE': "Andrew's Wave",
                                   'TUKEYS_BIWEIGHT': "Tukey's Biweight",
                                   'DANISH': 'Danish Estimator',
-                                  'HODGES_LEHMANN': 'Hodges-Lehmann Estimator'
+                                  'HODGES_LEHMANN': 'Hodges-Lehmann Estimator',
+                                  'TUKEYS_TRIMEAN': "Tukey's Trimean"
                                 };
                                 return labels[m] || m;
                               };
@@ -1677,7 +1681,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               'ANDREWS_WAVE': "Andrew's Wave",
                               'TUKEYS_BIWEIGHT': "Tukey's Biweight",
                               'DANISH': 'Danish Estimator',
-                              'HODGES_LEHMANN': 'Hodges-Lehmann Estimator'
+                              'HODGES_LEHMANN': 'Hodges-Lehmann Estimator',
+                              'TUKEYS_TRIMEAN': "Tukey's Trimean"
                             };
                             return labels[m] || m;
                           };
@@ -1718,7 +1723,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             'ANDREWS_WAVE': "Andrew's Wave",
                             'TUKEYS_BIWEIGHT': "Tukey's Biweight",
                             'DANISH': 'Danish Estimator',
-                            'HODGES_LEHMANN': 'Hodges-Lehmann Estimator'
+                            'HODGES_LEHMANN': 'Hodges-Lehmann Estimator',
+                            'TUKEYS_TRIMEAN': "Tukey's Trimean"
                           };
                           return labels[m] || m;
                         };
