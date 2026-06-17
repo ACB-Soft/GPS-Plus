@@ -18,12 +18,12 @@ export interface Coordinate {
 
 export type CalculationMethod = 
   | 'WEIGHTED_LSE' 
+  | 'DBSCAN'
   | 'HUBER'
   | 'HAMPEL'
   | 'HODGES_LEHMANN'
   | 'TUKEYS_TRIMEAN'
-  | 'OPTIMAL_S'
-  | 'MM_ESTIMATOR';
+  | 'OPTIMAL_S';
 
 export interface SavedLocation extends Coordinate {
   id: string;

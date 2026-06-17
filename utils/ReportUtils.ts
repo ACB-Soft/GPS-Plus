@@ -664,15 +664,6 @@ function runKMeans(samples: Coordinate[], k: number): number[] {
       <p class="no-indent"><span class="bold">2. İteratif Yakınsama:</span> Konum koordinatları ağırlıklara göre yeniden hesaplanır og değişim $0.001\text{m}$ altına düşene kadar iteratif olarak güncellenir. Uç değerlerin ağırlıkları sıfıra indirilerek kararlılık maksimuma ulaştırılır.</p>
     </div>
 
-    <h3>2.4.7. Robust MM-Kestiricisi (Robust MM-Estimation)</h3>
-    <p>Hem yüksek kırılma noktasına (%50 breakdown point) hem de yüksek asimptotik etkinliğe sahip olan modern <b>Robust MM-Kestiricisi</b>, iki aşamalı hibrit bir hiyerarşide koordine edilir. Bu sayede veri havuzundaki baskın kaba hataları ve çoklu multipath sıçramalarını tam olarak filtrelerken, normal dağılıma uyan epokların doğruluğunu korur.</p>
-    
-    <div class="case-container" style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
-      <p class="bold" style="color: #14532d; margin-bottom: 6px;">MM-Estimator Çift Kademeli Çözüm Filtresi</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. İlk Aşama (Optimal S-Kestiricisi):</span> Aşırı uçlu kaba hataları dışlamak amacıyla ilk etapta Tukey's Biweight kayıp fonksiyonu tabanlı gürbüz konumlandırma sağlayan Optimal S-Kestiricisi uygulanarak kararlı ve sağlam bir başlangıç koordinat merkezi belirlenir.</p>
-      <p class="no-indent"><span class="bold">2. İkinci Aşama (Huber M-Kestiricisi):</span> Birinci aşamada elde edilen robust başlangıç konumu referans alınarak, Huber M-Kestiricisi algoritması ile gürbüz standart sapma limitlerinde iteratif ağırlıklı en küçük kareler dengesi kurulur. Sapma sınırını aşan uç gözlemler Huber ağırlıkları ile sönümlenerek kararlılık optimize edilir.</p>
-    </div>
-
     <div style="display:none;">
 
   // 1. Stage: Speed Filtering (speed &lt; 1.0 m/s)

@@ -57,9 +57,9 @@ export function calculateResult(
 
   // Let's implement the constraint checks for professional mathematical models:
   // - HUBER requires en az 30 epok.
-  // - HAMPEL, HODGES_LEHMANN, TUKEYS_TRIMEAN, OPTIMAL_S, MM_ESTIMATOR require geodetic minimum of 4 epok.
+  // - HAMPEL, HODGES_LEHMANN, TUKEYS_TRIMEAN, OPTIMAL_S, DBSCAN require geodetic minimum of 4 epok.
   const requires30 = method === 'HUBER';
-  const requires4 = method === 'HAMPEL' || method === 'HODGES_LEHMANN' || method === 'TUKEYS_TRIMEAN' || method === 'OPTIMAL_S' || method === 'MM_ESTIMATOR';
+  const requires4 = method === 'HAMPEL' || method === 'HODGES_LEHMANN' || method === 'TUKEYS_TRIMEAN' || method === 'OPTIMAL_S' || method === 'DBSCAN';
   
   let finalMethod = method;
   let fallbackApplied = false;
@@ -77,6 +77,12 @@ export function calculateResult(
       const lseResult = calculateWeightedLSE(sourceData);
       resultData = lseResult.result;
       finalCalculatedUsedIndices = lseResult.usedIndices;
+      break;
+    case 'DBSCAN':
+      const dbscanRes = calculateDBSCAN(sourceData);
+      resultData = dbscanRes.result;
+      finalCalculatedUsedIndices = dbscanRes.usedIndices;
+      clusters = dbscanRes.clusters;
       break;
     case 'HUBER':
       const pureHuberRes = calculateHuberPure(sourceData);
@@ -102,11 +108,6 @@ export function calculateResult(
       const optimalSRes = calculateOptimalSPure(sourceData);
       resultData = optimalSRes.result;
       finalCalculatedUsedIndices = optimalSRes.usedIndices;
-      break;
-    case 'MM_ESTIMATOR':
-      const mmeRes = calculateMMEstimatorPure(sourceData);
-      resultData = mmeRes.result;
-      finalCalculatedUsedIndices = mmeRes.usedIndices;
       break;
     default:
       const defaultLse = calculateWeightedLSE(sourceData);
@@ -1168,122 +1169,6 @@ export function calculateOptimalSPure(samples: Coordinate[]): { result: Coordina
   };
 }
 
-export function calculateMMEstimatorPure(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  if (samples.length < 4) {
-    const avgLat = samples.reduce((sum, p) => sum + p.lat, 0) / samples.length;
-    const avgLng = samples.reduce((sum, p) => sum + p.lng, 0) / samples.length;
-    const avgAcc = samples.reduce((sum, p) => sum + p.accuracy, 0) / samples.length;
-    return {
-      result: { lat: avgLat, lng: avgLng, accuracy: avgAcc, altitude: null, altitudeAccuracy: null, timestamp: Date.now() },
-      usedIndices: samples.map((_, i) => i)
-    };
-  }
-
-  // Stage 1: Robust initial estimate using Optimal S-Estimator (First Stage)
-  // This yields highly robust location and filters outliers, giving us a clean/robust subset.
-  const sEstimatorResult = calculateOptimalSPure(samples);
-  const robustIndicesSubset = sEstimatorResult.usedIndices;
-  const robustSubset = robustIndicesSubset.map(idx => samples[idx]);
-
-  if (robustSubset.length < 2) {
-    // If S-estimator heavily cleared everything, fallback to S-estimator's result directly
-    return sEstimatorResult;
-  }
-
-  let currentLat = sEstimatorResult.result.lat;
-  let currentLng = sEstimatorResult.result.lng;
-
-  // Stage 2: Refinement using Huber M-Estimator starting from S-Estimator's location (Second Stage)
-  // We perform refinement ONLY on the robust subset elements selected by Stage 1.
-  const maxIterations = 15;
-  const toleranceMeter = 0.001;
-
-  for (let iter = 0; iter < maxIterations; iter++) {
-    const currentMAD = calculateMADHuber(robustSubset, currentLat, currentLng);
-    const pseudoSigma = currentMAD * 1.4826;
-    const stablePseudoSigma = pseudoSigma > 1e-7 ? pseudoSigma : 1e-7;
-    const huberLimit = 1.345 * stablePseudoSigma;
-
-    let sumW = 0;
-    let sumLatW = 0;
-    let sumLngW = 0;
-
-    for (let i = 0; i < robustSubset.length; i++) {
-      const p = robustSubset[i];
-      const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
-
-      const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
-      const huberWeight = dist <= huberLimit ? 1.0 : huberLimit / Math.max(0.001, dist);
-      const combinedWeight = hardwareWeight * huberWeight;
-
-      sumW += combinedWeight;
-      sumLatW += p.lat * combinedWeight;
-      sumLngW += p.lng * combinedWeight;
-    }
-
-    if (sumW === 0) break;
-
-    const nextLat = sumLatW / sumW;
-    const nextLng = sumLngW / sumW;
-
-    const changeInMeter = calculateDistanceMeter(nextLat, nextLng, currentLat, currentLng, currentLat);
-
-    currentLat = nextLat;
-    currentLng = nextLng;
-
-    if (changeInMeter < toleranceMeter) break;
-  }
-
-  // Refined robust subset scale checking
-  const finalMAD = calculateMADHuber(robustSubset, currentLat, currentLng);
-  const finalPseudoSigma = finalMAD * 1.4826;
-  const stableFinalPseudoSigma = finalPseudoSigma > 1e-7 ? finalPseudoSigma : 1e-7;
-  const outlierThreshold = 1.345 * stableFinalPseudoSigma;
-
-  const finalUsedIndices: number[] = [];
-  const cleanSamples: Coordinate[] = [];
-
-  for (let k = 0; k < robustSubset.length; k++) {
-    const p = robustSubset[k];
-    const originalIndex = robustIndicesSubset[k];
-    const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
-
-    if (dist <= outlierThreshold) {
-      finalUsedIndices.push(originalIndex);
-      cleanSamples.push(p);
-    }
-  }
-
-  if (cleanSamples.length === 0) {
-    return sEstimatorResult;
-  }
-
-  let finalSumW = 0;
-  let finalLatW = 0;
-  let finalLngW = 0;
-  let totalAccuracy = 0;
-
-  for (const p of cleanSamples) {
-    const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
-    finalSumW += hardwareWeight;
-    finalLatW += p.lat * hardwareWeight;
-    finalLngW += p.lng * hardwareWeight;
-    totalAccuracy += p.accuracy;
-  }
-
-  return {
-    result: {
-      lat: finalLatW / finalSumW,
-      lng: finalLngW / finalSumW,
-      accuracy: totalAccuracy / cleanSamples.length,
-      altitude: sEstimatorResult.result.altitude || null,
-      altitudeAccuracy: sEstimatorResult.result.altitudeAccuracy || null,
-      timestamp: Date.now()
-    },
-    usedIndices: finalUsedIndices
-  };
-}
-
 /**
  * Helper function for Inverse Normal CDF (using the Beasley-Springer-Moro rational approximation)
  */
@@ -2149,6 +2034,171 @@ export function calculateTukeysTrimeanPure(samples: Coordinate[]): { result: Coo
       timestamp: Date.now()
     },
     usedIndices: finalUsedIndices
+  };
+}
+
+export function calculateDBSCAN(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
+  const N = samples.length;
+  if (N < 4) {
+    const lseRes = calculateWeightedLSE(samples);
+    return {
+      result: lseRes.result,
+      usedIndices: samples.map((_, i) => i),
+      clusters: []
+    };
+  }
+
+  // Define original index mapping
+  const inputWithIndices = samples.map((s, idx) => ({ ...s, _originalIdx: idx }));
+
+  // ================= STAGE 1: MAD OUTLIER DETECTION =================
+  // 1. Compute spatial median of Latitude and Longitude independently
+  const sortedLats = [...samples.map(s => s.lat)].sort((a, b) => a - b);
+  const sortedLngs = [...samples.map(s => s.lng)].sort((a, b) => a - b);
+  const mid = Math.floor(N / 2);
+  const medianLat = N % 2 !== 0 ? sortedLats[mid] : (sortedLats[mid - 1] + sortedLats[mid]) / 2;
+  const medianLng = N % 2 !== 0 ? sortedLngs[mid] : (sortedLngs[mid - 1] + sortedLngs[mid]) / 2;
+
+  // 2. Compute spatial distance of each point to this spatial median in meters
+  const dists = samples.map(s => calculateDistanceMeter(s.lat, s.lng, medianLat, medianLng, medianLat));
+
+  // 3. Compute Median Distance
+  const sortedDists = [...dists].sort((a, b) => a - b);
+  const medianDist = N % 2 !== 0 ? sortedDists[mid] : (sortedDists[mid - 1] + sortedDists[mid]) / 2;
+
+  // 4. Absolute deviations of each distance from the median distance
+  const absDevs = dists.map(d => Math.abs(d - medianDist));
+  const sortedDevs = [...absDevs].sort((a, b) => a - b);
+  const medianDev = N % 2 !== 0 ? sortedDevs[mid] : (sortedDevs[mid - 1] + sortedDevs[mid]) / 2;
+
+  // 5. Sigma_MAD estimation
+  const mad = medianDev;
+  const scaleSigma = 1.4826 * mad;
+  const minSigmaBoundary = 1e-6; // 1 micrometer
+
+  let madSurvivors = inputWithIndices;
+
+  if (scaleSigma >= minSigmaBoundary) {
+    const outlierThreshold = 3.0 * scaleSigma;
+    const filtered = inputWithIndices.filter((item, idx) => absDevs[idx] <= outlierThreshold);
+    // Fallback: keep at least 4 elements if filter is too aggressive
+    if (filtered.length >= 4) {
+      madSurvivors = filtered;
+    } else {
+      // Keep 4 points with the lowest absolute deviation
+      const sortedByDev = inputWithIndices
+        .map((item, idx) => ({ item, dev: absDevs[idx] }))
+        .sort((a, b) => a.dev - b.dev);
+      madSurvivors = sortedByDev.slice(0, 4).map(x => x.item);
+    }
+  }
+
+  // ================= STAGE 2: DBSCAN CLUSTERING =================
+  // Use adaptive eps based on scaleSigma of the MAD filter
+  const safeSigma = scaleSigma > 1e-4 ? scaleSigma : 1e-4; // minimum 0.1 mm
+  const eps = Math.max(1.5, Math.min(10.0, 1.5 * safeSigma)); // Clamp eps between 1.5m and 10m
+  const minPts = 3;
+
+  const nFiltered = madSurvivors.length;
+  const visited = new Set<number>();
+  const noise = new Set<number>();
+  const localClusters: number[][] = []; // contains indices local to the madSurvivors array
+
+  const getNeighbors = (i: number) => {
+    const neighbors: number[] = [];
+    const p1 = madSurvivors[i];
+    for (let j = 0; j < nFiltered; j++) {
+      const p2 = madSurvivors[j];
+      const dist = calculateDistanceMeter(p1.lat, p1.lng, p2.lat, p2.lng, p1.lat);
+      if (dist <= eps) {
+        neighbors.push(j);
+      }
+    }
+    return neighbors;
+  };
+
+  for (let i = 0; i < nFiltered; i++) {
+    if (visited.has(i)) continue;
+    visited.add(i);
+
+    const neighbors = getNeighbors(i);
+    if (neighbors.length < minPts) {
+      noise.add(i);
+    } else {
+      const currentCluster: number[] = [i];
+      localClusters.push(currentCluster);
+
+      const queue = [...neighbors];
+      for (let q = 0; q < queue.length; q++) {
+        const neighborIdx = queue[q];
+        if (neighborIdx === i) continue;
+
+        if (!visited.has(neighborIdx)) {
+          visited.add(neighborIdx);
+          const nextNeighbors = getNeighbors(neighborIdx);
+          if (nextNeighbors.length >= minPts) {
+            queue.push(...nextNeighbors.filter(idx => !queue.includes(idx)));
+          }
+        }
+
+        const inAnyCluster = localClusters.some(c => c.includes(neighborIdx));
+        if (!inAnyCluster) {
+          currentCluster.push(neighborIdx);
+          noise.delete(neighborIdx);
+        }
+      }
+    }
+  }
+
+  // Map localClusters of local indices of madSurvivors to original indices of samples array
+  const finalClustersMapping = localClusters.map(cluster => 
+    cluster.map(localIdx => madSurvivors[localIdx]._originalIdx)
+  );
+
+  // Choose the Champion Cluster
+  let finalPointsToUse = madSurvivors;
+  let championClusterIndex = -1;
+  let maxCount = -1;
+
+  for (let i = 0; i < localClusters.length; i++) {
+    if (localClusters[i].length > maxCount) {
+      maxCount = localClusters[i].length;
+      championClusterIndex = i;
+    }
+  }
+
+  if (championClusterIndex !== -1) {
+    // We found clusters! Filter points to champion cluster
+    finalPointsToUse = localClusters[championClusterIndex].map(localIdx => madSurvivors[localIdx]);
+  }
+
+  // Fallback protection: ensure we have at least 2 points
+  if (finalPointsToUse.length < 2) {
+    finalPointsToUse = madSurvivors;
+  }
+
+  // Solve Weighted Least Squares (WLS) on selected points
+  const lseResult = calculateWeightedLSE(finalPointsToUse);
+  const resultData = { ...lseResult.result };
+
+  // Calculate coordinates and metadata average on active inliers
+  const activeInlierIndices = finalPointsToUse.map(s => s._originalIdx); 
+
+  // Compute altitude on active inliers
+  const validAlts = finalPointsToUse.filter(s => s.altitude !== null && s.altitude !== undefined);
+  resultData.altitude = validAlts.length > 0
+    ? validAlts.reduce((sum, s) => sum + (s.altitude || 0), 0) / validAlts.length
+    : null;
+
+  const validAltAccs = finalPointsToUse.filter(s => s.altitudeAccuracy !== null && s.altitudeAccuracy !== undefined);
+  resultData.altitudeAccuracy = validAltAccs.length > 0
+    ? validAltAccs.reduce((sum, s) => sum + (s.altitudeAccuracy || 0), 0) / validAltAccs.length
+    : null;
+
+  return {
+    result: resultData,
+    usedIndices: activeInlierIndices,
+    clusters: finalClustersMapping.filter(c => c.length > 0)
   };
 }
 

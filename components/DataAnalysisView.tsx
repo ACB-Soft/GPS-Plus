@@ -42,6 +42,7 @@ const MapSetBounds = ({ points }: { points: [number, number][] }) => {
 const METHOD_COLORS: Record<string, string> = {
   ARITHMETIC_MEAN: '#ec4899',
   WEIGHTED_LSE: '#8b5cf6',
+  DBSCAN: '#d946ef',
   HUBER: '#3b82f6',
   KMEANS_4: '#06b6d4',
   BAARDA: '#f59e0b',
@@ -53,8 +54,7 @@ const METHOD_COLORS: Record<string, string> = {
   DANISH: '#eab308',
   HODGES_LEHMANN: '#ec4899',
   TUKEYS_TRIMEAN: '#a855f7',
-  OPTIMAL_S: '#0d9488',
-  MM_ESTIMATOR: '#10b981'
+  OPTIMAL_S: '#0d9488'
 };
 
 const CLUSTER_COLORS = [
@@ -230,23 +230,23 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
   const methods = useMemo<CalculationMethod[]>(() => [
     'WEIGHTED_LSE',
+    'DBSCAN',
     'HUBER',
     'HAMPEL',
     'HODGES_LEHMANN',
     'TUKEYS_TRIMEAN',
-    'OPTIMAL_S',
-    'MM_ESTIMATOR'
+    'OPTIMAL_S'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
     const labels: Record<string, string> = {
       'WEIGHTED_LSE': t("1. Ağırlıklı En Küçük Kareler"),
-      'HUBER': t("2. Huber M-Kestiricisi"),
-      'HAMPEL': t("3. Hampel M-Kestiricisi"),
-      'HODGES_LEHMANN': t("4. Hodges-Lehmann R-Kestiricisi"),
-      'TUKEYS_TRIMEAN': t("5. Tukey's Trimean L-Kestiricisi"),
-      'OPTIMAL_S': t("6. Optimal S-Kestiricisi"),
-      'MM_ESTIMATOR': t("7. MM-Kestiricisi")
+      'DBSCAN': t("2. DB SCAN (MAD + DBSCAN)"),
+      'HUBER': t("3. Huber M-Kestiricisi"),
+      'HAMPEL': t("4. Hampel M-Kestiricisi"),
+      'HODGES_LEHMANN': t("5. Hodges-Lehmann R-Kestiricisi"),
+      'TUKEYS_TRIMEAN': t("6. Tukey's Trimean L-Kestiricisi"),
+      'OPTIMAL_S': t("7. Optimal S-Kestiricisi")
     };
     return labels[m] || m;
   };
@@ -1591,6 +1591,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 const labels: Record<string, string> = {
                                   'ARITHMETIC_MEAN': 'Arithmetic Mean',
                                   'WEIGHTED_LSE': 'Weighted LSE',
+                                  'DBSCAN': 'MAD + DBSCAN Clustering',
                                   'HUBER': 'Huber',
                                   'KMEANS_4': 'KMeans',
                                   'BAARDA': 'Baarda',
@@ -1602,8 +1603,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   'DANISH': 'Danish Estimator',
                                   'HODGES_LEHMANN': 'Hodges-Lehmann Estimator',
                                   'TUKEYS_TRIMEAN': "Tukey's Trimean",
-                                  'OPTIMAL_S': 'Optimal S-Estimator',
-                                  'MM_ESTIMATOR': 'Robust MM-Estimator'
+                                  'OPTIMAL_S': 'Optimal S-Estimator'
                                 };
                                 return labels[m] || m;
                               };
@@ -1666,6 +1666,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             const labels: Record<string, string> = {
                               'ARITHMETIC_MEAN': 'Arithmetic Mean',
                               'WEIGHTED_LSE': 'Weighted LSE',
+                              'DBSCAN': 'MAD + DBSCAN Clustering',
                               'HUBER': 'Huber',
                               'KMEANS_4': 'KMeans',
                               'BAARDA': 'Baarda',
@@ -1677,8 +1678,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               'DANISH': 'Danish Estimator',
                               'HODGES_LEHMANN': 'Hodges-Lehmann Estimator',
                               'TUKEYS_TRIMEAN': "Tukey's Trimean",
-                              'OPTIMAL_S': 'Optimal S-Estimator',
-                              'MM_ESTIMATOR': 'Robust MM-Estimator'
+                              'OPTIMAL_S': 'Optimal S-Estimator'
                             };
                             return labels[m] || m;
                           };
@@ -1710,6 +1710,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           const labels: Record<string, string> = {
                             'ARITHMETIC_MEAN': 'Arithmetic Mean',
                             'WEIGHTED_LSE': 'Weighted LSE',
+                            'DBSCAN': 'MAD + DBSCAN Clustering',
                             'HUBER': 'Huber',
                             'KMEANS_4': 'KMeans',
                             'BAARDA': 'Baarda',
@@ -1721,8 +1722,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             'DANISH': 'Danish Estimator',
                             'HODGES_LEHMANN': 'Hodges-Lehmann Estimator',
                             'TUKEYS_TRIMEAN': "Tukey's Trimean",
-                            'OPTIMAL_S': 'Optimal S-Estimator',
-                            'MM_ESTIMATOR': 'Robust MM-Estimator'
+                            'OPTIMAL_S': 'Optimal S-Estimator'
                           };
                           return labels[m] || m;
                         };
