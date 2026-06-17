@@ -448,6 +448,7 @@ export const trToEnMap: Record<string, string> = {
   "4. Hampel M-Kestiricisi": "4. Hampel M-Estimator",
   "5. Hodges-Lehmann R-Kestiricisi": "5. Hodges-Lehmann R-Estimator",
   "6. Tukey's Trimean L-Kestiricisi": "6. Tukey's Trimean L-Estimator",
+  "7. Optimal S-Kestiricisi": "7. Optimal S-Estimator",
   "GÜRBÜZ / ROBUST": "ROBUST",
   "AMİRAL GEMİSİ / HİBRİT": "FLAGSHIP / HYBRID",
   "Aktif edildiğinde, sadece yükseklik verisi içeren uydu tabanlı konumlar ölçüme dahil edilir. Açık alanlarda hassasiyeti artırır.": "When enabled, only satellite-based positions with altitude data are included in measurements. Increases accuracy in open areas.",

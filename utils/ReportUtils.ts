@@ -652,6 +652,15 @@ function runKMeans(samples: Coordinate[], k: number): number[] {
       <p class="no-indent"><span class="bold">2. Trimean Formülasyonu:</span> Konum koordinatları, $Trimean = (Q_1 + 2 \times Median + Q_3) / 4$ formülüyle çözümlenir. Bu model, her iki uçtaki sapma sınırlarını dikkate alırken merkeze en yüksek ağırlığı vererek pürüzsüzleştirme sağlar.</p>
     </div>
 
+    <h3>2.4.7. Optimal S-Kestiricisi (Optimal S-Estimation)</h3>
+    <p>Konum gözlem serilerindeki geniş saçılımları ve çoklu kaba hataları güçlü bir şekilde sönümleyen <b>Optimal S-Kestiricisi</b>, Tukey's Biweight kayıp fonksiyonu og yüksek kırılma noktalı (high breakdown point) ölçek kestiricileri kullanarak iteratif ağırlıklandırma yöntemiyle nihai koordinatı belirler.</p>
+    
+    <div class="case-container" style="background-color: #f0f9ff; border-left: 4px solid #0284c7; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
+      <p class="bold" style="color: #0369a1; margin-bottom: 6px;">Iterative Biweight Ağırlık Dinamiği</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Robust Ölçek Ölçeklendirme:</span> Medyan mutlak sapması ($MAD$) üzerinden $c = 3.0$ katsayı limiti belirlenir. Gözlemlerin ortanca değere olan uzaklıklarına göre biweight ağırlıkları ($w = (1 - (d/c)^2)^2$) hesaplanır.</p>
+      <p class="no-indent"><span class="bold">2. İteratif Yakınsama:</span> Konum koordinatları ağırlıklara göre yeniden hesaplanır og değişim $0.001\text{m}$ altına düşene kadar iteratif olarak güncellenir. Uç değerlerin ağırlıkları sıfıra indirilerek kararlılık maksimuma ulaştırılır.</p>
+    </div>
+
     <div style="display:none;">
 
   // 1. Stage: Speed Filtering (speed &lt; 1.0 m/s)

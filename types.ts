@@ -22,7 +22,8 @@ export type CalculationMethod =
   | 'KMEANS_4' 
   | 'HAMPEL'
   | 'HODGES_LEHMANN'
-  | 'TUKEYS_TRIMEAN';
+  | 'TUKEYS_TRIMEAN'
+  | 'OPTIMAL_S';
 
 export interface SavedLocation extends Coordinate {
   id: string;

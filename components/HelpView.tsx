@@ -309,9 +309,19 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                   </p>
                 </div>
 
+                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("7. Optimal S-Kestiricisi")}</h4>
+                    <span className="text-[11px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full font-bold">{t("OPTIMAL_S")}</span>
+                  </div>
+                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                    {t("Tukey's Biweight fonksiyonu temelli iterasyonlar kullanarak kaba hatalı saçılımları minimize eder ve koordinatları mükemmel kararlılığa ulaştırır.")} <span className="text-emerald-600 font-black">{t("En az 4 epok veri gerektirir.")}</span>
+                  </p>
+                </div>
+
                 <div className="bg-amber-50/70 rounded-2xl p-4 border border-amber-200/50 text-amber-900 leading-relaxed text-xs font-semibold text-justify">
                   <span className="font-extrabold uppercase text-amber-700 block mb-1">⚠️ {t("UYARI / ÖNEMLİ KOŞUL:")}</span>
-                  {t("K-Means ve Huber yöntemleri için en az 30 epok; Hampel, Hodges-Lehmann ve Tukey's Trimean yöntemleri için en az 4 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.")}
+                  {t("K-Means ve Huber yöntemleri için en az 30 epok; Hampel, Hodges-Lehmann, Tukey's Trimean ve Optimal S-Kestiricisi yöntemleri için en az 4 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.")}
                 </div>
               </div>
             </div>

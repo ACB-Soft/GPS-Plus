@@ -52,7 +52,8 @@ const METHOD_COLORS: Record<string, string> = {
   TUKEYS_BIWEIGHT: '#14b8a6',
   DANISH: '#eab308',
   HODGES_LEHMANN: '#ec4899',
-  TUKEYS_TRIMEAN: '#a855f7'
+  TUKEYS_TRIMEAN: '#a855f7',
+  OPTIMAL_S: '#0d9488'
 };
 
 const CLUSTER_COLORS = [
@@ -232,7 +233,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     'HUBER',
     'HAMPEL',
     'HODGES_LEHMANN',
-    'TUKEYS_TRIMEAN'
+    'TUKEYS_TRIMEAN',
+    'OPTIMAL_S'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
@@ -242,7 +244,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       'HUBER': t("3. Huber M-Kestiricisi"),
       'HAMPEL': t("4. Hampel M-Kestiricisi"),
       'HODGES_LEHMANN': t("5. Hodges-Lehmann R-Kestiricisi"),
-      'TUKEYS_TRIMEAN': t("6. Tukey's Trimean L-Kestiricisi")
+      'TUKEYS_TRIMEAN': t("6. Tukey's Trimean L-Kestiricisi"),
+      'OPTIMAL_S': t("7. Optimal S-Kestiricisi")
     };
     return labels[m] || m;
   };
@@ -1597,7 +1600,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   'TUKEYS_BIWEIGHT': "Tukey's Biweight",
                                   'DANISH': 'Danish Estimator',
                                   'HODGES_LEHMANN': 'Hodges-Lehmann Estimator',
-                                  'TUKEYS_TRIMEAN': "Tukey's Trimean"
+                                  'TUKEYS_TRIMEAN': "Tukey's Trimean",
+                                  'OPTIMAL_S': 'Optimal S-Estimator'
                                 };
                                 return labels[m] || m;
                               };
@@ -1670,7 +1674,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               'TUKEYS_BIWEIGHT': "Tukey's Biweight",
                               'DANISH': 'Danish Estimator',
                               'HODGES_LEHMANN': 'Hodges-Lehmann Estimator',
-                              'TUKEYS_TRIMEAN': "Tukey's Trimean"
+                              'TUKEYS_TRIMEAN': "Tukey's Trimean",
+                              'OPTIMAL_S': 'Optimal S-Estimator'
                             };
                             return labels[m] || m;
                           };
@@ -1712,7 +1717,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             'TUKEYS_BIWEIGHT': "Tukey's Biweight",
                             'DANISH': 'Danish Estimator',
                             'HODGES_LEHMANN': 'Hodges-Lehmann Estimator',
-                            'TUKEYS_TRIMEAN': "Tukey's Trimean"
+                            'TUKEYS_TRIMEAN': "Tukey's Trimean",
+                            'OPTIMAL_S': 'Optimal S-Estimator'
                           };
                           return labels[m] || m;
                         };

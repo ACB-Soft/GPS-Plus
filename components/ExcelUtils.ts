@@ -14,6 +14,7 @@ const getMethodName = (m: CalculationMethod) => {
     case 'HAMPEL': return "Hampel M-Kestiricisi";
     case 'HODGES_LEHMANN': return "Hodges-Lehmann R-Kestiricisi";
     case 'TUKEYS_TRIMEAN': return "Tukey's Trimean L-Kestiricisi";
+    case 'OPTIMAL_S': return "Optimal S-Kestiricisi";
     default: return m;
   }
 };
@@ -154,7 +155,8 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     'HUBER',
     'HAMPEL',
     'HODGES_LEHMANN',
-    'TUKEYS_TRIMEAN'
+    'TUKEYS_TRIMEAN',
+    'OPTIMAL_S'
   ];
   const methodResults = methods.map(method => {
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
@@ -545,7 +547,8 @@ export const downloadCombinedAnalysisReport = (
     'HUBER',
     'HAMPEL',
     'HODGES_LEHMANN',
-    'TUKEYS_TRIMEAN'
+    'TUKEYS_TRIMEAN',
+    'OPTIMAL_S'
   ];
 
   if (location.samples && location.samples.length > 0) {
