@@ -532,6 +532,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
         lat: s.lat,
         lng: s.lng,
         accuracy: s.accuracy,
+        speed: s.speed,
         timestamp: s.timestamp
       };
     });
@@ -571,6 +572,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       const dy = p.y - refCenterY; // Northing offset in meters relative to reference
       
       const passedBaarda = usedIndices ? usedIndices.includes(p.idx) : true;
+      const speedFiltered = p.speed !== null && p.speed !== undefined && p.speed >= 0.10;
       
       let clusterId = 0;
       if (clusters) {
@@ -589,8 +591,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
         lat: p.lat,
         lng: p.lng,
         passedBaarda,
+        speedFiltered,
         clusterId,
         accuracy: p.accuracy,
+        speed: p.speed,
         time: new Date(p.timestamp).toLocaleTimeString()
       };
     });
@@ -2033,10 +2037,16 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                             <span className="opacity-60 text-[7px] uppercase">ΔN (Northing):</span>
                                             <span className="font-bold text-sky-400">{data.dy.toFixed(4)} m</span>
                                           </div>
+                                          {data.speed !== undefined && data.speed !== null && (
+                                            <div className="flex justify-between gap-2">
+                                              <span className="opacity-60 text-[7px] uppercase">Nokta Hızı:</span>
+                                              <span className="font-bold text-amber-400">{data.speed.toFixed(3)} m/s</span>
+                                            </div>
+                                          )}
                                           <div className="flex justify-between gap-2">
-                                            <span className="opacity-60 text-[7px] uppercase">Baarda Filter:</span>
-                                            <span className={`font-bold ${data.passedBaarda ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                              {data.passedBaarda ? "PASSED (RELIABLE)" : "OUTLIER (REJECTED)"}
+                                            <span className="opacity-60 text-[7px] uppercase">Filtre Durumu:</span>
+                                            <span className={`font-bold ${data.passedBaarda ? 'text-emerald-500' : (data.speedFiltered ? 'text-slate-400' : 'text-rose-500')}`}>
+                                              {data.passedBaarda ? "GEÇTİ (GÜVENİLİR)" : (data.speedFiltered ? "HIZ LİMİTİ (ELENDİ)" : "KABA HATA (ELENDİ)")}
                                             </span>
                                           </div>
                                         </div>
@@ -2072,11 +2082,21 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 className="cursor-pointer"
                               />
                               
-                              {/* Rejected/Outlier Points Series */}
+                              {/* Rejected/Outlier Points Series - Yöntem (Kırmızı) */}
                               <Scatter 
                                 name="OUTLIERS" 
-                                data={hybridClusterChartData.points.filter(p => !p.passedBaarda)} 
+                                data={hybridClusterChartData.points.filter(p => !p.passedBaarda && !p.speedFiltered)} 
                                 fill="#ef4444"
+                                shape={<RawPointShape r={parseFloat(customClusterDotSize)} />}
+                                onClick={(pt) => setActiveClusterPointId(pt.id)}
+                                className="cursor-pointer"
+                              />
+
+                              {/* Rejected Points Series - Hız Filtresi (Siyah) */}
+                              <Scatter 
+                                name="SPEED_OUTLIERS" 
+                                data={hybridClusterChartData.points.filter(p => !p.passedBaarda && p.speedFiltered)} 
+                                fill="#000000"
                                 shape={<RawPointShape r={parseFloat(customClusterDotSize)} />}
                                 onClick={(pt) => setActiveClusterPointId(pt.id)}
                                 className="cursor-pointer"
@@ -2090,7 +2110,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
                       {/* Bottom Panel: Shrunk & Very Compact Legend */}
                       <div className="shrink-0 border-t border-slate-100 pt-3 flex flex-col gap-2 w-full">
-                        <div className="grid grid-cols-3 gap-x-2 gap-y-1.5 font-sans">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2 gap-y-1.5 font-sans">
                           {(() => {
                             const fs = parseFloat(customClusterFontSize);
                             const badgeSize = `${fs + 6.5}px`;
@@ -2098,7 +2118,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             const titleFontSize = `${fs - 1}px`;
                             const subFontSize = `${fs - 2}px`;
                             const approvedCount = hybridClusterChartData.points.filter(p => p.passedBaarda).length;
-                            const rejectedCount = hybridClusterChartData.points.filter(p => !p.passedBaarda).length;
+                            const rejectedCount = hybridClusterChartData.points.filter(p => !p.passedBaarda && !p.speedFiltered).length;
+                            const speedFiltCount = hybridClusterChartData.points.filter(p => !p.passedBaarda && p.speedFiltered).length;
                             return (
                               <>
                                 <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
@@ -2129,7 +2150,21 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   </div>
                                 </div>
 
-                                {analysisType === 'precise' && (
+                                <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
+                                  <div className="flex items-center justify-center rounded font-black text-white shrink-0 shadow-xs bg-[#000000]" style={{ width: badgeSize, height: badgeSize, fontSize: badgeFontSize }}>
+                                    SPD
+                                  </div>
+                                  <div className="min-w-0 font-sans">
+                                    <p className="font-extrabold text-slate-800 uppercase tracking-tight truncate leading-none" style={{ fontSize: titleFontSize }}>
+                                      SPEED FILT
+                                    </p>
+                                    <p className="font-bold text-slate-900 font-mono tracking-tight leading-none mt-0.5" style={{ fontSize: subFontSize }}>
+                                      {speedFiltCount} FILTERED
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {analysisType === 'precise' ? (
                                   <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
                                     <div 
                                       className="flex items-center justify-center bg-[#10b981] border border-[#059669] text-white font-black shrink-0 shadow-xs rotate-45" 
@@ -2152,6 +2187,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                       </p>
                                     </div>
                                   </div>
+                                ) : (
+                                  <div />
                                 )}
                               </>
                             );
@@ -2186,29 +2223,32 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               Küme {getClusterLetterLabel(pt.clusterId)}
                             </p>
                           </div>
-                          <div className="space-y-1">
-                            <p className="text-slate-400 font-bold uppercase text-[8px] tracking-wider leading-none">{t("Varyans Merkezinden Sapma")}</p>
-                            <p className="font-extrabold text-slate-800 leading-snug">
-                              ±{offsetMeters.toFixed(4)} m
-                            </p>
-                          </div>
-                          <div className="space-y-1">
+                                            <div className="space-y-1">
                             <p className="text-slate-400 font-bold uppercase text-[8px] tracking-wider leading-none">{t("Donanımsal Hassasiyet (3D)")}</p>
                             <p className="font-extrabold text-blue-600 font-semibold leading-snug">
                               {pt.accuracy.toFixed(2)} m
                             </p>
                           </div>
                           <div className="space-y-1">
+                            <p className="text-slate-400 font-bold uppercase text-[8px] tracking-wider leading-none">{t("Nokta Hızı")}</p>
+                            <p className="font-extrabold text-amber-600 font-semibold leading-snug">
+                              {pt.speed !== undefined && pt.speed !== null ? `${pt.speed.toFixed(3)} m/s` : '0.000 m/s'}
+                            </p>
+                          </div>
+                          <div className="space-y-1 col-span-2">
                             <p className="text-slate-400 font-bold uppercase text-[8px] tracking-wider leading-none">{getMethodLabel(reliabilityPlotMethod)} {t("Süzgeci")}</p>
-                            <p className={`font-black uppercase text-[9px] leading-snug ${pt.passedBaarda ? 'text-emerald-600' : 'text-rose-600'}`}>
-                              {pt.passedBaarda ? t("GEÇTİ (GÜVENİLİR)") : t("ELENDİ (KABA HATA)")}
+                            <p className={`font-black uppercase text-[9px] leading-snug ${pt.passedBaarda ? 'text-emerald-600' : (pt.speedFiltered ? 'text-slate-900 border-l-2 border-black pl-1.5' : 'text-rose-600')}`}>
+                              {pt.passedBaarda ? t("GEÇTİ (GÜVENİLİR)") : (pt.speedFiltered ? t("HIZ LİMİTİNDEN ELENDİ") : t("ELENDİ (KABA HATA)"))}
                             </p>
                           </div>
                           <div className="col-span-2 bg-white/70 p-2.5 rounded-xl border border-slate-150 mt-1">
                             <p className="text-slate-500 font-medium leading-relaxed font-sans">
                               {pt.passedBaarda 
                                 ? t("Bu veri noktası seçilen yöntemin varyans/filtre test kriterlerini karşılayarak kaba hatalardan arındırılmış ve geodezik dengelemeye dahil edilmiştir.")
-                                : t("Bu veri noktası seçilen yöntemin filtre sınırlarının dışına taşarak konumsal sıçrama (outlier/multipath) tespitiyle elenmiştir. Hesaplamada ağırlığı sıfırlanmıştır.")
+                                : (pt.speedFiltered
+                                  ? t("Bu veri noktası nokta hızı sınır (0.10 m/s) kriterini aşması nedeniyle analize girmeden önce ön filtre tarafından doğrudan elenmiştir.")
+                                  : t("Bu veri noktası seçilen yöntemin filtre sınırlarının dışına taşarak konumsal sıçrama (outlier/multipath) tespitiyle elenmiştir. Hesaplamada ağırlığı sıfırlanmıştır.")
+                                )
                               }
                             </p>
                           </div>
