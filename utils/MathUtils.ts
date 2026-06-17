@@ -29,6 +29,7 @@ export function calculateResult(
   clusters?: number[][]; 
   fallbackApplied?: boolean; 
   actualMethodUsed?: CalculationMethod;
+  preFilteredCount?: number;
 } {
   // Step 1: Filter by GNSS metadata if requested
   // GNSS usually provides altitude, while Wi-Fi/Network often doesn't in browsers
@@ -52,7 +53,7 @@ export function calculateResult(
   const sourceData = accuracyFiltered.length > 0 ? accuracyFiltered : preFilteredData;
 
   if (sourceData.length === 0) {
-    return { result: samples[0], usedIndices: [0] };
+    return { result: samples[0], usedIndices: [0], preFilteredCount: 0 };
   }
 
   let finalSamples = sourceData;
@@ -163,7 +164,8 @@ export function calculateResult(
     usedIndices, 
     clusters, 
     fallbackApplied, 
-    actualMethodUsed: finalMethod 
+    actualMethodUsed: finalMethod,
+    preFilteredCount: sourceData.length
   };
 }
 export function calculateMaxDistance(samples: Coordinate[]): number {

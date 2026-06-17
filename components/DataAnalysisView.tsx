@@ -311,7 +311,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
     const results = methods.map(method => {
       // 1. Calculate point for this method
-      const { result, clusters, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
+      const { result, clusters, usedIndices, preFilteredCount } = calculateResult(location.samples!, method, accuracyLimit);
       
       if (method === 'KMEANS_4' && clusters) {
         clusterResults = clusters;
@@ -333,6 +333,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
         lat: result.lat,
         lng: result.lng,
         usedCount: usedIndices ? usedIndices.length : location.samples!.length,
+        preFilteredCount: preFilteredCount ?? location.samples!.length,
         calculated: {
           x: useLocal ? calcMeter.x : result.lat, 
           y: useLocal ? calcMeter.y : result.lng, 
@@ -972,7 +973,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     let clusterResults: number[][] | null = null;
 
     const results = methods.map(method => {
-      const { result, clusters, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
+      const { result, clusters, usedIndices, preFilteredCount } = calculateResult(location.samples!, method, accuracyLimit);
       if (method === 'KMEANS_4' && clusters) {
         clusterResults = clusters;
       }
@@ -982,6 +983,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
         lat: result.lat,
         lng: result.lng,
         usedCount: usedIndices ? usedIndices.length : location.samples!.length,
+        preFilteredCount: preFilteredCount ?? location.samples!.length,
         calculated: {
           x: conv.x,
           y: conv.y,
@@ -1347,10 +1349,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       {analysisResults.map((res, idx) => {
                         const isBest = res.method === bestMethod;
                         const totalCount = location?.samples?.length || 0;
+                        const baseCount = res.preFilteredCount ?? totalCount;
                         return (
                           <tr key={res.method} className={`border-b border-slate-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
                             <td className="p-4 font-black text-[11px] text-slate-800">{getMethodLabel(res.method)}</td>
-                            <td className="p-4 font-mono text-xs text-slate-600 font-medium">{(res.usedCount ?? totalCount)} / {totalCount}</td>
+                            <td className="p-4 font-mono text-xs text-slate-600 font-medium">{(res.usedCount ?? baseCount)} / {baseCount}</td>
                             <td className="p-4 font-bold text-xs text-blue-600">{res.errors.dhz.toFixed(3)}</td>
                             <td className="p-4">
                               {isBest && (
@@ -1377,10 +1380,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     <tbody>
                       {analysisResults.map((res, idx) => {
                         const totalCount = location?.samples?.length || 0;
+                        const baseCount = res.preFilteredCount ?? totalCount;
                         return (
                           <tr key={res.method} className={`border-b border-slate-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
                             <td className="p-4 font-black text-[11px] text-slate-800">{getMethodLabel(res.method)}</td>
-                            <td className="p-4 font-mono text-xs text-slate-600 font-medium">{(res.usedCount ?? totalCount)} / {totalCount}</td>
+                            <td className="p-4 font-mono text-xs text-slate-600 font-medium">{(res.usedCount ?? baseCount)} / {baseCount}</td>
                             <td className="p-4 font-bold text-xs text-blue-600">{res.calculated.x.toFixed(useLocal ? 3 : 8)}</td>
                             <td className="p-4 font-bold text-xs text-indigo-600">{res.calculated.y.toFixed(useLocal ? 3 : 8)}</td>
                           </tr>
