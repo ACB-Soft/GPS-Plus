@@ -9,17 +9,11 @@ import { geoidService } from '../services/GeoidService';
 const getMethodName = (m: CalculationMethod) => {
   switch(m) {
     case 'WEIGHTED_LSE': return "Ağırlıklı En Küçük Kareler";
-    case 'HUBER': return "Huber M-Tahmini";
-    case 'HYBRID_v1': return "Hibrit Yöntem (HYBRID_v1)";
-    case 'KMEANS_4': return "K-Means (4 Küme)";
-    case 'BAARDA': return "Baarda Eleme";
-    case 'POPE_TAU': return "Pope's Tau Testi";
-    case 'HAMPEL': return "Hampel Yöntemi (Robust MAD)";
-    case 'ANDREWS_WAVE': return "Andrew's Wave Kestiricisi";
-    case 'TUKEYS_BIWEIGHT': return "Tukey's Biweight Kestiricisi";
-    case 'DANISH': return "Danimarka (Danish) Kestiricisi";
-    case 'HODGES_LEHMANN': return "Hodges-Lehmann Kestiricisi";
-    case 'TUKEYS_TRIMEAN': return "Tukey's Trimean Kestiricisi";
+    case 'KMEANS_4': return "K-Means Kümeleme";
+    case 'HUBER': return "Huber M-Kestiricisi";
+    case 'HAMPEL': return "Hampel M-Kestiricisi";
+    case 'HODGES_LEHMANN': return "Hodges-Lehmann R-Kestiricisi";
+    case 'TUKEYS_TRIMEAN': return "Tukey's Trimean L-Kestiricisi";
     default: return m;
   }
 };
@@ -157,14 +151,8 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   const methods: CalculationMethod[] = [
     'WEIGHTED_LSE', 
     'KMEANS_4',
-    'BAARDA',
-    'POPE_TAU',
     'HUBER',
     'HAMPEL',
-    'ANDREWS_WAVE',
-    'TUKEYS_BIWEIGHT',
-    'DANISH',
-    'HYBRID_v1',
     'HODGES_LEHMANN',
     'TUKEYS_TRIMEAN'
   ];
@@ -554,14 +542,8 @@ export const downloadCombinedAnalysisReport = (
   const allMethods: CalculationMethod[] = [
     'WEIGHTED_LSE', 
     'KMEANS_4',
-    'BAARDA',
-    'POPE_TAU',
     'HUBER',
     'HAMPEL',
-    'ANDREWS_WAVE',
-    'TUKEYS_BIWEIGHT',
-    'DANISH',
-    'HYBRID_v1',
     'HODGES_LEHMANN',
     'TUKEYS_TRIMEAN'
   ];

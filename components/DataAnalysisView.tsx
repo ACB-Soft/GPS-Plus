@@ -121,7 +121,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [selectedFolder, setSelectedFolder] = useState<string>('');
   const [selectedPointId, setSelectedPointId] = useState<string>(initialSelectedId || '');
   const [showMap, setShowMap] = useState(false);
-  const [reliabilityPlotMethod, setReliabilityPlotMethod] = useState<CalculationMethod>(settings.calculationMethod || 'HYBRID_v1');
+  const [reliabilityPlotMethod, setReliabilityPlotMethod] = useState<CalculationMethod>(settings.calculationMethod || 'WEIGHTED_LSE');
 
   const handleDownloadTechnicalReportAction = () => {
     generateTechnicalReport();
@@ -229,14 +229,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const methods = useMemo<CalculationMethod[]>(() => [
     'WEIGHTED_LSE',
     'KMEANS_4',
-    'BAARDA',
-    'POPE_TAU',
     'HUBER',
     'HAMPEL',
-    'ANDREWS_WAVE',
-    'TUKEYS_BIWEIGHT',
-    'DANISH',
-    'HYBRID_v1',
     'HODGES_LEHMANN',
     'TUKEYS_TRIMEAN'
   ], []);
@@ -244,17 +238,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const getMethodLabel = (m: CalculationMethod) => {
     const labels: Record<string, string> = {
       'WEIGHTED_LSE': t("1. Ağırlıklı En Küçük Kareler"),
-      'KMEANS_4': t("2. K-Means Dinamik Kümeleme"),
-      'BAARDA': t("3. Baarda's w-Testi"),
-      'POPE_TAU': t("4. Pope’s Tau Testi"),
-      'HUBER': t("5. Robust Huber"),
-      'HAMPEL': t("6. Robust Hampel"),
-      'ANDREWS_WAVE': t("7. Andrew's Wave Kestiricisi"),
-      'TUKEYS_BIWEIGHT': t("8. Tukey's Biweight Kestiricisi"),
-      'DANISH': t("9. Danimarka (Danish) Kestiricisi"),
-      'HYBRID_v1': t("10. Hibrit Yöntem (HYBRID_v1)"),
-      'HODGES_LEHMANN': t("11. Hodges-Lehmann Kestiricisi"),
-      'TUKEYS_TRIMEAN': t("12. Tukey's Trimean Kestiricisi")
+      'KMEANS_4': t("2. K-Means Kümeleme"),
+      'HUBER': t("3. Huber M-Kestiricisi"),
+      'HAMPEL': t("4. Hampel M-Kestiricisi"),
+      'HODGES_LEHMANN': t("5. Hodges-Lehmann R-Kestiricisi"),
+      'TUKEYS_TRIMEAN': t("6. Tukey's Trimean L-Kestiricisi")
     };
     return labels[m] || m;
   };
@@ -321,7 +309,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       // 1. Calculate point for this method
       const { result, clusters, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
       
-      if ((method === 'KMEANS_4' || method === 'HYBRID_v1') && clusters) {
+      if (method === 'KMEANS_4' && clusters) {
         clusterResults = clusters;
       }
       
@@ -981,7 +969,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
     const results = methods.map(method => {
       const { result, clusters, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
-      if (method === 'HYBRID_v1' && clusters) {
+      if (method === 'KMEANS_4' && clusters) {
         clusterResults = clusters;
       }
       const conv = convertCoordinate(result.lat, result.lng, sys);

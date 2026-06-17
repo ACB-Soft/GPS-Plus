@@ -245,7 +245,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             <div className="soft-card p-6 space-y-4">
               <p 
                 className="text-sm text-slate-700 font-medium leading-relaxed text-justify"
-                dangerouslySetInnerHTML={{ __html: t("Uygulama, toplanan ham GPS verilerini nihai bir koordinata dönüştürmek için 5 farklı matematiksel model sunar. Bu yöntemleri <b>Ayarlar</b> menüsünden değiştirebilirsiniz:") }}
+                dangerouslySetInnerHTML={{ __html: t("Uygulama, toplanan ham GPS verilerini nihai bir koordinata dönüştürmek için 6 farklı akademik model sunar. Bu yöntemleri <b>Ayarlar</b> menüsünden değiştirebilirsiniz:") }}
               />
               
               <div className="space-y-4">
@@ -261,37 +261,17 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
 
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("2. K-Means Dinamik Kümeleme")}</h4>
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("2. K-Means Kümeleme")}</h4>
                     <span className="text-[11px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full font-bold">{t("KÜMELEME")}</span>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                    {t("Gözlemleri mekansal yakınlıklarına göre dinamik sayıda yoğunluk grubuna ayırarak küme merkezini belirler.")} <span className="text-amber-600 font-black">{t("En az 30 epok veri gerektirir.")}</span>
+                    {t("Gözlemleri mekansal yakınlıklarına göre 4 bağımsız yoğunluk grubuna ayırarak küme merkezini belirler.")} <span className="text-amber-600 font-black">{t("En az 30 epok veri gerektirir.")}</span>
                   </p>
                 </div>
 
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("3. Baarda's w-Testi")}</h4>
-                    <span className="text-[11px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">{t("İSTATİSTİK")}</span>
-                  </div>
-                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                    {t("Baarda kalın hata eleme teorisini kullanarak uyuşumsuz ve kaba hatalı koordinatları sistemden temizler.")} <span className="text-amber-600 font-black">{t("En az 60 epok veri gerektirir.")}</span>
-                  </p>
-                </div>
-
-                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("4. Pope’s Tau Testi")}</h4>
-                    <span className="text-[11px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full font-bold">{t("ÖLÇÜ KONTROL")}</span>
-                  </div>
-                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                    {t("Örneklem büyüklüğünün sınırlı olduğu durumlarda, uyuşmazlıkları Tau dağılımına tabi tutarak uç değer tespiti yapar.")} <span className="text-amber-600 font-black">{t("En az 30 epok veri gerektirir.")}</span>
-                  </p>
-                </div>
-
-                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("5. Robust Huber")}</h4>
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("3. Huber M-Kestiricisi")}</h4>
                     <span className="text-[11px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">{t("GÜRBÜZ / ROBUST")}</span>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed">
@@ -301,44 +281,37 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
 
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("6. Robust Hampel")}</h4>
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("4. Hampel M-Kestiricisi")}</h4>
                     <span className="text-[11px] bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full font-bold">{t("MEDYAN MUTLAK SAPMA")}</span>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                    {t("Medyan Mutlak Sapma (MAD) süzgecini baz alarak gürültü pencerelerini gürbüz sınır değerlerle dışlar.")} <span className="text-amber-600 font-black">{t("En az 30 epok veri gerektirir.")}</span>
+                    {t("Medyan Mutlak Sapma (MAD) süzgecini baz alarak gürültü pencerelerini gürbüz sınır değerlerle dışlar.")} <span className="text-emerald-600 font-black">{t("En az 4 epok veri gerektirit.")}</span>
                   </p>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm ring-1 ring-emerald-50">
+                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-emerald-700 uppercase tracking-tight">{t("10. Hibrit Yöntem (HYBRID_v1)")}</h4>
-                    <span className="text-[11px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">{t("İLERİ HİBRİT")}</span>
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("5. Hodges-Lehmann R-Kestiricisi")}</h4>
+                    <span className="text-[11px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full font-bold">{t("HODGES-LEHMANN")}</span>
                   </div>
-                  <p className="text-sm text-slate-600 font-medium leading-relaxed mb-3">
-                    {t("Hız filtrelemesi, Hodges-Lehmann gürbüz kestirimi ve G-Means kümeleme modelini donanım hassasiyetiyle harmanlayan en gelişmiş hibrit konumlandırma modelimizdir.")} <span className="text-emerald-600 font-black">{t("En az 4 epok veri gerektirir.")}</span>
+                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                    {t("Durağan epokların Walsh ortalamalarının gürbüz medyanını alarak kaba kumsal konum kaymalarını temizler.")} <span className="text-emerald-600 font-black">{t("En az 4 epok veri gerektirir.")}</span>
                   </p>
-                  <div className="bg-emerald-50/50 rounded-lg p-3 space-y-2 border border-emerald-100/50">
-                     <p className="text-sm font-black text-emerald-800 uppercase tracking-widest">{t("İşlem Adımları:")}</p>
-                     <ul className="space-y-1.5">
-                      <li className="text-sm text-slate-700 leading-tight">
-                        1-<b>{t("Epok Hız Süzmesi")}:</b> {t("Anlık hızı 1.0 m/s'nin üzerinde olan kararsız/hareketli epokları tamamen filtreler.")}
-                      </li>
-                      <li className="text-sm text-slate-700 leading-tight">
-                        2-<b>{t("Hodges-Lehmann Robust Süzgeci")}:</b> {t("Hız filtresinden geçen temiz veriler üzerinde Hodges-Lehmann kestirimi ve MAD katsayısı (3-sigma) ile kaba hataları ayıklar.")}
-                      </li>
-                      <li className="text-sm text-slate-700 leading-tight">
-                        3-<b>{t("G-Means Kümeleme")}:</b> {t("Kalan gözlemleri Anderson-Darling normal dağılım testini temel alan adaptif G-Means algoritması ile mekansal olarak küreler.")}
-                      </li>
-                      <li className="text-sm text-slate-700 leading-tight">
-                        4-<b>{t("Ortak Ağırlıklı WLS")}:</b> {t("Küme epok sayısının toplam epok sayısına oranı ile donanımsal hassasiyet katsayısının (1/acc²) ortak çarpımını alarak son konumlandırmayı Weighted Least Squares (WLS) ile yapar.")}
-                      </li>
-                    </ul>
+                </div>
+
+                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("6. Tukey's Trimean L-Kestiricisi")}</h4>
+                    <span className="text-[11px] bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full font-bold">{t("TRIMEAN")}</span>
                   </div>
+                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                    {t("İlk çeyreklik (Q1), ortanca (Q2) ve son çeyreklik (Q3) konum piksellerinin ağırlıklı medyanı üzerinden pürüzsüzleştirme uygular.")} <span className="text-emerald-600 font-black">{t("En az 4 epok veri gerektirir.")}</span>
+                  </p>
                 </div>
 
                 <div className="bg-amber-50/70 rounded-2xl p-4 border border-amber-200/50 text-amber-900 leading-relaxed text-xs font-semibold text-justify">
                   <span className="font-extrabold uppercase text-amber-700 block mb-1">⚠️ {t("UYARI / ÖNEMLİ KOŞUL:")}</span>
-                  {t("KMeans ve Huber yöntemleri için en az 30 epok; HYBRID_v1 dâhil diğer yöntemler için en az 4 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.")}
+                  {t("K-Means ve Huber yöntemleri için en az 30 epok; Hampel, Hodges-Lehmann ve Tukey's Trimean yöntemleri için en az 4 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.")}
                 </div>
               </div>
             </div>

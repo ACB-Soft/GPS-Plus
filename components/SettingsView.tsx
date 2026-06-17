@@ -530,17 +530,11 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
                   <option value="WEIGHTED_LSE">{t("1. Ağırlıklı En Küçük Kareler")}</option>
-                  <option value="KMEANS_4">{t("2. K-Means Dinamik Kümeleme")}</option>
-                  <option value="BAARDA">{t("3. Baarda's w-Testi")}</option>
-                  <option value="POPE_TAU">{t("4. Pope’s Tau Testi")}</option>
-                  <option value="HUBER">{t("5. Robust Huber")}</option>
-                  <option value="HAMPEL">{t("6. Robust Hampel")}</option>
-                  <option value="ANDREWS_WAVE">{t("7. Andrew's Wave Kestiricisi")}</option>
-                  <option value="TUKEYS_BIWEIGHT">{t("8. Tukey's Biweight Kestiricisi")}</option>
-                  <option value="DANISH">{t("9. Danimarka (Danish) Kestiricisi")}</option>
-                  <option value="HYBRID_v1">{t("10. Hibrit Yöntem (HYBRID_v1)")}</option>
-                  <option value="HODGES_LEHMANN">{t("11. Hodges-Lehmann Kestiricisi")}</option>
-                  <option value="TUKEYS_TRIMEAN">{t("12. Tukey's Trimean Kestiricisi")}</option>
+                  <option value="KMEANS_4">{t("2. K-Means Kümeleme")}</option>
+                  <option value="HUBER">{t("3. Huber M-Kestiricisi")}</option>
+                  <option value="HAMPEL">{t("4. Hampel M-Kestiricisi")}</option>
+                  <option value="HODGES_LEHMANN">{t("5. Hodges-Lehmann R-Kestiricisi")}</option>
+                  <option value="TUKEYS_TRIMEAN">{t("6. Tukey's Trimean L-Kestiricisi")}</option>
                 </select>
               </div>
 

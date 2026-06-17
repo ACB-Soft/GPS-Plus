@@ -17,17 +17,10 @@ export interface Coordinate {
 }
 
 export type CalculationMethod = 
-  | 'ARITHMETIC_MEAN'
   | 'WEIGHTED_LSE' 
   | 'HUBER'
   | 'KMEANS_4' 
-  | 'BAARDA'
-  | 'HYBRID_v1'
-  | 'POPE_TAU'
   | 'HAMPEL'
-  | 'ANDREWS_WAVE'
-  | 'TUKEYS_BIWEIGHT'
-  | 'DANISH'
   | 'HODGES_LEHMANN'
   | 'TUKEYS_TRIMEAN';
 

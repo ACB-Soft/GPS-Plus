@@ -624,50 +624,35 @@ function runKMeans(samples: Coordinate[], k: number): number[] {
 }
     </pre>
 
-    <h3>2.4.4. Baarda Kalın Hata Elemesi (Baarda's Reliability Test / Snooping)</h3>
-    <p>Jeodezik ölçü standartlarının temeli olan Baarda'nın veri gözetleme yöntemi (data snooping), normalize edilmiş ve standardize edilmiş ölçü uyuşmazlığı hatalarının istatistiksel test büyüklüğünü denetler. Kritik sınır değerleri aşan uyuşmazlık hataları ardışık olarak tespit edilerek en büyük kalın hatadan başlanarak döngüsel düzende sistemden temizlenir.</p>
+    <h3>2.4.4. Robust Hampel M-Kestiricisi (Robust Hampel M-Estimation)</h3>
+    <p>Jeodezik uyuşmazlıkların giderilmesi ve kaba hataların ayıklanması amacıyla geliştirilen <b>Robust Hampel</b> süzgeci, medyan bazlı mutlak sapma sınır değerlerini (Median Absolute Deviation - MAD) esas alır. Veri setindeki uç ve sıçramalı değerleri hassas istatistiksel barikatlarla izole eder.</p>
     
-    <div class="case-container" style="background-color: #f8fafc; border-left: 4px solid #d97706; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
-      <p class="bold" style="color: #b45309; margin-bottom: 6px;">Uyuşmazlık Testi ve Dengeleme İyileştirmeleri (Saf Akademik Jeodezi Standartları)</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Serbestlik Derecesi Düzenlemesi (<i>f = 2N - 2</i>):</span> Birim ölçü hatasının (<i>&sigma;<sub>0</sub></i>) hesabı sırasında serbestlik derecesi hesabı <i>f = n - u</i> formülüne bağlıdır. 2D düzlemde (<i>X, Y</i> / Enlem, Boylam) koordinat kestirimi yaptığımız için bilinmeyen parametre sayısı <i>u = 2</i>'dir. $N$ adet nokta için toplam $2N$ gözlem denklemimiz bulunduğundan serbestlik derecesi <i>2N - 2</i> olarak güncellenerek mükemmel akademik kesinlik sağlanmıştır.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Birimsiz / Boyutsuz w-Testi İstatistiği:</span> Uyuşmazlıkların birimsizleştirilmesi hatası giderilmiştir. Kalın hata test büyüklüğü $w_i$, uyuşmazlığın metre cinsinden değeri $v_i$ ile gözlem ağırlığının karekökünün $\sqrt{p_i}$ çarpılarak $\sigma_0 \sqrt{1 - h_i}$ ile bölünmesiyle ($w_i = v_i \sqrt{p_i} / (\sigma_0 \sqrt{1 - h_i})$) elde edilir. Böylelikle metre birimli büyüklükler ağırlıkların metre cinsinden olan ters birimi (1/m) ile tamamen sadeleşerek saf, boyutsuz bir istatistiksel w-değeri üretir.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. Kritik Sınır Değeri (3.29):</span> Seçilen w<sub>test</sub> = 3.29 kritik sınırı, standart normal dağılımda (N(0,1)) çift taraflı %99.9 güven düzeyine (&alpha; = 0.001) tekabül eder. Bu muhafazakar tercih, kaba hata içermeyen temiz epokların yanlışlıkla reddedilmesini (I. Tip Hata) jeodezik toleranslar dahilinde minimize etmek amacıyla Baarda'nın orijinal güven kriteriyle uyumludur.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">4. İndeks Kırılma Koruması:</span> Üst katmandan gelen örneklem grubunda '_originalIdx' öznitleğinin eksik veya tanımlanamıyor olması durumuna karşı gürbüz dinamik indeksleme yapısı uygulanmaktadır.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">5. Kaba Hata Sonrası Dengeleme:</span> İstatistiki uyuşmazlık testleri tamamlanarak gürültülü veriler elendikten sonra, kalan temiz koordinatlar düz aritmetik ortalamaya tabi tutulmaz. Bunun yerine kalan veriler kendi güncel hassasiyetleri (<i>p<sub>i</sub> = 1/accuracy<sub>i</sub><sup>2</sup></i>) ile tekrar ağırlıklandırılarak <b>Stokastik Ağırlıklı En Küçük Kareler (Weighted Centroid)</b> motorumuzla çözümlenir ve nihai denge koordinatı jeodezik açıdan en kararlı şekilde elde edilir.</p>
-      <p class="no-indent"><span class="bold">6. Saf Akademik Gözetleme Durdurma Kriteri:</span> Standart testte herhangi bir yapay konumsal mesafe veya saçılım eşiği (örneğin 0.25-0.50m gibi kısıtlamalar) kullanılmaz. Algoritma, yalnızca standardize edilmiş hata uyuşmazlık değerleri kritik değer sınırının (3.29) altına indiğinde veya gözlem sayısı jeodezik dengeleme yapmaya (2D konum kestirimi için degrees of freedom f > 0 ihtiyacı nedeniyle en az n = 4 gürbüz nokta) sınır teşkil eden minimum değere ulaştığında doğal olarak durur.</p>
+    <div class="case-container" style="background-color: #fdf2f8; border-left: 4px solid #db2777; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
+      <p class="bold" style="color: #9d174d; margin-bottom: 6px;">Hampel Gürbüz Filtresi Karar Sistemi</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Medyan ve MAD Hesabı:</span> Gözlemlerin medyan değeri ($M$) ve her gözlemin medyandan olan mutlak uzaklığının medyanını simgeleyen MAD değeri hesaplanır: $MAD = Median(|x_i - M|)$.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Gürbüz Ölçek Katsayısı (1.4826):</span> Normal dağılmış verilerde standart sapma ile uyum sağlaması adına MAD değeri $1.4826 \times MAD$ katsayısıyla ölçeklendirilir.</p>
+      <p class="no-indent"><span class="bold">3. 3-Sigma Kriteri ile Temizleme:</span> Medyandan uzaklığı $3 \times (1.4826 \times MAD)$ değerini aşan uç sinyaller kaba hata olarak işaretlenip elenir. Kalan kararlı gözlemler WLS yöntemiyle dengelenir.</p>
     </div>
 
-    <p class="no-indent">Baarda kalın hata test büyüklüğünü, n - 2 serbestlik derecesini ve temizlenmiş verilerin ağırlıklı dengelenmesini koşturan kritik fonksiyon aşağıda yer almaktadır:</p>
-    <pre class="code-block">
-function calculateBaardaInternalAcademic(samples: any[]): { result: Coordinate; usedIndices: number[] } {
-  if (samples.length &lt; 4) return { result: calculateWeightedLSE(samples).result, usedIndices: samples.map((_, i) =&gt; i) };
-
-  // Safe mapping of the original sequence indices
-  let currentSamples = samples.map((s, idx) =&gt; ({
-    ...s,
-    _originalIdx: s._originalIdx !== undefined ? s._originalIdx : idx
-  }));
-  const criticalValue = 3.29; // Critical limit for 99.9% co    <h3>2.4.5. "HYBRID_v1" İleri-Hibrit Filtreleme Modeli</h3>
-    <p>Uygulamada yer alan en gelişmiş ve akademik seviyedeki konum hesaplama yöntemidir. Bu metot, uydulardan gelen sinyal hatalarını, çoklu yol yansımalarını (multipath) ve harici gürültüleri en üstün hassasiyetle ayıklamak ve dengelemek amacıyla geliştirilmiştir. Yöntem, ilk aşamaddaki hız kriterli dinamik süzgeç sonrasında Hodges-Lehmann gürbüz kestiricisi yardımıyla veri temizliği yaparken; K-Means tabanlı G-Means kümeleme modelini uzaysal yoğunluk oranlarına göre ağırlıklandırma yapmak için kullanır.</p>
-
-    <div class="case-container" style="background-color: #f0fdf4; border-left: 4px solid #10b981; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
-      <p class="bold" style="color: #065f46; margin-bottom: 6px;">HYBRID_v1 Algoritması Paralel Kolları ve Yeni Nesil Ağırlık Sentezi</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Aşama - Epok Hız Filtrelemesi:</span> Ölçüm anındaki hız kaydı 1.0 m/s eşik değerinin üzerinde olan noktaları (hareketli epoklar) tamamen eler. Böylece konum hesaplamasında sadece durağan sinyaller kullanılır.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Aşama - Hodges-Lehmann Gürbüz Filtresi:</span> Hız filtresinden geçen durağan epokların Walsh ortalamalarının medyanını alarak gürbüz bir ağırlık merkezi belirler. MAD katsayısı (1.4826 &times; MAD) üzerinden 3-sigma kuralını işleterek kaba hatalı uç gözlemleri tamamen temizler.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. Aşama - G-Means Uzaysal Kümeleme:</span> Kalan temiz gözlem noktaları, normal dağılım hipotez testine (Anderson-Darling) dayalı adaptif G-Means algoritması ile kümelere ayrılır.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">4. Aşama - Küme Yoğunluk ve Donanım Ağırlıklı WLS:</span> Her noktaya, ait olduğu kümenin yoğunluk oranı (<i>w<sub>cluster</sub> = N<sub>cluster</sub> / N<sub>surviving</sub></i>) ve donanım hassaslık katsayısı (<i>1 / accuracy<sup>2</sup></i>) üzerinden kombine bir ağırlık atanarak son koordinat Ağırlıklı En Küçük Kareler (WLS) dengelemesiyle hesaplanır: <i>P<sub>nihai</sub> = w<sub>cluster</sub> &times; (1 / accuracy<sup>2</sup>)</i>.</p>
+    <h3>2.4.5. Hodges-Lehmann R-Kestiricisi (Hodges-Lehmann R-Estimation)</h3>
+    <p>Akademik düzeydeki en gürbüz konum hesaplama yöntemlerinden biri olan <b>Hodges-Lehmann R-Kestiricisi</b>, epok verilerinin tüm ikili kombinasyonlarının Walsh ortalamalarını (pairwise averages) temel alarak konumun robust medyanını hesaplar.</p>
+    
+    <div class="case-container" style="background-color: #f5f3ff; border-left: 4px solid #7c3aed; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
+      <p class="bold" style="color: #5b21b6; margin-bottom: 6px;">Hodges-Lehmann Robust Ağırlık Merkezi Kararlılığı</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Walsh Ortalamaları Sentezi:</span> $N$ adet gözlemin tüm ikili kombinasyonları için $(x_i + x_j) / 2$ Walsh ortalamaları oluşturulur. Bu işlem, tekil sıçramaların ve multipath etkilerinin doğrusal sönümlenmesini sağlar.</p>
+      <p class="no-indent"><span class="bold">2. Robust Medyan Çözümü:</span> Elde edilen Walsh ortalamaları dizisinin ortancası (medyanı) alınarak asimetrik dağılımlardan ve sistematik gürültülerden arındırılmış, son derece kararlı bir robust ağırlık merkezi elde edilir.</p>
     </div>
 
-    <p class="no-indent">"HYBRID_v1" yönteminin TypeScript programlama dilli motor kaynak kod tasarımı aşağıda sunulmuştur:</p>
-    <pre class="code-block">
-function calculateHybridV1(samples: Coordinate[]): {
-  result: Coordinate;
-  usedIndices: number[];
-  clusters?: number[][];
-  fallbackApplied?: boolean;
-  actualMethodUsed?: CalculationMethod;
-} {
-  if (samples.length &lt; 4) return { result: calculateWeightedLSE(samples).result, usedIndices: samples.map((_, i) =&gt; i), clusters: [], fallbackApplied: true, actualMethodUsed: 'WEIGHTED_LSE' };
+    <h3>2.4.6. Tukey's Trimean L-Kestiricisi (Tukey's Trimean L-Estimation)</h3>
+    <p>Doğrusal olmayan gürültüleri ve konum sıçramalarını verimli şekilde sönümleyen <b>Tukey's Trimean L-Kestiricisi</b>, istatistiksel dağılımdaki çeyreklik aralıkları (interquartile ranges) ve ortanca değerini ağırlıklandırarak konum çözümlemesi yapar.</p>
+    
+    <div class="case-container" style="background-color: #f0fdfa; border-left: 4px solid #0d9488; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
+      <p class="bold" style="color: #115e59; margin-bottom: 6px;">Trimean Çeyreklik Ağırlık Sentezi</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Dağılım Bölümlemesi:</span> Gözlemlerin birinci çeyrekliği ($Q_1$ veya %25 dilimi), ortancası ($Median$ veya %50 dilimi) ve üçüncü çeyrekliği ($Q_3$ veya %75 dilimi) hesaplanır.</p>
+      <p class="no-indent"><span class="bold">2. Trimean Formülasyonu:</span> Konum koordinatları, $Trimean = (Q_1 + 2 \times Median + Q_3) / 4$ formülüyle çözümlenir. Bu model, her iki uçtaki sapma sınırlarını dikkate alırken merkeze en yüksek ağırlığı vererek pürüzsüzleştirme sağlar.</p>
+    </div>
+
+    <div style="display:none;">
 
   // 1. Stage: Speed Filtering (speed &lt; 1.0 m/s)
   const checkIsMoving = (s: Coordinate) =&gt; {
@@ -714,9 +699,9 @@ function calculateHybridV1(samples: Coordinate[]): {
     actualMethodUsed: 'HYBRID_v1'
   };
 }
-    </pre>
+    </div>
 
-    <h3>2.4.6. Sinyal Güvenilirlik Analizi ve Veri Saçılım Metodolojisi</h3>
+    <h3>2.4.7. Sinyal Güvenilirlik Analizi ve Veri Saçılım Metodolojisi</h3>
     <p>Mobil donanımların ve akıllı telefonların entegre konum sensörleri doğrudan ham GNSS gözlemleri (taşıyıcı fazı vb.) yerine tarayıcı düzlemine filtrelenmiş tahminler sunar. Bu sebeple donanımın ürettiği konumsal doğruluk kestirimleri (UERE - User Equivalent Range Error tabanlı tahmini konum hatası veya Geolocation API Hassasiyet Çemberi / Accuracy Radius), her zaman sahada karşılaşılan fiziki çoklu yansıma (multipath) ve atmosferik gecikme etkilerini bütünüyle yansıtamaz. ${FULL_BRAND}, bu tip yetersiz veya iyimser bildirimlerden kaynaklı riskleri bertaraf etmek amacıyla <b>Konumsal Veri Saçılımı ve Sinyal Güvenilirlik Analiz Motorunu</b> çalıştırır. Bu motor, toplanan örneklem havuzunun uzaysal dağılımını matematiksel kriterlere göre denetleyerek sinyal kalitesini derecelendirir.</p>
 
     <p><span class="bold">Zaman Serisi ve Epok Aralığı (1 Hz Frekans Modeli):</span> Akıllı konumlandırma motoru, statik ölçüm sırasında Geolocation API'nin standart saniyelik güncelleme hızı olan 1 Hz varsayılan frekansı ile veri toplar. Güvenli bir istatistiksel çıkarım için en az 15 epok (yaklaşık 15 saniyelik kesintisiz zaman serisi dizisi) toplanması zorunluluğu getirilmiştir. Bu 15 saniyelik statik oturum, GNSS uydularının saatler içinde gerçekleşen yörünge/geometri değişimlerini (bölgesel DOP değişimini) modellemek yerine; yerel çevresel engeller, bina yansımaları ve ağaç örtüsünden kaynaklanan anlık çoklu yol (multipath) sapmalarını, sinyal saçılmalarını ve yüksek frekanslı beyaz gürültüyü sönümleyerek verilerin kararlılığını güvene almayı hedefler.</p>

@@ -57,9 +57,9 @@ export function calculateResult(
 
   // Let's implement the constraint checks for professional mathematical models:
   // - HUBER and KMEANS_4 require en az 30 epok.
-  // - Standalone BAARDA, POPE_TAU and HAMPEL only require geodetic minimum of 4 epok.
+  // - HAMPEL, HODGES_LEHMANN, TUKEYS_TRIMEAN require geodetic minimum of 4 epok.
   const requires30 = method === 'HUBER' || method === 'KMEANS_4';
-  const requires4 = method === 'BAARDA' || method === 'POPE_TAU' || method === 'HAMPEL' || method === 'ANDREWS_WAVE' || method === 'TUKEYS_BIWEIGHT' || method === 'DANISH' || method === 'HODGES_LEHMANN' || method === 'TUKEYS_TRIMEAN' || method === 'HYBRID_v1';
+  const requires4 = method === 'HAMPEL' || method === 'HODGES_LEHMANN' || method === 'TUKEYS_TRIMEAN';
   
   let finalMethod = method;
   let fallbackApplied = false;
@@ -73,10 +73,6 @@ export function calculateResult(
   }
 
   switch (finalMethod) {
-    case 'ARITHMETIC_MEAN':
-      finalSamples = sourceData;
-      resultData = calculateAverage(sourceData);
-      break;
     case 'WEIGHTED_LSE':
       const lseResult = calculateWeightedLSE(sourceData);
       resultData = lseResult.result;
@@ -87,52 +83,16 @@ export function calculateResult(
       resultData = pureHuberRes.result;
       finalCalculatedUsedIndices = pureHuberRes.usedIndices;
       break;
-    case 'HYBRID_v1':
-      const hybridRes = calculateHybridV1(sourceData);
-      resultData = hybridRes.result;
-      finalCalculatedUsedIndices = hybridRes.usedIndices;
-      clusters = hybridRes.clusters;
-      if (hybridRes.fallbackApplied) {
-        fallbackApplied = true;
-        // Mark that we fell back to the other model
-        finalMethod = 'WEIGHTED_LSE';
-      }
-      break;
     case 'KMEANS_4':
       const kmeans4Res = calculateKMeans(sourceData);
       resultData = kmeans4Res.result;
       finalCalculatedUsedIndices = kmeans4Res.usedIndices;
       clusters = kmeans4Res.clusters;
       break;
-    case 'BAARDA':
-      const pureBaardaRes = calculateBaardaPureAcademic(sourceData);
-      resultData = pureBaardaRes.result;
-      finalCalculatedUsedIndices = pureBaardaRes.usedIndices;
-      break;
-    case 'POPE_TAU':
-      const popeTauRes = calculatePopeTauAcademic(sourceData);
-      resultData = popeTauRes.result;
-      finalCalculatedUsedIndices = popeTauRes.usedIndices;
-      break;
     case 'HAMPEL':
       const hampelRes = calculateHampelAcademic(sourceData);
       resultData = hampelRes.result;
       finalCalculatedUsedIndices = hampelRes.usedIndices;
-      break;
-    case 'ANDREWS_WAVE':
-      const andrewsRes = calculateAndrewsWavePure(sourceData);
-      resultData = andrewsRes.result;
-      finalCalculatedUsedIndices = andrewsRes.usedIndices;
-      break;
-    case 'TUKEYS_BIWEIGHT':
-      const tukeyRes = calculateTukeysBiweightPure(sourceData);
-      resultData = tukeyRes.result;
-      finalCalculatedUsedIndices = tukeyRes.usedIndices;
-      break;
-    case 'DANISH':
-      const danishRes = calculateDanishPure(sourceData);
-      resultData = danishRes.result;
-      finalCalculatedUsedIndices = danishRes.usedIndices;
       break;
     case 'HODGES_LEHMANN':
       const hlRes = calculateHodgesLehmannPure(sourceData);
@@ -958,7 +918,7 @@ export function calculateHybridV1(samples: Coordinate[]): {
     usedIndices: hlFilteredIndices,
     clusters: finalClusters,
     fallbackApplied: false,
-    actualMethodUsed: 'HYBRID_v1'
+    actualMethodUsed: 'WEIGHTED_LSE'
   };
 }
 
