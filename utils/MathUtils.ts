@@ -40,9 +40,16 @@ export function calculateResult(
     }
   }
 
+  // Pre-filter: Filter out epochs where point speed >= 1.0 m/s
+  const speedFiltered = baseData.filter(s => s.speed === null || s.speed === undefined || s.speed < 1.0);
+  let preFilteredData = speedFiltered;
+  if (preFilteredData.length === 0 && baseData.length > 0) {
+    preFilteredData = baseData; // Safe fallback to not discard everything if all points violate the rule
+  }
+
   // Step 2: Filter by accuracy limit (pre-requisite for all methods)
-  const accuracyFiltered = baseData.filter(s => s.accuracy <= accuracyLimit);
-  const sourceData = accuracyFiltered.length > 0 ? accuracyFiltered : baseData;
+  const accuracyFiltered = preFilteredData.filter(s => s.accuracy <= accuracyLimit);
+  const sourceData = accuracyFiltered.length > 0 ? accuracyFiltered : preFilteredData;
 
   if (sourceData.length === 0) {
     return { result: samples[0], usedIndices: [0] };
