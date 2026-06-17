@@ -408,6 +408,7 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
 }
     </pre>
 
+    <div style="display:none;">
     <h3>2.4.3. Dinamik G-Means Kümeleme ve Şampiyon Küme Süzgeci (Academic G-Means & WLS)</h3>
     <p>Bu filtreleme modeli, 2D konum verilerini sabit bir <i>K</i> küme sayısı veya yapay sınır kısıtlı bir BIC yaklaşımı yerine, <b>G-Means (Gaussian Means)</b> algoritması yardımıyla dinamik olarak bölümler. Model, Anderson-Darling normal uyuşmazlık test büyüklüğü ve istatistiksel kritik sınırlar rehberliğinde küme alt gruplarının standart normal dağılıma (Gaussian) uygunluğunu denetler. Eğer bir alt grup normal dağılıma uymuyorsa, dinamik olarak bölünerek yeni alt kümeler türetilir. Tüm alt kümeler Gaussian normalliğini sağladığında bölme durur. Ardından en çok eleman barındıran baskın küme "Şampiyon Küme" seçilerek diğer kümelerin taşıdığı gözlemler gürültü ve çoklu-yol yansıması kabul edilip bütünüyle elenir.</p>
 
@@ -624,7 +625,9 @@ function runKMeans(samples: Coordinate[], k: number): number[] {
 }
     </pre>
 
-    <h3>2.4.4. Robust Hampel M-Kestiricisi (Robust Hampel M-Estimation)</h3>
+    </div>
+
+    <h3>2.4.3. Robust Hampel M-Kestiricisi (Robust Hampel M-Estimation)</h3>
     <p>Jeodezik uyuşmazlıkların giderilmesi ve kaba hataların ayıklanması amacıyla geliştirilen <b>Robust Hampel</b> süzgeci, medyan bazlı mutlak sapma sınır değerlerini (Median Absolute Deviation - MAD) esas alır. Veri setindeki uç ve sıçramalı değerleri hassas istatistiksel barikatlarla izole eder.</p>
     
     <div class="case-container" style="background-color: #fdf2f8; border-left: 4px solid #db2777; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
@@ -634,7 +637,7 @@ function runKMeans(samples: Coordinate[], k: number): number[] {
       <p class="no-indent"><span class="bold">3. 3-Sigma Kriteri ile Temizleme:</span> Medyandan uzaklığı $3 \times (1.4826 \times MAD)$ değerini aşan uç sinyaller kaba hata olarak işaretlenip elenir. Kalan kararlı gözlemler WLS yöntemiyle dengelenir.</p>
     </div>
 
-    <h3>2.4.5. Hodges-Lehmann R-Kestiricisi (Hodges-Lehmann R-Estimation)</h3>
+    <h3>2.4.4. Hodges-Lehmann R-Kestiricisi (Hodges-Lehmann R-Estimation)</h3>
     <p>Akademik düzeydeki en gürbüz konum hesaplama yöntemlerinden biri olan <b>Hodges-Lehmann R-Kestiricisi</b>, epok verilerinin tüm ikili kombinasyonlarının Walsh ortalamalarını (pairwise averages) temel alarak konumun robust medyanını hesaplar.</p>
     
     <div class="case-container" style="background-color: #f5f3ff; border-left: 4px solid #7c3aed; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
@@ -643,7 +646,7 @@ function runKMeans(samples: Coordinate[], k: number): number[] {
       <p class="no-indent"><span class="bold">2. Robust Medyan Çözümü:</span> Elde edilen Walsh ortalamaları dizisinin ortancası (medyanı) alınarak asimetrik dağılımlardan ve sistematik gürültülerden arındırılmış, son derece kararlı bir robust ağırlık merkezi elde edilir.</p>
     </div>
 
-    <h3>2.4.6. Tukey's Trimean L-Kestiricisi (Tukey's Trimean L-Estimation)</h3>
+    <h3>2.4.5. Tukey's Trimean L-Kestiricisi (Tukey's Trimean L-Estimation)</h3>
     <p>Doğrusal olmayan gürültüleri ve konum sıçramalarını verimli şekilde sönümleyen <b>Tukey's Trimean L-Kestiricisi</b>, istatistiksel dağılımdaki çeyreklik aralıkları (interquartile ranges) ve ortanca değerini ağırlıklandırarak konum çözümlemesi yapar.</p>
     
     <div class="case-container" style="background-color: #f0fdfa; border-left: 4px solid #0d9488; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
@@ -652,13 +655,22 @@ function runKMeans(samples: Coordinate[], k: number): number[] {
       <p class="no-indent"><span class="bold">2. Trimean Formülasyonu:</span> Konum koordinatları, $Trimean = (Q_1 + 2 \times Median + Q_3) / 4$ formülüyle çözümlenir. Bu model, her iki uçtaki sapma sınırlarını dikkate alırken merkeze en yüksek ağırlığı vererek pürüzsüzleştirme sağlar.</p>
     </div>
 
-    <h3>2.4.7. Optimal S-Kestiricisi (Optimal S-Estimation)</h3>
+    <h3>2.4.6. Optimal S-Kestiricisi (Optimal S-Estimation)</h3>
     <p>Konum gözlem serilerindeki geniş saçılımları ve çoklu kaba hataları güçlü bir şekilde sönümleyen <b>Optimal S-Kestiricisi</b>, Tukey's Biweight kayıp fonksiyonu og yüksek kırılma noktalı (high breakdown point) ölçek kestiricileri kullanarak iteratif ağırlıklandırma yöntemiyle nihai koordinatı belirler.</p>
     
     <div class="case-container" style="background-color: #f0f9ff; border-left: 4px solid #0284c7; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
       <p class="bold" style="color: #0369a1; margin-bottom: 6px;">Iterative Biweight Ağırlık Dinamiği</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Robust Ölçek Ölçeklendirme:</span> Medyan mutlak sapması ($MAD$) üzerinden $c = 3.0$ katsayı limiti belirlenir. Gözlemlerin ortanca değere olan uzaklıklarına göre biweight ağırlıkları ($w = (1 - (d/c)^2)^2$) hesaplanır.</p>
       <p class="no-indent"><span class="bold">2. İteratif Yakınsama:</span> Konum koordinatları ağırlıklara göre yeniden hesaplanır og değişim $0.001\text{m}$ altına düşene kadar iteratif olarak güncellenir. Uç değerlerin ağırlıkları sıfıra indirilerek kararlılık maksimuma ulaştırılır.</p>
+    </div>
+
+    <h3>2.4.7. Robust MM-Kestiricisi (Robust MM-Estimation)</h3>
+    <p>Hem yüksek kırılma noktasına (%50 breakdown point) hem de yüksek asimptotik etkinliğe (%95 efficiency) sahip olan modern <b>Robust MM-Kestiricisi</b>, Tukey's Biweight kayıp fonksiyonlarını çift aşamalı (S-ölçek ve M-konum) bir hiyerarşide koordine eder. Bu sayede veri havuzundaki baskın kaba hataları tam olarak elimine ederken normal dağılıma uyan epokların doğruluğunu korur.</p>
+    
+    <div class="case-container" style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
+      <p class="bold" style="color: #14532d; margin-bottom: 6px;">MM-Estimator Çift Kademeli Çözüm Filtresi</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. İlk Robust Ölçek (S-Süreci):</span> Başlangıç koordinatı olarak konumsal medyan seçilir ve gözlemlerin medyan mutlak sapması ($MAD$) üzerinden büzülmüş robust S-ölçek parametresi ($s_n = 1.4826 \times MAD$) hesaplanır.</p>
+      <p class="no-indent"><span class="bold">2. İteratif M-Tahmin Yakınsaması (M-Süreci):</span> Tukey's Biweight fonksiyonu yüksek verimlilik katsayısı ($c_1 = 4.685$) tabanında çalıştırılır. İteratif olarak her epoka $w_i = ( 1 - (d_i / (c_1 \cdot s_n))^2 )^2$ (eğer $d_i \le c_1 \cdot s_n$, aksi halde $0$) ağırlığı verilerek ağırlıklı en küçük kareler çözümü yinelenir. Sıçramalar tam sıfır ağırlıkla dışlanırken, kararlı gözlemler yüksek asimptotik doğrulukla konumlandırılır.</p>
     </div>
 
     <div style="display:none;">

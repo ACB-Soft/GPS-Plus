@@ -53,7 +53,8 @@ const METHOD_COLORS: Record<string, string> = {
   DANISH: '#eab308',
   HODGES_LEHMANN: '#ec4899',
   TUKEYS_TRIMEAN: '#a855f7',
-  OPTIMAL_S: '#0d9488'
+  OPTIMAL_S: '#0d9488',
+  MM_ESTIMATOR: '#10b981'
 };
 
 const CLUSTER_COLORS = [
@@ -229,23 +230,23 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
   const methods = useMemo<CalculationMethod[]>(() => [
     'WEIGHTED_LSE',
-    'KMEANS_4',
     'HUBER',
     'HAMPEL',
     'HODGES_LEHMANN',
     'TUKEYS_TRIMEAN',
-    'OPTIMAL_S'
+    'OPTIMAL_S',
+    'MM_ESTIMATOR'
   ], []);
 
   const getMethodLabel = (m: CalculationMethod) => {
     const labels: Record<string, string> = {
       'WEIGHTED_LSE': t("1. Ağırlıklı En Küçük Kareler"),
-      'KMEANS_4': t("2. K-Means Kümeleme"),
-      'HUBER': t("3. Huber M-Kestiricisi"),
-      'HAMPEL': t("4. Hampel M-Kestiricisi"),
-      'HODGES_LEHMANN': t("5. Hodges-Lehmann R-Kestiricisi"),
-      'TUKEYS_TRIMEAN': t("6. Tukey's Trimean L-Kestiricisi"),
-      'OPTIMAL_S': t("7. Optimal S-Kestiricisi")
+      'HUBER': t("2. Huber M-Kestiricisi"),
+      'HAMPEL': t("3. Hampel M-Kestiricisi"),
+      'HODGES_LEHMANN': t("4. Hodges-Lehmann R-Kestiricisi"),
+      'TUKEYS_TRIMEAN': t("5. Tukey's Trimean L-Kestiricisi"),
+      'OPTIMAL_S': t("6. Optimal S-Kestiricisi"),
+      'MM_ESTIMATOR': t("7. MM-Kestiricisi")
     };
     return labels[m] || m;
   };
@@ -1601,7 +1602,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   'DANISH': 'Danish Estimator',
                                   'HODGES_LEHMANN': 'Hodges-Lehmann Estimator',
                                   'TUKEYS_TRIMEAN': "Tukey's Trimean",
-                                  'OPTIMAL_S': 'Optimal S-Estimator'
+                                  'OPTIMAL_S': 'Optimal S-Estimator',
+                                  'MM_ESTIMATOR': 'Robust MM-Estimator'
                                 };
                                 return labels[m] || m;
                               };
@@ -1675,7 +1677,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               'DANISH': 'Danish Estimator',
                               'HODGES_LEHMANN': 'Hodges-Lehmann Estimator',
                               'TUKEYS_TRIMEAN': "Tukey's Trimean",
-                              'OPTIMAL_S': 'Optimal S-Estimator'
+                              'OPTIMAL_S': 'Optimal S-Estimator',
+                              'MM_ESTIMATOR': 'Robust MM-Estimator'
                             };
                             return labels[m] || m;
                           };
@@ -1718,7 +1721,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             'DANISH': 'Danish Estimator',
                             'HODGES_LEHMANN': 'Hodges-Lehmann Estimator',
                             'TUKEYS_TRIMEAN': "Tukey's Trimean",
-                            'OPTIMAL_S': 'Optimal S-Estimator'
+                            'OPTIMAL_S': 'Optimal S-Estimator',
+                            'MM_ESTIMATOR': 'Robust MM-Estimator'
                           };
                           return labels[m] || m;
                         };
@@ -1911,220 +1915,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 </div>
 
                 <div className="flex flex-col gap-6">
-                  {/* 1. K-Means Cluster Classification Scatter Chart */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center px-1">
-                      <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">
-                        K-Means Cluster Classification Plot
-                      </span>
-                      <button 
-                        onClick={() => exportChart(clusterChartRef, 'gps-plus-kmeans-clusters')}
-                        type="button"
-                        className="bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 cursor-pointer flex items-center gap-1"
-                      >
-                        <i className="fas fa-camera text-blue-400"></i> {t("Download PNG")}
-                      </button>
-                    </div>
 
-                    <div 
-                      ref={clusterChartRef}
-                      className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] aspect-square mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
-                    >
-                      {/* Header */}
-                      <div className="flex justify-between items-center border-b border-slate-900/10 pb-1.5 min-h-0 shrink-0">
-                        <div className="min-w-0">
-                          <h2 className="text-slate-900 font-extrabold text-[9px] uppercase tracking-wider leading-none font-sans">
-                            ACB LABS K-MEANS CLUSTERING PLAN
-                          </h2>
-                          <p className="text-slate-400 text-[6px] font-bold uppercase tracking-widest mt-0.5 font-mono">
-                            SPATIAL COORDINATE DENSITY GROUPS
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Scatter Plot */}
-                      <div className="flex-1 min-h-0 min-w-0 w-full relative">
-                        {hybridClusterChartData && hybridClusterChartData.points.length > 0 ? (
-                          <ResponsiveContainer width="100%" height="100%">
-                            <ScatterChart margin={{ top: 12, right: 12, bottom: 20, left: -5 }}>
-                              <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" horizontal={true} vertical={true} />
-                              <XAxis 
-                                type="number" 
-                                dataKey="dx" 
-                                name="ΔE" 
-                                domain={[-maxClusterTickLimit + clusterXOffset, maxClusterTickLimit + clusterXOffset]} 
-                                ticks={clusterXTicks}
-                                interval={0}
-                                angle={-90}
-                                textAnchor="end"
-                                height={32}
-                                tickFormatter={(val) => {
-                                  const isInteger = Math.abs(val - Math.round(val)) < 0.01;
-                                  return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
-                                }}
-                                tick={{fontSize: parseFloat(customClusterFontSize), fontWeight: 700, fill: '#334155', dy: 2.5, dx: -3}}
-                                axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
-                                tickLine={{ stroke: '#475569', strokeWidth: 1 }}
-                              />
-                              <YAxis 
-                                type="number" 
-                                dataKey="dy" 
-                                name="ΔN" 
-                                domain={[-maxClusterTickLimit + clusterYOffset, maxClusterTickLimit + clusterYOffset]} 
-                                ticks={clusterYTicks}
-                                interval={0}
-                                tickFormatter={(val) => {
-                                  const isInteger = Math.abs(val - Math.round(val)) < 0.01;
-                                  return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
-                                }}
-                                tick={{fontSize: parseFloat(customClusterFontSize), fontWeight: 700, fill: '#334155'}} 
-                                axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
-                                tickLine={{ stroke: '#475569', strokeWidth: 1 }}
-                              />
-                              <ZAxis type="number" range={[15, 15]} />
-                              <Tooltip 
-                                cursor={{ strokeDasharray: '3 3', stroke: '#475569' }} 
-                                content={({ active, payload }) => {
-                                  if (active && payload && payload.length) {
-                                    const data = payload[0].payload;
-                                    return (
-                                      <div className="bg-slate-900 border border-slate-800 text-white p-2.5 rounded-lg shadow-xl z-50 text-[8px] text-left">
-                                        <p className="font-bold uppercase text-blue-400 mb-0.5 pb-0.5 border-b border-slate-800 leading-none">
-                                          Epoch #{data.id}
-                                        </p>
-                                        <div className="space-y-0.5 font-mono">
-                                          <div className="flex justify-between gap-2">
-                                            <span className="opacity-60 text-[7px] uppercase">Spatial Cluster:</span>
-                                            <span className="font-bold text-indigo-400">Cluster {getClusterLetterLabel(data.clusterId)}</span>
-                                          </div>
-                                          <div className="flex justify-between gap-2">
-                                            <span className="opacity-60 text-[7px] uppercase">ΔE (Easting):</span>
-                                            <span className="font-bold text-emerald-400">{data.dx.toFixed(4)} m</span>
-                                          </div>
-                                          <div className="flex justify-between gap-2">
-                                            <span className="opacity-60 text-[7px] uppercase">ΔN (Northing):</span>
-                                            <span className="font-bold text-sky-400">{data.dy.toFixed(4)} m</span>
-                                          </div>
-                                          <div className="flex justify-between gap-2">
-                                            <span className="opacity-60 text-[7px] uppercase">Baarda Filter:</span>
-                                            <span className={`font-bold ${data.passedBaarda ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                              {data.passedBaarda ? "PASSED" : "REJECTED"}
-                                            </span>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    );
-                                  }
-                                  return null;
-                                }}
-                              />
-                              <ReferenceLine x={0} stroke="#475569" strokeWidth={1} strokeDasharray="3 3" />
-                              <ReferenceLine y={0} stroke="#475569" strokeWidth={1} strokeDasharray="3 3" />
-                              
-                              {/* Reference Point / Ground Truth (REF) */}
-                              {analysisType === 'precise' && (
-                                <Scatter 
-                                  name="GROUND TRUTH (REF)" 
-                                  data={[{ dx: 0, dy: 0 }]} 
-                                  fill="#10b981" 
-                                  shape="diamond" 
-                                  line={false}
-                                >
-                                  <Cell fill="#10b981" stroke="#059669" strokeWidth={1.5} />
-                                </Scatter>
-                              )}
-
-                              {/* Draw Each Cluster in its own color layer */}
-                              {(() => {
-                                const clusterColors = ['#3b82f6', '#a855f7', '#eab308', '#ec4899', '#14b8a6', '#f97316'];
-                                return hybridClusterChartData?.clusters.map((clusterIndices, cIdx) => {
-                                  if (clusterIndices.length === 0) return null;
-                                  const ptsOfCluster = hybridClusterChartData.points.filter(p => clusterIndices.includes(p.id - 1));
-                                  return (
-                                    <Scatter 
-                                      key={`kmeans-scatter-${cIdx}`}
-                                      name={`Cluster ${getClusterLetterLabel(cIdx)}`} 
-                                      data={ptsOfCluster} 
-                                      fill={clusterColors[cIdx % clusterColors.length]}
-                                      shape={<RawPointShape r={parseFloat(customClusterDotSize)} />}
-                                      onClick={(pt) => setActiveClusterPointId(pt.id)}
-                                      className="cursor-pointer"
-                                    />
-                                  );
-                                });
-                              })()}
-                            </ScatterChart>
-                          </ResponsiveContainer>
-                        ) : (
-                          <div className="flex items-center justify-center h-full text-slate-400 font-bold text-xs uppercase tracking-widest">NO DATA FOUND</div>
-                        )}
-                      </div>
-
-                      {/* Bottom Panel: Shrunk & Very Compact Legend */}
-                      <div className="shrink-0 border-t border-slate-100 pt-3 flex flex-col gap-2 w-full">
-                        <div className="grid grid-cols-3 gap-x-2 gap-y-1.5 font-sans">
-                          {(() => {
-                            const clusterColors = ['#3b82f6', '#a855f7', '#eab308', '#ec4899', '#14b8a6', '#f97316'];
-                            const fs = parseFloat(customClusterFontSize);
-                            const badgeSize = `${fs + 6.5}px`;
-                            const badgeFontSize = `${fs - 0.5}px`;
-                            const titleFontSize = `${fs - 1}px`;
-                            const subFontSize = `${fs - 2}px`;
-                            
-                            const elements = (hybridClusterChartData?.clusters || []).map((clusterIndices, cIdx) => {
-                              if (clusterIndices.length === 0) return null;
-                              const color = clusterColors[cIdx % clusterColors.length];
-                              return (
-                                <div key={`kmeans-legend-${cIdx}`} className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
-                                  <div className="flex items-center justify-center rounded font-black text-white shrink-0 shadow-xs" style={{ backgroundColor: color, width: badgeSize, height: badgeSize, fontSize: badgeFontSize }}>
-                                    {getClusterLetterLabel(cIdx)}
-                                  </div>
-                                  <div className="min-w-0 font-sans">
-                                    <p className="font-extrabold text-slate-800 uppercase tracking-tight truncate leading-none" style={{ fontSize: titleFontSize }}>
-                                      CLUSTER {getClusterLetterLabel(cIdx)}
-                                    </p>
-                                    <p className="font-bold text-indigo-600 font-mono tracking-tight leading-none mt-0.5" style={{ fontSize: subFontSize }}>
-                                      {clusterIndices.length} EPOCHS
-                                    </p>
-                                  </div>
-                                </div>
-                              );
-                            }).filter(Boolean);
-
-                            return (
-                              <>
-                                {elements}
-                                {analysisType === 'precise' && (
-                                  <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
-                                    <div 
-                                      className="flex items-center justify-center bg-[#10b981] border border-[#059669] text-white font-black shrink-0 shadow-xs rotate-45" 
-                                      style={{ 
-                                        width: `${parseFloat(customClusterFontSize) + 2.5}px`, 
-                                        height: `${parseFloat(customClusterFontSize) + 2.5}px`,
-                                        borderRadius: '3px',
-                                        marginLeft: '2px',
-                                        marginRight: '2px'
-                                      }}
-                                    >
-                                      <span className="text-[6px] font-black -rotate-45 block transform">REF</span>
-                                    </div>
-                                    <div className="min-w-0 font-sans">
-                                      <p className="font-extrabold text-slate-800 uppercase tracking-wider truncate leading-none" style={{ fontSize: `${parseFloat(customClusterFontSize) - 0.5}px` }}>
-                                        PRECISE
-                                      </p>
-                                      <p className="font-bold text-emerald-600 tracking-wider leading-none mt-0.5 truncate" style={{ fontSize: `${parseFloat(customClusterFontSize) - 1.5}px` }}>
-                                        COORDINATE
-                                      </p>
-                                    </div>
-                                  </div>
-                                )}
-                              </>
-                            );
-                          })()}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
                   {/* 2. Custom Method Outlier Filtering Scatter Chart */}
                   <div className="space-y-2">

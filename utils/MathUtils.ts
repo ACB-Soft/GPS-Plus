@@ -56,10 +56,10 @@ export function calculateResult(
   let clusters: number[][] | undefined = undefined;
 
   // Let's implement the constraint checks for professional mathematical models:
-  // - HUBER and KMEANS_4 require en az 30 epok.
-  // - HAMPEL, HODGES_LEHMANN, TUKEYS_TRIMEAN, OPTIMAL_S require geodetic minimum of 4 epok.
-  const requires30 = method === 'HUBER' || method === 'KMEANS_4';
-  const requires4 = method === 'HAMPEL' || method === 'HODGES_LEHMANN' || method === 'TUKEYS_TRIMEAN' || method === 'OPTIMAL_S';
+  // - HUBER requires en az 30 epok.
+  // - HAMPEL, HODGES_LEHMANN, TUKEYS_TRIMEAN, OPTIMAL_S, MM_ESTIMATOR require geodetic minimum of 4 epok.
+  const requires30 = method === 'HUBER';
+  const requires4 = method === 'HAMPEL' || method === 'HODGES_LEHMANN' || method === 'TUKEYS_TRIMEAN' || method === 'OPTIMAL_S' || method === 'MM_ESTIMATOR';
   
   let finalMethod = method;
   let fallbackApplied = false;
@@ -83,12 +83,6 @@ export function calculateResult(
       resultData = pureHuberRes.result;
       finalCalculatedUsedIndices = pureHuberRes.usedIndices;
       break;
-    case 'KMEANS_4':
-      const kmeans4Res = calculateKMeans(sourceData);
-      resultData = kmeans4Res.result;
-      finalCalculatedUsedIndices = kmeans4Res.usedIndices;
-      clusters = kmeans4Res.clusters;
-      break;
     case 'HAMPEL':
       const hampelRes = calculateHampelAcademic(sourceData);
       resultData = hampelRes.result;
@@ -108,6 +102,11 @@ export function calculateResult(
       const optimalSRes = calculateOptimalSPure(sourceData);
       resultData = optimalSRes.result;
       finalCalculatedUsedIndices = optimalSRes.usedIndices;
+      break;
+    case 'MM_ESTIMATOR':
+      const mmeRes = calculateMMEstimatorPure(sourceData);
+      resultData = mmeRes.result;
+      finalCalculatedUsedIndices = mmeRes.usedIndices;
       break;
     default:
       const defaultLse = calculateWeightedLSE(sourceData);
@@ -1131,6 +1130,130 @@ export function calculateOptimalSPure(samples: Coordinate[]): { result: Coordina
     const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
 
     if (dist <= outlierThreshold) {
+      usedIndices.push(i);
+      cleanSamples.push(p);
+    }
+  }
+
+  if (cleanSamples.length === 0) {
+    return {
+      result: { lat: currentLat, lng: currentLng, accuracy: 3.0, altitude: null, altitudeAccuracy: null, timestamp: Date.now() },
+      usedIndices: samples.map((_, i) => i)
+    };
+  }
+
+  let finalSumW = 0;
+  let finalLatW = 0;
+  let finalLngW = 0;
+  let totalAccuracy = 0;
+
+  for (const p of cleanSamples) {
+    const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
+    finalSumW += hardwareWeight;
+    finalLatW += p.lat * hardwareWeight;
+    finalLngW += p.lng * hardwareWeight;
+    totalAccuracy += p.accuracy;
+  }
+
+  return {
+    result: {
+      lat: finalLatW / finalSumW,
+      lng: finalLngW / finalSumW,
+      accuracy: totalAccuracy / cleanSamples.length,
+      altitude: null,
+      altitudeAccuracy: null,
+      timestamp: Date.now()
+    },
+    usedIndices
+  };
+}
+
+export function calculateMMEstimatorPure(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length < 4) {
+    const avgLat = samples.reduce((sum, p) => sum + p.lat, 0) / samples.length;
+    const avgLng = samples.reduce((sum, p) => sum + p.lng, 0) / samples.length;
+    const avgAcc = samples.reduce((sum, p) => sum + p.accuracy, 0) / samples.length;
+    return {
+      result: { lat: avgLat, lng: avgLng, accuracy: avgAcc, altitude: null, altitudeAccuracy: null, timestamp: Date.now() },
+      usedIndices: samples.map((_, i) => i)
+    };
+  }
+
+  // Stage 1: Initial highly robust estimate (spatial median / median coordinate)
+  let currentLat = calculateMedian(samples.map(s => s.lat));
+  let currentLng = calculateMedian(samples.map(s => s.lng));
+
+  // Stage 2: Robust scale estimate s_n based on MAD (high breakdown point)
+  const initialMAD = calculateMADHuber(samples, currentLat, currentLng);
+  // We compute the initial scale estimate s_n = 1.4826 * MAD
+  const initialScale = initialMAD * 1.4826;
+  const s_n = initialScale > 1e-7 ? initialScale : 1e-7;
+
+  // Stage 3: Iterative M-Estimation using Tukey's Biweight loss with high efficiency tuning constant c1 = 4.685
+  const c1 = 4.685;
+  const cutoff = c1 * s_n;
+
+  const maxIterations = 25;
+  const toleranceMeter = 0.001;
+
+  for (let iter = 0; iter < maxIterations; iter++) {
+    let sumW = 0;
+    let sumLatW = 0;
+    let sumLngW = 0;
+
+    for (let i = 0; i < samples.length; i++) {
+      const p = samples[i];
+      const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
+
+      // Hardware-reported accuracy weighting
+      const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
+      
+      // Tukey's Biweight weight function: w(u) = (1 - u^2)^2 if |u| <= 1, else 0
+      let biweightWeight = 0;
+      if (dist <= cutoff) {
+        const u = dist / cutoff;
+        biweightWeight = Math.pow(1.0 - u * u, 2);
+      }
+      
+      const combinedWeight = hardwareWeight * biweightWeight;
+
+      sumW += combinedWeight;
+      sumLatW += p.lat * combinedWeight;
+      sumLngW += p.lng * combinedWeight;
+    }
+
+    if (sumW === 0) {
+      // Fall back if all weights are 0 due to being outliers
+      for (let i = 0; i < samples.length; i++) {
+        const p = samples[i];
+        const combinedWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
+        sumW += combinedWeight;
+        sumLatW += p.lat * combinedWeight;
+        sumLngW += p.lng * combinedWeight;
+      }
+    }
+
+    const nextLat = sumLatW / sumW;
+    const nextLng = sumLngW / sumW;
+
+    const changeInMeter = calculateDistanceMeter(nextLat, nextLng, currentLat, currentLng, currentLat);
+
+    currentLat = nextLat;
+    currentLng = nextLng;
+
+    if (changeInMeter < toleranceMeter) break;
+  }
+
+  // Post-Estimation outlier check: points further than 3.0 * s_n are marked as outliers
+  const finalOutlierThreshold = 3.0 * s_n;
+  const usedIndices: number[] = [];
+  const cleanSamples: Coordinate[] = [];
+
+  for (let i = 0; i < samples.length; i++) {
+    const p = samples[i];
+    const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
+
+    if (dist <= finalOutlierThreshold) {
       usedIndices.push(i);
       cleanSamples.push(p);
     }

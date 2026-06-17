@@ -19,11 +19,11 @@ export interface Coordinate {
 export type CalculationMethod = 
   | 'WEIGHTED_LSE' 
   | 'HUBER'
-  | 'KMEANS_4' 
   | 'HAMPEL'
   | 'HODGES_LEHMANN'
   | 'TUKEYS_TRIMEAN'
-  | 'OPTIMAL_S';
+  | 'OPTIMAL_S'
+  | 'MM_ESTIMATOR';
 
 export interface SavedLocation extends Coordinate {
   id: string;

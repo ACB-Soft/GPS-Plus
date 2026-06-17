@@ -9,12 +9,12 @@ import { geoidService } from '../services/GeoidService';
 const getMethodName = (m: CalculationMethod) => {
   switch(m) {
     case 'WEIGHTED_LSE': return "Ağırlıklı En Küçük Kareler";
-    case 'KMEANS_4': return "K-Means Kümeleme";
     case 'HUBER': return "Huber M-Kestiricisi";
     case 'HAMPEL': return "Hampel M-Kestiricisi";
     case 'HODGES_LEHMANN': return "Hodges-Lehmann R-Kestiricisi";
     case 'TUKEYS_TRIMEAN': return "Tukey's Trimean L-Kestiricisi";
     case 'OPTIMAL_S': return "Optimal S-Kestiricisi";
+    case 'MM_ESTIMATOR': return "MM-Kestiricisi";
     default: return m;
   }
 };
@@ -151,12 +151,12 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   
   const methods: CalculationMethod[] = [
     'WEIGHTED_LSE', 
-    'KMEANS_4',
     'HUBER',
     'HAMPEL',
     'HODGES_LEHMANN',
     'TUKEYS_TRIMEAN',
-    'OPTIMAL_S'
+    'OPTIMAL_S',
+    'MM_ESTIMATOR'
   ];
   const methodResults = methods.map(method => {
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
@@ -543,12 +543,12 @@ export const downloadCombinedAnalysisReport = (
 
   const allMethods: CalculationMethod[] = [
     'WEIGHTED_LSE', 
-    'KMEANS_4',
     'HUBER',
     'HAMPEL',
     'HODGES_LEHMANN',
     'TUKEYS_TRIMEAN',
-    'OPTIMAL_S'
+    'OPTIMAL_S',
+    'MM_ESTIMATOR'
   ];
 
   if (location.samples && location.samples.length > 0) {
