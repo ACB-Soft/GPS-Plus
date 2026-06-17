@@ -1179,24 +1179,21 @@ export function calculateMMEstimatorPure(samples: Coordinate[]): { result: Coord
     };
   }
 
-  // Stage 1: Initial highly robust estimate (spatial median / median coordinate)
-  let currentLat = calculateMedian(samples.map(s => s.lat));
-  let currentLng = calculateMedian(samples.map(s => s.lng));
+  // Stage 1: Robust initial estimate using Optimal S-Estimator (First Stage)
+  const sEstimatorResult = calculateOptimalSPure(samples);
+  let currentLat = sEstimatorResult.result.lat;
+  let currentLng = sEstimatorResult.result.lng;
 
-  // Stage 2: Robust scale estimate s_n based on MAD (high breakdown point)
-  const initialMAD = calculateMADHuber(samples, currentLat, currentLng);
-  // We compute the initial scale estimate s_n = 1.4826 * MAD
-  const initialScale = initialMAD * 1.4826;
-  const s_n = initialScale > 1e-7 ? initialScale : 1e-7;
-
-  // Stage 3: Iterative M-Estimation using Tukey's Biweight loss with high efficiency tuning constant c1 = 4.685
-  const c1 = 4.685;
-  const cutoff = c1 * s_n;
-
-  const maxIterations = 25;
+  // Stage 2: Refinement using Huber M-Estimator starting from S-Estimator's location (Second Stage)
+  const maxIterations = 15;
   const toleranceMeter = 0.001;
 
   for (let iter = 0; iter < maxIterations; iter++) {
+    const currentMAD = calculateMADHuber(samples, currentLat, currentLng);
+    const pseudoSigma = currentMAD * 1.4826;
+    const stablePseudoSigma = pseudoSigma > 1e-7 ? pseudoSigma : 1e-7;
+    const huberLimit = 1.345 * stablePseudoSigma;
+
     let sumW = 0;
     let sumLatW = 0;
     let sumLngW = 0;
@@ -1205,33 +1202,16 @@ export function calculateMMEstimatorPure(samples: Coordinate[]): { result: Coord
       const p = samples[i];
       const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
 
-      // Hardware-reported accuracy weighting
       const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
-      
-      // Tukey's Biweight weight function: w(u) = (1 - u^2)^2 if |u| <= 1, else 0
-      let biweightWeight = 0;
-      if (dist <= cutoff) {
-        const u = dist / cutoff;
-        biweightWeight = Math.pow(1.0 - u * u, 2);
-      }
-      
-      const combinedWeight = hardwareWeight * biweightWeight;
+      const huberWeight = dist <= huberLimit ? 1.0 : huberLimit / Math.max(0.001, dist);
+      const combinedWeight = hardwareWeight * huberWeight;
 
       sumW += combinedWeight;
       sumLatW += p.lat * combinedWeight;
       sumLngW += p.lng * combinedWeight;
     }
 
-    if (sumW === 0) {
-      // Fall back if all weights are 0 due to being outliers
-      for (let i = 0; i < samples.length; i++) {
-        const p = samples[i];
-        const combinedWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
-        sumW += combinedWeight;
-        sumLatW += p.lat * combinedWeight;
-        sumLngW += p.lng * combinedWeight;
-      }
-    }
+    if (sumW === 0) break;
 
     const nextLat = sumLatW / sumW;
     const nextLng = sumLngW / sumW;
@@ -1244,8 +1224,11 @@ export function calculateMMEstimatorPure(samples: Coordinate[]): { result: Coord
     if (changeInMeter < toleranceMeter) break;
   }
 
-  // Post-Estimation outlier check: points further than 3.0 * s_n are marked as outliers
-  const finalOutlierThreshold = 3.0 * s_n;
+  const finalMAD = calculateMADHuber(samples, currentLat, currentLng);
+  const finalPseudoSigma = finalMAD * 1.4826;
+  const stableFinalPseudoSigma = finalPseudoSigma > 1e-7 ? finalPseudoSigma : 1e-7;
+  const outlierThreshold = 1.345 * stableFinalPseudoSigma;
+
   const usedIndices: number[] = [];
   const cleanSamples: Coordinate[] = [];
 
@@ -1253,7 +1236,7 @@ export function calculateMMEstimatorPure(samples: Coordinate[]): { result: Coord
     const p = samples[i];
     const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
 
-    if (dist <= finalOutlierThreshold) {
+    if (dist <= outlierThreshold) {
       usedIndices.push(i);
       cleanSamples.push(p);
     }
