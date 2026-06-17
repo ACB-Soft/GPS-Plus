@@ -1180,16 +1180,26 @@ export function calculateMMEstimatorPure(samples: Coordinate[]): { result: Coord
   }
 
   // Stage 1: Robust initial estimate using Optimal S-Estimator (First Stage)
+  // This yields highly robust location and filters outliers, giving us a clean/robust subset.
   const sEstimatorResult = calculateOptimalSPure(samples);
+  const robustIndicesSubset = sEstimatorResult.usedIndices;
+  const robustSubset = robustIndicesSubset.map(idx => samples[idx]);
+
+  if (robustSubset.length < 2) {
+    // If S-estimator heavily cleared everything, fallback to S-estimator's result directly
+    return sEstimatorResult;
+  }
+
   let currentLat = sEstimatorResult.result.lat;
   let currentLng = sEstimatorResult.result.lng;
 
   // Stage 2: Refinement using Huber M-Estimator starting from S-Estimator's location (Second Stage)
+  // We perform refinement ONLY on the robust subset elements selected by Stage 1.
   const maxIterations = 15;
   const toleranceMeter = 0.001;
 
   for (let iter = 0; iter < maxIterations; iter++) {
-    const currentMAD = calculateMADHuber(samples, currentLat, currentLng);
+    const currentMAD = calculateMADHuber(robustSubset, currentLat, currentLng);
     const pseudoSigma = currentMAD * 1.4826;
     const stablePseudoSigma = pseudoSigma > 1e-7 ? pseudoSigma : 1e-7;
     const huberLimit = 1.345 * stablePseudoSigma;
@@ -1198,8 +1208,8 @@ export function calculateMMEstimatorPure(samples: Coordinate[]): { result: Coord
     let sumLatW = 0;
     let sumLngW = 0;
 
-    for (let i = 0; i < samples.length; i++) {
-      const p = samples[i];
+    for (let i = 0; i < robustSubset.length; i++) {
+      const p = robustSubset[i];
       const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
 
       const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
@@ -1224,29 +1234,28 @@ export function calculateMMEstimatorPure(samples: Coordinate[]): { result: Coord
     if (changeInMeter < toleranceMeter) break;
   }
 
-  const finalMAD = calculateMADHuber(samples, currentLat, currentLng);
+  // Refined robust subset scale checking
+  const finalMAD = calculateMADHuber(robustSubset, currentLat, currentLng);
   const finalPseudoSigma = finalMAD * 1.4826;
   const stableFinalPseudoSigma = finalPseudoSigma > 1e-7 ? finalPseudoSigma : 1e-7;
   const outlierThreshold = 1.345 * stableFinalPseudoSigma;
 
-  const usedIndices: number[] = [];
+  const finalUsedIndices: number[] = [];
   const cleanSamples: Coordinate[] = [];
 
-  for (let i = 0; i < samples.length; i++) {
-    const p = samples[i];
+  for (let k = 0; k < robustSubset.length; k++) {
+    const p = robustSubset[k];
+    const originalIndex = robustIndicesSubset[k];
     const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
 
     if (dist <= outlierThreshold) {
-      usedIndices.push(i);
+      finalUsedIndices.push(originalIndex);
       cleanSamples.push(p);
     }
   }
 
   if (cleanSamples.length === 0) {
-    return {
-      result: { lat: currentLat, lng: currentLng, accuracy: 3.0, altitude: null, altitudeAccuracy: null, timestamp: Date.now() },
-      usedIndices: samples.map((_, i) => i)
-    };
+    return sEstimatorResult;
   }
 
   let finalSumW = 0;
@@ -1267,11 +1276,11 @@ export function calculateMMEstimatorPure(samples: Coordinate[]): { result: Coord
       lat: finalLatW / finalSumW,
       lng: finalLngW / finalSumW,
       accuracy: totalAccuracy / cleanSamples.length,
-      altitude: null,
-      altitudeAccuracy: null,
+      altitude: sEstimatorResult.result.altitude || null,
+      altitudeAccuracy: sEstimatorResult.result.altitudeAccuracy || null,
       timestamp: Date.now()
     },
-    usedIndices
+    usedIndices: finalUsedIndices
   };
 }
 
