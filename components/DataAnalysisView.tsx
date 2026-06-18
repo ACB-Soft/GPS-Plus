@@ -169,9 +169,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
   // Grafik özelleştirme seçenekleri
   const [customScatterRange, setCustomScatterRange] = useState<string>('auto'); // 'auto', '1.0', '2.0', '3.0', '4.0', '5.0', '10.0', '15.0'
-  const [customScatterStep, setCustomScatterStep] = useState<string>('auto'); // 'auto', '0.1', '0.2', '0.5', '1.0', '2.0'
-  const [customScatterFontSize, setCustomScatterFontSize] = useState<string>('7.5'); // '6', '7', '7.5', '8', '9', '10', '12'
-  const [customDotSize, setCustomDotSize] = useState<string>('2.5'); // '1.0', '1.5', '2.0', '2.5', '3.0', '4.0', '5.0', '6.0'
+  const [customScatterStep, setCustomScatterStep] = useState<string>('0.5'); // 'auto', '0.1', '0.2', '0.5', '1.0', '2.0'
+  const [customScatterFontSize, setCustomScatterFontSize] = useState<string>('10'); // '6', '7', '7.5', '8', '9', '10', '12'
+  const [customDotSize, setCustomDotSize] = useState<string>('1.5'); // '1.0', '1.5', '2.0', '2.5', '3.0', '4.0', '5.0', '6.0'
   const [xOffset, setXOffset] = useState<number>(0);
   const [yOffset, setYOffset] = useState<number>(0);
   const [customTimeSeriesRange, setCustomTimeSeriesRange] = useState<string>('auto'); // 'auto', '2.0', '3.0', '4.0', '5.0', '10.0', '15.0', '20.0', '30.0', '50.0'
@@ -179,13 +179,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [customTimeSeriesFontSize, setCustomTimeSeriesFontSize] = useState<string>('7'); // '6', '7', '8', '9', '10', '12'
   const [customTimeSeriesDotSize, setCustomTimeSeriesDotSize] = useState<string>('2.5'); // '1.0', '1.5', '2.0', '2.5', '3.0', '4.0', '5.0', '6.0'
 
-  // Kümeleme Grafiği özelleştirme seçenekleri (Bağımsızlaştırma için)
-  const [customClusterRange, setCustomClusterRange] = useState<string>('auto');
-  const [customClusterStep, setCustomClusterStep] = useState<string>('auto');
-  const [customClusterFontSize, setCustomClusterFontSize] = useState<string>('7.5');
-  const [customClusterDotSize, setCustomClusterDotSize] = useState<string>('2.5');
-  const [clusterXOffset, setClusterXOffset] = useState<number>(0);
-  const [clusterYOffset, setClusterYOffset] = useState<number>(0);
+
 
   const bestMethod = useMemo(() => {
     if (!analysisResults || analysisResults.length === 0) return null;
@@ -240,13 +234,13 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
   const getMethodLabel = (m: CalculationMethod) => {
     const labels: Record<string, string> = {
-      'WEIGHTED_LSE': t("1. Ağırlıklı En Küçük Kareler"),
-      'DBSCAN': t("2. DB SCAN (MAD + DBSCAN)"),
-      'HUBER': t("3. Huber M-Kestiricisi"),
-      'HAMPEL': t("4. Hampel M-Kestiricisi"),
-      'HODGES_LEHMANN': t("5. Hodges-Lehmann R-Kestiricisi"),
-      'TUKEYS_TRIMEAN': t("6. Tukey's Trimean L-Kestiricisi"),
-      'OPTIMAL_S': t("7. Optimal S-Kestiricisi")
+      'WEIGHTED_LSE': "WLSE",
+      'DBSCAN': "DBSCAN",
+      'HUBER': "HUBER-M",
+      'HAMPEL': "HAMPEL-M",
+      'HODGES_LEHMANN': "HODGES-R",
+      'TUKEYS_TRIMEAN': "TRIMEAN-L",
+      'OPTIMAL_S': "OPTIMAL-S"
     };
     return labels[m] || m;
   };
@@ -805,66 +799,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     return ticks;
   }, [maxTickLimit, customScatterStep]);
 
-  const maxClusterTickLimit = useMemo(() => {
-    if (customClusterRange !== 'auto') {
-      return parseFloat(customClusterRange);
-    }
-    return Math.max(3.0, Math.ceil(distributionData.range * 2) / 2);
-  }, [distributionData.range, customClusterRange]);
 
-  const clusterXTicks = useMemo(() => {
-    let step = 0.5;
-    if (customClusterStep !== 'auto') {
-      step = parseFloat(customClusterStep);
-    } else {
-      if (maxClusterTickLimit <= 1.0) step = 0.2;
-      else if (maxClusterTickLimit <= 2.0) step = 0.5;
-      else if (maxClusterTickLimit <= 4.0) step = 0.5;
-      else if (maxClusterTickLimit <= 10.0) step = 1.0;
-      else step = 2.0;
-    }
-    const ticks = [];
-    const minVal = -maxClusterTickLimit + clusterXOffset;
-    const maxVal = maxClusterTickLimit + clusterXOffset;
-    const start = Math.floor(minVal / step) * step;
-    let current = start;
-    let loops = 0;
-    while (current <= maxVal + 0.001 && loops < 200) {
-      if (current >= minVal - 0.001) {
-        ticks.push(parseFloat(current.toFixed(2)));
-      }
-      current += step;
-      loops++;
-    }
-    return ticks;
-  }, [maxClusterTickLimit, customClusterStep, clusterXOffset]);
 
-  const clusterYTicks = useMemo(() => {
-    let step = 0.5;
-    if (customClusterStep !== 'auto') {
-      step = parseFloat(customClusterStep);
-    } else {
-      if (maxClusterTickLimit <= 1.0) step = 0.2;
-      else if (maxClusterTickLimit <= 2.0) step = 0.5;
-      else if (maxClusterTickLimit <= 4.0) step = 0.5;
-      else if (maxClusterTickLimit <= 10.0) step = 1.0;
-      else step = 2.0;
-    }
-    const ticks = [];
-    const minVal = -maxClusterTickLimit + clusterYOffset;
-    const maxVal = maxClusterTickLimit + clusterYOffset;
-    const start = Math.floor(minVal / step) * step;
-    let current = start;
-    let loops = 0;
-    while (current <= maxVal + 0.001 && loops < 200) {
-      if (current >= minVal - 0.001) {
-        ticks.push(parseFloat(current.toFixed(2)));
-      }
-      current += step;
-      loops++;
-    }
-    return ticks;
-  }, [maxClusterTickLimit, customClusterStep, clusterYOffset]);
 
   const timeSeriesChartData = useMemo(() => {
     return chartData.map((point, index) => {
@@ -1548,10 +1484,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 {/* 1:1 Aspect Ratio Precision Sheet: Borderless & Extremely Clean layout */}
                 <div 
                   ref={rawChartRef} 
-                  className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] aspect-square mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
+                  className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] h-auto mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
                 >
                   {/* Top Panel: Large/Expanded Borderless Scatter Chart */}
-                  <div className="flex-1 min-h-0 min-w-0 w-full relative">
+                  <div className="w-full aspect-square relative shrink-0">
                     <ResponsiveContainer width="100%" height="100%">
                       <ScatterChart margin={{ top: 12, right: 12, bottom: 20, left: -5 }}>
                         <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" horizontal={true} vertical={true} />
@@ -1597,21 +1533,13 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               const isMethod = data.method !== undefined;
                               const getMethodLabelEn = (m: CalculationMethod) => {
                                 const labels: Record<string, string> = {
-                                  'ARITHMETIC_MEAN': 'Arithmetic Mean',
-                                  'WEIGHTED_LSE': 'Weighted LSE',
-                                  'DBSCAN': 'MAD + DBSCAN Clustering',
-                                  'HUBER': 'Huber',
-                                  'KMEANS_4': 'KMeans',
-                                  'BAARDA': 'Baarda',
-                                  'HYBRID_v1': 'HYBRID_v1',
-                                  'POPE_TAU': "Pope's Tau",
-                                  'HAMPEL': 'Hampel MAD',
-                                  'ANDREWS_WAVE': "Andrew's Wave",
-                                  'TUKEYS_BIWEIGHT': "Tukey's Biweight",
-                                  'DANISH': 'Danish Estimator',
-                                  'HODGES_LEHMANN': 'Hodges-Lehmann Estimator',
-                                  'TUKEYS_TRIMEAN': "Tukey's Trimean",
-                                  'OPTIMAL_S': 'Optimal S-Estimator'
+                                  'WEIGHTED_LSE': 'WLSE',
+                                  'DBSCAN': 'DBSCAN',
+                                  'HUBER': 'HUBER-M',
+                                  'HAMPEL': 'HAMPEL-M',
+                                  'HODGES_LEHMANN': 'HODGES-R',
+                                  'TUKEYS_TRIMEAN': 'TRIMEAN-L',
+                                  'OPTIMAL_S': 'OPTIMAL-S'
                                 };
                                 return labels[m] || m;
                               };
@@ -1672,21 +1600,13 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         {distributionData.methodPoints.map((mp) => {
                           const getMethodLabelEn = (m: CalculationMethod) => {
                             const labels: Record<string, string> = {
-                              'ARITHMETIC_MEAN': 'Arithmetic Mean',
-                              'WEIGHTED_LSE': 'Weighted LSE',
-                              'DBSCAN': 'MAD + DBSCAN Clustering',
-                              'HUBER': 'Huber',
-                              'KMEANS_4': 'KMeans',
-                              'BAARDA': 'Baarda',
-                              'HYBRID_v1': 'HYBRID_v1',
-                              'POPE_TAU': "Pope's Tau",
-                              'HAMPEL': 'Hampel MAD',
-                              'ANDREWS_WAVE': "Andrew's Wave",
-                              'TUKEYS_BIWEIGHT': "Tukey's Biweight",
-                              'DANISH': 'Danish Estimator',
-                              'HODGES_LEHMANN': 'Hodges-Lehmann Estimator',
-                              'TUKEYS_TRIMEAN': "Tukey's Trimean",
-                              'OPTIMAL_S': 'Optimal S-Estimator'
+                              'WEIGHTED_LSE': 'WLSE',
+                              'DBSCAN': 'DBSCAN',
+                              'HUBER': 'HUBER-M',
+                              'HAMPEL': 'HAMPEL-M',
+                              'HODGES_LEHMANN': 'HODGES-R',
+                              'TUKEYS_TRIMEAN': 'TRIMEAN-L',
+                              'OPTIMAL_S': 'OPTIMAL-S'
                             };
                             return labels[m] || m;
                           };
@@ -1711,26 +1631,18 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   </div>
 
                   {/* Bottom Panel: Shrunk & Very Compact Legend */}
-                  <div className="shrink-0 border-t border-slate-100 pt-3 flex flex-col gap-2 w-full">
+                  <div className="shrink-0 pt-1.5 flex flex-col gap-2 w-full mt-2">
                     <div className="grid grid-cols-3 gap-x-2 gap-y-1.5 font-sans">
                       {distributionData.methodPoints.map(m => {
                         const getMethodLabelEn = (m: CalculationMethod) => {
                           const labels: Record<string, string> = {
-                            'ARITHMETIC_MEAN': 'Arithmetic Mean',
-                            'WEIGHTED_LSE': 'Weighted LSE',
-                            'DBSCAN': 'MAD + DBSCAN Clustering',
-                            'HUBER': 'Huber',
-                            'KMEANS_4': 'KMeans',
-                            'BAARDA': 'Baarda',
-                            'HYBRID_v1': 'HYBRID_v1',
-                            'POPE_TAU': "Pope's Tau",
-                            'HAMPEL': 'Hampel MAD',
-                            'ANDREWS_WAVE': "Andrew's Wave",
-                            'TUKEYS_BIWEIGHT': "Tukey's Biweight",
-                            'DANISH': 'Danish Estimator',
-                            'HODGES_LEHMANN': 'Hodges-Lehmann Estimator',
-                            'TUKEYS_TRIMEAN': "Tukey's Trimean",
-                            'OPTIMAL_S': 'Optimal S-Estimator'
+                            'WEIGHTED_LSE': 'WLSE',
+                            'DBSCAN': 'DBSCAN',
+                            'HUBER': 'HUBER-M',
+                            'HAMPEL': 'HAMPEL-M',
+                            'HODGES_LEHMANN': 'HODGES-R',
+                            'TUKEYS_TRIMEAN': 'TRIMEAN-L',
+                            'OPTIMAL_S': 'OPTIMAL-S'
                           };
                           return labels[m] || m;
                         };
@@ -1796,14 +1708,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     <div className="w-5 h-5 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500 shrink-0">
                       <i className="fas fa-sliders-h text-[9px]"></i>
                     </div>
-                    <span className="font-extrabold text-[9px] uppercase text-slate-700 tracking-wider font-sans">{t("KÜMELEME GRAFİK AYARLARI")}</span>
+                    <span className="font-extrabold text-[9px] uppercase text-slate-700 tracking-wider font-sans">{t("HARİTA PAFTASI AYARLARI")}</span>
                   </div>
                   <div className="flex flex-wrap gap-2.5 items-center justify-start lg:justify-end">
                     <div className="flex items-center gap-1.5">
                       <span className="text-[8.5px] font-bold text-slate-400 uppercase font-sans">{t("Eksen:")}</span>
                       <select 
-                        value={customClusterRange} 
-                        onChange={(e) => setCustomClusterRange(e.target.value)}
+                        value={customScatterRange} 
+                        onChange={(e) => setCustomScatterRange(e.target.value)}
                         className="bg-slate-100 hover:bg-slate-200 border border-slate-200/60 text-[9px] font-black rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
                       >
                         <option value="auto">Auto</option>
@@ -1819,8 +1731,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     <div className="flex items-center gap-1.5">
                       <span className="text-[8.5px] font-bold text-slate-400 uppercase font-sans">{t("Kılavuz Adımı:")}</span>
                       <select 
-                        value={customClusterStep} 
-                        onChange={(e) => setCustomClusterStep(e.target.value)}
+                        value={customScatterStep} 
+                        onChange={(e) => setCustomScatterStep(e.target.value)}
                         className="bg-slate-100 hover:bg-slate-200 border border-slate-200/60 text-[9px] font-black rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
                       >
                         <option value="auto">Auto</option>
@@ -1834,8 +1746,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     <div className="flex items-center gap-1.5">
                       <span className="text-[8.5px] font-bold text-slate-400 uppercase font-sans">{t("Yazı Boyutu:")}</span>
                       <select 
-                        value={customClusterFontSize} 
-                        onChange={(e) => setCustomClusterFontSize(e.target.value)}
+                        value={customScatterFontSize} 
+                        onChange={(e) => setCustomScatterFontSize(e.target.value)}
                         className="bg-slate-100 hover:bg-slate-200 border border-slate-200/60 text-[9px] font-black rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
                       >
                         <option value="6">6px</option>
@@ -1850,8 +1762,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     <div className="flex items-center gap-1.5">
                       <span className="text-[8.5px] font-bold text-slate-400 uppercase font-sans">{t("Nokta Boyutu:")}</span>
                       <select 
-                        value={customClusterDotSize} 
-                        onChange={(e) => setCustomClusterDotSize(e.target.value)}
+                        value={customDotSize} 
+                        onChange={(e) => setCustomDotSize(e.target.value)}
                         className="bg-slate-100 hover:bg-slate-200 border border-slate-200/60 text-[9px] font-black rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
                       >
                         <option value="1.0">1.0px</option>
@@ -1875,15 +1787,15 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       <i className="fas fa-arrows-alt text-[9px]"></i>
                     </div>
                     <div className="flex flex-col">
-                      <span className="font-extrabold text-[9px] uppercase text-slate-700 tracking-wider font-sans">{t("KÜMELEME EKSEN KAYDIRMA")}</span>
+                      <span className="font-extrabold text-[9px] uppercase text-slate-700 tracking-wider font-sans">{t("EKSEN KAYDIRMA (OFFSET NAVİGASYON)")}</span>
                       <span className="text-[7.5px] font-bold text-slate-400 uppercase font-mono tracking-wide">
-                        OFFSET: X = {clusterXOffset >= 0 ? `+${clusterXOffset}` : clusterXOffset}m • Y = {clusterYOffset >= 0 ? `+${clusterYOffset}` : clusterYOffset}m
+                        OFFSET: X = {xOffset >= 0 ? `+${xOffset}` : xOffset}m • Y = {yOffset >= 0 ? `+${yOffset}` : yOffset}m
                       </span>
                     </div>
                   </div>
                   <div className="flex items-center justify-center gap-1.5 self-center">
                     <button
-                      onClick={() => setClusterXOffset(prev => prev - 1.0)}
+                      onClick={() => setXOffset(prev => prev - 1.0)}
                       className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-8 rounded-lg flex items-center justify-center transition-all active:scale-90"
                       title={t("Sola Kaydır (X -1m)")}
                     >
@@ -1891,14 +1803,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     </button>
                     <div className="flex flex-col gap-1 items-center justify-center">
                       <button
-                        onClick={() => setClusterYOffset(prev => prev + 1.0)}
+                        onClick={() => setYOffset(prev => prev + 1.0)}
                         className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-3.5 rounded flex items-center justify-center transition-all active:scale-90 focus:outline-none"
                         title={t("Yukarı Kaydır (Y +1m)")}
                       >
                         <i className="fas fa-chevron-up text-[7px]"></i>
                       </button>
                       <button
-                        onClick={() => setClusterYOffset(prev => prev - 1.0)}
+                        onClick={() => setYOffset(prev => prev - 1.0)}
                         className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-3.5 rounded flex items-center justify-center transition-all active:scale-90 focus:outline-none"
                         title={t("Aşağı Kaydır (Y -1m)")}
                       >
@@ -1906,14 +1818,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       </button>
                     </div>
                     <button
-                      onClick={() => setClusterXOffset(prev => prev + 1.0)}
+                      onClick={() => setXOffset(prev => prev + 1.0)}
                       className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-8 rounded-lg flex items-center justify-center transition-all active:scale-90"
                       title={t("Sağa Kaydır (X +1m)")}
                     >
                       <i className="fas fa-chevron-right"></i>
                     </button>
                     <button
-                      onClick={() => { setClusterXOffset(0); setClusterYOffset(0); }}
+                      onClick={() => { setXOffset(0); setYOffset(0); }}
                       className="ml-1 bg-rose-50 hover:bg-rose-100 text-rose-600 font-black text-[9px] uppercase px-2 py-2 rounded-lg flex items-center justify-center gap-1 transition-all active:scale-90"
                       title={t("Eksenleri Sıfırla")}
                     >
@@ -1955,13 +1867,13 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
                     <div 
                       ref={baardaChartRef}
-                      className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] aspect-square mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
+                      className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] h-auto mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
                     >
                       {/* Header */}
                       <div className="flex justify-between items-center border-b border-slate-900/10 pb-1.5 min-h-0 shrink-0">
                         <div className="min-w-0">
                           <h2 className="text-slate-900 font-extrabold text-[9px] uppercase tracking-wider leading-none font-sans truncate">
-                            ACB LABS {reliabilityPlotMethod} PLAN
+                            ACB LABS {getMethodLabel(reliabilityPlotMethod)} PLAN
                           </h2>
                           <p className="text-slate-400 text-[6px] font-bold uppercase tracking-widest mt-0.5 font-mono">
                             GEODETIC RELIABILITY & OUTLIER DETECTION
@@ -1969,13 +1881,13 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         </div>
                         <div className="text-right shrink-0">
                           <span className="bg-emerald-50 border border-emerald-100 text-emerald-600 font-mono text-[6px] font-black px-1.5 py-0.5 rounded">
-                            {reliabilityPlotMethod} ACTIVE
+                            {getMethodLabel(reliabilityPlotMethod)} ACTIVE
                           </span>
                         </div>
                       </div>
 
                       {/* Scatter Plot */}
-                      <div className="flex-1 min-h-0 min-w-0 w-full relative">
+                      <div className="w-full aspect-square relative shrink-0">
                         {hybridClusterChartData && hybridClusterChartData.points.length > 0 ? (
                           <ResponsiveContainer width="100%" height="100%">
                             <ScatterChart margin={{ top: 12, right: 12, bottom: 20, left: -5 }}>
@@ -1984,8 +1896,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 type="number" 
                                 dataKey="dx" 
                                 name="ΔE" 
-                                domain={[-maxClusterTickLimit + clusterXOffset, maxClusterTickLimit + clusterXOffset]} 
-                                ticks={clusterXTicks}
+                                domain={[-maxTickLimit + xOffset, maxTickLimit + xOffset]} 
+                                ticks={xTicks}
                                 interval={0}
                                 angle={-90}
                                 textAnchor="end"
@@ -1994,7 +1906,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   const isInteger = Math.abs(val - Math.round(val)) < 0.01;
                                   return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
                                 }}
-                                tick={{fontSize: parseFloat(customClusterFontSize), fontWeight: 700, fill: '#334155', dy: 2.5, dx: -3}}
+                                tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155', dy: 2.5, dx: -3}}
                                 axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
                                 tickLine={{ stroke: '#475569', strokeWidth: 1 }}
                               />
@@ -2002,14 +1914,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 type="number" 
                                 dataKey="dy" 
                                 name="ΔN" 
-                                domain={[-maxClusterTickLimit + clusterYOffset, maxClusterTickLimit + clusterYOffset]} 
-                                ticks={clusterYTicks}
+                                domain={[-maxTickLimit + yOffset, maxTickLimit + yOffset]} 
+                                ticks={yTicks}
                                 interval={0}
                                 tickFormatter={(val) => {
                                   const isInteger = Math.abs(val - Math.round(val)) < 0.01;
                                   return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
                                 }}
-                                tick={{fontSize: parseFloat(customClusterFontSize), fontWeight: 700, fill: '#334155'}} 
+                                tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155'}} 
                                 axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
                                 tickLine={{ stroke: '#475569', strokeWidth: 1 }}
                               />
@@ -2077,7 +1989,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 name="APPROVED" 
                                 data={hybridClusterChartData.points.filter(p => p.passedBaarda)} 
                                 fill="#10b981"
-                                shape={<RawPointShape r={parseFloat(customClusterDotSize)} />}
+                                shape={<RawPointShape r={parseFloat(customDotSize)} />}
                                 onClick={(pt) => setActiveClusterPointId(pt.id)}
                                 className="cursor-pointer"
                               />
@@ -2087,7 +1999,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 name="OUTLIERS" 
                                 data={hybridClusterChartData.points.filter(p => !p.passedBaarda && !p.speedFiltered)} 
                                 fill="#ef4444"
-                                shape={<RawPointShape r={parseFloat(customClusterDotSize)} />}
+                                shape={<RawPointShape r={parseFloat(customDotSize)} />}
                                 onClick={(pt) => setActiveClusterPointId(pt.id)}
                                 className="cursor-pointer"
                               />
@@ -2097,7 +2009,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 name="SPEED_OUTLIERS" 
                                 data={hybridClusterChartData.points.filter(p => !p.passedBaarda && p.speedFiltered)} 
                                 fill="#000000"
-                                shape={<RawPointShape r={parseFloat(customClusterDotSize)} />}
+                                shape={<RawPointShape r={parseFloat(customDotSize)} />}
                                 onClick={(pt) => setActiveClusterPointId(pt.id)}
                                 className="cursor-pointer"
                               />
@@ -2109,10 +2021,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       </div>
 
                       {/* Bottom Panel: Shrunk & Very Compact Legend */}
-                      <div className="shrink-0 border-t border-slate-100 pt-3 flex flex-col gap-2 w-full">
+                      <div className="shrink-0 pt-1.5 flex flex-col gap-2 w-full mt-2">
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2 gap-y-1.5 font-sans">
                           {(() => {
-                            const fs = parseFloat(customClusterFontSize);
+                            const fs = parseFloat(customScatterFontSize);
                             const badgeSize = `${fs + 6.5}px`;
                             const badgeFontSize = `${fs - 0.5}px`;
                             const titleFontSize = `${fs - 1}px`;
@@ -2169,8 +2081,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                     <div 
                                       className="flex items-center justify-center bg-[#10b981] border border-[#059669] text-white font-black shrink-0 shadow-xs rotate-45" 
                                       style={{ 
-                                        width: `${parseFloat(customClusterFontSize) + 2.5}px`, 
-                                        height: `${parseFloat(customClusterFontSize) + 2.5}px`,
+                                        width: `${parseFloat(customScatterFontSize) + 2.5}px`, 
+                                        height: `${parseFloat(customScatterFontSize) + 2.5}px`,
                                         borderRadius: '3px',
                                         marginLeft: '2px',
                                         marginRight: '2px'
@@ -2179,10 +2091,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                       <span className="text-[6px] font-black -rotate-45 block transform">REF</span>
                                     </div>
                                     <div className="min-w-0 font-sans">
-                                      <p className="font-extrabold text-slate-800 uppercase tracking-wider truncate leading-none" style={{ fontSize: `${parseFloat(customClusterFontSize) - 0.5}px` }}>
+                                      <p className="font-extrabold text-slate-800 uppercase tracking-wider truncate leading-none" style={{ fontSize: `${parseFloat(customScatterFontSize) - 0.5}px` }}>
                                         PRECISE
                                       </p>
-                                      <p className="font-bold text-emerald-600 tracking-wider leading-none mt-0.5 truncate" style={{ fontSize: `${parseFloat(customClusterFontSize) - 1.5}px` }}>
+                                      <p className="font-bold text-emerald-600 tracking-wider leading-none mt-0.5 truncate" style={{ fontSize: `${parseFloat(customScatterFontSize) - 1.5}px` }}>
                                         COORDINATE
                                       </p>
                                     </div>
@@ -2199,68 +2111,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   </div>
                 </div>
 
-                {/* Selected Point Detailed Analysis Panel (Fully Interactive with both charts) */}
-                <div className="bg-slate-50 border border-slate-200/60 rounded-2xl p-4.5 text-slate-800 text-xs shadow-xs space-y-2">
-                  <div className="flex items-center gap-2 border-b border-slate-150 pb-2">
-                    <div className="w-5 h-5 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 shrink-0">
-                      <i className="fas fa-info-circle text-[9px]"></i>
-                    </div>
-                    <span className="font-black text-[9.5px] uppercase text-slate-700 tracking-wider">
-                      {activeClusterPointId ? `${t("Epok")} #${activeClusterPointId} ${t("Analiz Detayı")}` : t("Detaylı Nokta Analizi")}
-                    </span>
-                  </div>
 
-                  {activeClusterPointId && hybridClusterChartData ? (
-                    (() => {
-                      const pt = hybridClusterChartData.points.find(p => p.id === activeClusterPointId);
-                      if (!pt) return null;
-                      const offsetMeters = Math.sqrt(pt.dx * pt.dx + pt.dy * pt.dy);
-                      return (
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 font-sans text-[10.5px]">
-                          <div className="space-y-1">
-                            <p className="text-slate-400 font-bold uppercase text-[8px] tracking-wider leading-none">{t("Uzaysal Kümesi")}</p>
-                            <p className="font-extrabold text-slate-800 leading-snug">
-                              Küme {getClusterLetterLabel(pt.clusterId)}
-                            </p>
-                          </div>
-                                            <div className="space-y-1">
-                            <p className="text-slate-400 font-bold uppercase text-[8px] tracking-wider leading-none">{t("Donanımsal Hassasiyet (3D)")}</p>
-                            <p className="font-extrabold text-blue-600 font-semibold leading-snug">
-                              {pt.accuracy.toFixed(2)} m
-                            </p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-slate-400 font-bold uppercase text-[8px] tracking-wider leading-none">{t("Nokta Hızı")}</p>
-                            <p className="font-extrabold text-amber-600 font-semibold leading-snug">
-                              {pt.speed !== undefined && pt.speed !== null ? `${pt.speed.toFixed(3)} m/s` : '0.000 m/s'}
-                            </p>
-                          </div>
-                          <div className="space-y-1 col-span-2">
-                            <p className="text-slate-400 font-bold uppercase text-[8px] tracking-wider leading-none">{getMethodLabel(reliabilityPlotMethod)} {t("Süzgeci")}</p>
-                            <p className={`font-black uppercase text-[9px] leading-snug ${pt.passedBaarda ? 'text-emerald-600' : (pt.speedFiltered ? 'text-slate-900 border-l-2 border-black pl-1.5' : 'text-rose-600')}`}>
-                              {pt.passedBaarda ? t("GEÇTİ (GÜVENİLİR)") : (pt.speedFiltered ? t("HIZ LİMİTİNDEN ELENDİ") : t("ELENDİ (KABA HATA)"))}
-                            </p>
-                          </div>
-                          <div className="col-span-2 bg-white/70 p-2.5 rounded-xl border border-slate-150 mt-1">
-                            <p className="text-slate-500 font-medium leading-relaxed font-sans">
-                              {pt.passedBaarda 
-                                ? t("Bu veri noktası seçilen yöntemin varyans/filtre test kriterlerini karşılayarak kaba hatalardan arındırılmış ve geodezik dengelemeye dahil edilmiştir.")
-                                : (pt.speedFiltered
-                                  ? t("Bu veri noktası nokta hızı sınır (0.10 m/s) kriterini aşması nedeniyle analize girmeden önce ön filtre tarafından doğrudan elenmiştir.")
-                                  : t("Bu veri noktası seçilen yöntemin filtre sınırlarının dışına taşarak konumsal sıçrama (outlier/multipath) tespitiyle elenmiştir. Hesaplamada ağırlığı sıfırlanmıştır.")
-                                )
-                              }
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })()
-                  ) : (
-                    <div className="py-2 text-center text-[#94a3b8] font-bold text-[9px] uppercase tracking-wider">
-                      {t("Özelliklerini incelemek için grafiklerdeki bir koordinat noktasına (yuvarlak) tıklayın.")}
-                    </div>
-                  )}
-                </div>
               </div>
 
               {/* Technical Analysis Position Error Chart (With 1:1 PNG Export capability) */}

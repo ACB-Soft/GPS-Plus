@@ -63,19 +63,13 @@ export function calculateResult(
   let finalCalculatedUsedIndices: number[] | null = null;
   let clusters: number[][] | undefined = undefined;
 
-  // Let's implement the constraint checks for professional mathematical models:
-  // - HUBER requires en az 30 epok.
-  // - HAMPEL, HODGES_LEHMANN, TUKEYS_TRIMEAN, OPTIMAL_S, DBSCAN require geodetic minimum of 4 epok.
-  const requires30 = method === 'HUBER';
-  const requires4 = method === 'HAMPEL' || method === 'HODGES_LEHMANN' || method === 'TUKEYS_TRIMEAN' || method === 'OPTIMAL_S' || method === 'DBSCAN';
+  // Tüm profesyonel yöntemler için en az epok şartı 5 epoktur.
+  const requires5 = method !== 'WEIGHTED_LSE';
   
   let finalMethod = method;
   let fallbackApplied = false;
 
-  if (requires30 && samples.length < 30) {
-    finalMethod = 'WEIGHTED_LSE';
-    fallbackApplied = true;
-  } else if (requires4 && samples.length < 4) {
+  if (requires5 && samples.length < 5) {
     finalMethod = 'WEIGHTED_LSE';
     fallbackApplied = true;
   }

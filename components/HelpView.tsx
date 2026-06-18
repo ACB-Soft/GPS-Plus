@@ -245,83 +245,43 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             <div className="soft-card p-6 space-y-4">
               <p 
                 className="text-sm text-slate-700 font-medium leading-relaxed text-justify"
-                dangerouslySetInnerHTML={{ __html: t("Uygulama, toplanan ham GPS verilerini nihai bir koordinata dönüştürmek için 6 farklı akademik model sunar. Bu yöntemleri <b>Ayarlar</b> menüsünden değiştirebilirsiniz:") }}
+                dangerouslySetInnerHTML={{ __html: t("Uygulama, toplanan ham GPS verilerini nihai bir koordinata dönüştürmek için 7 farklı gelişmiş akademik model sunar. Bu yöntemleri <b>Ayarlar</b> menüsünden değiştirebilirsiniz:") }}
               />
               
-              <div className="space-y-4">
-                <div className="bg-white p-4 rounded-xl border border-blue-100 shadow-sm ring-1 ring-blue-50">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight">{t("1. Ağırlıklı En Küçük Kareler")}</h4>
-                    <span className="text-[11px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold">{t("VARSAYILAN")}</span>
-                  </div>
-                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                    {t("Veri setindeki donanımsal hassasiyeti yüksek olan verilere daha fazla ağırlık vererek dengeleme yapar. En kararlı ve sağlıklı sonuçları üretir.")}
-                  </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="bg-white p-3 px-4 rounded-xl border border-blue-100 shadow-sm ring-1 ring-blue-50 flex items-center justify-between">
+                  <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight">{t("1. Ağırlıklı En Küçük Kareler")}</h4>
+                  <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold">{t("VARSAYILAN")}</span>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("2. K-Means Kümeleme")}</h4>
-                    <span className="text-[11px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full font-bold">{t("KÜMELEME")}</span>
-                  </div>
-                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                    {t("Gözlemleri mekansal yakınlıklarına göre 4 bağımsız yoğunluk grubuna ayırarak küme merkezini belirler.")} <span className="text-amber-600 font-black">{t("En az 30 epok veri gerektirir.")}</span>
-                  </p>
+                <div className="bg-white p-3 px-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("2. MAD + DBSCAN")}</h4>
+                  <span className="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full font-bold">{t("KÜMELEME")}</span>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("3. Huber M-Kestiricisi")}</h4>
-                    <span className="text-[11px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">{t("GÜRBÜZ / ROBUST")}</span>
-                  </div>
-                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                    {t("İteratif gürbüz (robust) Huber M-tahmini kullanarak veri havuzundaki konumsal sıçramaları ve gürültüleri hassasiyete göre yumuşatıp dengeler.")} <span className="text-amber-600 font-black">{t("En az 30 epok veri gerektirir.")}</span>
-                  </p>
+                <div className="bg-white p-3 px-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("3. Huber M-Kestiricisi")}</h4>
+                  <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">{t("ROBUST")}</span>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("4. Hampel M-Kestiricisi")}</h4>
-                    <span className="text-[11px] bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full font-bold">{t("MEDYAN MUTLAK SAPMA")}</span>
-                  </div>
-                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                    {t("Medyan Mutlak Sapma (MAD) süzgecini baz alarak gürültü pencerelerini gürbüz sınır değerlerle dışlar.")} <span className="text-emerald-600 font-black">{t("En az 4 epok veri gerektirit.")}</span>
-                  </p>
+                <div className="bg-white p-3 px-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("4. Hampel M-Kestiricisi")}</h4>
+                  <span className="text-[10px] bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full font-bold">{t("ROBUST")}</span>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("5. Hodges-Lehmann R-Kestiricisi")}</h4>
-                    <span className="text-[11px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full font-bold">{t("HODGES-LEHMANN")}</span>
-                  </div>
-                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                    {t("Durağan epokların Walsh ortalamalarının gürbüz medyanını alarak kaba kumsal konum kaymalarını temizler.")} <span className="text-emerald-600 font-black">{t("En az 4 epok veri gerektirir.")}</span>
-                  </p>
+                <div className="bg-white p-3 px-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("5. Hodges-Lehmann R-Kestiricisi")}</h4>
+                  <span className="text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full font-bold">{t("ROBUST")}</span>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("6. Tukey's Trimean L-Kestiricisi")}</h4>
-                    <span className="text-[11px] bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full font-bold">{t("TRIMEAN")}</span>
-                  </div>
-                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                    {t("İlk çeyreklik (Q1), ortanca (Q2) ve son çeyreklik (Q3) konum piksellerinin ağırlıklı medyanı üzerinden pürüzsüzleştirme uygular.")} <span className="text-emerald-600 font-black">{t("En az 4 epok veri gerektirir.")}</span>
-                  </p>
+                <div className="bg-white p-3 px-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("6. Tukey's Trimean L-Kestiricisi")}</h4>
+                  <span className="text-[10px] bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full font-bold">{t("ROBUST")}</span>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("7. Optimal S-Kestiricisi")}</h4>
-                    <span className="text-[11px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full font-bold">{t("OPTIMAL_S")}</span>
-                  </div>
-                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                    {t("Tukey's Biweight fonksiyonu temelli iterasyonlar kullanarak kaba hatalı saçılımları minimize eder ve koordinatları mükemmel kararlılığa ulaştırır.")} <span className="text-emerald-600 font-black">{t("En az 4 epok veri gerektirir.")}</span>
-                  </p>
-                </div>
-
-                <div className="bg-amber-50/70 rounded-2xl p-4 border border-amber-200/50 text-amber-900 leading-relaxed text-xs font-semibold text-justify">
-                  <span className="font-extrabold uppercase text-amber-700 block mb-1">⚠️ {t("UYARI / ÖNEMLİ KOŞUL:")}</span>
-                  {t("K-Means ve Huber yöntemleri için en az 30 epok; Hampel, Hodges-Lehmann, Tukey's Trimean ve Optimal S-Kestiricisi yöntemleri için en az 4 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.")}
+                <div className="bg-white p-3 px-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between md:col-span-2">
+                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("7. Optimal S-Kestiricisi")}</h4>
+                  <span className="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full font-bold">{t("ROBUST")}</span>
                 </div>
               </div>
             </div>

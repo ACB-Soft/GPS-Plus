@@ -443,6 +443,7 @@ export const trToEnMap: Record<string, string> = {
   "Ölçüm Ayarları": "Measurement Settings",
   "Wi-Fi / Şebeke Verilerini Filtrele": "Filter Wi-Fi / Cellular Data",
   "1. Ağırlıklı En Küçük Kareler": "1. Weighted Least Squares",
+  "2. MAD + DBSCAN": "2. MAD + DBSCAN",
   "2. DB SCAN (MAD + DBSCAN)": "2. DB SCAN (MAD + DBSCAN)",
   "2. K-Means Kümeleme": "2. K-Means Clustering",
   "3. Huber M-Kestiricisi": "3. Huber M-Estimator",
