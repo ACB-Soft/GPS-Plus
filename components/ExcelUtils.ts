@@ -126,7 +126,6 @@ export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings
   const dateStr = now.toLocaleDateString('tr-TR').replace(/\./g, '-');
   const timeStr = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }).replace(/:/g, '-');
   const fileName = `GPS_${projectName}_${dateStr}_${timeStr}.xlsx`;
-  
   XLSX.writeFile(workbook, fileName);
 };
 

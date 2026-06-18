@@ -1881,42 +1881,27 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   <div className="flex items-center justify-center rounded font-black text-white shrink-0 shadow-xs bg-[#10b981]" style={{ width: badgeSize, height: badgeSize, fontSize: badgeFontSize }}>
                                     OK
                                   </div>
-                                  <div className="min-w-0 font-sans">
-                                    <p className="font-extrabold text-slate-800 uppercase tracking-tight truncate leading-none" style={{ fontSize: titleFontSize }}>
-                                      APPROVED
-                                    </p>
-                                    <p className="font-bold text-emerald-600 font-mono tracking-tight leading-none mt-0.5" style={{ fontSize: subFontSize }}>
-                                      {approvedCount}
-                                    </p>
-                                  </div>
+                                  <span className="font-mono font-black text-[#10b981]" style={{ fontSize: `${fs + 2.5}px` }}>
+                                    {approvedCount}
+                                  </span>
                                 </div>
 
                                 <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
                                   <div className="flex items-center justify-center rounded font-black text-white shrink-0 shadow-xs bg-[#ef4444]" style={{ width: badgeSize, height: badgeSize, fontSize: badgeFontSize }}>
                                     REJ
                                   </div>
-                                  <div className="min-w-0 font-sans">
-                                    <p className="font-extrabold text-slate-800 uppercase tracking-tight truncate leading-none" style={{ fontSize: titleFontSize }}>
-                                      OUTLIERS
-                                    </p>
-                                    <p className="font-bold text-rose-600 font-mono tracking-tight leading-none mt-0.5" style={{ fontSize: subFontSize }}>
-                                      {rejectedCount}
-                                    </p>
-                                  </div>
+                                  <span className="font-mono font-black text-[#ef4444]" style={{ fontSize: `${fs + 2.5}px` }}>
+                                    {rejectedCount}
+                                  </span>
                                 </div>
 
                                 <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
                                   <div className="flex items-center justify-center rounded font-black text-white shrink-0 shadow-xs bg-[#000000]" style={{ width: badgeSize, height: badgeSize, fontSize: badgeFontSize }}>
                                     SPD
                                   </div>
-                                  <div className="min-w-0 font-sans">
-                                    <p className="font-extrabold text-slate-800 uppercase tracking-tight truncate leading-none" style={{ fontSize: titleFontSize }}>
-                                      SPEED FILT
-                                    </p>
-                                    <p className="font-bold text-slate-900 font-mono tracking-tight leading-none mt-0.5" style={{ fontSize: subFontSize }}>
-                                      {speedFiltCount}
-                                    </p>
-                                  </div>
+                                  <span className="font-mono font-black text-slate-800" style={{ fontSize: `${fs + 2.5}px` }}>
+                                    {speedFiltCount}
+                                  </span>
                                 </div>
 
                                 {analysisType === 'precise' ? (
@@ -1961,7 +1946,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               <div className="space-y-4">
                 <div className="flex justify-between items-center px-2">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    {t("Zamana Bağlı Hata Grafiği (Time-Dependent Error Graph)")}
+                    Zamana Bağlı Hata Grafiği (Time-Dependent Error Graph)
                   </span>
                   <button 
                     onClick={() => exportChart(timeErrorChartRef, 'gps-plus-time-error-chart')}

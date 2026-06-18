@@ -634,8 +634,68 @@ function runKMeans(samples: Coordinate[], k: number): number[] {
       <p class="bold" style="color: #9d174d; margin-bottom: 6px;">Hampel Gürbüz Filtresi Karar Sistemi</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Medyan ve MAD Hesabı:</span> Gözlemlerin medyan değeri ($M$) ve her gözlemin medyandan olan mutlak uzaklığının medyanını simgeleyen MAD değeri hesaplanır: $MAD = Median(|x_i - M|)$.</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Gürbüz Ölçek Katsayısı (1.4826):</span> Normal dağılmış verilerde standart sapma ile uyum sağlaması adına MAD değeri $1.4826 \times MAD$ katsayısıyla ölçeklendirilir.</p>
-      <p class="no-indent"><span class="bold">3. 3-Sigma Kriteri ile Temizleme:</span> Medyandan uzaklığı $3 \times (1.4826 \times MAD)$ değerini aşan uç sinyaller kaba hata olarak işaretlenip elenir. Kalan kararlı gözlemler WLS yöntemiyle dengelenir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. Neden Seçildi ve Jeodezik Katkısı:</span> Hampel filtresi, uyuşmazlık barındıran veri gruplarında %50'lik tam kırılma sınırına (breakdown point) sahiptir ve standart sapmayı şişiren kaba hatalardan etkilenmez. Mobil ölçümlerdeki ani çevresel yansımaları (multipath) sönümlemek amacıyla seçilmiştir.</p>
+      <p class="no-indent"><span class="bold">4. 3-Sigma Kriteri ile Temizleme:</span> Medyandan uzaklığı $3 \times (1.4826 \times MAD)$ değerini aşan uç sinyaller kaba hata olarak işaretlenip elenir. Kalan kararlı gözlemler WLS yöntemiyle dengelenir.</p>
     </div>
+
+    <p class="no-indent">Sistem bünyesinde uygulanan akademik gürbüz Hampel süzgecinin özgün kaynak kodu aşağıda sunulmuştur:</p>
+    <pre class="code-block">
+export function calculateHampelAcademic(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length &lt; 4) {
+    return calculateWeightedLSE(samples);
+  }
+
+  const N = samples.length;
+  const sortedLats = samples.map(s =&gt; s.lat).sort((a, b) =&gt; a - b);
+  const sortedLngs = samples.map(s =&gt; s.lng).sort((a, b) =&gt; a - b);
+  const mid = Math.floor(N / 2);
+  const medianLat = N % 2 !== 0 ? sortedLats[mid] : (sortedLats[mid - 1] + sortedLats[mid]) / 2;
+  const medianLng = N % 2 !== 0 ? sortedLngs[mid] : (sortedLngs[mid - 1] + sortedLngs[mid]) / 2;
+
+  const dists = samples.map(s =&gt; calculateDistanceMeter(s.lat, s.lng, medianLat, medianLng, medianLat));
+  const sortedDists = [...dists].sort((a, b) =&gt; a - b);
+  const medianDist = N % 2 !== 0 ? sortedDists[mid] : (sortedDists[mid - 1] + sortedDists[mid]) / 2;
+
+  const absDevs = dists.map(d =&gt; Math.abs(d - medianDist));
+  const sortedDevs = [...absDevs].sort((a, b) =&gt; a - b);
+  const medianDev = N % 2 !== 0 ? sortedDevs[mid] : (sortedDevs[mid - 1] + sortedDevs[mid]) / 2;
+
+  const mad = medianDev;
+  const scaleSigma = 1.4826 * mad;
+  const minSigmaBoundary = 1e-6;
+
+  const inlierIndices: number[] = [];
+  
+  if (scaleSigma &lt; minSigmaBoundary) {
+    return {
+      result: calculateWeightedLSE(samples).result,
+      usedIndices: samples.map((_, i) =&gt; i)
+    };
+  }
+
+  for (let i = 0; i &lt; N; i++) {
+    if (absDevs[i] &lt;= 3.0 * scaleSigma) {
+      inlierIndices.push(i);
+    }
+  }
+
+  let finalUsedIndices = inlierIndices;
+  if (finalUsedIndices.length &lt; 2) {
+    const sortedSampleIndices = samples
+      .map((_, idx) =&gt; ({ idx, dev: absDevs[idx] }))
+      .sort((a, b) =&gt; a.dev - b.dev);
+    finalUsedIndices = [sortedSampleIndices[0].idx, sortedSampleIndices[1].idx];
+  }
+
+  const filteredSamples = finalUsedIndices.map(idx =&gt; samples[idx]);
+  const finalResult = calculateWeightedLSE(filteredSamples);
+
+  return {
+    result: finalResult.result,
+    usedIndices: finalUsedIndices
+  };
+}
+    </pre>
 
     <h3>2.4.4. Hodges-Lehmann R-Kestiricisi (Hodges-Lehmann R-Estimation)</h3>
     <p>Akademik düzeydeki en gürbüz konum hesaplama yöntemlerinden biri olan <b>Hodges-Lehmann R-Kestiricisi</b>, epok verilerinin tüm ikili kombinasyonlarının Walsh ortalamalarını (pairwise averages) temel alarak konumun robust medyanını hesaplar.</p>
@@ -643,8 +703,102 @@ function runKMeans(samples: Coordinate[], k: number): number[] {
     <div class="case-container" style="background-color: #f5f3ff; border-left: 4px solid #7c3aed; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
       <p class="bold" style="color: #5b21b6; margin-bottom: 6px;">Hodges-Lehmann Robust Ağırlık Merkezi Kararlılığı</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Walsh Ortalamaları Sentezi:</span> $N$ adet gözlemin tüm ikili kombinasyonları için $(x_i + x_j) / 2$ Walsh ortalamaları oluşturulur. Bu işlem, tekil sıçramaların ve multipath etkilerinin doğrusal sönümlenmesini sağlar.</p>
-      <p class="no-indent"><span class="bold">2. Robust Medyan Çözümü:</span> Elde edilen Walsh ortalamaları dizisinin ortancası (medyanı) alınarak asimetrik dağılımlardan ve sistematik gürültülerden arındırılmış, son derece kararlı bir robust ağırlık merkezi elde edilir.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Neden Seçildi ve Jeodezik Katkısı:</span> Hodges-Lehmann kestiricisi, normal dağılımlarda %95.5 asimptotik etkililik sunarken, kaba hatalar barındıran kirli dağılımlarda aritmetik medyana kıyasla çok daha dengeli ve pürüzsüz sonuçlar ortaya koyar. Durağan oturumlardaki milimetrik dalgalanmaları ve rastgele gürültüyü kararlı kılmak amacıyla tercih edilmiştir.</p>
+      <p class="no-indent"><span class="bold">3. Robust Medyan Çözümü:</span> Elde edilen Walsh ortalamaları dizisinin ortancası (medyanı) alınarak asimetrik dağılımlardan ve sistematik gürültülerden arındırılmış, son derece kararlı bir robust ağırlık merkezi elde edilir.</p>
     </div>
+
+    <p class="no-indent">Pairwise (Walsh) kombinasyonlarına dayalı Hodges-Lehmann konum belirleme motorunun kaynak kod yapısı şu şekildedir:</p>
+    <pre class="code-block">
+export function calculateHodgesLehmannPure(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length &lt; 4) {
+    return calculateWeightedLSE(samples);
+  }
+
+  const N = samples.length;
+
+  const walshLats: number[] = [];
+  for (let i = 0; i &lt; N; i++) {
+    for (let j = i; j &lt; N; j++) {
+      walshLats.push((samples[i].lat + samples[j].lat) / 2);
+    }
+  }
+  walshLats.sort((a, b) =&gt; a - b);
+  const midLat = Math.floor(walshLats.length / 2);
+  const hlLat = walshLats.length % 2 !== 0 
+    ? walshLats[midLat] 
+    : (walshLats[midLat - 1] + walshLats[midLat]) / 2;
+
+  const walshLngs: number[] = [];
+  for (let i = 0; i &lt; N; i++) {
+    for (let j = i; j &lt; N; j++) {
+      walshLngs.push((samples[i].lng + samples[j].lng) / 2);
+    }
+  }
+  walshLngs.sort((a, b) =&gt; a - b);
+  const midLng = Math.floor(walshLngs.length / 2);
+  const hlLng = walshLngs.length % 2 !== 0 
+    ? walshLngs[midLng] 
+    : (walshLngs[midLng - 1] + walshLngs[midLng]) / 2;
+
+  const dists = samples.map(s =&gt; calculateDistanceMeter(s.lat, s.lng, hlLat, hlLng, hlLat));
+  const sortedDists = [...dists].sort((a, b) =&gt; a - b);
+  const midD = Math.floor(N / 2);
+  const medianDist = N % 2 !== 0 ? sortedDists[midD] : (sortedDists[midD - 1] + sortedDists[midD]) / 2;
+
+  const absDevs = dists.map(d =&gt; Math.abs(d - medianDist));
+  const sortedDevs = [...absDevs].sort((a, b) =&gt; a - b);
+  const medianDev = N % 2 !== 0 ? sortedDevs[midD] : (sortedDevs[midD - 1] + sortedDevs[midD]) / 2;
+
+  const mad = medianDev;
+  const scaleSigma = 1.4826 * mad;
+  const minSigmaBoundary = 1e-6;
+
+  const inlierIndices: number[] = [];
+
+  if (scaleSigma &lt; minSigmaBoundary) {
+    return {
+      result: {
+        lat: hlLat,
+        lng: hlLng,
+        accuracy: samples.reduce((sum, s) =&gt; sum + s.accuracy, 0) / N,
+        altitude: null,
+        altitudeAccuracy: null,
+        timestamp: Date.now()
+      },
+      usedIndices: samples.map((_, i) =&gt; i)
+    };
+  }
+
+  for (let i = 0; i &lt; N; i++) {
+    if (absDevs[i] &lt;= 3.0 * scaleSigma) {
+      inlierIndices.push(i);
+    }
+  }
+
+  let finalUsedIndices = inlierIndices;
+  if (finalUsedIndices.length &lt; 2) {
+    const sortedSampleIndices = samples
+      .map((_, idx) =&gt; ({ idx, dev: absDevs[idx] }))
+      .sort((a, b) =&gt; a.dev - b.dev);
+    finalUsedIndices = [sortedSampleIndices[0].idx, sortedSampleIndices[1].idx];
+  }
+
+  const activeInliers = finalUsedIndices.map(idx =&gt; samples[idx]);
+  const avgAccuracy = activeInliers.reduce((sum, s) =&gt; sum + s.accuracy, 0) / activeInliers.length;
+
+  return {
+    result: {
+      lat: hlLat,
+      lng: hlLng,
+      accuracy: avgAccuracy,
+      altitude: null,
+      altitudeAccuracy: null,
+      timestamp: Date.now()
+    },
+    usedIndices: finalUsedIndices
+  };
+}
+    </pre>
 
     <h3>2.4.5. Tukey's Trimean L-Kestiricisi (Tukey's Trimean L-Estimation)</h3>
     <p>Doğrusal olmayan gürültüleri ve konum sıçramalarını verimli şekilde sönümleyen <b>Tukey's Trimean L-Kestiricisi</b>, istatistiksel dağılımdaki çeyreklik aralıkları (interquartile ranges) ve ortanca değerini ağırlıklandırarak konum çözümlemesi yapar.</p>
@@ -652,17 +806,230 @@ function runKMeans(samples: Coordinate[], k: number): number[] {
     <div class="case-container" style="background-color: #f0fdfa; border-left: 4px solid #0d9488; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
       <p class="bold" style="color: #115e59; margin-bottom: 6px;">Trimean Çeyreklik Ağırlık Sentezi</p>
       <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Dağılım Bölümlemesi:</span> Gözlemlerin birinci çeyrekliği ($Q_1$ veya %25 dilimi), ortancası ($Median$ veya %50 dilimi) ve üçüncü çeyrekliği ($Q_3$ veya %75 dilimi) hesaplanır.</p>
-      <p class="no-indent"><span class="bold">2. Trimean Formülasyonu:</span> Konum koordinatları, $Trimean = (Q_1 + 2 \times Median + Q_3) / 4$ formülüyle çözümlenir. Bu model, her iki uçtaki sapma sınırlarını dikkate alırken merkeze en yüksek ağırlığı vererek pürüzsüzleştirme sağlar.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Neden Seçildi ve Jeodezik Katkısı:</span> Tukey's Trimean, dağılımın asimetrisini ve kuyruk yapısını denge altına alan son derece hızlı bir L-kestiricisidir. Çeyreklik aralıkların kararlılığıyla medyanın hassasiyetini birleştirir; mobil cihaz işlem kapasitesini yormadan anlık konum sıçramalarını pürüzsüzleştirir.</p>
+      <p class="no-indent"><span class="bold">3. Trimean Formülasyonu:</span> Konum koordinatları, $Trimean = (Q_1 + 2 \times Median + Q_3) / 4$ formülüyle çözümlenir. Bu model, her iki uçtaki sapma sınırlarını dikkate alırken merkeze en yüksek ağırlığı vererek pürüzsüzleştirme sağlar.</p>
     </div>
+
+    <p class="no-indent">İstatistiksel çeyreklik ve medyan ağırlıklama tabanlı Tukey's Trimean algoritmasının kaynak kodu aşağıda yer almaktadır:</p>
+    <pre class="code-block">
+export function calculateTukeysTrimeanPure(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length &lt; 4) {
+    return calculateWeightedLSE(samples);
+  }
+
+  const N = samples.length;
+
+  const getPercentileValue = (sorted: number[], p: number): number =&gt; {
+    const idx = (sorted.length - 1) * p;
+    const low = Math.floor(idx);
+    const high = Math.ceil(idx);
+    if (low === high) return sorted[low];
+    return sorted[low] + (sorted[high] - sorted[low]) * (idx - low);
+  };
+
+  const sortedLats = samples.map(s =&gt; s.lat).sort((a, b) =&gt; a - b);
+  const q1Lat = getPercentileValue(sortedLats, 0.25);
+  const q2Lat = getPercentileValue(sortedLats, 0.50);
+  const q3Lat = getPercentileValue(sortedLats, 0.75);
+  const triLat = (q1Lat + 2 * q2Lat + q3Lat) / 4;
+
+  const sortedLngs = samples.map(s =&gt; s.lng).sort((a, b) =&gt; a - b);
+  const q1Lng = getPercentileValue(sortedLngs, 0.25);
+  const q2Lng = getPercentileValue(sortedLngs, 0.50);
+  const q3Lng = getPercentileValue(sortedLngs, 0.75);
+  const triLng = (q1Lng + 2 * q2Lng + q3Lng) / 4;
+
+  const dists = samples.map(s =&gt; calculateDistanceMeter(s.lat, s.lng, triLat, triLng, triLat));
+  const sortedDists = [...dists].sort((a, b) =&gt; a - b);
+  const midD = Math.floor(N / 2);
+  const medianDist = N % 2 !== 0 ? sortedDists[midD] : (sortedDists[midD - 1] + sortedDists[midD]) / 2;
+
+  const absDevs = dists.map(d =&gt; Math.abs(d - medianDist));
+  const sortedDevs = [...absDevs].sort((a, b) =&gt; a - b);
+  const medianDev = N % 2 !== 0 ? sortedDevs[midD] : (sortedDevs[midD - 1] + sortedDevs[midD]) / 2;
+
+  const mad = medianDev;
+  const scaleSigma = 1.4826 * mad;
+  const minSigmaBoundary = 1e-6;
+
+  if (scaleSigma &lt; minSigmaBoundary) {
+    return {
+      result: {
+        lat: triLat,
+        lng: triLng,
+        accuracy: samples.reduce((sum, s) =&gt; sum + s.accuracy, 0) / N,
+        altitude: null,
+        altitudeAccuracy: null,
+        timestamp: Date.now()
+      },
+      usedIndices: samples.map((_, i) =&gt; i)
+    };
+  }
+
+  const inlierIndices: number[] = [];
+  for (let i = 0; i &lt; N; i++) {
+    if (absDevs[i] &lt;= 3.0 * scaleSigma) {
+      inlierIndices.push(i);
+    }
+  }
+
+  let finalUsedIndices = inlierIndices;
+  if (finalUsedIndices.length &lt; 2) {
+    const sortedSampleIndices = samples
+      .map((_, idx) =&gt; ({ idx, dev: absDevs[idx] }))
+      .sort((a, b) =&gt; a.dev - b.dev);
+    finalUsedIndices = [sortedSampleIndices[0].idx, sortedSampleIndices[1].idx];
+  }
+
+  const activeInliers = finalUsedIndices.map(idx =&gt; samples[idx]);
+  const avgAccuracy = activeInliers.reduce((sum, s) =&gt; sum + s.accuracy, 0) / activeInliers.length;
+
+  return {
+    result: {
+      lat: triLat,
+      lng: triLng,
+      accuracy: avgAccuracy,
+      altitude: null,
+      altitudeAccuracy: null,
+      timestamp: Date.now()
+    },
+    usedIndices: finalUsedIndices
+  };
+}
+    </pre>
 
     <h3>2.4.6. Optimal S-Kestiricisi (Optimal S-Estimation)</h3>
     <p>Konum gözlem serilerindeki geniş saçılımları ve çoklu kaba hataları güçlü bir şekilde sönümleyen <b>Optimal S-Kestiricisi</b>, Tukey's Biweight kayıp fonksiyonu og yüksek kırılma noktalı (high breakdown point) ölçek kestiricileri kullanarak iteratif ağırlıklandırma yöntemiyle nihai koordinatı belirler.</p>
     
     <div class="case-container" style="background-color: #f0f9ff; border-left: 4px solid #0284c7; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
       <p class="bold" style="color: #0369a1; margin-bottom: 6px;">Iterative Biweight Ağırlık Dinamiği</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Robust Ölçek Ölçeklendirme:</span> Medyan mutlak sapması ($MAD$) üzerinden $c = 3.0$ katsayı limiti belirlenir. Gözlemlerin ortanca değere olan uzaklıklarına göre biweight ağırlıkları ($w = (1 - (d/c)^2)^2$) hesaplanır.</p>
-      <p class="no-indent"><span class="bold">2. İteratif Yakınsama:</span> Konum koordinatları ağırlıklara göre yeniden hesaplanır og değişim $0.001\text{m}$ altına düşene kadar iteratif olarak güncellenir. Uç değerlerin ağırlıkları sıfıra indirilerek kararlılık maksimuma ulaştırılır.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Robust Ölçeklendirme:</span> Medyan mutlak sapması ($MAD$) üzerinden $c = 3.0$ katsayı limiti belirlenir. Gözlemlerin ortanca değere olan uzaklıklarına göre biweight ağırlıkları ($w = (1 - (d/c)^2)^2$) hesaplanır.</p>
+      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Neden Seçildi og Jeodezik Katkısı:</span> S-kestiricileri, yüksek gürültülü ve ardışık kaba hataların kümelendiği ortamlarda standart M-kestiricilerine kıyasla daha kararlı bir yakınsama sunar. Tukey's Biweight sönümlemesi sayesinde, belirli bir sınırın ötesinde kalan gürültülü gözlemlerin ağırlıkları matematiksel olarak sıfırlanarak konumsal sürüklenme engellenir.</p>
+      <p class="no-indent"><span class="bold">3. İteratif Yakınsama:</span> Konum koordinatları ağırlıklara göre yeniden hesaplanır og değişim $0.001\text{m}$ altına düşene kadar iteratif olarak güncellenir. Uç değerlerin ağırlıkları sıfıra indirilerek kararlılık maksimuma ulaştırılır.</p>
     </div>
+
+    <p class="no-indent">Karesel sönümlemeli Tukey's Biweight bazlı iteratif Optimal S-Kestirim motorunun kaynak kod yapısı aşağıda sunulmuştur:</p>
+    <pre class="code-block">
+export function calculateOptimalSPure(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length &lt; 4) {
+    const avgLat = samples.reduce((sum, p) =&gt; sum + p.lat, 0) / samples.length;
+    const avgLng = samples.reduce((sum, p) =&gt; sum + p.lng, 0) / samples.length;
+    const avgAcc = samples.reduce((sum, p) =&gt; sum + p.accuracy, 0) / samples.length;
+    return {
+      result: { lat: avgLat, lng: avgLng, accuracy: avgAcc, altitude: null, altitudeAccuracy: null, timestamp: Date.now() },
+      usedIndices: samples.map((_, i) =&gt; i)
+    };
+  }
+
+  let currentLat = calculateMedian(samples.map(s =&gt; s.lat));
+  let currentLng = calculateMedian(samples.map(s =&gt; s.lng));
+
+  const maxIterations = 20;
+  const toleranceMeter = 0.001;
+
+  for (let iter = 0; iter &lt; maxIterations; iter++) {
+    const currentMAD = calculateMADHuber(samples, currentLat, currentLng);
+    const pseudoSigma = currentMAD * 1.4826;
+    const stablePseudoSigma = pseudoSigma &gt; 1e-7 ? pseudoSigma : 1e-7;
+    
+    const c = 3.0;
+    const cutoff = c * stablePseudoSigma;
+
+    let sumW = 0;
+    let sumLatW = 0;
+    let sumLngW = 0;
+
+    for (let i = 0; i &lt; samples.length; i++) {
+      const p = samples[i];
+      const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
+
+      const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
+      
+      let biweightWeight = 0;
+      if (dist &lt;= cutoff) {
+        const u = dist / cutoff;
+        biweightWeight = Math.pow(1.0 - u * u, 2);
+      }
+      
+      const combinedWeight = hardwareWeight * biweightWeight;
+
+      sumW += combinedWeight;
+      sumLatW += p.lat * combinedWeight;
+      sumLngW += p.lng * combinedWeight;
+    }
+
+    if (sumW === 0) {
+      for (let i = 0; i &lt; samples.length; i++) {
+        const p = samples[i];
+        const combinedWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
+        sumW += combinedWeight;
+        sumLatW += p.lat * combinedWeight;
+        sumLngW += p.lng * combinedWeight;
+      }
+    }
+
+    const nextLat = sumLatW / sumW;
+    const nextLng = sumLngW / sumW;
+
+    const changeInMeter = calculateDistanceMeter(nextLat, nextLng, currentLat, currentLng, currentLat);
+
+    currentLat = nextLat;
+    currentLng = nextLng;
+
+    if (changeInMeter &lt; toleranceMeter) break;
+  }
+
+  const finalMAD = calculateMADHuber(samples, currentLat, currentLng);
+  const finalPseudoSigma = finalMAD * 1.4826;
+  const stableFinalPseudoSigma = finalPseudoSigma &gt; 1e-7 ? finalPseudoSigma : 1e-7;
+  const outlierThreshold = 3.0 * stableFinalPseudoSigma;
+
+  const usedIndices: number[] = [];
+  const cleanSamples: Coordinate[] = [];
+
+  for (let i = 0; i &lt; samples.length; i++) {
+    const p = samples[i];
+    const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
+
+    if (dist &lt;= outlierThreshold) {
+      usedIndices.push(i);
+      cleanSamples.push(p);
+    }
+  }
+
+  if (cleanSamples.length === 0) {
+    return {
+      result: { lat: currentLat, lng: currentLng, accuracy: 3.0, altitude: null, altitudeAccuracy: null, timestamp: Date.now() },
+      usedIndices: samples.map((_, i) =&gt; i)
+    };
+  }
+
+  let finalSumW = 0;
+  let finalLatW = 0;
+  let finalLngW = 0;
+  let totalAccuracy = 0;
+
+  for (const p of cleanSamples) {
+    const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
+    finalSumW += hardwareWeight;
+    finalLatW += p.lat * hardwareWeight;
+    finalLngW += p.lng * hardwareWeight;
+    totalAccuracy += p.accuracy;
+  }
+
+  return {
+    result: {
+      lat: finalLatW / finalSumW,
+      lng: finalLngW / finalSumW,
+      accuracy: totalAccuracy / cleanSamples.length,
+      altitude: null,
+      altitudeAccuracy: null,
+      timestamp: Date.now()
+    },
+    usedIndices
+  };
+}
+    </pre>
 
     <div style="display:none;">
 
