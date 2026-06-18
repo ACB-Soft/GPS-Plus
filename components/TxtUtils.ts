@@ -42,7 +42,7 @@ export const downloadTXT = (locations: SavedLocation[], settings: AppSettings) =
     const valY = isUTM ? y.toFixed(prec) : y.toFixed(6);
     
     const hPrec = settings.heightPrecision || 2;
-    const gInfo = getGeoidInfo(loc.lat, loc.lng, loc.altitude);
+    const gInfo = getGeoidInfo(loc.lat, loc.lng, loc.altitude, loc.deviceOS);
     const ellipsoidalH = loc.altitude;
     const orthometricH = gInfo.orthometricHeight;
     

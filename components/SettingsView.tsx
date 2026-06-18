@@ -27,6 +27,9 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
   const [gnssOnlyMode, setGnssOnlyMode] = useState(localStorage.getItem('default_gnss_only_mode') === 'true');
   const [showOnboarding, setShowOnboarding] = useState(localStorage.getItem('show_onboarding_every_time') !== 'false');
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [restorePayload, setRestorePayload] = useState<any | null>(null);
+  const [selectedBackupOS, setSelectedBackupOS] = useState<'iOS' | 'Android'>('iOS');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -155,10 +158,12 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
         backupData[key] = localStorage.getItem(key);
       });
 
+      const isIOSDevice = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
       const payload = {
         appName: 'ACB Maps',
         backupVersion: '1.0',
         timestamp: Date.now(),
+        deviceOS: isIOSDevice ? 'iOS' : 'Android',
         data: backupData
       };
 
@@ -204,213 +209,28 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
           throw new Error(t('Geçersiz yedek dosyası formatı.'));
         }
 
-        const dataToRestore = payload.data;
+        setRestorePayload(payload);
         
-        setModal({
-          isOpen: true,
-          title: t('Yedek Yükle'),
-          type: 'confirm',
-          confirmLabel: t('Yedek Yükle'),
-          message: t('Yedek dosyasındaki ölçümler, mevcut verilerinizin üzerine eklenecek ve aynı isimdeki projeler otomatik olarak yeni isimle kaydedilecektir. Devam etmek istiyor musunuz?'),
-          onConfirm: () => {
-            try {
-              // 1. Ölçümler (gps_locations_v5.0) kurgusu
-              const currentLocsJson = localStorage.getItem('gps_locations_v5.0');
-              let currentLocations: any[] = currentLocsJson ? JSON.parse(currentLocsJson) : [];
-              if (!Array.isArray(currentLocations)) currentLocations = [];
-
-              // Desteklenen tüm eski ve yeni lokasyon yedek anahtarları
-              const backupLocsValue = dataToRestore['gps_locations_v5.0'] || 
-                                      dataToRestore['gps_locations_v7.8.8'] || 
-                                      dataToRestore['gps_locations_v7.8.0'] || 
-                                      dataToRestore['locations'];
-              
-              let backupLocations: any[] = [];
-              if (backupLocsValue) {
-                if (typeof backupLocsValue === 'string') {
-                  try {
-                    backupLocations = JSON.parse(backupLocsValue);
-                  } catch (e) {
-                    console.error("Yedek lokasyonlar ayrıştırılamadı:", e);
-                  }
-                } else if (Array.isArray(backupLocsValue)) {
-                  backupLocations = backupLocsValue;
-                }
-              }
-
-              if (backupLocations.length > 0) {
-                // Mevcut klasörleri (projeleri) tespit et
-                const currentFolders = new Set(currentLocations.map((l: any) => l.folderName || t('Klasör Yok')));
-                
-                // Yedek dosyadan gelen benzersiz klasörler
-                const backupFolders = Array.from(new Set(backupLocations.map((l: any) => l.folderName || t('Klasör Yok')))) as string[];
-
-                // Klasör adı eşleştirme tablosu (eskiKlasor -> yeniKlasor)
-                const folderNameMap = new Map<string, string>();
-
-                backupFolders.forEach(folder => {
-                  if (currentFolders.has(folder)) {
-                    // Çakışma var! Yeni klasör adı bulalım (örn. Klasör (2), Klasör (3) ...)
-                    let idx = 2; // Doğrudan (2) ile başla
-                    let newFoldName = `${folder} (${idx})`;
-                    while (currentFolders.has(newFoldName) || Array.from(folderNameMap.values()).includes(newFoldName)) {
-                      idx++;
-                      newFoldName = `${folder} (${idx})`;
-                    }
-                    folderNameMap.set(folder, newFoldName);
-                  } else {
-                    folderNameMap.set(folder, folder);
-                  }
-                });
-
-                // Önce her bir yedek lokasyonu yeni isimleriyle currentLocations'a ekleyelim
-                backupLocations.forEach((loc: any) => {
-                  const originalFolder = loc.folderName || t('Klasör Yok');
-                  const mappedFolder = folderNameMap.get(originalFolder) || originalFolder;
-                  
-                  // Nokta adı çakışma analizi ve yeniden adlandırma iptal edildi! Noktalar orijinal isimleriyle ekleniyor.
-                  const finalPointName = loc.name;
-
-                  // Benzersiz bir id ata (mevcut idlerle çakışmasın)
-                  let finalId = loc.id;
-                  if (currentLocations.some((l: any) => l.id === loc.id)) {
-                    finalId = loc.id + "_" + Math.random().toString(36).substr(2, 5);
-                  }
-
-                  currentLocations.push({
-                    ...loc,
-                    id: finalId,
-                    name: finalPointName,
-                    folderName: mappedFolder === t('Klasör Yok') ? undefined : mappedFolder
-                  });
-                });
-
-                // localStorage'a geri eşitleyelim
-                localStorage.setItem('gps_locations_v5.0', JSON.stringify(currentLocations));
-                if (onRestoreLocations) {
-                  onRestoreLocations(currentLocations);
-                }
-              }
-
-              // 2. Aplikasyon Noktaları (stakeout_points_v1) kurgusu
-              const currentStPtsJson = localStorage.getItem('stakeout_points_v1');
-              let currentStakeoutPoints: any[] = currentStPtsJson ? JSON.parse(currentStPtsJson) : [];
-              if (!Array.isArray(currentStakeoutPoints)) currentStakeoutPoints = [];
-
-              const backupStPtsValue = dataToRestore['stakeout_points_v1'] || dataToRestore['stakeout_points'];
-              let backupStakeoutPoints: any[] = [];
-              if (backupStPtsValue) {
-                if (typeof backupStPtsValue === 'string') {
-                  try {
-                    backupStakeoutPoints = JSON.parse(backupStPtsValue);
-                  } catch (e) {}
-                } else if (Array.isArray(backupStPtsValue)) {
-                  backupStakeoutPoints = backupStPtsValue;
-                }
-              }
-
-              if (backupStakeoutPoints.length > 0) {
-                backupStakeoutPoints.forEach((bp: any) => {
-                  let finalId = bp.id;
-                  if (currentStakeoutPoints.some((p: any) => p.id === bp.id)) {
-                    finalId = bp.id + "_" + Math.random().toString(36).substr(2, 5);
-                  }
-
-                  let finalName = bp.name;
-                  let stPtIdx = 1;
-                  while (currentStakeoutPoints.some((p: any) => p.name === finalName)) {
-                    stPtIdx++;
-                    finalName = `${bp.name} (${stPtIdx})`;
-                  }
-
-                  currentStakeoutPoints.push({
-                    ...bp,
-                    id: finalId,
-                    name: finalName
-                  });
-                });
-                localStorage.setItem('stakeout_points_v1', JSON.stringify(currentStakeoutPoints));
-              }
-
-              // 3. Aplikasyon Geometrileri (stakeout_geometries_v1) kurgusu
-              const currentGeomsJson = localStorage.getItem('stakeout_geometries_v1');
-              let currentGeometries: any[] = currentGeomsJson ? JSON.parse(currentGeomsJson) : [];
-              if (!Array.isArray(currentGeometries)) currentGeometries = [];
-
-              const backupGeomsValue = dataToRestore['stakeout_geometries_v1'] || dataToRestore['stakeout_geometries'];
-              let backupGeometries: any[] = [];
-              if (backupGeomsValue) {
-                if (typeof backupGeomsValue === 'string') {
-                  try {
-                    backupGeometries = JSON.parse(backupGeomsValue);
-                  } catch (e) {}
-                } else if (Array.isArray(backupGeomsValue)) {
-                  backupGeometries = backupGeomsValue;
-                }
-              }
-
-              if (backupGeometries.length > 0) {
-                backupGeometries.forEach((bg: any) => {
-                  let finalId = bg.id;
-                  if (currentGeometries.some((g: any) => g.id === bg.id)) {
-                    finalId = bg.id + "_" + Math.random().toString(36).substr(2, 5);
-                  }
-
-                  let finalName = bg.name;
-                  let geomIdx = 1;
-                  while (currentGeometries.some((g: any) => g.name === finalName)) {
-                    geomIdx++;
-                    finalName = `${bg.name} (${geomIdx})`;
-                  }
-
-                  currentGeometries.push({
-                    ...bg,
-                    id: finalId,
-                    name: finalName
-                  });
-                });
-                localStorage.setItem('stakeout_geometries_v1', JSON.stringify(currentGeometries));
-              }
-
-              // 4. Diğer konfigürasyon ayarlarını olduğu gibi üstüne yazabiliriz
-              const skippedKeys = [
-                'gps_locations_v5.0', 
-                'gps_locations_v7.8.8', 
-                'gps_locations_v7.8.0', 
-                'locations', 
-                'stakeout_points_v1', 
-                'stakeout_points', 
-                'stakeout_geometries_v1', 
-                'stakeout_geometries'
-              ];
-              Object.keys(dataToRestore).forEach(key => {
-                if (!skippedKeys.includes(key)) {
-                  const val = dataToRestore[key];
-                  if (val !== null && val !== undefined) {
-                    localStorage.setItem(key, val);
-                  }
-                }
-              });
-
-              setModal({
-                isOpen: true,
-                title: t('Başarılı'),
-                type: 'success',
-                message: t('Yedek başarıyla yüklendi. Değişikliklerin uygulanması için uygulama yenilenecektir.'),
-                onConfirm: () => {
-                  window.location.reload();
-                }
-              });
-            } catch (restoreErr: any) {
-              setModal({
-                isOpen: true,
-                title: t('Hata Oluştu'),
-                type: 'error',
-                message: t('Yedek yüklenirken bir hata oluştu: ') + restoreErr.message
-              });
+        // Eğer yedek dosyasında cihaz OS bilgisi zaten varsa, modal göstermeden doğrudan işlemi gerçekleştirelim
+        if (payload.deviceOS) {
+          const detectedOSName = payload.deviceOS === 'iOS' ? 'iOS (Apple)' : 'Android';
+          setSelectedBackupOS(payload.deviceOS);
+          
+          setModal({
+            isOpen: true,
+            title: t('Yedek Yükle'),
+            type: 'confirm',
+            confirmLabel: t('Yedek Yükle'),
+            message: `${t('Cihaz Tipi')}: ${detectedOSName}\n\n${t('Yedek dosyasındaki ölçümler, mevcut verilerinizin üzerine eklenecek ve aynı isimdeki projeler otomatik olarak yeni isimle kaydedilecektir. Devam etmek istiyor musunuz?')}`,
+            onConfirm: () => {
+              executeRestoreBackup(payload.deviceOS, payload);
             }
-          }
-        });
+          });
+        } else {
+          // Eğer yedek dosyasında OS bilgisi yoksa (Eski yedek sürümü), kullanıcıya seçtirelim
+          setSelectedBackupOS('iOS');
+          setShowRestoreModal(true);
+        }
       } catch (err: any) {
         setModal({
           isOpen: true,
@@ -425,6 +245,223 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
       }
     };
     reader.readAsText(file);
+  };
+
+  const executeRestoreBackup = (finalOS: 'iOS' | 'Android', customPayload?: any) => {
+    const activePayload = customPayload || restorePayload;
+    if (!activePayload) return;
+    try {
+      const dataToRestore = activePayload.data;
+
+      // 1. Ölçümler (gps_locations_v5.0) kurgusu
+      const currentLocsJson = localStorage.getItem('gps_locations_v5.0');
+      let currentLocations: any[] = currentLocsJson ? JSON.parse(currentLocsJson) : [];
+      if (!Array.isArray(currentLocations)) currentLocations = [];
+
+      // Desteklenen tüm eski ve yeni lokasyon yedek anahtarları
+      const backupLocsValue = dataToRestore['gps_locations_v5.0'] || 
+                              dataToRestore['gps_locations_v7.8.8'] || 
+                              dataToRestore['gps_locations_v7.8.0'] || 
+                              dataToRestore['locations'];
+      
+      let backupLocations: any[] = [];
+      if (backupLocsValue) {
+        if (typeof backupLocsValue === 'string') {
+          try {
+            backupLocations = JSON.parse(backupLocsValue);
+          } catch (e) {
+            console.error("Yedek lokasyonlar ayrıştırılamadı:", e);
+          }
+        } else if (Array.isArray(backupLocsValue)) {
+          backupLocations = backupLocsValue;
+        }
+      }
+
+      if (backupLocations.length > 0) {
+        // Mevcut klasörleri (projeleri) tespit et
+        const currentFolders = new Set(currentLocations.map((l: any) => l.folderName || t('Klasör Yok')));
+        
+        // Yedek dosyadan gelen benzersiz klasörler
+        const backupFolders = Array.from(new Set(backupLocations.map((l: any) => l.folderName || t('Klasör Yok')))) as string[];
+
+        // Klasör adı eşleştirme tablosu (eskiKlasor -> yeniKlasor)
+        const folderNameMap = new Map<string, string>();
+
+        backupFolders.forEach(folder => {
+          if (currentFolders.has(folder)) {
+            // Çakışma var! Yeni klasör adı bulalım (örn. Klasör (2), Klasör (3) ...)
+            let idx = 2; // Doğrudan (2) ile başla
+            let newFoldName = `${folder} (${idx})`;
+            while (currentFolders.has(newFoldName) || Array.from(folderNameMap.values()).includes(newFoldName)) {
+              idx++;
+              newFoldName = `${folder} (${idx})`;
+            }
+            folderNameMap.set(folder, newFoldName);
+          } else {
+            folderNameMap.set(folder, folder);
+          }
+        });
+
+        // Önce her bir yedek lokasyonu yeni isimleriyle ve deviceOS etiketleriyle currentLocations'a ekleyelim
+        backupLocations.forEach((loc: any) => {
+          const originalFolder = loc.folderName || t('Klasör Yok');
+          const mappedFolder = folderNameMap.get(originalFolder) || originalFolder;
+          
+          const finalPointName = loc.name;
+
+          // Benzersiz bir id ata (mevcut idlerle çakışmasın)
+          let finalId = loc.id;
+          if (currentLocations.some((l: any) => l.id === loc.id)) {
+            finalId = loc.id + "_" + Math.random().toString(36).substr(2, 5);
+          }
+
+          // Örnekleri (samples) de cihaz OS'i ile etiketleyelim
+          const mappedSamples = loc.samples ? loc.samples.map((s: any) => ({
+            ...s,
+            deviceOS: s.deviceOS || finalOS
+          })) : undefined;
+
+          // Ham örnekleri (rawSamples) de cihaz OS'i ile etiketleyelim
+          const mappedRawSamples = loc.rawSamples ? loc.rawSamples.map((s: any) => ({
+            ...s,
+            deviceOS: s.deviceOS || finalOS
+          })) : undefined;
+
+          currentLocations.push({
+            ...loc,
+            id: finalId,
+            name: finalPointName,
+            folderName: mappedFolder === t('Klasör Yok') ? undefined : mappedFolder,
+            deviceOS: loc.deviceOS || finalOS,
+            samples: mappedSamples,
+            rawSamples: mappedRawSamples
+          });
+        });
+
+        // localStorage'a geri eşitleyelim
+        localStorage.setItem('gps_locations_v5.0', JSON.stringify(currentLocations));
+        if (onRestoreLocations) {
+          onRestoreLocations(currentLocations);
+        }
+      }
+
+      // 2. Aplikasyon Noktaları (stakeout_points_v1) kurgusu
+      const currentStPtsJson = localStorage.getItem('stakeout_points_v1');
+      let currentStakeoutPoints: any[] = currentStPtsJson ? JSON.parse(currentStPtsJson) : [];
+      if (!Array.isArray(currentStakeoutPoints)) currentStakeoutPoints = [];
+
+      const backupStPtsValue = dataToRestore['stakeout_points_v1'] || dataToRestore['stakeout_points'];
+      let backupStakeoutPoints: any[] = [];
+      if (backupStPtsValue) {
+        if (typeof backupStPtsValue === 'string') {
+          try {
+            backupStakeoutPoints = JSON.parse(backupStPtsValue);
+          } catch (e) {}
+        } else if (Array.isArray(backupStPtsValue)) {
+          backupStakeoutPoints = backupStPtsValue;
+        }
+      }
+
+      if (backupStakeoutPoints.length > 0) {
+        backupStakeoutPoints.forEach((bp: any) => {
+          let finalId = bp.id;
+          if (currentStakeoutPoints.some((p: any) => p.id === bp.id)) {
+            finalId = bp.id + "_" + Math.random().toString(36).substr(2, 5);
+          }
+
+          let finalName = bp.name;
+          let stPtIdx = 1;
+          while (currentStakeoutPoints.some((p: any) => p.name === finalName)) {
+            stPtIdx++;
+            finalName = `${bp.name} (${stPtIdx})`;
+          }
+
+          currentStakeoutPoints.push({
+            ...bp,
+            id: finalId,
+            name: finalName
+          });
+        });
+        localStorage.setItem('stakeout_points_v1', JSON.stringify(currentStakeoutPoints));
+      }
+
+      // 3. Aplikasyon Geometrileri (stakeout_geometries_v1) kurgusu
+      const currentGeomsJson = localStorage.getItem('stakeout_geometries_v1');
+      let currentGeometries: any[] = currentGeomsJson ? JSON.parse(currentGeomsJson) : [];
+      if (!Array.isArray(currentGeometries)) currentGeometries = [];
+
+      const backupGeomsValue = dataToRestore['stakeout_geometries_v1'] || dataToRestore['stakeout_geometries'];
+      let backupGeometries: any[] = [];
+      if (backupGeomsValue) {
+        if (typeof backupGeomsValue === 'string') {
+          try {
+            backupGeometries = JSON.parse(backupGeomsValue);
+          } catch (e) {}
+        } else if (Array.isArray(backupGeomsValue)) {
+          backupGeometries = backupGeomsValue;
+        }
+      }
+
+      if (backupGeometries.length > 0) {
+        backupGeometries.forEach((bg: any) => {
+          let finalId = bg.id;
+          if (currentGeometries.some((g: any) => g.id === bg.id)) {
+            finalId = bg.id + "_" + Math.random().toString(36).substr(2, 5);
+          }
+
+          let finalName = bg.name;
+          let geomIdx = 1;
+          while (currentGeometries.some((g: any) => g.name === finalName)) {
+            geomIdx++;
+            finalName = `${bg.name} (${geomIdx})`;
+          }
+
+          currentGeometries.push({
+            ...bg,
+            id: finalId,
+            name: finalName
+          });
+        });
+        localStorage.setItem('stakeout_geometries_v1', JSON.stringify(currentGeometries));
+      }
+
+      // 4. Diğer konfigürasyon ayarlarını olduğu gibi üstüne yazabiliriz
+      const skippedKeys = [
+        'gps_locations_v5.0', 
+        'gps_locations_v7.8.8', 
+        'gps_locations_v7.8.0', 
+        'locations', 
+        'stakeout_points_v1', 
+        'stakeout_points', 
+        'stakeout_geometries_v1', 
+        'stakeout_geometries'
+      ];
+      Object.keys(dataToRestore).forEach(key => {
+        if (!skippedKeys.includes(key)) {
+          const val = dataToRestore[key];
+          if (val !== null && val !== undefined) {
+            localStorage.setItem(key, val);
+          }
+        }
+      });
+
+      setModal({
+        isOpen: true,
+        title: t('Başarılı'),
+        type: 'success',
+        message: t('Yedek başarıyla yüklendi. Değişikliklerin uygulanması için uygulama yenilenecektir.'),
+        onConfirm: () => {
+          window.location.reload();
+        }
+      });
+    } catch (restoreErr: any) {
+      setModal({
+        isOpen: true,
+        title: t('Hata Oluştu'),
+        type: 'error',
+        message: t('Yedek yüklenirken bir hata oluştu: ') + restoreErr.message
+      });
+    }
   };
 
   return (
@@ -750,6 +787,104 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
           </section>
         </div>
       </div>
+      
+      {/* Yedek Yükleme Detay Modalı - Platform Seçimi */}
+      {showRestoreModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" id="restore_os_modal">
+          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-6 space-y-6 border border-slate-100 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm">
+                <i className="fas fa-file-import text-lg"></i>
+              </div>
+              <div>
+                <h3 className="font-black text-slate-800 text-lg leading-tight">{t("Yedek Geri Yükleme")}</h3>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{t("Yükseklik Uyumlandırıcı")}</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-xs text-slate-600 leading-relaxed font-semibold">
+                {t("Geri yüklenecek yedekteki yüksekliklerin doğru yorumlanabilmesi için yedeğin alındığı orijinal cihazın işletim sistemini seçiniz:")}
+              </p>
+
+              {/* iOS vs Android Seçim Kutusu */}
+              <div className="grid grid-cols-2 gap-3 p-1 bg-slate-100 rounded-2xl border border-slate-200/60 font-sans">
+                <button
+                  type="button"
+                  id="btn_select_ios"
+                  onClick={() => setSelectedBackupOS('iOS')}
+                  className={`flex flex-col items-center justify-center py-4 rounded-xl font-bold transition-all ${
+                    selectedBackupOS === 'iOS'
+                      ? 'bg-white text-slate-900 shadow-md border border-slate-200/50'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  <i className="fab fa-apple text-xl mb-1"></i>
+                  <span className="text-xs">{t("iOS (Apple)")}</span>
+                  <span className="text-[8px] opacity-75 mt-0.5 font-normal">({t("Ortometrik Kot")})</span>
+                </button>
+
+                <button
+                  type="button"
+                  id="btn_select_android"
+                  onClick={() => setSelectedBackupOS('Android')}
+                  className={`flex flex-col items-center justify-center py-4 rounded-xl font-bold transition-all ${
+                    selectedBackupOS === 'Android'
+                      ? 'bg-white text-slate-900 shadow-md border border-slate-200/50'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  <i className="fab fa-android text-xl mb-1 text-emerald-500"></i>
+                  <span className="text-xs">{t("Android")}</span>
+                  <span className="text-[8px] opacity-75 mt-0.5 font-normal">({t("Elipsoidal Kot")})</span>
+                </button>
+              </div>
+
+              <div className="p-3 bg-blue-50/50 border border-blue-100/80 rounded-xl space-y-1">
+                <div className="flex items-center gap-2 text-blue-700">
+                  <i className="fas fa-circle-info text-xs"></i>
+                  <span className="text-[10px] font-bold uppercase tracking-wider">{t("Neden Önemli?")}</span>
+                </div>
+                <p className="text-[10px] text-slate-500 leading-relaxed font-semibold">
+                  {selectedBackupOS === 'iOS' 
+                    ? t("iOS yedeklerinde yükseklikler Ortometrik olarak saklanır. Program bunları otomatik olarak elipsoidal koda dönüştürerek Android cihazınızla entegre eder.")
+                    : t("Android yedeklerinde yükseklikler Ham Elipsoidal olarak saklanır. Program bunları doğrudan elipsoidal kod olarak içe aktarır.")
+                  }
+                </p>
+              </div>
+
+              <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
+                {t("Not: Yedek veri mevcut kayıtlarınızla birleştirilir, çakışan klasörler otomatik olarak yeniden adlandırılır.")}
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                id="btn_cancel_restore"
+                onClick={() => {
+                  setShowRestoreModal(false);
+                  setRestorePayload(null);
+                }}
+                className="flex-1 py-3 text-slate-500 bg-slate-100 hover:bg-slate-200 active:scale-[0.98] rounded-2xl font-bold text-xs transition-colors"
+              >
+                {t("İptal")}
+              </button>
+              <button
+                type="button"
+                id="btn_confirm_restore"
+                onClick={() => {
+                  setShowRestoreModal(false);
+                  executeRestoreBackup(selectedBackupOS);
+                }}
+                className="flex-1 py-3 text-white bg-emerald-600 hover:bg-emerald-500 active:scale-[0.98] rounded-2xl font-bold text-xs shadow-md shadow-emerald-100 transition-colors"
+              >
+                {t("Devam Et")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       <GlobalFooter />
     </div>

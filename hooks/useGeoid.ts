@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getGeoidInfo, GeoidInfo, getEllipsoidalHeight } from '../components/GeoidUtils';
 
-export const useHeightInfo = (altitude: number | null, lat: number, lng: number) => {
+export const useHeightInfo = (altitude: number | null, lat: number, lng: number, recordedOS?: 'iOS' | 'Android') => {
   const [info, setInfo] = useState<{ 
     orthometricHeight: number | null, 
     ellipsoidalHeight: number | null,
@@ -17,8 +17,8 @@ export const useHeightInfo = (altitude: number | null, lat: number, lng: number)
   });
 
   useEffect(() => {
-    const geoid = getGeoidInfo(lat, lng, altitude);
-    const ellip = getEllipsoidalHeight(lat, lng, altitude);
+    const geoid = getGeoidInfo(lat, lng, altitude, recordedOS);
+    const ellip = getEllipsoidalHeight(lat, lng, altitude, recordedOS);
     setInfo({
       orthometricHeight: geoid.orthometricHeight,
       ellipsoidalHeight: ellip,
@@ -26,11 +26,11 @@ export const useHeightInfo = (altitude: number | null, lat: number, lng: number)
       model: geoid.model,
       isSmartCorrectionApplied: geoid.isSmartCorrectionApplied
     });
-  }, [altitude, lat, lng]);
+  }, [altitude, lat, lng, recordedOS]);
 
   return info;
 };
 
-export const useOrthometricHeight = (ellipsoidalHeight: number | null, lat: number, lng: number) => {
-  return useHeightInfo(ellipsoidalHeight, lat, lng);
+export const useOrthometricHeight = (ellipsoidalHeight: number | null, lat: number, lng: number, recordedOS?: 'iOS' | 'Android') => {
+  return useHeightInfo(ellipsoidalHeight, lat, lng, recordedOS);
 };

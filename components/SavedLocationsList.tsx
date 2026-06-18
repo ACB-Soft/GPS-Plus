@@ -29,7 +29,7 @@ const SavedLocationItem: React.FC<{
   onViewOnMap: (l: SavedLocation) => void;
 }> = ({ l, settings, expanded, togglePoint, deletingPoint, setDeletingPoint, onDelete, onRenamePoint, onViewOnMap }) => {
   const { t } = useLanguage();
-  const geoidInfo = useOrthometricHeight(l.altitude, l.lat, l.lng);
+  const geoidInfo = useOrthometricHeight(l.altitude, l.lat, l.lng, l.deviceOS);
   const isOrthometric = settings.heightType === 'orthometric';
   const displayHeight = isOrthometric ? geoidInfo.orthometricHeight : geoidInfo.ellipsoidalHeight;
   const heightPrecision = settings.heightPrecision ?? 2;

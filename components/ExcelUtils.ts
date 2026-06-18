@@ -49,10 +49,10 @@ export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings
     const val1 = x.toFixed(2);
     const val2 = y.toFixed(2);
     
-    const correctedH = getCorrectedHeight(loc.lat, loc.lng, loc.altitude);
+    const correctedH = getCorrectedHeight(loc.lat, loc.lng, loc.altitude, loc.deviceOS);
     const orthometricH = correctedH !== null ? correctedH.toFixed(2) : '---';
     
-    const ellipVal = getEllipsoidalHeight(loc.lat, loc.lng, loc.altitude);
+    const ellipVal = getEllipsoidalHeight(loc.lat, loc.lng, loc.altitude, loc.deviceOS);
     const ellipsoidalH = ellipVal !== null ? ellipVal.toFixed(2) : '---';
     
     let undulationVal = '---';
@@ -164,13 +164,13 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     const usedSamples = usedIndices.map(i => location.samples![i]);
     const variance = calculateVariance(usedSamples, result);
     
-    const resEllip = getEllipsoidalHeight(result.lat, result.lng, result.altitude);
+    const resEllip = getEllipsoidalHeight(result.lat, result.lng, result.altitude, location.deviceOS);
 
     return {
       method,
       x: isWGS84 ? result.lat : x,
       y: isWGS84 ? result.lng : y,
-      z: isOrthometricSetting ? getCorrectedHeight(result.lat, result.lng, result.altitude) : resEllip,
+      z: isOrthometricSetting ? getCorrectedHeight(result.lat, result.lng, result.altitude, location.deviceOS) : resEllip,
       usedCount: usedIndices.length,
       accuracy: result.accuracy,
       variance: variance
@@ -195,13 +195,13 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
       const { x, y } = convertCoordinate(result.lat, result.lng, sys);
       const usedSamples = usedIndices.map(i => sliceSamples[i]);
       const variance = calculateVariance(usedSamples, result);
-      const resEllip = getEllipsoidalHeight(result.lat, result.lng, result.altitude);
+      const resEllip = getEllipsoidalHeight(result.lat, result.lng, result.altitude, location.deviceOS);
 
       return {
         method,
         x: isWGS84 ? result.lat : x,
         y: isWGS84 ? result.lng : y,
-        z: isOrthometricSetting ? getCorrectedHeight(result.lat, result.lng, result.altitude) : resEllip,
+        z: isOrthometricSetting ? getCorrectedHeight(result.lat, result.lng, result.altitude, location.deviceOS) : resEllip,
         usedCount: usedIndices.length,
         accuracy: result.accuracy,
         variance: variance
@@ -238,8 +238,8 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     }
 
     const hValue = isOrthometricSetting 
-      ? getCorrectedHeight(s.lat, s.lng, s.altitude) 
-      : getEllipsoidalHeight(s.lat, s.lng, s.altitude);
+      ? getCorrectedHeight(s.lat, s.lng, s.altitude, s.deviceOS || location.deviceOS) 
+      : getEllipsoidalHeight(s.lat, s.lng, s.altitude, s.deviceOS || location.deviceOS);
 
     const speedVal = s.speed !== null && s.speed !== undefined ? s.speed.toFixed(2) : '---';
     const headingVal = s.heading !== null && s.heading !== undefined ? s.heading.toFixed(1) : '---';
@@ -380,8 +380,8 @@ export const downloadCombinedAnalysisReport = (
     reportRawList.forEach((s, idx) => {
       const conv = convertCoordinate(s.lat, s.lng, sys);
       const hVal = isOrthometric 
-        ? getCorrectedHeight(s.lat, s.lng, s.altitude) 
-        : getEllipsoidalHeight(s.lat, s.lng, s.altitude);
+        ? getCorrectedHeight(s.lat, s.lng, s.altitude, s.deviceOS || location.deviceOS) 
+        : getEllipsoidalHeight(s.lat, s.lng, s.altitude, s.deviceOS || location.deviceOS);
 
       const speedVal = s.speed !== null && s.speed !== undefined ? s.speed.toFixed(2) : '---';
       const headingVal = s.heading !== null && s.heading !== undefined ? s.heading.toFixed(1) : '---';

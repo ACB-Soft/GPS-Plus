@@ -44,7 +44,7 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
   const formattedX = isUTM ? x.toFixed(locPrecision) : x.toFixed(6);
   const formattedY = isUTM ? y.toFixed(locPrecision) : y.toFixed(6);
   
-  const geoidInfo = useOrthometricHeight(location.altitude, location.lat, location.lng);
+  const geoidInfo = useOrthometricHeight(location.altitude, location.lat, location.lng, location.deviceOS);
   const displayHeight = isOrthometric ? geoidInfo.orthometricHeight : geoidInfo.ellipsoidalHeight;
   
   const maxSpread = React.useMemo(() => {

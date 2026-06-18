@@ -301,8 +301,11 @@ const App = () => {
 
   const handleGPSComplete = (coord: Coordinate, folderName: string, pointName: string, description: string, coordinateSystem: string, duration: number, samples: Coordinate[], usedIndices: number[], accLimit: number, method: any, gnssOnly: boolean, rawSamples?: Coordinate[]) => {
     const { fallbackApplied, actualMethodUsed } = calculateResult(samples, method, accLimit, gnssOnly);
+    const isIOSDevice = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+    const currentOS: 'iOS' | 'Android' = isIOSDevice ? 'iOS' : 'Android';
     const newLoc: SavedLocation = {
       ...coord,
+      deviceOS: coord.deviceOS || (samples.length > 0 ? (samples[0].deviceOS || currentOS) : currentOS),
       id: Date.now().toString(),
       name: pointName,
       folderName: folderName,
@@ -311,8 +314,8 @@ const App = () => {
       measurementDuration: duration,
       calculationMethod: method,
       gnssOnlyMode: gnssOnly,
-      samples: samples,
-      rawSamples: rawSamples && rawSamples.length > 0 ? rawSamples : samples,
+      samples: samples.map(s => ({ ...s, deviceOS: s.deviceOS || currentOS })),
+      rawSamples: (rawSamples && rawSamples.length > 0 ? rawSamples : samples).map(s => ({ ...s, deviceOS: s.deviceOS || currentOS })),
       usedSampleIndices: usedIndices,
       accuracyLimit: accLimit,
       fallbackApplied,

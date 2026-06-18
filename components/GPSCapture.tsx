@@ -89,6 +89,8 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
     gyroGamma: null
   });
   const lastPositionRef = useRef<GeolocationPosition | null>(null);
+  const isIOSDevice = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+  const currentDeviceOS: 'iOS' | 'Android' = isIOSDevice ? 'iOS' : 'Android';
   const lastSavedPositionRef = useRef<{lat: number, lng: number, accuracy: number} | null>(null);
   const lastSaveTimestampRef = useRef<number>(0);
   const watchIdRef = useRef<number | null>(null);
@@ -253,6 +255,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                 speed: pos.coords.speed,
                 heading: pos.coords.heading,
                 timestamp: Date.now(),
+                deviceOS: currentDeviceOS,
                 accelX: latestMotionRef.current.accelX,
                 accelY: latestMotionRef.current.accelY,
                 accelZ: latestMotionRef.current.accelZ,
@@ -287,6 +290,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                   altitude: pos.coords.altitude, 
                   altitudeAccuracy: pos.coords.altitudeAccuracy,
                   timestamp: Date.now(),
+                  deviceOS: currentDeviceOS,
                   speed: pos.coords.speed,
                   heading: pos.coords.heading,
                   accelX: latestMotionRef.current.accelX,
@@ -366,6 +370,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
           altitude: p.coords.altitude, 
           altitudeAccuracy: p.coords.altitudeAccuracy,
           timestamp: Date.now(),
+          deviceOS: currentDeviceOS,
           speed: p.coords.speed,
           heading: p.coords.heading,
           accelX: latestMotionRef.current.accelX,
@@ -446,6 +451,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
             altitude: p.coords.altitude, 
             altitudeAccuracy: p.coords.altitudeAccuracy,
             timestamp: now,
+            deviceOS: currentDeviceOS,
             speed: p.coords.speed,
             heading: p.coords.heading,
             accelX: latestMotionRef.current.accelX,
@@ -538,6 +544,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
         altitude: p.coords.altitude, 
         altitudeAccuracy: p.coords.altitudeAccuracy,
         timestamp: Date.now(),
+        deviceOS: currentDeviceOS,
         speed: p.coords.speed,
         heading: p.coords.heading,
         accelX: latestMotionRef.current.accelX,

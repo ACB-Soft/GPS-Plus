@@ -8,7 +8,7 @@ export interface GeoidInfo {
   isSmartCorrectionApplied: boolean;
 }
 
-export const getGeoidInfo = (lat: number, lng: number, inputHeight: number | null): GeoidInfo => {
+export const getGeoidInfo = (lat: number, lng: number, inputHeight: number | null, recordedOS?: 'iOS' | 'Android'): GeoidInfo => {
   if (inputHeight === null) {
     return { orthometricHeight: null, undulation: 0, model: 'None', isSmartCorrectionApplied: false };
   }
@@ -18,7 +18,8 @@ export const getGeoidInfo = (lat: number, lng: number, inputHeight: number | nul
   
   // 1. Detect OS
   const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
-  const isIOS = /iPad|iPhone|iPod/.test(userAgent) || (typeof navigator !== 'undefined' && (navigator as any).platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
+  const isIOSDevice = /iPad|iPhone|iPod/.test(userAgent) || (typeof navigator !== 'undefined' && (navigator as any).platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
+  const isIOS = recordedOS ? (recordedOS === 'iOS') : isIOSDevice;
   
   let finalHeight = inputHeight;
   let usedUndulation = 0;
@@ -70,11 +71,12 @@ export const getGeoidInfo = (lat: number, lng: number, inputHeight: number | nul
   };
 };
 
-export const getEllipsoidalHeight = (lat: number, lng: number, altitude: number | null): number | null => {
+export const getEllipsoidalHeight = (lat: number, lng: number, altitude: number | null, recordedOS?: 'iOS' | 'Android'): number | null => {
   if (altitude === null) return null;
   
   const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
-  const isIOS = /iPad|iPhone|iPod/.test(userAgent) || (typeof navigator !== 'undefined' && (navigator as any).platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
+  const isIOSDevice = /iPad|iPhone|iPod/.test(userAgent) || (typeof navigator !== 'undefined' && (navigator as any).platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
+  const isIOS = recordedOS ? (recordedOS === 'iOS') : isIOSDevice;
   
   if (isIOS) {
     const egm96Undulation = geoidService.getUndulation(lat, lng, 'EGM96');
@@ -84,10 +86,10 @@ export const getEllipsoidalHeight = (lat: number, lng: number, altitude: number 
   return altitude;
 };
 
-export const getCorrectedHeight = (lat: number, lng: number, ellipsoidalHeight: number | null): number | null => {
-  return getGeoidInfo(lat, lng, ellipsoidalHeight).orthometricHeight;
+export const getCorrectedHeight = (lat: number, lng: number, ellipsoidalHeight: number | null, recordedOS?: 'iOS' | 'Android'): number | null => {
+  return getGeoidInfo(lat, lng, ellipsoidalHeight, recordedOS).orthometricHeight;
 };
 
-export const convertToMSL = (lat: number, lng: number, ellipsoidalHeight: number | null): number | null => {
-  return getCorrectedHeight(lat, lng, ellipsoidalHeight);
+export const convertToMSL = (lat: number, lng: number, ellipsoidalHeight: number | null, recordedOS?: 'iOS' | 'Android'): number | null => {
+  return getCorrectedHeight(lat, lng, ellipsoidalHeight, recordedOS);
 };
