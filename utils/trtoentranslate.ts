@@ -1,6 +1,7 @@
 // Turkish-to-English translation dictionary (Combined for performance and cleaner codebase)
 export const trToEnMap: Record<string, string> = {
   "== COMMON & NAVIGATION ==": "",
+  "DOWNLOAD": "DOWNLOAD",
   "Ölçüm Yap": "Survey",
   "Aplikasyon Yap": "Stake Out",
   "Kayıtlı Ölçümler": "Saved Surveys",
@@ -352,6 +353,7 @@ export const trToEnMap: Record<string, string> = {
   "Koordinatsız Analiz": "Standard Analysis",
   "Veri Saçılımı Grafiği": "Data Scatter Plot",
   "Zamana Bağlı Hata Grafiği": "Time-Dependent Error Graph",
+  "Zamana Bağlı Hata Grafiği (Time-Dependent Error Graph)": "Time-Dependent Error Graph",
   "Model Açıklamaları": "Model Explanations",
   "Tüm ham ölçümlerin ağırlıksız ortalamasını hesaplar. Veriler homojen olduğunda kararlıdır.": "Calculates unweighted mean of all raw measurements. Stable when data is homogenous.",
   "Ölçüm hassasiyetine (accuracy) göre ters ağırlıklı modelleme yaparak güvensiz verilerin etkisini azaltır.": "Does inverse weight modeling based on measurement accuracy to minimize unsafe data impact.",

@@ -1339,27 +1339,71 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               <div className="space-y-4">
                 <div className="flex justify-between items-center px-2">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    {t("Veri Saçılımı Grafiği")}
+                    {t("Yöntem Sonuçları Grafiği (Method Results Graph)")}
                   </span>
                   <button 
                     onClick={() => exportChart(rawChartRef, 'gps-plus-precision-sheet')}
                     className="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-1.5"
                   >
-                    <i className="fas fa-camera text-blue-400"></i> {t("PNG İndir (İngilizce)")}
+                    <i className="fas fa-camera text-blue-400"></i> {t("DOWNLOAD")}
                   </button>
                 </div>
 
-                {/* Precision Sheet Config Panel */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-3 text-slate-800 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between text-xs shadow-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500 shrink-0">
-                      <i className="fas fa-sliders-h text-[9px]"></i>
+                {/* Unified Map Settings & Axis Offset Control Panel */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-4 text-slate-800 shadow-sm space-y-3.5">
+                  {/* Top Row: Title, Offset Info & Map Navigation */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500 shrink-0">
+                        <i className="fas fa-sliders-h text-[10px]"></i>
+                      </div>
                     </div>
-                    <span className="font-extrabold text-[9px] uppercase text-slate-705 tracking-wider">{t("HARİTA PAFTASI AYARLARI")}</span>
+                    {/* Navigation Buttons integrated directly into the header right side */}
+                    <div className="flex items-center gap-1.5 self-start sm:self-center">
+                      <button
+                        onClick={() => setXOffset(prev => prev - 1.0)}
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-8 rounded-lg flex items-center justify-center transition-all active:scale-90"
+                        title={t("Sola Kaydır (X -1m)")}
+                      >
+                        <i className="fas fa-chevron-left"></i>
+                      </button>
+                      <div className="flex flex-col gap-1 items-center justify-center">
+                        <button
+                          onClick={() => setYOffset(prev => prev + 1.0)}
+                          className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-3.5 rounded flex items-center justify-center transition-all active:scale-90 focus:outline-none"
+                          title={t("Yukarı Kaydır (Y +1m)")}
+                        >
+                          <i className="fas fa-chevron-up text-[7px]"></i>
+                        </button>
+                        <button
+                          onClick={() => setYOffset(prev => prev - 1.0)}
+                          className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-3.5 rounded flex items-center justify-center transition-all active:scale-90 focus:outline-none"
+                          title={t("Aşağı Kaydır (Y -1m)")}
+                        >
+                          <i className="fas fa-chevron-down text-[7px]"></i>
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => setXOffset(prev => prev + 1.0)}
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-8 rounded-lg flex items-center justify-center transition-all active:scale-90"
+                        title={t("Sağa Kaydır (X +1m)")}
+                      >
+                        <i className="fas fa-chevron-right"></i>
+                      </button>
+                      <button
+                        onClick={() => { setXOffset(0); setYOffset(0); }}
+                        className="ml-1 bg-rose-50 hover:bg-rose-100 text-rose-600 font-black text-[9px] uppercase px-2 py-2 rounded-lg flex items-center justify-center gap-1 transition-all active:scale-90"
+                        title={t("Eksenleri Sıfırla")}
+                      >
+                        <i className="fas fa-redo-alt"></i> <span className="text-[7.5px] font-extrabold">{t("SIFIRLA")}</span>
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-2.5 items-center justify-end">
+
+                  {/* Bottom Row: Selector Option Dropdowns */}
+                  <div className="flex flex-wrap gap-x-4 gap-y-2.5 items-center justify-start text-[10px]">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[8.5px] font-bold text-slate-400 uppercase">{t("Eksen:")}</span>
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase font-sans">{t("Eksen:")}</span>
                       <select 
                         value={customScatterRange} 
                         onChange={(e) => setCustomScatterRange(e.target.value)}
@@ -1376,7 +1420,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       </select>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[8.5px] font-bold text-slate-400 uppercase">{t("Kılavuz Adımı:")}</span>
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase font-sans">{t("Kılavuz Adımı:")}</span>
                       <select 
                         value={customScatterStep} 
                         onChange={(e) => setCustomScatterStep(e.target.value)}
@@ -1427,60 +1471,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   </div>
                 </div>
 
-                {/* Eksen Kaydırma (Offset Navigation) Kontrolleri */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-3 text-slate-800 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between text-xs shadow-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 shrink-0">
-                      <i className="fas fa-arrows-alt text-[9px]"></i>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="font-extrabold text-[9px] uppercase text-slate-700 tracking-wider">{t("EKSEN KAYDIRMA (OFFSET NAVİGASYON)")}</span>
-                      <span className="text-[7.5px] font-bold text-slate-400 uppercase font-mono tracking-wide">
-                        OFFSET: X = {xOffset >= 0 ? `+${xOffset}` : xOffset}m • Y = {yOffset >= 0 ? `+${yOffset}` : yOffset}m
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-center gap-1.5 self-center">
-                    <button
-                      onClick={() => setXOffset(prev => prev - 1.0)}
-                      className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-8 rounded-lg flex items-center justify-center transition-all active:scale-90"
-                      title={t("Sola Kaydır (X -1m)")}
-                    >
-                      <i className="fas fa-chevron-left"></i>
-                    </button>
-                    <div className="flex flex-col gap-1 items-center justify-center">
-                      <button
-                        onClick={() => setYOffset(prev => prev + 1.0)}
-                        className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-3.5 rounded flex items-center justify-center transition-all active:scale-90 focus:outline-none"
-                        title={t("Yukarı Kaydır (Y +1m)")}
-                      >
-                        <i className="fas fa-chevron-up text-[7px]"></i>
-                      </button>
-                      <button
-                        onClick={() => setYOffset(prev => prev - 1.0)}
-                        className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-3.5 rounded flex items-center justify-center transition-all active:scale-90 focus:outline-none"
-                        title={t("Aşağı Kaydır (Y -1m)")}
-                      >
-                        <i className="fas fa-chevron-down text-[7px]"></i>
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => setXOffset(prev => prev + 1.0)}
-                      className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-8 rounded-lg flex items-center justify-center transition-all active:scale-90"
-                      title={t("Sağa Kaydır (X +1m)")}
-                    >
-                      <i className="fas fa-chevron-right"></i>
-                    </button>
-                    <button
-                      onClick={() => { setXOffset(0); setYOffset(0); }}
-                      className="ml-1 bg-rose-50 hover:bg-rose-100 text-rose-600 font-black text-[9px] uppercase px-2 py-2 rounded-lg flex items-center justify-center gap-1 transition-all active:scale-90"
-                      title={t("Eksenleri Sıfırla")}
-                    >
-                      <i className="fas fa-redo-alt"></i> <span className="text-[7.5px] font-extrabold">{t("SIFIRLA")}</span>
-                    </button>
-                  </div>
-                </div>
-
                 {/* 1:1 Aspect Ratio Precision Sheet: Borderless & Extremely Clean layout */}
                 <div 
                   ref={rawChartRef} 
@@ -1489,7 +1479,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   {/* Top Panel: Large/Expanded Borderless Scatter Chart */}
                   <div className="w-full aspect-square relative shrink-0">
                     <ResponsiveContainer width="100%" height="100%">
-                      <ScatterChart margin={{ top: 12, right: 12, bottom: 20, left: -5 }}>
+                      <ScatterChart margin={{ top: 15, right: 15, bottom: 15, left: 15 }}>
                         <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" horizontal={true} vertical={true} />
                         <XAxis 
                           type="number" 
@@ -1500,7 +1490,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           interval={0}
                           angle={-90}
                           textAnchor="end"
-                          height={32}
+                          height={45}
                           tickFormatter={(val) => {
                             const isInteger = Math.abs(val - Math.round(val)) < 0.01;
                             return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
@@ -1516,6 +1506,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           domain={[-maxTickLimit + yOffset, maxTickLimit + yOffset]} 
                           ticks={yTicks}
                           interval={0}
+                          width={45}
                           tickFormatter={(val) => {
                             const isInteger = Math.abs(val - Math.round(val)) < 0.01;
                             return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
@@ -1698,140 +1689,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               <div className="space-y-4">
                 <div className="flex justify-between items-center px-1.5">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    Advanced Clustering & Geodetic Quality Analysis
+                    {t("Aykırı Değer Tespit Grafiği (Outlier Detection Graph)")}
                   </span>
-                </div>
-
-                {/* Kümeleme Grafiği Ayarları Config Panel */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-3 text-slate-800 flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between text-xs shadow-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500 shrink-0">
-                      <i className="fas fa-sliders-h text-[9px]"></i>
-                    </div>
-                    <span className="font-extrabold text-[9px] uppercase text-slate-700 tracking-wider font-sans">{t("HARİTA PAFTASI AYARLARI")}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2.5 items-center justify-start lg:justify-end">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[8.5px] font-bold text-slate-400 uppercase font-sans">{t("Eksen:")}</span>
-                      <select 
-                        value={customScatterRange} 
-                        onChange={(e) => setCustomScatterRange(e.target.value)}
-                        className="bg-slate-100 hover:bg-slate-200 border border-slate-200/60 text-[9px] font-black rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
-                      >
-                        <option value="auto">Auto</option>
-                        <option value="1.0">±1.0m</option>
-                        <option value="2.0">±2.0m</option>
-                        <option value="3.0">±3.0m</option>
-                        <option value="4.0">±4.0m</option>
-                        <option value="5.0">±5.0m</option>
-                        <option value="10.0">±10.0m</option>
-                        <option value="15.0">±15.0m</option>
-                      </select>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[8.5px] font-bold text-slate-400 uppercase font-sans">{t("Kılavuz Adımı:")}</span>
-                      <select 
-                        value={customScatterStep} 
-                        onChange={(e) => setCustomScatterStep(e.target.value)}
-                        className="bg-slate-100 hover:bg-slate-200 border border-slate-200/60 text-[9px] font-black rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
-                      >
-                        <option value="auto">Auto</option>
-                        <option value="0.1">0.1m</option>
-                        <option value="0.2">0.2m</option>
-                        <option value="0.5">0.5m</option>
-                        <option value="1.0">1.0m</option>
-                        <option value="2.0">2.0m</option>
-                      </select>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[8.5px] font-bold text-slate-400 uppercase font-sans">{t("Yazı Boyutu:")}</span>
-                      <select 
-                        value={customScatterFontSize} 
-                        onChange={(e) => setCustomScatterFontSize(e.target.value)}
-                        className="bg-slate-100 hover:bg-slate-200 border border-slate-200/60 text-[9px] font-black rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
-                      >
-                        <option value="6">6px</option>
-                        <option value="7">7px</option>
-                        <option value="7.5">7.5px</option>
-                        <option value="8">8px</option>
-                        <option value="9">9px</option>
-                        <option value="10">10px</option>
-                        <option value="12">12px</option>
-                      </select>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[8.5px] font-bold text-slate-400 uppercase font-sans">{t("Nokta Boyutu:")}</span>
-                      <select 
-                        value={customDotSize} 
-                        onChange={(e) => setCustomDotSize(e.target.value)}
-                        className="bg-slate-100 hover:bg-slate-200 border border-slate-200/60 text-[9px] font-black rounded-lg px-2 py-1 outline-none text-slate-800 cursor-pointer transition-all font-mono"
-                      >
-                        <option value="1.0">1.0px</option>
-                        <option value="1.5">1.5px</option>
-                        <option value="2.0">2.0px</option>
-                        <option value="2.5">2.5px</option>
-                        <option value="3.0">3.0px</option>
-                        <option value="3.5">3.5px</option>
-                        <option value="4.0">4.0px</option>
-                        <option value="5.0">5.0px</option>
-                        <option value="6.0">6.0px</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Kümeleme Eksen Kaydırma (Offset Navigation) Kontrolleri */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-3 text-slate-800 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between text-xs shadow-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 shrink-0">
-                      <i className="fas fa-arrows-alt text-[9px]"></i>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="font-extrabold text-[9px] uppercase text-slate-700 tracking-wider font-sans">{t("EKSEN KAYDIRMA (OFFSET NAVİGASYON)")}</span>
-                      <span className="text-[7.5px] font-bold text-slate-400 uppercase font-mono tracking-wide">
-                        OFFSET: X = {xOffset >= 0 ? `+${xOffset}` : xOffset}m • Y = {yOffset >= 0 ? `+${yOffset}` : yOffset}m
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-center gap-1.5 self-center">
-                    <button
-                      onClick={() => setXOffset(prev => prev - 1.0)}
-                      className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-8 rounded-lg flex items-center justify-center transition-all active:scale-90"
-                      title={t("Sola Kaydır (X -1m)")}
-                    >
-                      <i className="fas fa-chevron-left"></i>
-                    </button>
-                    <div className="flex flex-col gap-1 items-center justify-center">
-                      <button
-                        onClick={() => setYOffset(prev => prev + 1.0)}
-                        className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-3.5 rounded flex items-center justify-center transition-all active:scale-90 focus:outline-none"
-                        title={t("Yukarı Kaydır (Y +1m)")}
-                      >
-                        <i className="fas fa-chevron-up text-[7px]"></i>
-                      </button>
-                      <button
-                        onClick={() => setYOffset(prev => prev - 1.0)}
-                        className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-3.5 rounded flex items-center justify-center transition-all active:scale-90 focus:outline-none"
-                        title={t("Aşağı Kaydır (Y -1m)")}
-                      >
-                        <i className="fas fa-chevron-down text-[7px]"></i>
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => setXOffset(prev => prev + 1.0)}
-                      className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-[10px] w-8 h-8 rounded-lg flex items-center justify-center transition-all active:scale-90"
-                      title={t("Sağa Kaydır (X +1m)")}
-                    >
-                      <i className="fas fa-chevron-right"></i>
-                    </button>
-                    <button
-                      onClick={() => { setXOffset(0); setYOffset(0); }}
-                      className="ml-1 bg-rose-50 hover:bg-rose-100 text-rose-600 font-black text-[9px] uppercase px-2 py-2 rounded-lg flex items-center justify-center gap-1 transition-all active:scale-90"
-                      title={t("Eksenleri Sıfırla")}
-                    >
-                      <i className="fas fa-redo-alt"></i> <span className="text-[7.5px] font-extrabold">{t("SIFIRLA")}</span>
-                    </button>
-                  </div>
                 </div>
 
                 <div className="flex flex-col gap-6">
@@ -1861,7 +1720,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         type="button"
                         className="bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 cursor-pointer flex items-center gap-1"
                       >
-                        <i className="fas fa-camera text-emerald-400"></i> {t("Download PNG")}
+                        <i className="fas fa-camera text-emerald-400"></i> {t("DOWNLOAD")}
                       </button>
                     </div>
 
@@ -1869,28 +1728,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       ref={baardaChartRef}
                       className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] h-auto mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
                     >
-                      {/* Header */}
-                      <div className="flex justify-between items-center border-b border-slate-900/10 pb-1.5 min-h-0 shrink-0">
-                        <div className="min-w-0">
-                          <h2 className="text-slate-900 font-extrabold text-[9px] uppercase tracking-wider leading-none font-sans truncate">
-                            ACB LABS {getMethodLabel(reliabilityPlotMethod)} PLAN
-                          </h2>
-                          <p className="text-slate-400 text-[6px] font-bold uppercase tracking-widest mt-0.5 font-mono">
-                            GEODETIC RELIABILITY & OUTLIER DETECTION
-                          </p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <span className="bg-emerald-50 border border-emerald-100 text-emerald-600 font-mono text-[6px] font-black px-1.5 py-0.5 rounded">
-                            {getMethodLabel(reliabilityPlotMethod)} ACTIVE
-                          </span>
-                        </div>
-                      </div>
-
                       {/* Scatter Plot */}
                       <div className="w-full aspect-square relative shrink-0">
                         {hybridClusterChartData && hybridClusterChartData.points.length > 0 ? (
                           <ResponsiveContainer width="100%" height="100%">
-                            <ScatterChart margin={{ top: 12, right: 12, bottom: 20, left: -5 }}>
+                            <ScatterChart margin={{ top: 15, right: 15, bottom: 15, left: 15 }}>
                               <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" horizontal={true} vertical={true} />
                               <XAxis 
                                 type="number" 
@@ -1901,7 +1743,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 interval={0}
                                 angle={-90}
                                 textAnchor="end"
-                                height={32}
+                                height={45}
                                 tickFormatter={(val) => {
                                   const isInteger = Math.abs(val - Math.round(val)) < 0.01;
                                   return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
@@ -1917,6 +1759,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 domain={[-maxTickLimit + yOffset, maxTickLimit + yOffset]} 
                                 ticks={yTicks}
                                 interval={0}
+                                width={45}
                                 tickFormatter={(val) => {
                                   const isInteger = Math.abs(val - Math.round(val)) < 0.01;
                                   return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
@@ -2043,7 +1886,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                       APPROVED
                                     </p>
                                     <p className="font-bold text-emerald-600 font-mono tracking-tight leading-none mt-0.5" style={{ fontSize: subFontSize }}>
-                                      {approvedCount} EPOCHS
+                                      {approvedCount}
                                     </p>
                                   </div>
                                 </div>
@@ -2057,7 +1900,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                       OUTLIERS
                                     </p>
                                     <p className="font-bold text-rose-600 font-mono tracking-tight leading-none mt-0.5" style={{ fontSize: subFontSize }}>
-                                      {rejectedCount} REJECTED
+                                      {rejectedCount}
                                     </p>
                                   </div>
                                 </div>
@@ -2071,7 +1914,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                       SPEED FILT
                                     </p>
                                     <p className="font-bold text-slate-900 font-mono tracking-tight leading-none mt-0.5" style={{ fontSize: subFontSize }}>
-                                      {speedFiltCount} FILTERED
+                                      {speedFiltCount}
                                     </p>
                                   </div>
                                 </div>
@@ -2118,14 +1961,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               <div className="space-y-4">
                 <div className="flex justify-between items-center px-2">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    {t("Zamana Bağlı Hata Grafiği")}
+                    {t("Zamana Bağlı Hata Grafiği (Time-Dependent Error Graph)")}
                   </span>
                   <button 
                     onClick={() => exportChart(timeErrorChartRef, 'gps-plus-time-error-chart')}
                     type="button"
                     className="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-1.5"
                   >
-                    <i className="fas fa-camera text-rose-400"></i> PNG Download (1:1)
+                    <i className="fas fa-camera text-rose-400"></i> {t("DOWNLOAD")}
                   </button>
                 </div>
 
@@ -2209,33 +2052,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   </div>
                 </div>
 
-                {/* 1:1 Aspect-Ratio Time Series Panel Wrapper (On Screen) */}
-                <div className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] aspect-square mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none">
-                  
-                  {/* English Geodetic Header */}
-                  <div className="flex justify-between items-center border-b border-slate-900/10 pb-1.5 min-h-0 shrink-0">
-                    <div className="min-w-0">
-                      <h2 className="text-slate-900 font-extrabold text-[10px] uppercase tracking-wider leading-none font-sans">
-                        GPS+ TIME-SERIES POSITION ERROR ANALYSIS
-                      </h2>
-                      <p className="text-slate-400 text-[6.5px] font-bold uppercase tracking-widest mt-0.5 font-mono">
-                        HORIZONTAL DEVIATION OVER TIME (ΔHz) &bull; {location?.name || 'MEASUREMENT'}
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span className="bg-rose-50 border border-rose-100 text-rose-600 font-mono text-[7px] font-black px-1.5 py-0.5 rounded">
-                        GUM COMPLIANT
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* ONLY THE CHART CONTAINER WITH WHITE BACKGROUND & INDEPENDENT PADDING IS EXPORTED TO KEEP IT BORDERLESS AND CLEAR OF HEADERS/FOOTERS */}
-                  <div 
-                    ref={timeErrorChartRef}
-                    className="flex-1 min-h-0 min-w-0 bg-white p-5 rounded-[1rem]"
-                  >
+                {/* Unified Aspect-Ratio Time Series Panel Wrapper (Clean, No Headers/Footers) */}
+                <div 
+                  ref={timeErrorChartRef}
+                  className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] h-auto mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
+                >
+                  <div className="w-full aspect-square relative shrink-0">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={timeSeriesChartData} margin={{ top: 8, right: 16, bottom: 25, left: 0 }}>
+                      <LineChart data={timeSeriesChartData} margin={{ top: 15, right: 15, bottom: 15, left: 15 }}>
                         <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={true} strokeOpacity={0.15} stroke="#000000" />
                         <XAxis 
                           dataKey="timeLabel" 
@@ -2243,7 +2067,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           interval={0}
                           angle={-90}
                           textAnchor="end"
-                          height={30}
+                          height={45}
                           tick={{ fontSize: parseFloat(customTimeSeriesFontSize), fontWeight: 800, fill: '#000000', dy: 2.5, dx: -3 }}
                           axisLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                           tickLine={{ stroke: '#000000', strokeWidth: 1.5 }}
@@ -2286,16 +2110,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         />
                       </LineChart>
                     </ResponsiveContainer>
-                  </div>
-
-                  {/* Footnote Explanation */}
-                  <div className="flex justify-between items-center border-t border-slate-900/10 pt-1.5 min-h-0 shrink-0">
-                    <p className="text-[6.5px] text-slate-500 font-black tracking-wide uppercase leading-none">
-                      * Calculates distance deviation of each measurement point from geodetic reference over duration
-                    </p>
-                    <p className="text-slate-400 font-bold text-[6px] tracking-wide uppercase leading-none font-mono">
-                      UNIT: METERS (m) &bull; SCALE: 1:1
-                    </p>
                   </div>
                 </div>
               </div>
