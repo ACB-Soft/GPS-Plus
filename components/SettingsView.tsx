@@ -15,7 +15,10 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
   const { t } = useLanguage();
   const [coordinateSystem, setCoordinateSystem] = useState(localStorage.getItem('default_coord_system') || 'WGS84');
   const [accuracyLimit, setAccuracyLimit] = useState(localStorage.getItem('default_accuracy_limit') || '5');
-  const [measurementDuration, setMeasurementDuration] = useState(localStorage.getItem('default_duration') || '15');
+  const [measurementDuration, setMeasurementDuration] = useState(() => {
+    const saved = localStorage.getItem('default_duration') || '15';
+    return saved === '120' ? '90' : saved;
+  });
   const [mapProvider, setMapProvider] = useState(localStorage.getItem('default_map_provider') || 'Google Hybrid');
   const [audioEnabled, setAudioEnabled] = useState(localStorage.getItem('default_audio_feedback_enabled') !== 'false');
   const [vibrationEnabled, setVibrationEnabled] = useState(localStorage.getItem('default_vibration_feedback_enabled') === 'true');
@@ -554,7 +557,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
                   onChange={(e) => setMeasurementDuration(e.target.value)}
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
-                  {[5, 10, 15, 30, 60, 120].map(v => <option key={v} value={v.toString()}>{v} {t("saniye")}</option>)}
+                  {[5, 10, 15, 30, 60, 90].map(v => <option key={v} value={v.toString()}>{v} {t("saniye")}</option>)}
                 </select>
               </div>
 

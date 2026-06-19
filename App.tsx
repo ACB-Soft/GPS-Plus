@@ -69,7 +69,10 @@ const App = () => {
   const [settings, setSettings] = useState<AppSettings>(() => ({
     defaultCoordinateSystem: localStorage.getItem('default_coord_system') || 'WGS84',
     defaultAccuracyLimit: parseFloat(localStorage.getItem('default_accuracy_limit') || '5'),
-    defaultMeasurementDuration: parseInt(localStorage.getItem('default_duration') || '15'),
+    defaultMeasurementDuration: (() => {
+      const saved = parseInt(localStorage.getItem('default_duration') || '15');
+      return saved === 120 ? 90 : saved;
+    })(),
     alertsEnabled: localStorage.getItem('default_audio_feedback_enabled') !== 'false',
     vibrationEnabled: localStorage.getItem('default_vibration_feedback_enabled') === 'true',
     screenAlwaysOn: localStorage.getItem('default_screen_always_on') !== 'false',
@@ -404,7 +407,10 @@ const App = () => {
               setSettings({
                 defaultCoordinateSystem: localStorage.getItem('default_coord_system') || 'WGS84',
                 defaultAccuracyLimit: parseFloat(localStorage.getItem('default_accuracy_limit') || '5'),
-                defaultMeasurementDuration: parseInt(localStorage.getItem('default_duration') || '15'),
+                defaultMeasurementDuration: (() => {
+                  const saved = parseInt(localStorage.getItem('default_duration') || '15');
+                  return saved === 120 ? 90 : saved;
+                })(),
                 alertsEnabled: localStorage.getItem('default_audio_feedback_enabled') !== 'false',
                 vibrationEnabled: localStorage.getItem('default_vibration_feedback_enabled') === 'true',
                 screenAlwaysOn: localStorage.getItem('default_screen_always_on') !== 'false',

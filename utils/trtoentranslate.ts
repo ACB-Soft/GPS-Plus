@@ -149,6 +149,7 @@ export const trToEnMap: Record<string, string> = {
   "15sn": "15s",
   "30sn": "30s",
   "60sn": "60s",
+  "90sn": "90s",
   "120sn": "120s",
   "Hassasiyet": "Accuracy",
   "Ölçüm": "Measurement",

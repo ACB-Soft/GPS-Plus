@@ -67,8 +67,14 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
 
   const [coordinateSystem, setCoordinateSystem] = useState(getInitialSystem());
   const [accuracyLimit, setAccuracyLimit] = useState(parseFloat(localStorage.getItem('default_accuracy_limit') || '5'));
-  const [measurementDuration, setMeasurementDuration] = useState(parseInt(localStorage.getItem('default_duration') || '15'));
-  const [seconds, setSeconds] = useState(parseInt(localStorage.getItem('default_duration') || '15'));
+  const [measurementDuration, setMeasurementDuration] = useState(() => {
+    const saved = parseInt(localStorage.getItem('default_duration') || '15');
+    return saved === 120 ? 90 : saved;
+  });
+  const [seconds, setSeconds] = useState(() => {
+    const saved = parseInt(localStorage.getItem('default_duration') || '15');
+    return saved === 120 ? 90 : saved;
+  });
   const [sampleCount, setSampleCount] = useState(0);
   const [reliabilityStatus, setReliabilityStatus] = useState<'GOOD' | 'WARNING' | 'CRITICAL' | 'UNKNOWN'>('UNKNOWN');
   const [instantAccuracy, setInstantAccuracy] = useState<number | null>(null);
@@ -94,15 +100,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   const isIOSDevice = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
   const currentDeviceOS: 'iOS' | 'Android' = isIOSDevice ? 'iOS' : 'Android';
 
-  const getActiveDurationBudget = (duration: number, os: 'iOS' | 'Android') => {
-    if (os === 'iOS') {
-      if (duration === 120) return 30;
-      if (duration === 60) return 20;
-    }
-    return duration;
-  };
-
-  const activeDurationBudget = getActiveDurationBudget(measurementDuration, currentDeviceOS);
+  const activeDurationBudget = measurementDuration;
   const lastSavedPositionRef = useRef<{lat: number, lng: number, accuracy: number} | null>(null);
   const lastSaveTimestampRef = useRef<number>(0);
   const watchIdRef = useRef<number | null>(null);
@@ -525,21 +523,10 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
           setSeconds(prev => {
             const nextVal = prev > 0 ? prev - 1 : 0;
             
-            if (currentDeviceOS === 'iOS') {
-              if (measurementDuration === 60 && nextVal === 10) {
-                setIsWaiting(true);
-                setWaitSeconds(45);
-              } else if (measurementDuration === 120 && (nextVal === 20 || nextVal === 10)) {
-                setIsWaiting(true);
-                setWaitSeconds(45);
-              }
-            } else {
-              // Android (or default web)
-              const isMulti = measurementDuration === 60 || measurementDuration === 120;
-              if (isMulti && nextVal > 0 && nextVal % 30 === 0) {
-                setIsWaiting(true);
-                setWaitSeconds(10);
-              }
+            const isMulti = measurementDuration === 30 || measurementDuration === 60 || measurementDuration === 90;
+            if (isMulti && nextVal > 0 && nextVal % 15 === 0) {
+              setIsWaiting(true);
+              setWaitSeconds(currentDeviceOS === 'iOS' ? 45 : 15);
             }
             
             return nextVal;
