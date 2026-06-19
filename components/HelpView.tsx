@@ -239,7 +239,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
               <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-amber-200 animate-pulse">
                 <i className="fas fa-hourglass-half"></i>
               </div>
-              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Çoklu Oturum (Multi-Session)")}</h3>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Çoklu Oturum")}</h3>
             </div>
             
             <div className="soft-card p-6 space-y-4">
@@ -398,7 +398,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
               <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center text-white shadow-lg shadow-slate-400">
                 <i className="fas fa-microchip"></i>
               </div>
-              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Koordinat Dönüşüm Altyapısı")}</h3>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Koordinat Dönüşümü")}</h3>
             </div>
             
             <div className="bg-slate-100 border border-slate-200 rounded-2xl p-6 space-y-6 shadow-inner">

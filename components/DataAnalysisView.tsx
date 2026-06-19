@@ -1275,14 +1275,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               </button>
 
               {analysisType === 'precise' ? (
-                <div className="overflow-x-auto rounded-3xl border border-slate-100 bg-slate-50 shadow-sm">
-                  <table className="w-full text-left border-collapse">
+                <div className="overflow-hidden rounded-3xl border border-slate-100 bg-slate-50 shadow-sm">
+                  <table className="w-full text-left border-collapse table-fixed">
                     <thead>
-                      <tr className="bg-slate-900 text-white text-[9px] uppercase tracking-widest">
-                        <th className="p-4 rounded-tl-3xl">{t("Yöntem")}</th>
-                        <th className="p-4">{t("Katılan Veri")}</th>
-                        <th className="p-4">{t("ΔYatay (m)")}</th>
-                        <th className="p-4 rounded-tr-3xl">{t("DURUM")}</th>
+                      <tr className="bg-slate-900 text-white text-[8px] sm:text-[9.5px] uppercase tracking-wider">
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 rounded-tl-3xl w-[28%] whitespace-nowrap">Method</th>
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 w-[22%] whitespace-nowrap">Epochs</th>
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 w-[28%] whitespace-nowrap">ΔH (m)</th>
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 rounded-tr-3xl w-[22%] whitespace-nowrap">STATUS</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1291,13 +1291,13 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         const totalCount = location?.samples?.length || 0;
                         const baseCount = res.preFilteredCount ?? totalCount;
                         return (
-                          <tr key={res.method} className={`border-b border-slate-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-                            <td className="p-4 font-black text-[11px] text-slate-800">{getMethodLabel(res.method)}</td>
-                            <td className="p-4 font-mono text-xs text-slate-600 font-medium">{(res.usedCount ?? baseCount)} / {baseCount}</td>
-                            <td className="p-4 font-bold text-xs text-blue-600">{res.errors.dhz.toFixed(3)}</td>
-                            <td className="p-4">
+                           <tr key={res.method} className={`border-b border-slate-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                            <td className="px-2 py-2 sm:px-3.5 sm:py-3.5 font-black text-[9.5px] sm:text-[11px] text-slate-800 whitespace-nowrap truncate">{getMethodLabel(res.method)}</td>
+                            <td className="px-2 py-2 sm:px-3.5 sm:py-3.5 font-mono text-[9.5px] sm:text-xs text-slate-600 font-medium whitespace-nowrap">{(res.usedCount ?? baseCount)}/{baseCount}</td>
+                            <td className="px-2 py-2 sm:px-3.5 sm:py-3.5 font-bold text-[9.5px] sm:text-xs text-blue-600 whitespace-nowrap">{res.errors.dhz.toFixed(3)}</td>
+                            <td className="px-2 py-2 sm:px-3.5 sm:py-3.5 whitespace-nowrap">
                               {isBest && (
-                                <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter">{t("EN İYİ")}</span>
+                                <span className="bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full text-[7px] sm:text-[8px] font-black uppercase tracking-tighter whitespace-nowrap">{t("EN İYİ")}</span>
                               )}
                             </td>
                           </tr>
@@ -1307,14 +1307,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   </table>
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-3xl border border-slate-100 bg-slate-50 shadow-sm">
-                   <table className="w-full text-left border-collapse">
+                <div className="overflow-hidden rounded-3xl border border-slate-100 bg-slate-50 shadow-sm">
+                   <table className="w-full text-left border-collapse table-fixed">
                     <thead>
-                      <tr className="bg-slate-900 text-white text-[9px] uppercase tracking-widest">
-                        <th className="p-4 rounded-tl-3xl">{t("Yöntem")}</th>
-                        <th className="p-4">{t("Katılan Veri")}</th>
-                        <th className="p-4">{useLocal ? t("Hesaplanan Y (Sağa)") : t("Hesaplanan Enlem (Lat)")}</th>
-                        <th className="p-4 rounded-tr-3xl">{useLocal ? t("Hesaplanan X (Yukarı)") : t("Hesaplanan Boylam (Lng)")}</th>
+                      <tr className="bg-slate-900 text-white text-[8px] sm:text-[9.5px] uppercase tracking-wider">
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 rounded-tl-3xl w-[28%] whitespace-nowrap">Method</th>
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 w-[22%] whitespace-nowrap">Epochs</th>
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 w-[25%] truncate">{useLocal ? "Y (m)" : "Lat"}</th>
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 rounded-tr-3xl w-[25%] truncate">{useLocal ? "X (m)" : "Lng"}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1323,10 +1323,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         const baseCount = res.preFilteredCount ?? totalCount;
                         return (
                           <tr key={res.method} className={`border-b border-slate-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-                            <td className="p-4 font-black text-[11px] text-slate-800">{getMethodLabel(res.method)}</td>
-                            <td className="p-4 font-mono text-xs text-slate-600 font-medium">{(res.usedCount ?? baseCount)} / {baseCount}</td>
-                            <td className="p-4 font-bold text-xs text-blue-600">{res.calculated.x.toFixed(useLocal ? 3 : 8)}</td>
-                            <td className="p-4 font-bold text-xs text-indigo-600">{res.calculated.y.toFixed(useLocal ? 3 : 8)}</td>
+                            <td className="px-2 py-2 sm:px-3.5 sm:py-3.5 font-black text-[9.5px] sm:text-[11px] text-slate-800 whitespace-nowrap truncate">{getMethodLabel(res.method)}</td>
+                            <td className="px-2 py-2 sm:px-3.5 sm:py-3.5 font-mono text-[9.5px] sm:text-xs text-slate-600 font-medium whitespace-nowrap">{(res.usedCount ?? baseCount)}/{baseCount}</td>
+                            <td className="px-2 py-2 sm:px-3.5 sm:py-3.5 font-bold text-[9.5px] sm:text-xs text-blue-600 whitespace-nowrap">{res.calculated.x.toFixed(useLocal ? 3 : 8)}</td>
+                            <td className="px-2 py-2 sm:px-3.5 sm:py-3.5 font-bold text-[9.5px] sm:text-xs text-indigo-600 whitespace-nowrap">{res.calculated.y.toFixed(useLocal ? 3 : 8)}</td>
                           </tr>
                         );
                       })}
@@ -1799,9 +1799,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                             </div>
                                           )}
                                           <div className="flex justify-between gap-2">
-                                            <span className="opacity-60 text-[7px] uppercase">Filtre Durumu:</span>
+                                            <span className="opacity-60 text-[7px] uppercase">Filter Status:</span>
                                             <span className={`font-bold ${data.passedBaarda ? 'text-emerald-500' : (data.speedFiltered ? 'text-slate-400' : 'text-rose-500')}`}>
-                                              {data.passedBaarda ? "GEÇTİ (GÜVENİLİR)" : (data.speedFiltered ? "HIZ LİMİTİ (ELENDİ)" : "KABA HATA (ELENDİ)")}
+                                              {data.passedBaarda ? "PASSED (RELIABLE)" : (data.speedFiltered ? "SPEED LIMIT (OUTLIER)" : "GROSS ERROR (OUTLIER)")}
                                             </span>
                                           </div>
                                         </div>
@@ -1877,55 +1877,53 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             const speedFiltCount = hybridClusterChartData.points.filter(p => !p.passedBaarda && p.speedFiltered).length;
                             return (
                               <>
-                                <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
-                                  <div className="flex items-center justify-center rounded font-black text-white shrink-0 shadow-xs bg-[#10b981]" style={{ width: badgeSize, height: badgeSize, fontSize: badgeFontSize }}>
-                                    OK
+                                <div className="flex flex-col gap-0.5 text-left min-w-0 font-sans">
+                                  <div className="flex items-center gap-1">
+                                    <div className="w-1.5 h-1.5 rounded-full shrink-0 bg-[#10b981]" />
+                                    <span className="font-extrabold text-slate-700 uppercase tracking-wider truncate" style={{ fontSize: `${fs - 1.5}px` }}>
+                                      Approved
+                                    </span>
                                   </div>
-                                  <span className="font-mono font-black text-[#10b981]" style={{ fontSize: `${fs + 2.5}px` }}>
+                                  <span className="font-mono font-black text-[#10b981] pl-2.5" style={{ fontSize: `${fs + 1.5}px`, lineHeight: 1 }}>
                                     {approvedCount}
                                   </span>
                                 </div>
 
-                                <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
-                                  <div className="flex items-center justify-center rounded font-black text-white shrink-0 shadow-xs bg-[#ef4444]" style={{ width: badgeSize, height: badgeSize, fontSize: badgeFontSize }}>
-                                    REJ
+                                <div className="flex flex-col gap-0.5 text-left min-w-0 font-sans">
+                                  <div className="flex items-center gap-1">
+                                    <div className="w-1.5 h-1.5 rounded-full shrink-0 bg-[#ef4444]" />
+                                    <span className="font-extrabold text-slate-700 uppercase tracking-wider truncate" style={{ fontSize: `${fs - 1.5}px` }}>
+                                      Outliers
+                                    </span>
                                   </div>
-                                  <span className="font-mono font-black text-[#ef4444]" style={{ fontSize: `${fs + 2.5}px` }}>
+                                  <span className="font-mono font-black text-[#ef4444] pl-2.5" style={{ fontSize: `${fs + 1.5}px`, lineHeight: 1 }}>
                                     {rejectedCount}
                                   </span>
                                 </div>
 
-                                <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
-                                  <div className="flex items-center justify-center rounded font-black text-white shrink-0 shadow-xs bg-[#000000]" style={{ width: badgeSize, height: badgeSize, fontSize: badgeFontSize }}>
-                                    SPD
+                                <div className="flex flex-col gap-0.5 text-left min-w-0 font-sans">
+                                  <div className="flex items-center gap-1">
+                                    <div className="w-1.5 h-1.5 rounded-full shrink-0 bg-[#000005]" />
+                                    <span className="font-extrabold text-slate-700 uppercase tracking-wider truncate" style={{ fontSize: `${fs - 1.5}px` }}>
+                                      SpeedFilt
+                                    </span>
                                   </div>
-                                  <span className="font-mono font-black text-slate-800" style={{ fontSize: `${fs + 2.5}px` }}>
+                                  <span className="font-mono font-black text-slate-800 pl-2.5" style={{ fontSize: `${fs + 1.5}px`, lineHeight: 1 }}>
                                     {speedFiltCount}
                                   </span>
                                 </div>
 
                                 {analysisType === 'precise' ? (
-                                  <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
-                                    <div 
-                                      className="flex items-center justify-center bg-[#10b981] border border-[#059669] text-white font-black shrink-0 shadow-xs rotate-45" 
-                                      style={{ 
-                                        width: `${parseFloat(customScatterFontSize) + 2.5}px`, 
-                                        height: `${parseFloat(customScatterFontSize) + 2.5}px`,
-                                        borderRadius: '3px',
-                                        marginLeft: '2px',
-                                        marginRight: '2px'
-                                      }}
-                                    >
-                                      <span className="text-[6px] font-black -rotate-45 block transform">REF</span>
+                                  <div className="flex flex-col gap-0.5 text-left min-w-0 font-sans">
+                                    <div className="flex items-center gap-1">
+                                      <div className="w-1.5 h-1.5 rotate-45 shrink-0 bg-[#10b981]" />
+                                      <span className="font-extrabold text-slate-700 uppercase tracking-wider truncate" style={{ fontSize: `${fs - 1.5}px` }}>
+                                        Reference
+                                      </span>
                                     </div>
-                                    <div className="min-w-0 font-sans">
-                                      <p className="font-extrabold text-slate-800 uppercase tracking-wider truncate leading-none" style={{ fontSize: `${parseFloat(customScatterFontSize) - 0.5}px` }}>
-                                        PRECISE
-                                      </p>
-                                      <p className="font-bold text-emerald-600 tracking-wider leading-none mt-0.5 truncate" style={{ fontSize: `${parseFloat(customScatterFontSize) - 1.5}px` }}>
-                                        COORDINATE
-                                      </p>
-                                    </div>
+                                    <span className="font-mono font-black text-emerald-600 pl-2.5" style={{ fontSize: `${fs + 1.5}px`, lineHeight: 1 }}>
+                                      REF
+                                    </span>
                                   </div>
                                 ) : (
                                   <div />
@@ -2060,8 +2058,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             const sec = parseInt(value, 10);
                             if (isNaN(sec)) return value;
                             if (sec % 10 === 0) {
-                              const unit = t("saniye") === "seconds" ? "s" : "sn";
-                              return `${sec}.${unit}`;
+                              return `${sec}s`;
                             }
                             return "";
                           }}
