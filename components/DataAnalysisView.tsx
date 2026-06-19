@@ -565,8 +565,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       const dx = p.x - refCenterX; // Easting offset in meters relative to reference
       const dy = p.y - refCenterY; // Northing offset in meters relative to reference
       
-      const passedBaarda = usedIndices ? usedIndices.includes(p.idx) : true;
       const speedFiltered = p.speed !== null && p.speed !== undefined && p.speed >= 0.10;
+      const passedBaarda = speedFiltered ? false : (usedIndices ? usedIndices.includes(p.idx) : true);
       
       let clusterId = 0;
       if (clusters) {

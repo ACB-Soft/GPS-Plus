@@ -42,7 +42,11 @@ export function calculateResult(
   }
 
   // Pre-filter: Filter out epochs where point speed >= 0.10 m/s
-  const speedFiltered = baseData.filter(s => s.speed === null || s.speed === undefined || s.speed < 0.10);
+  const speedFiltered = baseData.filter(s => {
+    if (s.speed === null || s.speed === undefined) return true;
+    const sp = typeof s.speed === 'string' ? parseFloat(s.speed) : Number(s.speed);
+    return isNaN(sp) || sp < 0.10;
+  });
   let preFilteredData = speedFiltered;
   if (preFilteredData.length === 0 && baseData.length > 0) {
     preFilteredData = baseData; // Safe fallback to not discard everything if all points violate the rule
