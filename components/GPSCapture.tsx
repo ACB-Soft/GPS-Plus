@@ -93,6 +93,16 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   const lastPositionRef = useRef<GeolocationPosition | null>(null);
   const isIOSDevice = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
   const currentDeviceOS: 'iOS' | 'Android' = isIOSDevice ? 'iOS' : 'Android';
+
+  const getActiveDurationBudget = (duration: number, os: 'iOS' | 'Android') => {
+    if (os === 'iOS') {
+      if (duration === 120) return 30;
+      if (duration === 60) return 20;
+    }
+    return duration;
+  };
+
+  const activeDurationBudget = getActiveDurationBudget(measurementDuration, currentDeviceOS);
   const lastSavedPositionRef = useRef<{lat: number, lng: number, accuracy: number} | null>(null);
   const lastSaveTimestampRef = useRef<number>(0);
   const watchIdRef = useRef<number | null>(null);
@@ -355,8 +365,8 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
     let samples = [...samplesRef.current];
     
     // Geçen süreyi hesapla (Erken bitirme durumu için)
-    const elapsedSeconds = measurementDuration - seconds;
-    const actualDuration = elapsedSeconds > 0 ? elapsedSeconds : measurementDuration;
+    const elapsedSeconds = activeDurationBudget - seconds;
+    const actualDuration = elapsedSeconds > 0 ? elapsedSeconds : activeDurationBudget;
 
     if (samples.length === 0 && lastPositionRef.current) {
       const p = lastPositionRef.current;
@@ -421,7 +431,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
 
     onComplete(avg, folderName, pointName, '', coordinateSystem, actualDuration, samples, usedIndices, accuracyLimit, calculationMethod, settings.gnssOnlyMode, rawSamplesRef.current);
     releaseWakeLock();
-  }, [folderName, pointName, coordinateSystem, measurementDuration, seconds, onComplete, accuracyLimit, settings.gnssOnlyMode, settings.calculationMethod, settings.alertsEnabled, settings.vibrationEnabled]);
+  }, [folderName, pointName, coordinateSystem, activeDurationBudget, seconds, onComplete, accuracyLimit, settings.gnssOnlyMode, settings.calculationMethod, settings.alertsEnabled, settings.vibrationEnabled]);
 
   // Ref to track accuracy validity without triggering effect re-runs
   const isAccuracyOkRef = useRef(false);
@@ -514,11 +524,24 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
         if (isAccuracyOkRef.current) {
           setSeconds(prev => {
             const nextVal = prev > 0 ? prev - 1 : 0;
-            const isMulti = measurementDuration === 60 || measurementDuration === 120;
-            if (isMulti && nextVal > 0 && nextVal % 30 === 0) {
-              setIsWaiting(true);
-              setWaitSeconds(10);
+            
+            if (currentDeviceOS === 'iOS') {
+              if (measurementDuration === 60 && nextVal === 10) {
+                setIsWaiting(true);
+                setWaitSeconds(45);
+              } else if (measurementDuration === 120 && (nextVal === 20 || nextVal === 10)) {
+                setIsWaiting(true);
+                setWaitSeconds(45);
+              }
+            } else {
+              // Android (or default web)
+              const isMulti = measurementDuration === 60 || measurementDuration === 120;
+              if (isMulti && nextVal > 0 && nextVal % 30 === 0) {
+                setIsWaiting(true);
+                setWaitSeconds(10);
+              }
             }
+            
             return nextVal;
           });
         }
@@ -526,7 +549,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
     }
     
     return () => clearInterval(timer);
-  }, [step, waitingForSignal, isWaiting, measurementDuration]);
+  }, [step, waitingForSignal, isWaiting, measurementDuration, currentDeviceOS]);
 
   useEffect(() => {
     if (step === 'COUNTDOWN' && seconds === 0) {
@@ -601,7 +624,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
     setReliabilityStatus('UNKNOWN');
     setIsWaiting(false);
     setWaitSeconds(10);
-    setSeconds(measurementDuration);
+    setSeconds(activeDurationBudget);
     if (lastPositionRef.current && instantAccuracy !== null) setWaitingForSignal(false);
     else setWaitingForSignal(true);
     onNavigate('COUNTDOWN');
