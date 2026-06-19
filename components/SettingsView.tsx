@@ -559,9 +559,9 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
                 >
                   {[5, 10, 15, 30, 60, 90].map(v => {
                     let label = `${v} ${t("saniye")}`;
-                    if (v === 30) label = t("15sn x 2 oturum");
-                    else if (v === 60) label = t("15sn x 4 oturum");
-                    else if (v === 90) label = t("15sn x 6 oturum");
+                    if (v === 30) label = t("15s x 2oturum");
+                    else if (v === 60) label = t("15s x 4oturum");
+                    else if (v === 90) label = t("15s x 6oturum");
                     return <option key={v} value={v.toString()}>{label}</option>;
                   })}
                 </select>

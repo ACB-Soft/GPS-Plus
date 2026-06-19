@@ -526,7 +526,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
             const isMulti = measurementDuration === 30 || measurementDuration === 60 || measurementDuration === 90;
             if (isMulti && nextVal > 0 && nextVal % 15 === 0) {
               setIsWaiting(true);
-              setWaitSeconds(currentDeviceOS === 'iOS' ? 45 : 15);
+              setWaitSeconds(currentDeviceOS === 'iOS' ? 30 : 15);
             }
             
             return nextVal;
@@ -806,9 +806,9 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                     >
                       {[5, 10, 15, 30, 60, 90].map(v => {
                         let label = t(`${v}sn`);
-                        if (v === 30) label = t("15sn x 2 oturum");
-                        else if (v === 60) label = t("15sn x 4 oturum");
-                        else if (v === 90) label = t("15sn x 6 oturum");
+                        if (v === 30) label = t("15s x 2oturum");
+                        else if (v === 60) label = t("15s x 4oturum");
+                        else if (v === 90) label = t("15s x 6oturum");
                         return <option key={v} value={v}>{label}</option>;
                       })}
                     </select>

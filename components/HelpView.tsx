@@ -254,7 +254,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                   </div>
                   <p 
                     className="text-sm text-slate-700 font-medium leading-relaxed text-justify flex-1"
-                    dangerouslySetInnerHTML={{ __html: t("<b>Donanım Sıfırlama:</b> Her 15 saniyelik ölçüm periyodunun ardından ölçüm (iOS için 45, Android için 15 saniye) otomatik olarak duraklatılır ve cihazın GPS alıcısı arka planda tamamen yeniden başlatılır.") }}
+                    dangerouslySetInnerHTML={{ __html: t("<b>Donanım Sıfırlama:</b> Her 15 saniyelik ölçüm periyodunun ardından ölçüm (iOS için 30, Android için 15 saniye) otomatik olarak duraklatılır ve cihazın GPS alıcısı arka planda tamamen yeniden başlatılır.") }}
                   />
                 </div>
                 <div className="flex gap-4">
