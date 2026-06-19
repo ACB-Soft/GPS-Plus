@@ -104,6 +104,8 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   const lastSavedPositionRef = useRef<{lat: number, lng: number, accuracy: number} | null>(null);
   const lastSaveTimestampRef = useRef<number>(0);
   const watchIdRef = useRef<number | null>(null);
+  const waitingFinishedTimeRef = useRef<number | null>(null);
+  const justFinishedWaitingRef = useRef<boolean>(false);
   const wakeLockRef = useRef<any>(null);
 
   const requestWakeLock = async () => {
@@ -250,10 +252,21 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
         (pos) => {
           setInstantAccuracy(pos.coords.accuracy);
           lastPositionRef.current = pos;
+          
+          if (justFinishedWaitingRef.current) {
+            waitingFinishedTimeRef.current = Date.now();
+            justFinishedWaitingRef.current = false;
+          }
+          
           setWaitingForSignal(false);
           setCaptureError(null);
           
           if (step === 'COUNTDOWN' && !isWaiting) {
+            const now = Date.now();
+            if (waitingFinishedTimeRef.current !== null && (now - waitingFinishedTimeRef.current < 5000)) {
+              // Discard the first 5 seconds of post-wait epoch positions
+              return;
+            }
             // Only save raw geolocation update with speed and heading if it is within accuracy limit
             if (pos.coords.accuracy <= accuracyLimit) {
               rawSamplesRef.current.push({
@@ -451,6 +464,8 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
               setIsWaiting(false);
               setWaitingForSignal(true);
               setInstantAccuracy(null);
+              justFinishedWaitingRef.current = true;
+              waitingFinishedTimeRef.current = null;
               return 0;
             }
             return prev - 1;
@@ -463,13 +478,14 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
         }
 
         const now = Date.now();
+        const inBlackout = waitingFinishedTimeRef.current !== null && (now - waitingFinishedTimeRef.current < 5000);
         
         // --- GNSS Only Modu Kontrolü ---
         const isActuallySatellite = !settings.gnssOnlyMode || 
           (lastPositionRef.current && lastPositionRef.current.coords.altitude !== null && lastPositionRef.current.coords.altitude !== 0);
 
         // --- HİBRİT MANTIK: 5 Saniyede Bir Zorunlu Kayıt (Farklı veri gelmediyse ve hassasiyet uygunsa) ---
-        if (isActuallySatellite && isAccuracyOkRef.current && lastPositionRef.current && lastPositionRef.current.coords.accuracy <= accuracyLimit && (now - lastSaveTimestampRef.current >= 5000)) {
+        if (!inBlackout && isActuallySatellite && isAccuracyOkRef.current && lastPositionRef.current && lastPositionRef.current.coords.accuracy <= accuracyLimit && (now - lastSaveTimestampRef.current >= 5000)) {
           const p = lastPositionRef.current;
           samplesRef.current.push({
             lat: p.coords.latitude, 
@@ -612,6 +628,8 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
     setIsWaiting(false);
     setWaitSeconds(10);
     setSeconds(activeDurationBudget);
+    waitingFinishedTimeRef.current = null;
+    justFinishedWaitingRef.current = false;
     if (lastPositionRef.current && instantAccuracy !== null) setWaitingForSignal(false);
     else setWaitingForSignal(true);
     onNavigate('COUNTDOWN');
