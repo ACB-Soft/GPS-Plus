@@ -804,7 +804,13 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                       onChange={e => setMeasurementDuration(parseInt(e.target.value))}
                       className="w-full p-2.5 bg-slate-200 rounded-xl font-black text-center text-lg text-slate-900 outline-none border border-slate-200 leading-none appearance-none"
                     >
-                      {[5, 10, 15, 30, 60, 120].map(v => <option key={v} value={v}>{t(`${v}sn`)}</option>)}
+                      {[5, 10, 15, 30, 60, 90].map(v => {
+                        let label = t(`${v}sn`);
+                        if (v === 30) label = t("15sn x 2 oturum");
+                        else if (v === 60) label = t("15sn x 4 oturum");
+                        else if (v === 90) label = t("15sn x 6 oturum");
+                        return <option key={v} value={v}>{label}</option>;
+                      })}
                     </select>
                   </div>
                 </div>

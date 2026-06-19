@@ -47,7 +47,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 />
                 <p 
                   className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
-                  dangerouslySetInnerHTML={{ __html: t("• <b>Ölçüm Süreci:</b> \"Ölçümü Başlat\" dediğinizde belirlediğiniz hassasiyette (2-100 m) ve belirlediğiniz sürede (5-120 sn) veri toplama süreci başlatılır. Uygulama bu aşamada konum örneği alarak verilerin ortalamasını hesaplar. En doğru sonuç için cihazı sabit bir zeminde ve açık bir alanda tutun.") }}
+                  dangerouslySetInnerHTML={{ __html: t("• <b>Ölçüm Süreci:</b> \"Ölçümü Başlat\" dediğinizde belirlediğiniz hassasiyette (2-100 m) ve belirlediğiniz sürede (5-90 sn) veri toplama süreci başlatılır. Uygulama bu aşamada konum örneği alarak verilerin ortalamasını hesaplar. En doğru sonuç için cihazı sabit bir zeminde ve açık bir alanda tutun.") }}
                 />
               </div>
 
@@ -245,7 +245,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             <div className="soft-card p-6 space-y-4">
               <p 
                 className="text-sm text-slate-700 font-medium leading-relaxed text-justify"
-                dangerouslySetInnerHTML={{ __html: t("Uzun süreli ölçümlerde (60 ve 120 sn) birikimli GPS kaymalarını sıfırlamak ve en kaliteli uydu verisini yakalamak için geliştirilen akıllı ölçüm modudur:") }}
+                dangerouslySetInnerHTML={{ __html: t("Uzun süreli ölçümlerde (30, 60 ve 90 sn) birikimli GPS kaymalarını sıfırlamak ve en kaliteli uydu verisini yakalamak için geliştirilen akıllı ölçüm modudur:") }}
               />
               <div className="space-y-4">
                 <div className="flex gap-4">
@@ -254,7 +254,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                   </div>
                   <p 
                     className="text-sm text-slate-700 font-medium leading-relaxed text-justify flex-1"
-                    dangerouslySetInnerHTML={{ __html: t("<b>Donanım Sıfırlama:</b> Her 30 saniyelik ölçüm periyodunun ardından ölçüm 10 saniye otomatik olarak duraklatılır ve cihazın GPS alıcısı arka planda tamamen yeniden başlatılır.") }}
+                    dangerouslySetInnerHTML={{ __html: t("<b>Donanım Sıfırlama:</b> Her 15 saniyelik ölçüm periyodunun ardından ölçüm (iOS için 45, Android için 15 saniye) otomatik olarak duraklatılır ve cihazın GPS alıcısı arka planda tamamen yeniden başlatılır.") }}
                   />
                 </div>
                 <div className="flex gap-4">

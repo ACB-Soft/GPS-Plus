@@ -557,7 +557,13 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
                   onChange={(e) => setMeasurementDuration(e.target.value)}
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
-                  {[5, 10, 15, 30, 60, 90].map(v => <option key={v} value={v.toString()}>{v} {t("saniye")}</option>)}
+                  {[5, 10, 15, 30, 60, 90].map(v => {
+                    let label = `${v} ${t("saniye")}`;
+                    if (v === 30) label = t("15sn x 2 oturum");
+                    else if (v === 60) label = t("15sn x 4 oturum");
+                    else if (v === 90) label = t("15sn x 6 oturum");
+                    return <option key={v} value={v.toString()}>{label}</option>;
+                  })}
                 </select>
               </div>
 
