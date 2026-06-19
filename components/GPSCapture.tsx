@@ -247,75 +247,40 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   }, [folderName, existingLocations]);
 
   useEffect(() => {
-    if ((step === 'READY' || step === 'COUNTDOWN') && !isWaiting) {
-      watchIdRef.current = navigator.geolocation.watchPosition(
-        (pos) => {
-          setInstantAccuracy(pos.coords.accuracy);
-          lastPositionRef.current = pos;
-          
-          if (justFinishedWaitingRef.current) {
-            waitingFinishedTimeRef.current = Date.now();
-            justFinishedWaitingRef.current = false;
-          }
-          
-          setWaitingForSignal(false);
-          setCaptureError(null);
-          
-          if (step === 'COUNTDOWN' && !isWaiting) {
-            const now = Date.now();
-            if (waitingFinishedTimeRef.current !== null && (now - waitingFinishedTimeRef.current < 5000)) {
-              // Discard the first 5 seconds of post-wait epoch positions
-              return;
+    const shouldWatch = (step === 'READY' || step === 'COUNTDOWN') && (!isWaiting || waitSeconds <= 3);
+    if (shouldWatch) {
+      if (!watchIdRef.current) {
+        watchIdRef.current = navigator.geolocation.watchPosition(
+          (pos) => {
+            setInstantAccuracy(pos.coords.accuracy);
+            lastPositionRef.current = pos;
+            
+            if (justFinishedWaitingRef.current) {
+              waitingFinishedTimeRef.current = Date.now();
+              justFinishedWaitingRef.current = false;
             }
-            // Only save raw geolocation update with speed and heading if it is within accuracy limit
-            if (pos.coords.accuracy <= accuracyLimit) {
-              rawSamplesRef.current.push({
-                lat: pos.coords.latitude,
-                lng: pos.coords.longitude,
-                accuracy: pos.coords.accuracy,
-                altitude: pos.coords.altitude,
-                altitudeAccuracy: pos.coords.altitudeAccuracy,
-                speed: pos.coords.speed,
-                heading: pos.coords.heading,
-                timestamp: Date.now(),
-                deviceOS: currentDeviceOS,
-                accelX: latestMotionRef.current.accelX,
-                accelY: latestMotionRef.current.accelY,
-                accelZ: latestMotionRef.current.accelZ,
-                gyroAlpha: latestOrientationRef.current.gyroAlpha,
-                gyroBeta: latestOrientationRef.current.gyroBeta,
-                gyroGamma: latestOrientationRef.current.gyroGamma,
-              });
-            }
-
-            // --- HİBRİT MANTIK: Farklı Veri Gelirse Kaydet ---
-            const current = {
-              lat: pos.coords.latitude,
-              lng: pos.coords.longitude,
-              accuracy: pos.coords.accuracy
-            };
-
-            const isDifferent = !lastSavedPositionRef.current || 
-              lastSavedPositionRef.current.lat !== current.lat ||
-              lastSavedPositionRef.current.lng !== current.lng ||
-              lastSavedPositionRef.current.accuracy !== current.accuracy;
-
-            if (isDifferent) {
-              // ONLY SAVE IF IT SATISFIES THE DETERMINED LIMITS
-              const isAccOk = current.accuracy <= accuracyLimit;
-              const isGnssOk = !settings.gnssOnlyMode || (pos.coords.altitude !== null && pos.coords.altitude !== 0);
-
-              if (isAccOk && isGnssOk) {
-                samplesRef.current.push({
-                  lat: pos.coords.latitude, 
+            
+            setWaitingForSignal(false);
+            setCaptureError(null);
+            
+            if (step === 'COUNTDOWN' && !isWaiting) {
+              const now = Date.now();
+              if (waitingFinishedTimeRef.current !== null && (now - waitingFinishedTimeRef.current < 3000)) {
+                // Discard the first 3 seconds of post-wait epoch positions
+                return;
+              }
+              // Only save raw geolocation update with speed and heading if it is within accuracy limit
+              if (pos.coords.accuracy <= accuracyLimit) {
+                rawSamplesRef.current.push({
+                  lat: pos.coords.latitude,
                   lng: pos.coords.longitude,
-                  accuracy: pos.coords.accuracy, 
-                  altitude: pos.coords.altitude, 
+                  accuracy: pos.coords.accuracy,
+                  altitude: pos.coords.altitude,
                   altitudeAccuracy: pos.coords.altitudeAccuracy,
-                  timestamp: Date.now(),
-                  deviceOS: currentDeviceOS,
                   speed: pos.coords.speed,
                   heading: pos.coords.heading,
+                  timestamp: Date.now(),
+                  deviceOS: currentDeviceOS,
                   accelX: latestMotionRef.current.accelX,
                   accelY: latestMotionRef.current.accelY,
                   accelZ: latestMotionRef.current.accelZ,
@@ -323,41 +288,79 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                   gyroBeta: latestOrientationRef.current.gyroBeta,
                   gyroGamma: latestOrientationRef.current.gyroGamma,
                 });
-                lastSavedPositionRef.current = current;
-                lastSaveTimestampRef.current = Date.now();
-                setSampleCount(samplesRef.current.length);
+              }
 
-                // Check reliability
-                const currentSamples = samplesRef.current;
-                if (currentSamples.length > 0) {
-                  const currentAvgAcc = currentSamples.reduce((a, b) => a + b.accuracy, 0) / currentSamples.length;
-                  const maxDist = calculateMaxDistance(currentSamples);
-                  const sampleCountVal = currentSamples.length;
+              // --- HİBRİT MANTIK: Farklı Veri Gelirse Kaydet ---
+              const current = {
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+                accuracy: pos.coords.accuracy
+              };
 
-                  const isRed = (currentAvgAcc > 20) || (maxDist > 20) || (maxDist > currentAvgAcc * 3);
-                  const isGreen = (currentAvgAcc <= 10) && (maxDist <= 10) && (maxDist <= currentAvgAcc) && (sampleCountVal >= 5);
+              const isDifferent = !lastSavedPositionRef.current || 
+                lastSavedPositionRef.current.lat !== current.lat ||
+                lastSavedPositionRef.current.lng !== current.lng ||
+                lastSavedPositionRef.current.accuracy !== current.accuracy;
 
-                  if (isRed) {
-                    setReliabilityStatus('CRITICAL');
-                  } else if (isGreen) {
-                    setReliabilityStatus('GOOD');
+              if (isDifferent) {
+                // ONLY SAVE IF IT SATISFIES THE DETERMINED LIMITS
+                const isAccOk = current.accuracy <= accuracyLimit;
+                const isGnssOk = !settings.gnssOnlyMode || (pos.coords.altitude !== null && pos.coords.altitude !== 0);
+
+                if (isAccOk && isGnssOk) {
+                  samplesRef.current.push({
+                    lat: pos.coords.latitude, 
+                    lng: pos.coords.longitude,
+                    accuracy: pos.coords.accuracy, 
+                    altitude: pos.coords.altitude, 
+                    altitudeAccuracy: pos.coords.altitudeAccuracy,
+                    timestamp: Date.now(),
+                    deviceOS: currentDeviceOS,
+                    speed: pos.coords.speed,
+                    heading: pos.coords.heading,
+                    accelX: latestMotionRef.current.accelX,
+                    accelY: latestMotionRef.current.accelY,
+                    accelZ: latestMotionRef.current.accelZ,
+                    gyroAlpha: latestOrientationRef.current.gyroAlpha,
+                    gyroBeta: latestOrientationRef.current.gyroBeta,
+                    gyroGamma: latestOrientationRef.current.gyroGamma,
+                  });
+                  lastSavedPositionRef.current = current;
+                  lastSaveTimestampRef.current = Date.now();
+                  setSampleCount(samplesRef.current.length);
+
+                  // Check reliability
+                  const currentSamples = samplesRef.current;
+                  if (currentSamples.length > 0) {
+                    const currentAvgAcc = currentSamples.reduce((a, b) => a + b.accuracy, 0) / currentSamples.length;
+                    const maxDist = calculateMaxDistance(currentSamples);
+                    const sampleCountVal = currentSamples.length;
+
+                    const isRed = (currentAvgAcc > 20) || (maxDist > 20) || (maxDist > currentAvgAcc * 3);
+                    const isGreen = (currentAvgAcc <= 10) && (maxDist <= 10) && (maxDist <= currentAvgAcc) && (sampleCountVal >= 5);
+
+                    if (isRed) {
+                      setReliabilityStatus('CRITICAL');
+                    } else if (isGreen) {
+                      setReliabilityStatus('GOOD');
+                    } else {
+                      setReliabilityStatus('WARNING');
+                    }
                   } else {
-                    setReliabilityStatus('WARNING');
+                    setReliabilityStatus('UNKNOWN');
                   }
-                } else {
-                  setReliabilityStatus('UNKNOWN');
                 }
               }
             }
-          }
-        },
-        (err) => { 
-          setInstantAccuracy(null); 
-          setWaitingForSignal(true);
-          setCaptureError(`Kod: ${err.code} - ${err.message}`);
-        },
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
-      );
+          },
+          (err) => { 
+            setInstantAccuracy(null); 
+            setWaitingForSignal(true);
+            setCaptureError(`Kod: ${err.code} - ${err.message}`);
+          },
+          { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
+        );
+      }
     } else {
       if (watchIdRef.current) {
         navigator.geolocation.clearWatch(watchIdRef.current);
@@ -370,7 +373,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
         watchIdRef.current = null;
       }
     };
-  }, [step, isWaiting]); // Removed waitingForSignal from deps to avoid infinite loop
+  }, [step, isWaiting, waitSeconds]);
 
   const processSamples = useCallback(() => {
     let samples = [...samplesRef.current];
@@ -478,7 +481,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
         }
 
         const now = Date.now();
-        const inBlackout = waitingFinishedTimeRef.current !== null && (now - waitingFinishedTimeRef.current < 5000);
+        const inBlackout = waitingFinishedTimeRef.current !== null && (now - waitingFinishedTimeRef.current < 3000);
         
         // --- GNSS Only Modu Kontrolü ---
         const isActuallySatellite = !settings.gnssOnlyMode || 
@@ -874,7 +877,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                       {t("Çoklu Oturum (Multi-Session) devam ediyor, lütfen bekleyiniz...")}
                     </p>
                     <p className="text-slate-400 text-[10px] md:text-[11px] font-bold leading-none uppercase tracking-widest mt-1">
-                      {t("GPS Yeniden Başlatılıyor")} ({waitSeconds}sn)
+                      {waitSeconds <= 3 ? t("GPS Isınıyor...") : t("GPS Yeniden Başlatılıyor")} ({waitSeconds}sn)
                     </p>
                   </div>
                 ) : instantAccuracy !== null && instantAccuracy > accuracyLimit ? (
