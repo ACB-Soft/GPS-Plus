@@ -75,6 +75,8 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   const [waitingForSignal, setWaitingForSignal] = useState(true);
   const [captureError, setCaptureError] = useState<string | null>(null);
   const [showLiveMap, setShowLiveMap] = useState(false);
+  const [isWaiting, setIsWaiting] = useState(false);
+  const [waitSeconds, setWaitSeconds] = useState(10);
   
   const samplesRef = useRef<Coordinate[]>([]);
   const rawSamplesRef = useRef<Coordinate[]>([]);
@@ -235,7 +237,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   }, [folderName, existingLocations]);
 
   useEffect(() => {
-    if (step === 'READY' || step === 'COUNTDOWN') {
+    if ((step === 'READY' || step === 'COUNTDOWN') && !isWaiting) {
       watchIdRef.current = navigator.geolocation.watchPosition(
         (pos) => {
           setInstantAccuracy(pos.coords.accuracy);
@@ -243,7 +245,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
           setWaitingForSignal(false);
           setCaptureError(null);
           
-          if (step === 'COUNTDOWN') {
+          if (step === 'COUNTDOWN' && !isWaiting) {
             // Only save raw geolocation update with speed and heading if it is within accuracy limit
             if (pos.coords.accuracy <= accuracyLimit) {
               rawSamplesRef.current.push({
@@ -347,7 +349,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
         watchIdRef.current = null;
       }
     };
-  }, [step]); // Removed waitingForSignal from deps to avoid infinite loop
+  }, [step, isWaiting]); // Removed waitingForSignal from deps to avoid infinite loop
 
   const processSamples = useCallback(() => {
     let samples = [...samplesRef.current];
@@ -433,8 +435,25 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   useEffect(() => {
     let timer: any;
     
-    if (step === 'COUNTDOWN' && !waitingForSignal) {
+    if (step === 'COUNTDOWN') {
       timer = setInterval(() => {
+        if (isWaiting) {
+          setWaitSeconds(prev => {
+            if (prev <= 1) {
+              setIsWaiting(false);
+              setWaitingForSignal(true);
+              setInstantAccuracy(null);
+              return 0;
+            }
+            return prev - 1;
+          });
+          return;
+        }
+
+        if (waitingForSignal) {
+          return;
+        }
+
         const now = Date.now();
         
         // --- GNSS Only Modu Kontrolü ---
@@ -493,13 +512,21 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
 
         // Sadece hassasiyet uygunsa geri sayımı ilerlet
         if (isAccuracyOkRef.current) {
-          setSeconds(prev => prev > 0 ? prev - 1 : 0);
+          setSeconds(prev => {
+            const nextVal = prev > 0 ? prev - 1 : 0;
+            const isMulti = measurementDuration === 60 || measurementDuration === 120;
+            if (isMulti && nextVal > 0 && nextVal % 30 === 0) {
+              setIsWaiting(true);
+              setWaitSeconds(10);
+            }
+            return nextVal;
+          });
         }
       }, 1000);
     }
     
     return () => clearInterval(timer);
-  }, [step, waitingForSignal]);
+  }, [step, waitingForSignal, isWaiting, measurementDuration]);
 
   useEffect(() => {
     if (step === 'COUNTDOWN' && seconds === 0) {
@@ -572,6 +599,8 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
     }
 
     setReliabilityStatus('UNKNOWN');
+    setIsWaiting(false);
+    setWaitSeconds(10);
     setSeconds(measurementDuration);
     if (lastPositionRef.current && instantAccuracy !== null) setWaitingForSignal(false);
     else setWaitingForSignal(true);
@@ -683,10 +712,15 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
           <div className="relative flex items-center justify-center flex-1 w-full max-h-[300px] mt-2">
             <div className="w-44 h-44 sm:w-56 sm:h-56 md:w-72 md:h-72 rounded-[3.5rem] md:rounded-[4.5rem] border-8 border-slate-50 shadow-2xl flex items-center justify-center relative bg-slate-200">
               <div className={`absolute inset-4 md:inset-6 border-2 rounded-[2.8rem] md:rounded-[3.8rem] ${instantAccuracy && instantAccuracy <= 10 ? 'border-emerald-100' : 'border-slate-50'}`}></div>
-              {step === 'COUNTDOWN' && !waitingForSignal && <div className="scanner-line"></div>}
+              {step === 'COUNTDOWN' && !waitingForSignal && !isWaiting && <div className="scanner-line"></div>}
               
               <span className="text-7xl md:text-9xl font-black text-slate-900 mono-font z-10 tracking-tighter leading-none">
-                {waitingForSignal ? (
+                {isWaiting ? (
+                  <div className="flex flex-col items-center gap-4 animate-pulse">
+                    <i className="fas fa-hourglass-half text-amber-500 text-4xl md:text-5xl animate-spin duration-1000"></i>
+                    <span className="text-5xl md:text-6xl font-black text-amber-500 tracking-tighter leading-none">{waitSeconds}s</span>
+                  </div>
+                ) : waitingForSignal ? (
                   <div className="flex flex-col items-center gap-4">
                     <i className="fas fa-satellite fa-spin text-blue-600 text-4xl md:text-5xl"></i>
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 animate-pulse">Sinyal Bekleniyor</span>
@@ -800,7 +834,16 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                   </div>
                 )}
 
-                {instantAccuracy !== null && instantAccuracy > accuracyLimit ? (
+                {isWaiting ? (
+                  <div className="animate-pulse space-y-1">
+                    <p className="font-black text-amber-600 text-[11px] md:text-[12px] uppercase tracking-[0.05em] leading-snug px-6">
+                      {t("Çoklu Oturum (Multi-Session) devam ediyor, lütfen bekleyiniz...")}
+                    </p>
+                    <p className="text-slate-400 text-[10px] md:text-[11px] font-bold leading-none uppercase tracking-widest mt-1">
+                      {t("GPS Yeniden Başlatılıyor")} ({waitSeconds}sn)
+                    </p>
+                  </div>
+                ) : instantAccuracy !== null && instantAccuracy > accuracyLimit ? (
                   <div className="animate-pulse space-y-1">
                     <p className="font-black text-amber-600 text-[12px] md:text-[13px] uppercase tracking-[0.2em] leading-none">{t("Hassasiyet Bekleniyor...")}</p>
                     <p className="text-slate-400 text-[10px] font-bold leading-tight uppercase tracking-widest px-4">
@@ -823,7 +866,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
 
                 <button 
                   onClick={() => processSamples()}
-                  disabled={sampleCount === 0}
+                  disabled={isWaiting || sampleCount === 0}
                   className="mx-auto mt-2 py-3 px-8 bg-blue-600 text-white rounded-2xl font-black text-[11px] md:text-[12px] active:scale-[0.96] disabled:opacity-50 transition-all uppercase tracking-[0.2em] leading-none shadow-xl shadow-blue-100 flex items-center justify-center gap-2 whitespace-nowrap w-full max-w-[280px]"
                 >
                   <i className="fas fa-check-circle"></i>

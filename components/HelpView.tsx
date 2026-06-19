@@ -233,6 +233,52 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             </div>
           </section>
 
+          {/* Çoklu Oturum */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-amber-200 animate-pulse">
+                <i className="fas fa-hourglass-half"></i>
+              </div>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Çoklu Oturum (Multi-Session)")}</h3>
+            </div>
+            
+            <div className="soft-card p-6 space-y-4">
+              <p 
+                className="text-sm text-slate-700 font-medium leading-relaxed text-justify"
+                dangerouslySetInnerHTML={{ __html: t("Uzun süreli ölçümlerde (60 ve 120 sn) birikimli GPS kaymalarını sıfırlamak ve en kaliteli uydu verisini yakalamak için geliştirilen akıllı ölçüm modudur:") }}
+              />
+              <div className="space-y-4">
+                <div className="flex gap-4">
+                  <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
+                    <i className="fas fa-sync-alt"></i>
+                  </div>
+                  <p 
+                    className="text-sm text-slate-700 font-medium leading-relaxed text-justify flex-1"
+                    dangerouslySetInnerHTML={{ __html: t("<b>Donanım Sıfırlama:</b> Her 30 saniyelik ölçüm periyodunun ardından ölçüm 10 saniye otomatik olarak duraklatılır ve cihazın GPS alıcısı arka planda tamamen yeniden başlatılır.") }}
+                  />
+                </div>
+                <div className="flex gap-4">
+                  <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
+                    <i className="fas fa-satellite"></i>
+                  </div>
+                  <p 
+                    className="text-sm text-slate-700 font-medium leading-relaxed text-justify flex-1"
+                    dangerouslySetInnerHTML={{ __html: t("<b>Yeniden Kilitlenme:</b> Verilen bu arada cihazın uydulara daha temiz açılardan yeniden kilitlenmesi sağlanır; böylece multipath (sinyal yansıması) etkisi en aza indirilir.") }}
+                  />
+                </div>
+                <div className="flex gap-4">
+                  <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
+                    <i className="fas fa-bullseye"></i>
+                  </div>
+                  <p 
+                    className="text-sm text-slate-700 font-medium leading-relaxed text-justify flex-1"
+                    dangerouslySetInnerHTML={{ __html: t("<b>Yüksek Doğruluk:</b> Farklı zaman dilimlerinde sıfırlanıp tekrar alınan temiz örneklerin birleştirilmesiyle, tekil ve uzun bir ölçüme kıyasla çok daha kararlı ve hassas koordinatlar elde edilir.") }}
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* Konum Hesabı */}
           <section className="space-y-4">
             <div className="flex items-center gap-3">
