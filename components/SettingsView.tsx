@@ -757,23 +757,23 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
                 {t("Verilerinizi yedekleyebilir veya yedekten geri yükleyebilirsiniz.")}
               </p>
               
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2.5">
                 <button
                   type="button"
                   onClick={handleCreateBackup}
-                  className="h-12 px-4 bg-sky-50 hover:bg-sky-100 text-sky-600 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-sm border border-sky-100 active:scale-[0.98] transition-all"
+                  className="h-12 px-2 sm:px-4 bg-sky-50 hover:bg-sky-100 text-sky-600 rounded-2xl font-bold flex items-center justify-center gap-1.5 shadow-sm border border-sky-100 active:scale-[0.98] transition-all whitespace-nowrap"
                 >
-                  <i className="fas fa-download"></i>
-                  <span className="text-[13px]">{t("Yedek Al")}</span>
+                  <i className="fas fa-download text-sm shrink-0"></i>
+                  <span className="text-[12px] sm:text-[13px]">{t("Yedek Al")}</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="h-12 px-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-sm border border-emerald-100 active:scale-[0.98] transition-all"
+                  className="h-12 px-2 sm:px-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-2xl font-bold flex items-center justify-center gap-1.5 shadow-sm border border-emerald-100 active:scale-[0.98] transition-all whitespace-nowrap"
                 >
-                  <i className="fas fa-upload"></i>
-                  <span className="text-[13px]">{t("Yedek Yükle")}</span>
+                  <i className="fas fa-upload text-sm shrink-0"></i>
+                  <span className="text-[12px] sm:text-[13px]">{t("Yedek Yükle")}</span>
                 </button>
               </div>
               
