@@ -918,7 +918,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                   className="mx-auto mt-2 py-3 px-8 bg-slate-100 text-slate-800 border border-slate-300 rounded-2xl font-black text-[11px] md:text-[12px] active:scale-[0.96] transition-all uppercase tracking-[0.2em] leading-none flex items-center justify-center gap-2 whitespace-nowrap w-full max-w-[280px] hover:bg-slate-200 cursor-pointer"
                 >
                   <i className="fas fa-map-location-dot text-blue-600"></i>
-                  {t("Canlı Veri İzleme")}
+                  {t("Gerçek Zamanlı Veri Gözlemi")}
                 </button>
               </div>
             )}
@@ -1007,9 +1007,10 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
           </div>
 
           {/* Bottom Info Card matching 'Show on Map' layout */}
-          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[10000] w-full max-w-xs px-6">
-            <div className="bg-white/90 backdrop-blur-md p-5 rounded-2xl shadow-2xl border border-slate-200 flex items-center justify-between gap-4">
-              <div className="flex flex-col">
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[10000] w-full max-w-[340px] px-2 sm:max-w-sm">
+            <div className="bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-slate-200 grid grid-cols-3 gap-2 items-center">
+              {/* Left Column: Accuracy */}
+              <div className="flex flex-col items-start pl-1">
                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">{t("Hassasiyet")}</p>
                 <p className={`text-base font-black mono-font leading-none ${
                   instantAccuracy !== null ? getAccuracyColor(instantAccuracy) : 'text-slate-600'
@@ -1017,9 +1018,31 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                   ±{instantAccuracy !== null ? instantAccuracy.toFixed(1) : '---'}m
                 </p>
               </div>
-              <div className="text-right flex-1 min-w-0">
+
+              {/* Middle Column: Countdown Timer */}
+              <div className="flex flex-col items-center border-x border-slate-200/80 px-1 text-center">
+                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">{t("Kalan Süre")}</p>
+                {isWaiting ? (
+                  <div className="flex items-center gap-1 text-amber-500 font-extrabold animate-pulse">
+                    <i className="fas fa-hourglass-half text-[11px] animate-spin"></i>
+                    <span className="text-sm font-black mono-font leading-none">{waitSeconds}s</span>
+                  </div>
+                ) : step === 'COUNTDOWN' ? (
+                  <div className="flex items-center gap-1 text-emerald-600 font-extrabold animate-pulse">
+                    <i className="fas fa-stopwatch text-[11px]"></i>
+                    <span className="text-sm font-black mono-font leading-none">{seconds}s</span>
+                  </div>
+                ) : (
+                  <p className="text-sm font-black text-slate-400 mono-font leading-none">
+                    {seconds}s
+                  </p>
+                )}
+              </div>
+
+              {/* Right Column: Point Name */}
+              <div className="flex flex-col items-end pr-1 min-w-0 text-right">
                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">{t("Nokta Adı")}</p>
-                <p className="text-sm font-black text-slate-900 truncate leading-none">
+                <p className="text-sm font-black text-slate-900 truncate leading-none w-full">
                   {pointName || t("Nokta")}
                 </p>
               </div>

@@ -158,6 +158,7 @@ export const trToEnMap: Record<string, string> = {
   "15s x 4oturum": "15s x 4sessions",
   "15s x 6oturum": "15s x 6sessions",
   "Hassasiyet": "Accuracy",
+  "Kalan Süre": "Remaining Time",
   "Ölçüm": "Measurement",
   "Konum verisi alınamadı.": "Location data could not be retrieved.",
 
@@ -198,7 +199,7 @@ export const trToEnMap: Record<string, string> = {
   "Haritayı Kapat": "Close Map",
   "Haritada Göster": "Show on Map",
   "Haritada İzle": "Track on Map",
-  "Canlı Veri İzleme": "Live Data Monitoring",
+  "Gerçek Zamanlı Veri Gözlemi": "Real-Time Data Observation",
   "Canlı Veri Haritası": "Live Data Map",
   "Filtrelenmiş Örnekler": "Filtered Samples",
   "Tüm Ham Gözlemler (Raw)": "All Raw Observations",
