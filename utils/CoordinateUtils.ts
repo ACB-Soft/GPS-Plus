@@ -1,23 +1,23 @@
 import proj4 from 'proj4';
 
-// WGS84 zaten proj4'ün varsayılanı
+// WGS84 is already proj4's default
 const WGS84 = 'EPSG:4326';
 
-// ITRF96 ~ WGS84 kabul edilebilir pratik kullanımda (hassas dönüşüm için parametreler gerekir ama mobil GPS hassasiyeti için ihmal edilebilir)
-// UTM Dilim hesaplama fonksiyonu
+// ITRF96 ~ WGS84 can be accepted in practical use (parameters are required for precise transformation, but negligible for mobile GPS accuracy)
+// UTM Zone calculation function
 const getUTMZone = (lon: number) => {
   return Math.floor((lon + 180) / 6) + 1;
 };
 
 const getDom3 = (lon: number) => {
-    // 3 derecelik dilim orta meridyeni
-    // Türkiye için dilimler: 27, 30, 33, 36, 39, 42, 45
-    // Formül: DOM = Round(lon / 3) * 3
+    // 3-degree central meridian
+    // Central meridians for Turkey: 27, 30, 33, 36, 39, 42, 45
+    // Formula: DOM = Round(lon / 3) * 3
     return Math.round(lon / 3) * 3;
 };
 
 const getDom6 = (lon: number) => {
-    // 6 derecelik dilim orta meridyeni (UTM)
+    // 6-degree central meridian (UTM)
     // Zone = floor((lon + 180) / 6) + 1
     // DOM = Zone * 6 - 183
     const zone = Math.floor((lon + 180) / 6) + 1;
@@ -49,7 +49,7 @@ export const convertCoordinate = (lat: number, lng: number, system: string) => {
     zoneLabel = `DOM ${dom}`;
   } else if (system === 'ED50_3') {
     const dom = getDom3(lng);
-    // Türkiye için ortalama ED50-WGS84 dönüşüm parametreleri (HGM/EPSG standartları)
+    // Average ED50-WGS84 transformation parameters for Turkey (HGM/EPSG standards)
     // +towgs84=dX,dY,dZ,Rx,Ry,Rz,dS
     destProj = `+proj=tmerc +lat_0=0 +lon_0=${dom} +k=1 +x_0=500000 +y_0=0 +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
     zoneLabel = `DOM ${dom}`;

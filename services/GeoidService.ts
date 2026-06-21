@@ -32,9 +32,9 @@ class GeoidService {
       this.tg20Grid = TG20_DATA;
       this.egm96Grid = EGM96_TURKEY_DATA;
       this.isLoaded = true;
-      console.log('TG-20 ve Hassas EGM96 Modelleri başarıyla yüklendi (Tam Çevrimdışı Destek)');
+      console.log('TG-20 and High-Precision EGM96 Models loaded successfully (Full Offline Support)');
     } catch (error) {
-      console.error('Veri modelleri yüklenirken hata oluştu:', error);
+      console.error('Error loading geoid data models:', error);
     }
   }
 
