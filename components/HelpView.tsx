@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import GlobalFooter from './GlobalFooter';
 import Header from './Header';
 import { generateTechnicalReport } from '../utils/ReportUtils';
@@ -10,6 +10,30 @@ interface Props {
 
 const HelpView: React.FC<Props> = ({ onBack }) => {
   const { t } = useLanguage();
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
+  const handleDownloadClick = () => {
+    if (localStorage.getItem('acb_labs_authorized') === 'true') {
+      generateTechnicalReport();
+    } else {
+      setPasswordInput('');
+      setPasswordError('');
+      setShowPasswordModal(true);
+    }
+  };
+
+  const handlePasswordSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (passwordInput === "748123") {
+      localStorage.setItem('acb_labs_authorized', 'true');
+      setShowPasswordModal(false);
+      generateTechnicalReport();
+    } else {
+      setPasswordError(t("Hatalı şifre!"));
+    }
+  };
 
   return (
     <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-slate-200">
@@ -472,7 +496,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
               <div className="space-y-3">
                 <div className="flex flex-col">
                   <span className="text-sm font-black text-slate-400 uppercase tracking-widest">{t("Konum Verisi")}</span>
-                  <span className="text-sm font-bold text-slate-900">{t("Mobil Cihazın GPS Verisi (WGS84 Format)")}</span>
+                  <span className="text-sm font-bold text-slate-900">{t("Geolocation API (WGS84 Format)")}</span>
                 </div>
                 <div className="flex flex-col">
                   <span className="text-sm font-black text-slate-400 uppercase tracking-widest">{t("Koordinat Dönüşümleri")}</span>
@@ -485,12 +509,15 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-sm font-black text-slate-400 uppercase tracking-widest">{t("Harita Servisleri")}</span>
-                  <span className="text-sm font-bold text-slate-900">{t("Leaflet JS Open-Source Library")}</span>
+                  <span className="text-sm font-bold text-slate-900">{t("Leaflet & React Leaflet (Interactive Spatial Map Engine)")}</span>
                   <span className="text-sm font-bold text-slate-900">{t("Google Maps API (Satellite/Hybrid)")}</span>
                   <span className="text-sm font-bold text-slate-900">{t("OpenStreetMap Contributors")}</span>
                 </div>
                 <div className="flex flex-col">
                   <span className="text-sm font-black text-slate-400 uppercase tracking-widest">{t("Yazılım Kütüphaneleri")}</span>
+                  <span className="text-sm font-bold text-slate-900">{t("React & React DOM (Modern UI Engine)")}</span>
+                  <span className="text-sm font-bold text-slate-900">{t("Recharts (Statistical Plotting & Chart Services)")}</span>
+                  <span className="text-sm font-bold text-slate-900">{t("html-to-image & FileSaver (Dynamic Snapshot Export Services)")}</span>
                   <span className="text-sm font-bold text-slate-900">{t("Proj4js (Coordinate Transformations)")}</span>
                   <span className="text-sm font-bold text-slate-900">{t("SheetJS & JSZip (Data Export Services)")}</span>
                   <span className="text-sm font-bold text-slate-900">{t("Lucide React & Font Awesome (Icons)")}</span>
@@ -515,12 +542,86 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <span className="text-sm font-black text-slate-400 uppercase tracking-widest">{t("İletişim")}</span>
                 <span className="text-sm font-medium text-slate-900"><span className="font-black">acb</span>maps@gmail.com</span>
               </div>
+              <div className="pt-2">
+                <button 
+                  onClick={handleDownloadClick}
+                  className="w-full sm:w-auto px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold text-xs uppercase tracking-wider active:scale-95 transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer text-center"
+                >
+                  <i className="fas fa-file-word text-[11px]"></i>
+                  {t("Akademik Teknik Rapor")}
+                </button>
+              </div>
             </div>
           </section>
         </div>
       </div>
       
       <GlobalFooter />
+
+      {/* ACB Labs Password Modal Prompt */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-[4000] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <form 
+            onSubmit={handlePasswordSubmit}
+            className="w-full max-w-sm bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-300"
+          >
+            <div className="p-8">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-center text-blue-600 shrink-0 shadow-inner">
+                  <i className="fas fa-lock text-2xl animate-pulse"></i>
+                </div>
+                <div>
+                  <h3 className="text-slate-900 font-extrabold uppercase tracking-tight text-base leading-tight">
+                    {t("Aktivasyon Kodu")}
+                  </h3>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <input 
+                    type="password"
+                    autoFocus
+                    required
+                    placeholder="••••••"
+                    value={passwordInput}
+                    onChange={(e) => {
+                      setPasswordInput(e.target.value);
+                      setPasswordError('');
+                    }}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white text-slate-900 placeholder-slate-300 rounded-xl text-center font-mono text-lg font-black tracking-[0.3em] outline-none transition-all"
+                  />
+                </div>
+
+                {passwordError && (
+                  <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl flex items-center gap-2 text-rose-600 animate-in shake duration-200">
+                    <i className="fas fa-circle-exclamation text-xs"></i>
+                    <span className="text-[11px] font-bold uppercase tracking-tight">{passwordError}</span>
+                  </div>
+                )}
+
+                <div className="pt-2 flex flex-col gap-2">
+                  <button 
+                    type="submit"
+                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-[13px] uppercase tracking-[0.2em] active:scale-95 transition-all shadow-xl shadow-blue-200 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <i className="fas fa-sign-in-alt"></i>
+                    {t("Giriş Yap")}
+                  </button>
+
+                  <button 
+                    type="button"
+                    onClick={() => setShowPasswordModal(false)}
+                    className="w-full py-3 bg-slate-50 hover:bg-slate-100 text-slate-500 border border-slate-200/60 rounded-xl font-black text-[11px] uppercase tracking-[0.15em] active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer mt-1"
+                  >
+                    {t("İptal")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 };

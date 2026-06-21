@@ -125,10 +125,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [showMap, setShowMap] = useState(false);
   const [reliabilityPlotMethod, setReliabilityPlotMethod] = useState<CalculationMethod>(settings.calculationMethod || 'WEIGHTED_LSE');
 
-  const handleDownloadTechnicalReportAction = () => {
-    generateTechnicalReport();
-  };
-
   const folders = useMemo(() => {
     const f = Array.from(new Set(locations.map(l => l.folderName || 'Genel')));
     return f.sort();
@@ -2095,14 +2091,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   </div>
                 </div>
               </div>
-
-                <button 
-                  onClick={handleDownloadTechnicalReportAction}
-                  className="w-full bg-slate-800 text-white px-6 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg mb-4"
-                >
-                  <i className="fas fa-file-word"></i>
-                  {t("GPS_Plus_TEKNIK_RAPOR İndir")}
-                </button>
 
                 <div className="bg-blue-600 p-6 rounded-[2rem] text-white flex flex-col items-center gap-6 shadow-xl shadow-blue-100">
                 {analysisType === 'precise' ? (
