@@ -1,5 +1,4 @@
 import { FULL_BRAND, APP_VERSION } from '../version';
-import { asBlob } from 'html-docx-js-typescript';
 
 /**
  * GPS Plus Akademik Teknik Rapor Üreticisi v7.0
@@ -1249,21 +1248,11 @@ export function analyzeSignalReliability(samples: Coordinate[]): SignalAnalysis 
 </html>
   `;
 
-  asBlob(htmlContent).then((blob) => {
-    const url = URL.createObjectURL(blob as Blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'GPS_Plus_TEKNIK_RAPOR.docx';
-    link.click();
-    URL.revokeObjectURL(url);
-  }).catch((err) => {
-    console.error("HTML to DOCX failed, falling back to legacy doc schema:", err);
-    const blob = new Blob([htmlContent], { type: 'application/msword;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'GPS_Plus_TEKNIK_RAPOR.doc';
-    link.click();
-    URL.revokeObjectURL(url);
-  });
+  const blob = new Blob([htmlContent], { type: 'application/msword;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'GPS_Plus_TEKNIK_RAPOR.doc';
+  link.click();
+  URL.revokeObjectURL(url);
 };
