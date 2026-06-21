@@ -146,26 +146,51 @@ const getTileLayer = (provider: string) => {
       return {
         url: "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
         attribution: '&copy; Google',
-        maxNativeZoom: 20
+        maxNativeZoom: 20,
+        tms: false
       };
     case 'Google Satellite':
       return {
         url: "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
         attribution: '&copy; Google',
-        maxNativeZoom: 20
+        maxNativeZoom: 20,
+        tms: false
       };
     case 'OpenTopoMap':
       return {
         url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
         attribution: '&copy; OpenTopoMap contributors',
-        maxNativeZoom: 17
+        maxNativeZoom: 17,
+        tms: false
+      };
+    case 'Esri World Imagery':
+      return {
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        attribution: 'Tiles &copy; Esri',
+        maxNativeZoom: 19,
+        tms: false
+      };
+    case 'Copernicus / Sentinel':
+      return {
+        url: "https://tiles.maps.mundialis.de/service/tms/1.0.0/copernicus_sentinel2/{z}/{x}/{y}.png",
+        attribution: '&copy; Copernicus',
+        maxNativeZoom: 14,
+        tms: true
+      };
+    case 'USGS':
+      return {
+        url: "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}",
+        attribution: 'Tiles courtesy of the USGS',
+        maxNativeZoom: 16,
+        tms: false
       };
     case 'Google Roadmap':
     default:
       return {
         url: "https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
         attribution: '&copy; Google',
-        maxNativeZoom: 20
+        maxNativeZoom: 20,
+        tms: false
       };
   }
 };
@@ -800,6 +825,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   attribution={getTileLayer(settings.mapProvider).attribution}
                   maxZoom={22}
                   maxNativeZoom={getTileLayer(settings.mapProvider).maxNativeZoom}
+                  tms={getTileLayer(settings.mapProvider).tms}
                 />
                 
                 {processedGeometries.map(g => (
@@ -919,6 +945,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   attribution={getTileLayer(settings.mapProvider).attribution}
                   maxZoom={22}
                   maxNativeZoom={getTileLayer(settings.mapProvider).maxNativeZoom}
+                  tms={getTileLayer(settings.mapProvider).tms}
                 />
                 
                 {processedGeometries.map(g => (

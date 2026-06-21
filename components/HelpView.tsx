@@ -71,7 +71,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 />
                 <p 
                   className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
-                  dangerouslySetInnerHTML={{ __html: t("• <b>Ölçüm Süreci:</b> \"Ölçümü Başlat\" dediğinizde belirlediğiniz hassasiyette (2-100 m) ve belirlediğiniz sürede (5-90 sn) veri toplama süreci başlatılır. Uygulama bu aşamada konum örneği alarak verilerin ortalamasını hesaplar. En doğru sonuç için cihazı sabit bir zeminde ve açık bir alanda tutun.") }}
+                  dangerouslySetInnerHTML={{ __html: t("• <b>Ölçüm Süreci:</b> \"Ölçümü Başlat\" dediğinizde belirlediğiniz hassasiyette ve belirlediğiniz sürede veri toplama süreci başlatılır. En doğru sonuç için cihazı sabit bir zeminde ve açık bir alanda tutun. Çoklu oturum seçeneklerini kullanmanız tavsiye edilir.") }}
                 />
               </div>
 
@@ -149,10 +149,6 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                   className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
                   dangerouslySetInnerHTML={{ __html: t("• <b>Metin (.txt):</b> Ham veri formatında (Ad, Y, X, Z) hızlı paylaşım.") }}
                 />
-                <p 
-                  className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
-                  dangerouslySetInnerHTML={{ __html: t("• <b>Paylaşım:</b> Oluşturulan dosyaları mobil cihazlarınız ile WhatsApp, E-posta veya Bulut sürücülere doğrudan gönderebilirsiniz.") }}
-                />
               </div>
             </div>
           </section>
@@ -178,14 +174,14 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <i className="fas fa-mobile-alt text-amber-600 mt-1 text-lg"></i>
                 <p 
                   className="text-sm text-slate-700 font-medium leading-relaxed text-justify"
-                  dangerouslySetInnerHTML={{ __html: t("<b>Bekleme Süresi:</b> Uygulamayı açtıktan sonra GPS sinyalinin \"oturması\" için yaklaşık 30 saniye beklemek hassasiyeti 2-5 metreye kadar düşürebilir.") }}
+                  dangerouslySetInnerHTML={{ __html: t("<b>Bekleme Süresi:</b> Uygulamayı açtıktan sonra 10-15sn beklemek hassasiyeti düşürebilir.") }}
                 />
               </div>
               <div className="flex gap-4">
                 <i className="fas fa-battery-three-quarters text-amber-600 mt-1 text-lg"></i>
                 <p 
                   className="text-sm text-slate-700 font-medium leading-relaxed text-justify"
-                  dangerouslySetInnerHTML={{ __html: t("<b>Güç Modu:</b> Cihazınızın \"Düşük Güç Modu\"nda olmaması gerekir, çünkü bu mod GPS güncelleme sıklığını azaltabilir.") }}
+                  dangerouslySetInnerHTML={{ __html: t("<b>Güç Modu:</b> Cihazınızın \"Düşük Güç Modu\"nda olmaması gerekir, çünkü bu mod konum güncelleme sıklığını azaltabilir.") }}
                 />
               </div>
             </div>
@@ -203,7 +199,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             <div className="soft-card p-6 space-y-6">
               <div className="space-y-3">
                 <p className="text-sm text-slate-700 font-medium leading-relaxed">
-                  {t("Uygulama, ekranda gördüğünüz nihai <b>Hassasiyet</b> değerini şu formülle belirler:")}
+                  {t("Uygulama, ekranda gördüğünüz nihai Hassasiyet değerini şu formül ile hesaplar:")}
                 </p>
                 <div className="text-center py-1">
                   <code className="text-sm font-black text-blue-900 tracking-wider">
@@ -218,7 +214,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
               <div className="space-y-3 border-t border-slate-100 pt-4">
                 <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">{t("Sinyal Güvenilirlik Analizi")}</h4>
                 <p className="text-sm text-slate-700 font-medium leading-relaxed">
-                  {t("Uygulama, ölçüm sırasında sadece sensörden gelen hata payına bakmaz; aynı zamanda toplanan koordinatların birbirine olan mesafesini (Veri Saçılımı) analiz ederek <b>Multipath (Sinyal Yansıması)</b> riskini değerlendirir:")}
+                  {t("Uygulama, ölçüm sırasında sadece uydudan gelen donanımsal hassasiyet değerine bakmaz; aynı zamanda toplanan koordinatların birbirine olan mesafesini (Veri Saçılımı) analiz ederek Multipath (Sinyal Yansıması) riskini değerlendirir:")}
                 </p>
                 
                 <div className="space-y-4">
@@ -269,7 +265,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             <div className="soft-card p-6 space-y-4">
               <p 
                 className="text-sm text-slate-700 font-medium leading-relaxed text-justify"
-                dangerouslySetInnerHTML={{ __html: t("Uzun süreli ölçümlerde (30, 60 ve 90 sn) birikimli GPS kaymalarını sıfırlamak ve en kaliteli uydu verisini yakalamak için geliştirilen akıllı ölçüm modudur:") }}
+                dangerouslySetInnerHTML={{ __html: t("Uzun süreli ölçümlerde (30sn, 60sn ve 90sn) multipath etkilerini tespit etmek ve en kaliteli uydu verisini yakalamak için geliştirilen akıllı ölçüm modudur:") }}
               />
               <div className="space-y-4">
                 <div className="flex gap-4">
@@ -278,7 +274,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                   </div>
                   <p 
                     className="text-sm text-slate-700 font-medium leading-relaxed text-justify flex-1"
-                    dangerouslySetInnerHTML={{ __html: t("<b>Donanım Sıfırlama:</b> Her 15 saniyelik ölçüm periyodunun ardından ölçüm (iOS için 30, Android için 15 saniye) otomatik olarak duraklatılır ve cihazın GPS alıcısı arka planda tamamen yeniden başlatılır.") }}
+                    dangerouslySetInnerHTML={{ __html: t("<b>Donanım Sıfırlama:</b> Her 15 saniyelik ölçüm periyodunun ardından ölçüm otomatik olarak duraklatılır ve cihazın GPS/GNSS alıcısı arka planda tamamen yeniden başlatılır.") }}
                   />
                 </div>
                 <div className="flex gap-4">
@@ -315,7 +311,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             <div className="soft-card p-6 space-y-4">
               <p 
                 className="text-sm text-slate-700 font-medium leading-relaxed text-justify"
-                dangerouslySetInnerHTML={{ __html: t("Uygulama, toplanan ham GPS verilerini nihai bir koordinata dönüştürmek için 7 farklı gelişmiş akademik model sunar. Bu yöntemleri <b>Ayarlar</b> menüsünden değiştirebilirsiniz:") }}
+                dangerouslySetInnerHTML={{ __html: t("Uygulama, toplanan ham GPS/GNSS verilerini nihai bir koordinata dönüştürmek için 7 farklı gelişmiş akademik model sunar.") }}
               />
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -430,7 +426,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <div>
                   <h4 className="text-base font-black text-indigo-700 uppercase tracking-tight mb-1">{t("ED50 Dönüşümü")}</h4>
                   <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
-                    {t("WGS84 ile ED50 (European Datum 1950) arasındaki dönüşümler, Türkiye geneli için optimize edilmiş 7 Parametreli (dX, dY, dZ, Rx, Ry, Rz, dS \"HGM/EPSG Standartları\") Helmert Dönüşümü kullanılarak yapılmaktadır.")}
+                    {t("WGS84 ile ED50 arasındaki dönüşümler, 3 ötemele parametresi kullanan (HGM/EPSG Standartları) Helmert Dönüşümü kullanılarak yapılmaktadır.")}
                   </p>
                 </div>
 
@@ -444,7 +440,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <div>
                   <h4 className="text-base font-black text-indigo-700 uppercase tracking-tight mb-1">{t("Düşey Datum (Yükseklik)")}</h4>
                   <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
-                    {t("Ortometrik yükseklik (H), GPS'ten alınan Elipsoid yüksekliğinden (h), TG-20 Jeoid Modeli ondülasyon değeri (N) çıkarılarak hesaplanır.")}
+                    {t("Ortometrik yükseklik (H), ham verilerde bulunan Elipsoid yüksekliğinden (h), TG-20 Jeoid Modeli ondülasyon değeri (N) çıkarılarak hesaplanır.")}
                   </p>
                 </div>
               </div>
@@ -505,13 +501,16 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <div className="flex flex-col">
                   <span className="text-sm font-black text-slate-400 uppercase tracking-widest">{t("Jeoid Modeli")}</span>
                   <span className="text-sm font-bold text-slate-900">{t("TG-20 (Çözünürlük: 5'x5')")}</span>
-                  <span className="text-sm font-bold text-slate-900">{t("EGM96 (Çözünürlük: 5'x5')")}</span>
+                  <span className="text-sm font-bold text-slate-900">{t("EGM96 (Çözünürlük: 15'x15')")}</span>
                 </div>
                 <div className="flex flex-col">
                   <span className="text-sm font-black text-slate-400 uppercase tracking-widest">{t("Harita Servisleri")}</span>
                   <span className="text-sm font-bold text-slate-900">{t("Leaflet & React Leaflet (Interactive Spatial Map Engine)")}</span>
                   <span className="text-sm font-bold text-slate-900">{t("Google Maps API (Satellite/Hybrid)")}</span>
                   <span className="text-sm font-bold text-slate-900">{t("OpenStreetMap Contributors")}</span>
+                  <span className="text-sm font-bold text-slate-900">{t("Esri World Imagery (ArcGIS Satellite Services)")}</span>
+                  <span className="text-sm font-bold text-slate-900">{t("Sentinel-hub (Copernicus / Sentinel-2)")}</span>
+                  <span className="text-sm font-bold text-slate-900">{t("USGS (U.S. Geological Survey)")}</span>
                 </div>
                 <div className="flex flex-col">
                   <span className="text-sm font-black text-slate-400 uppercase tracking-widest">{t("Yazılım Kütüphaneleri")}</span>
@@ -536,7 +535,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             </div>
             <div className="soft-card p-6 space-y-4">
               <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
-                {t("Bu uygulama, saha çalışmalarında hızlı ve pratik koordinat ölçümü, aplikasyon ve veri yönetimi sağlamak ve basit CBS verisi toplamak amacıyla geliştirilmiştir. Uygulama ile ilgili herhangi bir sorun yaşıyorsanız veya bir özellik isteğiniz varsa e-posta yoluyla iletişime geçebilirsiniz.")}
+                {t("Bu uygulama, saha çalışmalarında hızlı ve pratik koordinat ölçümü, aplikasyon ve veri yönetimi sağlamak ve basit CBS verisi toplamak amacıyla geliştirilmiştir.")}
               </p>
               <div className="flex flex-col">
                 <span className="text-sm font-black text-slate-400 uppercase tracking-widest">{t("İletişim")}</span>

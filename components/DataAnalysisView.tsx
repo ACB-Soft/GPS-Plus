@@ -891,11 +891,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const getMapProviderInfo = () => {
     const provider = localStorage.getItem('default_map_provider') || 'Google Hybrid';
     switch (provider) {
-      case 'Google Hybrid': return { url: "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", maxNativeZoom: 20 };
-      case 'Google Satellite': return { url: "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", maxNativeZoom: 20 };
-      case 'OpenTopoMap': return { url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", maxNativeZoom: 17 };
+      case 'Google Hybrid': return { url: "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", maxNativeZoom: 20, tms: false, attribution: '&copy; Google' };
+      case 'Google Satellite': return { url: "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", maxNativeZoom: 20, tms: false, attribution: '&copy; Google' };
+      case 'OpenTopoMap': return { url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", maxNativeZoom: 17, tms: false, attribution: '&copy; OpenTopoMap contributors' };
+      case 'Esri World Imagery': return { url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", maxNativeZoom: 19, tms: false, attribution: 'Tiles &copy; Esri' };
+      case 'Copernicus / Sentinel': return { url: "https://tiles.maps.mundialis.de/service/tms/1.0.0/copernicus_sentinel2/{z}/{x}/{y}.png", maxNativeZoom: 14, tms: true, attribution: '&copy; Copernicus' };
+      case 'USGS': return { url: "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}", maxNativeZoom: 16, tms: false, attribution: 'Tiles courtesy of the USGS' };
       case 'Google Roadmap':
-      default: return { url: "https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", maxNativeZoom: 20 };
+      default: return { url: "https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", maxNativeZoom: 20, tms: false, attribution: '&copy; Google' };
     }
   };
 
@@ -2177,9 +2180,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
             >
               <TileLayer
                 url={mapInfo.url}
-                attribution={localStorage.getItem('default_map_provider') === 'OpenTopoMap' ? '&copy; OpenTopoMap' : '&copy; Google'}
+                attribution={mapInfo.attribution}
                 maxZoom={22}
                 maxNativeZoom={mapInfo.maxNativeZoom}
+                tms={mapInfo.tms}
               />
               
               {/* Raw Samples Cloud (Filtered by Accuracy Limit) */}

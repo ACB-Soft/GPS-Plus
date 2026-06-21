@@ -679,9 +679,12 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
                   onChange={(e) => setMapProvider(e.target.value)}
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
-                  <option value="Google Hybrid">{t("Google Hibrit")}</option>
-                  <option value="Google Satellite">{t("Google Satellite")}</option>
-                  <option value="OpenTopoMap">{t("OpenTopoMap")}</option>
+                  <option value="Google Hybrid">{t("1-Google Hibrit")}</option>
+                  <option value="Google Satellite">{t("2-Google Satellite")}</option>
+                  <option value="OpenTopoMap">{t("3-Open Topo Map")}</option>
+                  <option value="Esri World Imagery">{t("4-Esri World Imagery")}</option>
+                  <option value="Copernicus / Sentinel">{t("4-Copernicus / Sentinel")}</option>
+                  <option value="USGS">{t("5-USGS")}</option>
                 </select>
               </div>
 
