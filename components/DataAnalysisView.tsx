@@ -169,6 +169,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [selectedFolder, setSelectedFolder] = useState<string>('');
   const [selectedPointId, setSelectedPointId] = useState<string>(initialSelectedId || '');
   const [showMap, setShowMap] = useState(false);
+  const [currentMapProvider, setCurrentMapProvider] = useState(() => localStorage.getItem('default_map_provider') || 'Google Hybrid');
+  const [showLayerMenu, setShowLayerMenu] = useState(false);
   const [reliabilityPlotMethod, setReliabilityPlotMethod] = useState<CalculationMethod>(settings.calculationMethod || 'WEIGHTED_LSE');
 
   const folders = useMemo(() => {
@@ -935,7 +937,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   };
 
   const getMapProviderInfo = () => {
-    const provider = localStorage.getItem('default_map_provider') || 'Google Hybrid';
+    const provider = currentMapProvider;
     switch (provider) {
       case 'Google Hybrid': return { url: "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", maxNativeZoom: 20, tms: false, attribution: '&copy; Google' };
       case 'Google Satellite': return { url: "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", maxNativeZoom: 20, tms: false, attribution: '&copy; Google' };
@@ -2192,6 +2194,48 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               </div>
             </div>
 
+            {/* Symmetrical Layer Selector on the top-right */}
+            <div className="absolute top-6 right-6 z-[10000] flex flex-col items-end gap-2">
+              <button 
+                onClick={() => {
+                  setShowLayerMenu(!showLayerMenu);
+                }}
+                className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-95 transition-all border border-slate-200 cursor-pointer"
+                title={t("Harita Kaynağı")}
+              >
+                <i className="fas fa-layer-group text-lg"></i>
+              </button>
+              {showLayerMenu && (
+                <div className="bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xl flex flex-col gap-1 w-52 text-slate-900 select-none animate-in fade-in slide-in-from-top-2 duration-150 animate-out fade-out">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-3 py-1.5 border-b border-slate-100 mb-1 leading-none">{t("Harita Kaynağı")}</p>
+                  {[
+                    { value: 'Google Hybrid', label: t("1-Google Hibrit") },
+                    { value: 'Google Satellite', label: t("2-Google Satellite") },
+                    { value: 'OpenTopoMap', label: t("3-Open Topo Map") },
+                    { value: 'Esri World Imagery', label: t("4-Esri World Imagery") },
+                    { value: 'Bing Satellite', label: t("5-Bing Satellite") },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => {
+                        setCurrentMapProvider(opt.value);
+                        localStorage.setItem('default_map_provider', opt.value);
+                        setShowLayerMenu(false);
+                      }}
+                      className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider text-left transition-all active:scale-95 cursor-pointer ${
+                        currentMapProvider === opt.value
+                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/10'
+                          : 'hover:bg-slate-100 text-slate-800'
+                      }`}
+                    >
+                      <i className={`fas ${currentMapProvider === opt.value ? 'fa-check-circle' : 'fa-circle-notch opacity-30'}`}></i>
+                      <span className="truncate">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <style>
               {`
                 .grid-background-fine {
@@ -2223,10 +2267,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               zoomControl={false}
               attributionControl={false}
             >
-              {localStorage.getItem('default_map_provider') === 'Bing Satellite' ? (
+              {currentMapProvider === 'Bing Satellite' ? (
                 <BingTileLayer />
               ) : (
                 <TileLayer
+                  key={currentMapProvider}
                   url={mapInfo.url}
                   attribution={mapInfo.attribution}
                   maxZoom={22}
