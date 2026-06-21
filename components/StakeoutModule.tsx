@@ -172,10 +172,10 @@ const getTileLayer = (provider: string) => {
       };
     case 'Copernicus / Sentinel':
       return {
-        url: "https://tiles.maps.mundialis.de/service/tms/1.0.0/copernicus_sentinel2/{z}/{x}/{y}.png",
-        attribution: '&copy; Copernicus',
+        url: "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2020_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.jpg",
+        attribution: 'Sentinel-2 cloudless &copy; EOX',
         maxNativeZoom: 14,
-        tms: true
+        tms: false
       };
     case 'USGS':
       return {

@@ -683,8 +683,8 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
                   <option value="Google Satellite">{t("2-Google Satellite")}</option>
                   <option value="OpenTopoMap">{t("3-Open Topo Map")}</option>
                   <option value="Esri World Imagery">{t("4-Esri World Imagery")}</option>
-                  <option value="Copernicus / Sentinel">{t("4-Copernicus / Sentinel")}</option>
-                  <option value="USGS">{t("5-USGS")}</option>
+                  <option value="Copernicus / Sentinel">{t("5-Copernicus / Sentinel")}</option>
+                  <option value="USGS">{t("6-USGS")}</option>
                 </select>
               </div>
 
