@@ -49,7 +49,7 @@ export const convertCoordinate = (lat: number, lng: number, system: string) => {
     zoneLabel = `DOM ${dom}`;
   } else if (system === 'ED50_3') {
     const dom = getDom3(lng);
-    // Average ED50-WGS84 transformation parameters for Turkey (HGM/EPSG standards)
+    // Average ED50-WGS84 transformation parameters for Turkiye (HGM/EPSG standards)
     // +towgs84=dX,dY,dZ,Rx,Ry,Rz,dS
     destProj = `+proj=tmerc +lat_0=0 +lon_0=${dom} +k=1 +x_0=500000 +y_0=0 +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs`;
     zoneLabel = `DOM ${dom}`;

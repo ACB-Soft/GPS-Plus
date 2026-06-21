@@ -208,7 +208,7 @@ export function calculateAverage(samples: Coordinate[]): Coordinate {
   const meanLat = samples.reduce((a, b) => a + b.lat, 0) / samples.length;
   const meanLng = samples.reduce((a, b) => a + b.lng, 0) / samples.length;
 
-  // Calculate Yatay Hassasiyet (Horizontal Precision)
+  // Calculate Horizontal Precision
   // We use the root-mean-square of residuals plus the standard error of reported accuracies
   const residualsInMeters = samples.map(s => {
     const dist = calculateDistanceMeter(s.lat, s.lng, meanLat, meanLng, meanLat);
