@@ -20,6 +20,52 @@ const MapResizer = () => {
   return null;
 };
 
+const BingTileLayer = () => {
+  const map = useMap();
+  useEffect(() => {
+    const BingLayerClass = L.TileLayer.extend({
+      getTileUrl: function (coords: any) {
+        let quadkey = '';
+        const z = coords.z;
+        const x = coords.x;
+        const y = coords.y;
+        for (let i = z; i > 0; i--) {
+          let digit = 0;
+          const mask = 1 << (i - 1);
+          if ((x & mask) !== 0) {
+            digit += 1;
+          }
+          if ((y & mask) !== 0) {
+            digit += 2;
+          }
+          quadkey += digit;
+        }
+        return L.Util.template(this._url, {
+          quadkey: quadkey,
+          s: this._getSubdomain(coords)
+        });
+      }
+    });
+
+    const layer = new (BingLayerClass as any)(
+      "https://ecn.t{s}.tiles.virtualearth.net/tiles/a{quadkey}.jpeg?g=587",
+      {
+        subdomains: ['0', '1', '2', '3', '4', '5', '6', '7'],
+        attribution: 'Tiles &copy; Microsoft (Bing Maps)',
+        maxNativeZoom: 19,
+        maxZoom: 22
+      }
+    );
+
+    map.addLayer(layer);
+    return () => {
+      map.removeLayer(layer);
+    };
+  }, [map]);
+
+  return null;
+};
+
 interface Props {
   onComplete: (
     coord: Coordinate, 
@@ -724,8 +770,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       case 'Google Satellite': return { url: "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", maxNativeZoom: 20, tms: false, attribution: '&copy; Google' };
       case 'OpenTopoMap': return { url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", maxNativeZoom: 17, tms: false, attribution: '&copy; OpenTopoMap contributors' };
       case 'Esri World Imagery': return { url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", maxNativeZoom: 19, tms: false, attribution: 'Tiles &copy; Esri' };
-      case 'Copernicus / Sentinel': return { url: "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2020_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.jpg", maxNativeZoom: 14, tms: false, attribution: 'Sentinel-2 cloudless &copy; EOX' };
-      case 'USGS': return { url: "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}", maxNativeZoom: 16, tms: false, attribution: 'Tiles courtesy of the USGS' };
+      case 'Bing Satellite': return { url: "", maxNativeZoom: 19, tms: false, attribution: 'Tiles &copy; Microsoft (Bing Maps)' };
       default: return { url: "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", maxNativeZoom: 20, tms: false, attribution: '&copy; Google' };
     }
   };
@@ -955,13 +1000,17 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
               zoomControl={false}
               attributionControl={false}
             >
-              <TileLayer
-                url={getMapProviderInfo().url}
-                attribution={getMapProviderInfo().attribution}
-                maxZoom={22}
-                maxNativeZoom={getMapProviderInfo().maxNativeZoom}
-                tms={getMapProviderInfo().tms}
-              />
+              {localStorage.getItem('default_map_provider') === 'Bing Satellite' ? (
+                <BingTileLayer />
+              ) : (
+                <TileLayer
+                  url={getMapProviderInfo().url}
+                  attribution={getMapProviderInfo().attribution}
+                  maxZoom={22}
+                  maxNativeZoom={getMapProviderInfo().maxNativeZoom}
+                  tms={getMapProviderInfo().tms}
+                />
+              )}
               <MapResizer />
               
               {/* Draw All Raw Samples in the same color, thin lines, only the last is thick */}

@@ -140,6 +140,52 @@ const MapCenterer = ({ trigger }: { trigger: { pos: [number, number], time: numb
   return null;
 };
 
+const BingTileLayer = () => {
+  const map = useMap();
+  useEffect(() => {
+    const BingLayerClass = L.TileLayer.extend({
+      getTileUrl: function (coords: any) {
+        let quadkey = '';
+        const z = coords.z;
+        const x = coords.x;
+        const y = coords.y;
+        for (let i = z; i > 0; i--) {
+          let digit = 0;
+          const mask = 1 << (i - 1);
+          if ((x & mask) !== 0) {
+            digit += 1;
+          }
+          if ((y & mask) !== 0) {
+            digit += 2;
+          }
+          quadkey += digit;
+        }
+        return L.Util.template(this._url, {
+          quadkey: quadkey,
+          s: this._getSubdomain(coords)
+        });
+      }
+    });
+
+    const layer = new (BingLayerClass as any)(
+      "https://ecn.t{s}.tiles.virtualearth.net/tiles/a{quadkey}.jpeg?g=587",
+      {
+        subdomains: ['0', '1', '2', '3', '4', '5', '6', '7'],
+        attribution: 'Tiles &copy; Microsoft (Bing Maps)',
+        maxNativeZoom: 19,
+        maxZoom: 22
+      }
+    );
+
+    map.addLayer(layer);
+    return () => {
+      map.removeLayer(layer);
+    };
+  }, [map]);
+
+  return null;
+};
+
 const getTileLayer = (provider: string) => {
   switch (provider) {
     case 'Google Hybrid':
@@ -170,18 +216,11 @@ const getTileLayer = (provider: string) => {
         maxNativeZoom: 19,
         tms: false
       };
-    case 'Copernicus / Sentinel':
+    case 'Bing Satellite':
       return {
-        url: "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2020_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.jpg",
-        attribution: 'Sentinel-2 cloudless &copy; EOX',
-        maxNativeZoom: 14,
-        tms: false
-      };
-    case 'USGS':
-      return {
-        url: "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}",
-        attribution: 'Tiles courtesy of the USGS',
-        maxNativeZoom: 16,
+        url: "",
+        attribution: 'Tiles &copy; Microsoft (Bing Maps)',
+        maxNativeZoom: 19,
         tms: false
       };
     case 'Google Roadmap':
@@ -820,13 +859,17 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                 attributionControl={false}
                 preferCanvas={true}
               >
-                <TileLayer
-                  url={getTileLayer(settings.mapProvider).url}
-                  attribution={getTileLayer(settings.mapProvider).attribution}
-                  maxZoom={22}
-                  maxNativeZoom={getTileLayer(settings.mapProvider).maxNativeZoom}
-                  tms={getTileLayer(settings.mapProvider).tms}
-                />
+                {settings.mapProvider === 'Bing Satellite' ? (
+                  <BingTileLayer />
+                ) : (
+                  <TileLayer
+                    url={getTileLayer(settings.mapProvider).url}
+                    attribution={getTileLayer(settings.mapProvider).attribution}
+                    maxZoom={22}
+                    maxNativeZoom={getTileLayer(settings.mapProvider).maxNativeZoom}
+                    tms={getTileLayer(settings.mapProvider).tms}
+                  />
+                )}
                 
                 {processedGeometries.map(g => (
                   <React.Fragment key={g.id}>
@@ -940,13 +983,17 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                 attributionControl={false}
                 preferCanvas={true}
               >
-                <TileLayer
-                  url={getTileLayer(settings.mapProvider).url}
-                  attribution={getTileLayer(settings.mapProvider).attribution}
-                  maxZoom={22}
-                  maxNativeZoom={getTileLayer(settings.mapProvider).maxNativeZoom}
-                  tms={getTileLayer(settings.mapProvider).tms}
-                />
+                {settings.mapProvider === 'Bing Satellite' ? (
+                  <BingTileLayer />
+                ) : (
+                  <TileLayer
+                    url={getTileLayer(settings.mapProvider).url}
+                    attribution={getTileLayer(settings.mapProvider).attribution}
+                    maxZoom={22}
+                    maxNativeZoom={getTileLayer(settings.mapProvider).maxNativeZoom}
+                    tms={getTileLayer(settings.mapProvider).tms}
+                  />
+                )}
                 
                 {processedGeometries.map(g => (
                   <React.Fragment key={g.id}>

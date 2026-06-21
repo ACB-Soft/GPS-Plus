@@ -509,8 +509,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                   <span className="text-sm font-bold text-slate-900">{t("Google Maps API (Satellite/Hybrid)")}</span>
                   <span className="text-sm font-bold text-slate-900">{t("OpenStreetMap Contributors")}</span>
                   <span className="text-sm font-bold text-slate-900">{t("Esri World Imagery (ArcGIS Satellite Services)")}</span>
-                  <span className="text-sm font-bold text-slate-900">{t("Sentinel-hub (Copernicus / Sentinel-2)")}</span>
-                  <span className="text-sm font-bold text-slate-900">{t("USGS (U.S. Geological Survey)")}</span>
+                  <span className="text-sm font-bold text-slate-900">{t("Bing Satellite Maps (Microsoft Virtual Earth)")}</span>
                 </div>
                 <div className="flex flex-col">
                   <span className="text-sm font-black text-slate-400 uppercase tracking-widest">{t("Yazılım Kütüphaneleri")}</span>
