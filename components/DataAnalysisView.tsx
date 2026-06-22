@@ -541,27 +541,32 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       }
 
       // Convert timestamp safely to numeric milliseconds since epoch
-      let ts = s.timestamp;
+      let ts: number;
+      const rawTs = s.timestamp;
       const baseTime = location.timestamp || Date.now();
-      if (!ts) {
+      
+      if (rawTs === null || rawTs === undefined) {
         ts = baseTime + chartIdx * 1000;
-      } else if (typeof ts === 'string') {
-        const parsed = Date.parse(ts);
-        if (!isNaN(parsed)) {
-          ts = parsed;
+      } else if (rawTs instanceof Date) {
+        ts = rawTs.getTime();
+      } else if (typeof rawTs === 'object' && typeof (rawTs as any).getTime === 'function') {
+        ts = (rawTs as any).getTime();
+      } else if (typeof rawTs === 'number') {
+        ts = rawTs;
+      } else {
+        const strTs = String(rawTs).trim();
+        const num = parseFloat(strTs);
+        if (!isNaN(num) && String(num) === strTs) {
+          ts = num;
         } else {
-          const num = parseFloat(ts);
-          ts = isNaN(num) ? baseTime + chartIdx * 1000 : num;
+          const parsed = Date.parse(strTs);
+          ts = !isNaN(parsed) ? parsed : (baseTime + chartIdx * 1000);
         }
       }
-      
-      if (typeof ts === 'number' && !isNaN(ts)) {
-        // If timestamp is in seconds (< 10 Billion), scale it to milliseconds
-        if (ts < 10000000000) {
-          ts = ts * 1000;
-        }
-      } else {
-        ts = baseTime + chartIdx * 1000;
+
+      // If epoch timestamp is in seconds (< 10 Billion), scale it to milliseconds
+      if (typeof ts === 'number' && !isNaN(ts) && ts < 10000000000) {
+        ts = ts * 1000;
       }
 
       return {
@@ -944,16 +949,130 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
 
   const timeSeriesChartData = useMemo(() => {
-    return chartData.map((point, index) => {
-      const secondNum = index + 1;
-      const sIdx = point.sessionIdx !== undefined ? point.sessionIdx : 0;
-      return {
-        ...point,
-        second: secondNum,
-        timeLabel: `${secondNum}.sec`,
-        sessionIdx: sIdx
-      };
+    if (chartData.length === 0) return [];
+    
+    // Group original points by sessionIdx and sort them
+    const sessionsMap: Record<number, typeof chartData> = {};
+    chartData.forEach(p => {
+      const sIdx = p.sessionIdx !== undefined ? p.sessionIdx : 0;
+      if (!sessionsMap[sIdx]) {
+        sessionsMap[sIdx] = [];
+      }
+      sessionsMap[sIdx].push(p);
     });
+
+    // Translate each session's raw epochs relative to its own starting epoch timestamp
+    const mappedRawPoints: any[] = [];
+    
+    Object.keys(sessionsMap).forEach(key => {
+      const sIdx = Number(key);
+      if (sIdx >= 6) return; // Restrict strictly to 6 sessions (0 to 5)
+      
+      const points = [...sessionsMap[sIdx]];
+      points.sort((a, b) => a.timestamp - b.timestamp);
+      
+      const t_0 = points[0].timestamp;
+      const addedSecondsInSession = new Set<number>();
+      
+      points.forEach(point => {
+        const dt = Math.round((point.timestamp - t_0) / 1000);
+        // Cap dt to ensure everything fits comfortably within the 15-second block (0 to 14)
+        const dt_capped = Math.min(14, Math.max(0, dt));
+        
+        // Avoid duplicate seconds within the same session
+        if (addedSecondsInSession.has(dt_capped)) {
+          return;
+        }
+        addedSecondsInSession.add(dt_capped);
+        
+        const absoluteSec = sIdx * 15 + dt_capped;
+        
+        mappedRawPoints.push({
+          ...point,
+          second: absoluteSec + 1,
+          elapsedSecondsInsideSession: dt_capped,
+          elapsedSeconds: absoluteSec,
+          timeLabel: `${absoluteSec}.sec`,
+          sessionIdx: sIdx
+        });
+      });
+    });
+
+    // Sort chronologically on the chart's timeline
+    mappedRawPoints.sort((a, b) => a.elapsedSeconds - b.elapsedSeconds);
+
+    if (mappedRawPoints.length === 0) return [];
+
+    // Create a continuous forward-filled timeline from 0 to 90 seconds
+    const filledData: any[] = [];
+    for (let t = 0; t <= 90; t++) {
+      const exactMatch = mappedRawPoints.find(p => p.elapsedSeconds === t);
+      if (exactMatch) {
+        filledData.push(exactMatch);
+      } else {
+        // Forward fill: Find the nearest sample strictly before t
+        let lastKnown: any = null;
+        for (let i = mappedRawPoints.length - 1; i >= 0; i--) {
+          if (mappedRawPoints[i].elapsedSeconds < t) {
+            lastKnown = mappedRawPoints[i];
+            break;
+          }
+        }
+        if (lastKnown) {
+          filledData.push({
+            ...lastKnown,
+            second: t + 1,
+            elapsedSecondsInsideSession: t % 15,
+            elapsedSeconds: t,
+            timeLabel: `${t}.sec`,
+            sessionIdx: Math.min(5, Math.floor(t / 15))
+          });
+        } else {
+          // Backward-fill / First fallback: find the first available record
+          const firstKnown = mappedRawPoints[0];
+          filledData.push({
+            ...firstKnown,
+            second: t + 1,
+            elapsedSecondsInsideSession: t % 15,
+            elapsedSeconds: t,
+            timeLabel: `${t}.sec`,
+            sessionIdx: Math.min(5, Math.floor(t / 15))
+          });
+        }
+      }
+    }
+
+    return filledData;
+  }, [chartData]);
+
+  const segmentList = useMemo(() => {
+    const list = [];
+    
+    // Group original points by sessionIdx
+    const sessionsMap: Record<number, typeof chartData> = {};
+    chartData.forEach(p => {
+      const sIdx = p.sessionIdx !== undefined ? p.sessionIdx : 0;
+      if (!sessionsMap[sIdx]) {
+        sessionsMap[sIdx] = [];
+      }
+      sessionsMap[sIdx].push(p);
+    });
+
+    for (let i = 0; i < 6; i++) {
+      const startSec = i * 15;
+      const endSec = (i + 1) * 15;
+      
+      const pts = sessionsMap[i] || [];
+      const count = pts.length;
+
+      list.push({
+        segmentIdx: i,
+        label: `Oturum ${i + 1} (${startSec}-${endSec}sn)`,
+        color: SESSION_COLORS[i % SESSION_COLORS.length],
+        count
+      });
+    }
+    return list;
   }, [chartData]);
 
   const sessionsList = useMemo(() => {
@@ -1022,15 +1141,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   }, [timeSeriesMaxLimit, customTimeSeriesStep]);
 
   const timeSeriesXTicks = useMemo(() => {
-    const total = timeSeriesChartData.length;
-    if (total === 0) return [];
-    
-    const ticks: string[] = [];
-    for (let i = 5; i <= total; i += 5) {
-      ticks.push(`${i}.sec`);
-    }
-    return ticks;
-  }, [timeSeriesChartData]);
+    return [0, 15, 30, 45, 60, 75, 90];
+  }, []);
 
   const exportChart = async (ref: React.RefObject<HTMLDivElement>, name: string) => {
     if (!ref.current) return;
@@ -2224,8 +2336,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       <LineChart data={timeSeriesChartData} margin={{ top: 15, right: 15, bottom: 15, left: 15 }}>
                         <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={true} strokeOpacity={0.15} stroke="#000000" />
                         <XAxis 
-                          dataKey="timeLabel" 
+                          type="number"
+                          dataKey="elapsedSeconds" 
                           ticks={timeSeriesXTicks}
+                          domain={[0, 90]}
                           interval={0}
                           angle={-90}
                           textAnchor="end"
@@ -2234,9 +2348,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           axisLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                           tickLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                           tickFormatter={(value) => {
-                            const sec = parseInt(value, 10);
-                            if (isNaN(sec)) return value;
-                            if (sec % 10 === 0) {
+                            const sec = Number(value);
+                            if (isNaN(sec)) return String(value);
+                            if (sec % 15 === 0) {
                               return `${sec}s`;
                             }
                             return "";
@@ -2261,13 +2375,15 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             const data = payload[0].payload;
                             const sIdx = data.sessionIdx !== undefined ? data.sessionIdx : 0;
                             const devValue = data.errorHz !== undefined ? data.errorHz : 0;
+                            const elapsed = data.elapsedSeconds !== undefined ? data.elapsedSeconds : 0;
+                            const segmentIdx = Math.min(5, Math.floor(elapsed / 15)) + 1;
                             return (
                               <div className="bg-white border-2 border-slate-200 text-slate-800 p-2.5 rounded-xl shadow-xl text-[10px] font-sans">
                                 <p className="font-extrabold text-blue-600 mb-0.5 leading-none">
-                                  Time: {data.timeLabel || `${data.second}.sec`}
+                                  Süre: {elapsed} saniye
                                 </p>
                                 <p className="font-extrabold text-slate-900 mb-1 leading-none">
-                                  Session {sIdx + 1}
+                                  Aralık #{segmentIdx} (Oturum {sIdx + 1})
                                 </p>
                                 <div className="h-px bg-slate-100 my-1" />
                                 <p className="font-bold text-slate-500 font-mono leading-none">
@@ -2290,18 +2406,17 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     </ResponsiveContainer>
                   </div>
 
-                  {/* Bottom Panel: Shrunk & Very Compact Session Legend */}
+                  {/* Bottom Panel: 15s Interval Legend partitioned into 6 parts (Total 90s) */}
                   <div className="shrink-0 pt-1.5 flex flex-col gap-2 w-full mt-2 border-t border-slate-100">
                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
-                      {t("ÖLÇÜM OTURUMLARI (OBSERVATION SESSIONS)")}
+                      {t("ÖLÇÜM ZAMAN ARALIKLARI (90sn LEJANT)")}
                     </span>
-                    <div className="grid grid-cols-3 gap-x-2 gap-y-1.5 font-sans">
-                      {sessionsList.map((session) => {
-                        const sIdx = session.sessionIdx;
-                        const color = session.color;
-                        const count = session.count;
-                        const startId = session.startId;
-                        const endId = session.endId;
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-2 gap-y-1.5 font-sans">
+                      {segmentList.map((segment) => {
+                        const sIdx = segment.segmentIdx;
+                        const color = segment.color;
+                        const count = segment.count;
+                        const label = segment.label;
                         
                         const fs = parseFloat(customTimeSeriesFontSize);
                         const titleFontSize = `${fs - 0.5}px`;
@@ -2311,10 +2426,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             <div className="w-3 h-3 rounded-full shrink-0 shadow-xs" style={{ backgroundColor: color }} />
                             <div className="min-w-0 font-sans">
                               <p className="font-extrabold text-slate-800 uppercase tracking-tight truncate leading-none font-sans" style={{ fontSize: titleFontSize }}>
-                                Session {sIdx + 1}
+                                {label}
                               </p>
                               <p className="font-bold text-slate-400 font-mono tracking-tight leading-none mt-0.5" style={{ fontSize: subFontSize }}>
-                                {count} Ep (#{startId}-#{endId})
+                                {count} Epoch
                               </p>
                             </div>
                           </div>
