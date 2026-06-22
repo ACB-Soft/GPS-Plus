@@ -557,14 +557,17 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     // Sort chronologically to be absolutely sure we process sequential epochs
     mapped.sort((a, b) => a.timestamp - b.timestamp);
 
-    // Dynamic grouping: if gap > 20,000ms (20 seconds), increment sessionIdx
+    // Dynamic grouping based on 20-second session window from the first epoch of each session
     let currentSessionIdx = 0;
+    let sessionStartTime = mapped.length > 0 ? mapped[0].timestamp : 0;
+
     for (let i = 0; i < mapped.length; i++) {
-      if (i > 0) {
-        const gapMs = mapped[i].timestamp - mapped[i - 1].timestamp;
-        if (gapMs > 20000) {
-          currentSessionIdx++;
-        }
+      const elapsedMs = mapped[i].timestamp - sessionStartTime;
+      if (elapsedMs > 20000) {
+        // This epoch is outside the 20-second window of the current session.
+        // It starts a new session.
+        currentSessionIdx++;
+        sessionStartTime = mapped[i].timestamp;
       }
       mapped[i].sessionIdx = currentSessionIdx;
     }
