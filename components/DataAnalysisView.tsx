@@ -113,6 +113,21 @@ const CLUSTER_COLORS = [
   '#10b981', // Emerald
 ];
 
+const SESSION_COLORS = [
+  '#2563eb', // Blue
+  '#dc2626', // Red
+  '#059669', // Emerald
+  '#d97706', // Amber
+  '#7c3aed', // Purple
+  '#db2777', // Pink
+  '#0891b2', // Cyan
+  '#65a30d', // Lime
+  '#ea580c', // Orange
+  '#0d9488', // Teal
+  '#4f46e5', // Indigo
+  '#0284c7', // Sky
+];
+
 const getClusterLetterLabel = (idx: number): string => {
   let label = '';
   let temp = idx;
@@ -152,6 +167,34 @@ const RawPointShape = (props: any) => {
       r={radius} 
       fill={fill} 
       fillOpacity={fillOpacity} 
+    />
+  );
+};
+
+const ColoredDot = (props: any) => {
+  const { cx, cy, payload, index, r } = props;
+  if (cx === undefined || cy === undefined) return null;
+  
+  let sessionIdx = 0;
+  if (payload && payload.sessionIdx !== undefined) {
+    sessionIdx = payload.sessionIdx;
+  } else if (props.sessionIdx !== undefined) {
+    sessionIdx = props.sessionIdx;
+  } else {
+    const idx = index !== undefined ? index : 0;
+    sessionIdx = Math.floor(idx / 15);
+  }
+  
+  const color = SESSION_COLORS[sessionIdx % SESSION_COLORS.length];
+  const radius = r !== undefined ? r : 2;
+  return (
+    <circle
+      cx={cx}
+      cy={cy}
+      r={radius}
+      fill={color}
+      stroke="#ffffff"
+      strokeWidth={0.8}
     />
   );
 };
@@ -477,7 +520,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       hasRef = true;
     }
 
-    return accuracyFilteredIndices.map((originalIdx, chartIdx) => {
+    const mapped = accuracyFilteredIndices.map((originalIdx, chartIdx) => {
       const s = location.samples![originalIdx];
       const conv = convertCoordinate(s.lat, s.lng, sys);
       let errorHz = 0;
@@ -504,10 +547,29 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
         alt: s.altitude || 0,
         acc: s.accuracy,
         time: new Date(s.timestamp).toLocaleTimeString(),
+        timestamp: s.timestamp,
         errorHz: errorHz,
-        clusterId
+        clusterId,
+        sessionIdx: 0
       };
     });
+
+    // Sort chronologically to be absolutely sure we process sequential epochs
+    mapped.sort((a, b) => a.timestamp - b.timestamp);
+
+    // Dynamic grouping: if gap > 20,000ms (20 seconds), increment sessionIdx
+    let currentSessionIdx = 0;
+    for (let i = 0; i < mapped.length; i++) {
+      if (i > 0) {
+        const gapMs = mapped[i].timestamp - mapped[i - 1].timestamp;
+        if (gapMs > 20000) {
+          currentSessionIdx++;
+        }
+      }
+      mapped[i].sessionIdx = currentSessionIdx;
+    }
+
+    return mapped;
   }, [location, analysisType, appliedPreciseN, appliedPreciseE, useLocal, computedClusters]);
 
   // Convex hull helper for cluster boundary polygons
@@ -727,7 +789,15 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       const dE = d.x - centerX; // Easting Delta
       const dN = d.y - centerY; // Northing Delta
       maxDelta = Math.max(maxDelta, Math.abs(dE), Math.abs(dN));
-      return { ...d, dE, dN };
+      
+      const sIdx = d.sessionIdx !== undefined ? d.sessionIdx : 0;
+
+      return { 
+        ...d, 
+        dE, 
+        dN,
+        sessionIdx: sIdx
+      };
     });
 
     const methodPoints = (analysisResults || [])
@@ -849,13 +919,45 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const timeSeriesChartData = useMemo(() => {
     return chartData.map((point, index) => {
       const secondNum = index + 1;
+      const sIdx = point.sessionIdx !== undefined ? point.sessionIdx : 0;
       return {
         ...point,
         second: secondNum,
-        timeLabel: `${secondNum}.sec`
+        timeLabel: `${secondNum}.sec`,
+        sessionIdx: sIdx
       };
     });
   }, [chartData]);
+
+  const sessionsList = useMemo(() => {
+    if (timeSeriesChartData.length === 0) return [];
+    const groups: Record<number, typeof timeSeriesChartData> = {};
+    timeSeriesChartData.forEach(d => {
+      const idx = d.sessionIdx !== undefined ? d.sessionIdx : 0;
+      if (!groups[idx]) {
+        groups[idx] = [];
+      }
+      groups[idx].push(d);
+    });
+    
+    const maxIdx = Math.max(...Object.keys(groups).map(Number), 0);
+    const list = [];
+    for (let sIdx = 0; sIdx <= maxIdx; sIdx++) {
+      const pts = groups[sIdx] || [];
+      if (pts.length > 0) {
+        const startId = pts[0].id;
+        const endId = pts[pts.length - 1].id;
+        list.push({
+          sessionIdx: sIdx,
+          color: SESSION_COLORS[sIdx % SESSION_COLORS.length],
+          count: pts.length,
+          startId,
+          endId
+        });
+      }
+    }
+    return list;
+  }, [timeSeriesChartData]);
 
   const timeSeriesMaxLimit = useMemo(() => {
     if (customTimeSeriesRange !== 'auto') {
@@ -1583,7 +1685,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               return (
                                 <div className="bg-slate-900 border border-slate-800 text-white p-2.5 rounded-lg shadow-xl z-50 text-[8px] text-left">
                                   <p className="font-bold uppercase text-blue-400 mb-0.5 pb-0.5 border-b border-slate-800 leading-none">
-                                    {isMethod ? `${getMethodLabelEn(data.method)}` : `Raw Epoch #${data.id}`}
+                                    {isMethod ? `${getMethodLabelEn(data.method)}` : `Raw Epoch #${data.id} (Session ${(data.sessionIdx !== undefined ? data.sessionIdx : 0) + 1})`}
                                   </p>
                                   <div className="space-y-0.5 font-mono">
                                     <div className="flex justify-between gap-2">
@@ -1624,13 +1726,17 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           data={distributionData.rawPoints} 
                           shape={<RawPointShape r={parseFloat(customDotSize)} />} 
                         >
-                          {distributionData.rawPoints.map((entry, index) => (
-                            <Cell 
-                              key={`cell-${index}`} 
-                              fill="#ef4444" 
-                              fillOpacity={0.4} 
-                            />
-                          ))}
+                          {distributionData.rawPoints.map((entry, index) => {
+                            const sessionIdx = entry.sessionIdx !== undefined ? entry.sessionIdx : 0;
+                            const color = SESSION_COLORS[sessionIdx % SESSION_COLORS.length];
+                            return (
+                              <Cell 
+                                key={`cell-${index}`} 
+                                fill={color} 
+                                fillOpacity={0.7} 
+                              />
+                            );
+                          })}
                         </Scatter>
                         
                         {/* Layer 2: Method Aggregates */}
@@ -2123,21 +2229,71 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           }}
                         />
                         <Tooltip 
-                          contentStyle={{ borderRadius: '0.75rem', border: '1px solid #e2e8f0', fontWeight: 'black', background: '#ffffff', color: '#0f172a', fontSize: '9px' }} 
-                          formatter={(value: number) => [`${value.toFixed(3)} m`, 'Horizontal Deviation']}
-                          labelFormatter={(label) => `Time: ${label}`}
+                          content={({ active, payload }) => {
+                            if (!active || !payload || !payload.length) return null;
+                            const data = payload[0].payload;
+                            const sIdx = data.sessionIdx !== undefined ? data.sessionIdx : 0;
+                            const devValue = data.errorHz !== undefined ? data.errorHz : 0;
+                            return (
+                              <div className="bg-white border-2 border-slate-200 text-slate-800 p-2.5 rounded-xl shadow-xl text-[10px] font-sans">
+                                <p className="font-extrabold text-blue-600 mb-0.5 leading-none">
+                                  Time: {data.timeLabel || `${data.second}.sec`}
+                                </p>
+                                <p className="font-extrabold text-slate-900 mb-1 leading-none">
+                                  Session {sIdx + 1}
+                                </p>
+                                <div className="h-px bg-slate-100 my-1" />
+                                <p className="font-bold text-slate-500 font-mono leading-none">
+                                  Sapma: <span className="font-black text-slate-800">{devValue.toFixed(3)} m</span>
+                                </p>
+                              </div>
+                            );
+                          }}
                         />
                         <Line 
                           type="monotone" 
                           dataKey="errorHz" 
                           name="Deviation"
-                          stroke="#f43f5e" 
-                          strokeWidth={2.5} 
-                          dot={{ r: parseFloat(customTimeSeriesDotSize), fill: '#f43f5e', stroke: '#fff', strokeWidth: 1 }} 
-                          activeDot={{ r: parseFloat(customTimeSeriesDotSize) + 1.5, stroke: '#f43f5e', strokeWidth: 2, fill: '#fff' }}
+                          stroke="#cbd5e1" 
+                          strokeWidth={2} 
+                          dot={<ColoredDot r={parseFloat(customTimeSeriesDotSize)} />} 
+                          activeDot={(props: any) => <ColoredDot {...props} r={parseFloat(customTimeSeriesDotSize) + 1.5} />}
                         />
                       </LineChart>
                     </ResponsiveContainer>
+                  </div>
+
+                  {/* Bottom Panel: Shrunk & Very Compact Session Legend */}
+                  <div className="shrink-0 pt-1.5 flex flex-col gap-2 w-full mt-2 border-t border-slate-100">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
+                      {t("ÖLÇÜM OTURUMLARI (OBSERVATION SESSIONS)")}
+                    </span>
+                    <div className="grid grid-cols-3 gap-x-2 gap-y-1.5 font-sans">
+                      {sessionsList.map((session) => {
+                        const sIdx = session.sessionIdx;
+                        const color = session.color;
+                        const count = session.count;
+                        const startId = session.startId;
+                        const endId = session.endId;
+                        
+                        const fs = parseFloat(customTimeSeriesFontSize);
+                        const titleFontSize = `${fs - 0.5}px`;
+                        const subFontSize = `${fs - 1.5}px`;
+                        return (
+                          <div key={sIdx} className="flex items-center gap-1.5 text-left leading-none min-w-0">
+                            <div className="w-3 h-3 rounded-full shrink-0 shadow-xs" style={{ backgroundColor: color }} />
+                            <div className="min-w-0 font-sans">
+                              <p className="font-extrabold text-slate-800 uppercase tracking-tight truncate leading-none font-sans" style={{ fontSize: titleFontSize }}>
+                                Session {sIdx + 1}
+                              </p>
+                              <p className="font-bold text-slate-400 font-mono tracking-tight leading-none mt-0.5" style={{ fontSize: subFontSize }}>
+                                {count} Ep (#{startId}-#{endId})
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
