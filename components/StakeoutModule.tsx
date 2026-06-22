@@ -609,6 +609,9 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
           title={view === 'MENU' ? t('Aplikasyon Yap') : 
                  view === 'LIST' ? t('Nokta Listesi') : 
                  view === 'MANUAL' ? t('Manuel Ekle') : t('Aplikasyon Ekranı')} 
+          onBack={() => {
+            window.history.back();
+          }}
         />
       )}
 
@@ -856,7 +859,9 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
               {/* Back Button on top-left */}
               <div className="absolute top-6 left-6 z-[10000]">
                 <button 
-                  onClick={() => onNavigate('MENU')}
+                  onClick={() => {
+                    window.history.back();
+                  }}
                   className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all cursor-pointer border border-slate-100"
                   title={t("Çıkış")}
                 >
@@ -1031,7 +1036,9 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
               {/* Back Button on top-left */}
               <div className="absolute top-6 left-6 z-[10000]">
                 <button 
-                  onClick={() => onNavigate(sourceView)}
+                  onClick={() => {
+                    window.history.back();
+                  }}
                   className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all cursor-pointer border border-slate-100"
                   title={t("Çıkış")}
                 >
