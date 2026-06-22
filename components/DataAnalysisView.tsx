@@ -1067,7 +1067,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
       list.push({
         segmentIdx: i,
-        label: `Oturum ${i + 1} (${startSec}-${endSec}sn)`,
+        label: `Session ${i + 1} (${startSec}-${endSec}s)`,
         color: SESSION_COLORS[i % SESSION_COLORS.length],
         count
       });
@@ -1761,12 +1761,12 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 {/* 1:1 Aspect Ratio Precision Sheet: Borderless & Extremely Clean layout */}
                 <div 
                   ref={rawChartRef} 
-                  className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] h-auto mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
+                  className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-3.5 pb-2.5 flex flex-col gap-1 text-slate-900 w-full max-w-[500px] h-auto mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
                 >
                   {/* Top Panel: Large/Expanded Borderless Scatter Chart */}
                   <div className="w-full aspect-square relative shrink-0">
                     <ResponsiveContainer width="100%" height="100%">
-                      <ScatterChart margin={{ top: 15, right: 15, bottom: 15, left: 15 }}>
+                      <ScatterChart margin={{ top: 8, right: 8, bottom: 2, left: 2 }}>
                         <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" horizontal={true} vertical={true} />
                         <XAxis 
                           type="number" 
@@ -1777,14 +1777,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           interval={0}
                           angle={-90}
                           textAnchor="end"
-                          height={45}
+                          height={48}
                           tickFormatter={(val) => {
                             const isInteger = Math.abs(val - Math.round(val)) < 0.01;
                             return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
                           }}
-                          tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155', dy: 2.5, dx: -3}}
-                          axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
-                          tickLine={{ stroke: '#475569', strokeWidth: 1 }}
+                          tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 800, fill: '#000000', dy: 2.5, dx: -3}}
+                          axisLine={{ stroke: '#000000', strokeWidth: 1.5 }}
+                          tickLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                         />
                         <YAxis 
                           type="number" 
@@ -1793,14 +1793,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           domain={[-maxTickLimit + yOffset, maxTickLimit + yOffset]} 
                           ticks={yTicks}
                           interval={0}
-                          width={45}
+                          width={38}
                           tickFormatter={(val) => {
                             const isInteger = Math.abs(val - Math.round(val)) < 0.01;
                             return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
                           }}
-                          tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155'}} 
-                          axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
-                          tickLine={{ stroke: '#475569', strokeWidth: 1 }}
+                          tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 800, fill: '#000000'}} 
+                          axisLine={{ stroke: '#000000', strokeWidth: 1.5 }}
+                          tickLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                         />
                         <ZAxis type="number" range={[15, 120]} />
                         <Tooltip 
@@ -2017,13 +2017,13 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
                     <div 
                       ref={baardaChartRef}
-                      className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] h-auto mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
+                      className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-3.5 pb-2.5 flex flex-col gap-1 text-slate-900 w-full max-w-[500px] h-auto mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
                     >
                       {/* Scatter Plot */}
                       <div className="w-full aspect-square relative shrink-0">
                         {hybridClusterChartData && hybridClusterChartData.points.length > 0 ? (
                           <ResponsiveContainer width="100%" height="100%">
-                            <ScatterChart margin={{ top: 15, right: 15, bottom: 15, left: 15 }}>
+                            <ScatterChart margin={{ top: 8, right: 8, bottom: 2, left: 2 }}>
                               <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" horizontal={true} vertical={true} />
                               <XAxis 
                                 type="number" 
@@ -2034,14 +2034,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 interval={0}
                                 angle={-90}
                                 textAnchor="end"
-                                height={45}
+                                height={48}
                                 tickFormatter={(val) => {
                                   const isInteger = Math.abs(val - Math.round(val)) < 0.01;
                                   return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
                                 }}
-                                tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155', dy: 2.5, dx: -3}}
-                                axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
-                                tickLine={{ stroke: '#475569', strokeWidth: 1 }}
+                                tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 800, fill: '#000000', dy: 2.5, dx: -3}}
+                                axisLine={{ stroke: '#000000', strokeWidth: 1.5 }}
+                                tickLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                               />
                               <YAxis 
                                 type="number" 
@@ -2050,14 +2050,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 domain={[-maxTickLimit + yOffset, maxTickLimit + yOffset]} 
                                 ticks={yTicks}
                                 interval={0}
-                                width={45}
+                                width={38}
                                 tickFormatter={(val) => {
                                   const isInteger = Math.abs(val - Math.round(val)) < 0.01;
                                   return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
                                 }}
-                                tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 700, fill: '#334155'}} 
-                                axisLine={{ stroke: '#475569', strokeWidth: 1.2 }}
-                                tickLine={{ stroke: '#475569', strokeWidth: 1 }}
+                                tick={{fontSize: parseFloat(customScatterFontSize), fontWeight: 800, fill: '#000000'}} 
+                                axisLine={{ stroke: '#000000', strokeWidth: 1.5 }}
+                                tickLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                               />
                               <ZAxis type="number" range={[15, 15]} />
                               <Tooltip 
@@ -2329,11 +2329,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 {/* Unified Aspect-Ratio Time Series Panel Wrapper (Clean, No Headers/Footers) */}
                 <div 
                   ref={timeErrorChartRef}
-                  className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-4 flex flex-col gap-3 text-slate-900 w-full max-w-[500px] h-auto mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
+                  className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-3.5 pb-2.5 flex flex-col gap-1 text-slate-900 w-full max-w-[500px] h-auto mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
                 >
                   <div className="w-full aspect-square relative shrink-0">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={timeSeriesChartData} margin={{ top: 15, right: 15, bottom: 15, left: 15 }}>
+                      <LineChart data={timeSeriesChartData} margin={{ top: 8, right: 8, bottom: 2, left: 2 }}>
                         <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={true} strokeOpacity={0.15} stroke="#000000" />
                         <XAxis 
                           type="number"
@@ -2343,7 +2343,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           interval={0}
                           angle={-90}
                           textAnchor="end"
-                          height={45}
+                          height={48}
                           tick={{ fontSize: parseFloat(customTimeSeriesFontSize), fontWeight: 800, fill: '#000000', dy: 2.5, dx: -3 }}
                           axisLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                           tickLine={{ stroke: '#000000', strokeWidth: 1.5 }}
@@ -2380,14 +2380,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             return (
                               <div className="bg-white border-2 border-slate-200 text-slate-800 p-2.5 rounded-xl shadow-xl text-[10px] font-sans">
                                 <p className="font-extrabold text-blue-600 mb-0.5 leading-none">
-                                  Süre: {elapsed} saniye
+                                  Time: {elapsed} seconds
                                 </p>
                                 <p className="font-extrabold text-slate-900 mb-1 leading-none">
-                                  Aralık #{segmentIdx} (Oturum {sIdx + 1})
+                                  Interval #{segmentIdx} (Session {sIdx + 1})
                                 </p>
                                 <div className="h-px bg-slate-100 my-1" />
                                 <p className="font-bold text-slate-500 font-mono leading-none">
-                                  Sapma: <span className="font-black text-slate-800">{devValue.toFixed(3)} m</span>
+                                  Deviation: <span className="font-black text-slate-800">{devValue.toFixed(3)} m</span>
                                 </p>
                               </div>
                             );
@@ -2407,10 +2407,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   </div>
 
                   {/* Bottom Panel: 15s Interval Legend partitioned into 6 parts (Total 90s) */}
-                  <div className="shrink-0 pt-1.5 flex flex-col gap-2 w-full mt-2 border-t border-slate-100">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
-                      {t("ÖLÇÜM ZAMAN ARALIKLARI (90sn LEJANT)")}
-                    </span>
+                  <div className="shrink-0 w-full mt-1">
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-2 gap-y-1.5 font-sans">
                       {segmentList.map((segment) => {
                         const sIdx = segment.segmentIdx;
