@@ -119,7 +119,9 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   });
   const [seconds, setSeconds] = useState(() => {
     const saved = parseInt(localStorage.getItem('default_duration') || '15');
-    return saved === 120 ? 90 : saved;
+    if (saved === 120) return 90;
+    if (saved === 91) return 90;
+    return saved;
   });
   const [sampleCount, setSampleCount] = useState(0);
   const [reliabilityStatus, setReliabilityStatus] = useState<'GOOD' | 'WARNING' | 'CRITICAL' | 'UNKNOWN'>('UNKNOWN');
@@ -148,7 +150,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   const isIOSDevice = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
   const currentDeviceOS: 'iOS' | 'Android' = isIOSDevice ? 'iOS' : 'Android';
 
-  const activeDurationBudget = measurementDuration;
+  const activeDurationBudget = measurementDuration === 91 ? 90 : measurementDuration;
   const lastSavedPositionRef = useRef<{lat: number, lng: number, accuracy: number} | null>(null);
   const lastSaveTimestampRef = useRef<number>(0);
   const watchIdRef = useRef<number | null>(null);
@@ -878,7 +880,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                       onChange={e => setMeasurementDuration(parseInt(e.target.value))}
                       className="w-full p-2.5 bg-slate-200 rounded-xl font-black text-center text-lg text-slate-900 outline-none border border-slate-200 leading-none appearance-none"
                     >
-                      {[5, 10, 15, 30, 60, 90].map(v => {
+                      {[5, 10, 15, 30, 60, 90, 91].map(v => {
                         let label = t(`${v}sn`);
                         if (v === 5) label = t("5sn (Hızlı)");
                         else if (v === 10) label = t("10sn (Hızlı)");
@@ -886,6 +888,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                         else if (v === 30) label = t("15s x 2oturum");
                         else if (v === 60) label = t("15s x 4oturum");
                         else if (v === 90) label = t("15s x 6oturum");
+                        else if (v === 91) label = t("90sn (Oturumsuz)");
                         return <option key={v} value={v}>{label}</option>;
                       })}
                     </select>

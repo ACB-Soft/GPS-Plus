@@ -557,7 +557,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
                   onChange={(e) => setMeasurementDuration(e.target.value)}
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
-                  {[5, 10, 15, 30, 60, 90].map(v => {
+                  {[5, 10, 15, 30, 60, 90, 91].map(v => {
                     let label = `${v} ${t("saniye")}`;
                     if (v === 5) label = t("5sn (Hızlı)");
                     else if (v === 10) label = t("10sn (Hızlı)");
@@ -565,6 +565,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
                     else if (v === 30) label = t("15s x 2oturum");
                     else if (v === 60) label = t("15s x 4oturum");
                     else if (v === 90) label = t("15s x 6oturum");
+                    else if (v === 91) label = t("90sn (Oturumsuz)");
                     return <option key={v} value={v.toString()}>{label}</option>;
                   })}
                 </select>

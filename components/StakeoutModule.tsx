@@ -271,6 +271,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
   const [view, setView] = useState<'MENU' | 'LIST' | 'MANUAL' | 'MAP' | 'ALL_MAP'>((currentStep as any) || (initialPoint ? 'MAP' : 'MENU'));
   const [allMapZoom, setAllMapZoom] = useState(0);
   const [allMapCenterTrigger, setAllMapCenterTrigger] = useState<{ pos: [number, number], time: number } | null>(null);
+  const [currentMapProvider, setCurrentMapProvider] = useState(() => localStorage.getItem('default_map_provider') || 'Google Hybrid');
+  const [showLayerMenu, setShowLayerMenu] = useState(false);
 
   useEffect(() => {
     if (currentStep && currentStep !== view) {
@@ -602,12 +604,13 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
           background: white;
         }
       `}</style>
-      <Header 
-        title={view === 'MENU' ? t('Aplikasyon Yap') : 
-               view === 'LIST' ? t('Nokta Listesi') : 
-               view === 'MANUAL' ? t('Manuel Ekle') : 
-               view === 'ALL_MAP' ? t('Tüm Noktalar') : t('Aplikasyon Ekranı')} 
-      />
+      {view !== 'MAP' && view !== 'ALL_MAP' && (
+        <Header 
+          title={view === 'MENU' ? t('Aplikasyon Yap') : 
+                 view === 'LIST' ? t('Nokta Listesi') : 
+                 view === 'MANUAL' ? t('Manuel Ekle') : t('Aplikasyon Ekranı')} 
+        />
+      )}
 
       {/* Toast Notification */}
       {toast && (
@@ -850,6 +853,57 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
         {view === 'ALL_MAP' && (
           <div className="flex flex-col h-full relative">
             <div className="flex-1 relative z-10">
+              {/* Back Button on top-left */}
+              <div className="absolute top-6 left-6 z-[10000]">
+                <button 
+                  onClick={() => onNavigate('MENU')}
+                  className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all cursor-pointer border border-slate-100"
+                  title={t("Çıkış")}
+                >
+                  <i className="fas fa-arrow-left"></i>
+                </button>
+              </div>
+
+              {/* Symmetrical Layer Selector on the top-right */}
+              <div className="absolute top-6 right-6 z-[10000] flex flex-col items-end gap-2">
+                <button 
+                  onClick={() => setShowLayerMenu(!showLayerMenu)}
+                  className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all cursor-pointer border border-slate-100"
+                  title={t("Harita Kaynağı")}
+                >
+                  <i className="fas fa-layer-group text-lg"></i>
+                </button>
+                {showLayerMenu && (
+                  <div className="bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xl flex flex-col gap-1 w-52 text-slate-900 select-none animate-in fade-in slide-in-from-top-2 duration-150 animate-out fade-out">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-3 py-1.5 border-b border-slate-100 mb-1 leading-none">{t("Harita Kaynağı")}</p>
+                    {[
+                      { value: 'Google Hybrid', label: t("1-Google Hibrit") },
+                      { value: 'Google Satellite', label: t("2-Google Satellite") },
+                      { value: 'OpenTopoMap', label: t("3-Open Topo Map") },
+                      { value: 'Esri World Imagery', label: t("4-Esri World Imagery") },
+                      { value: 'Bing Satellite', label: t("5-Bing Satellite") },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => {
+                          setCurrentMapProvider(opt.value);
+                          localStorage.setItem('default_map_provider', opt.value);
+                          setShowLayerMenu(false);
+                        }}
+                        className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider text-left transition-all active:scale-95 cursor-pointer ${
+                          currentMapProvider === opt.value
+                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/10'
+                            : 'hover:bg-slate-100 text-slate-800'
+                        }`}
+                      >
+                        <i className={`fas ${currentMapProvider === opt.value ? 'fa-check-circle' : 'fa-circle-notch opacity-30'}`}></i>
+                        <span className="truncate">{opt.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <MapContainer 
                 center={[userPos?.lat || 39, userPos?.lng || 35]} 
                 zoom={19} 
@@ -859,15 +913,15 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                 attributionControl={false}
                 preferCanvas={true}
               >
-                {settings.mapProvider === 'Bing Satellite' ? (
+                {currentMapProvider === 'Bing Satellite' ? (
                   <BingTileLayer />
                 ) : (
                   <TileLayer
-                    url={getTileLayer(settings.mapProvider).url}
-                    attribution={getTileLayer(settings.mapProvider).attribution}
+                    url={getTileLayer(currentMapProvider).url}
+                    attribution={getTileLayer(currentMapProvider).attribution}
                     maxZoom={22}
-                    maxNativeZoom={getTileLayer(settings.mapProvider).maxNativeZoom}
-                    tms={getTileLayer(settings.mapProvider).tms}
+                    maxNativeZoom={getTileLayer(currentMapProvider).maxNativeZoom}
+                    tms={getTileLayer(currentMapProvider).tms}
                   />
                 )}
                 
@@ -974,24 +1028,75 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
         {view === 'MAP' && activePoint && (
           <div className="flex flex-col h-full relative">
             <div className="flex-1 relative z-10">
+              {/* Back Button on top-left */}
+              <div className="absolute top-6 left-6 z-[10000]">
+                <button 
+                  onClick={() => onNavigate(sourceView)}
+                  className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all cursor-pointer border border-slate-100"
+                  title={t("Çıkış")}
+                >
+                  <i className="fas fa-arrow-left"></i>
+                </button>
+              </div>
+
+              {/* Symmetrical Layer Selector on the top-right */}
+              <div className="absolute top-6 right-6 z-[10000] flex flex-col items-end gap-2">
+                <button 
+                  onClick={() => setShowLayerMenu(!showLayerMenu)}
+                  className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all cursor-pointer border border-slate-100"
+                  title={t("Harita Kaynağı")}
+                >
+                  <i className="fas fa-layer-group text-lg"></i>
+                </button>
+                {showLayerMenu && (
+                  <div className="bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xl flex flex-col gap-1 w-52 text-slate-900 select-none animate-in fade-in slide-in-from-top-2 duration-150 animate-out fade-out font-sans">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-3 py-1.5 border-b border-slate-100 mb-1 leading-none">{t("Harita Kaynağı")}</p>
+                    {[
+                      { value: 'Google Hybrid', label: t("1-Google Hibrit") },
+                      { value: 'Google Satellite', label: t("2-Google Satellite") },
+                      { value: 'OpenTopoMap', label: t("3-Open Topo Map") },
+                      { value: 'Esri World Imagery', label: t("4-Esri World Imagery") },
+                      { value: 'Bing Satellite', label: t("5-Bing Satellite") },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => {
+                          setCurrentMapProvider(opt.value);
+                          localStorage.setItem('default_map_provider', opt.value);
+                          setShowLayerMenu(false);
+                        }}
+                        className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider text-left transition-all active:scale-95 cursor-pointer ${
+                          currentMapProvider === opt.value
+                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/10'
+                            : 'hover:bg-slate-100 text-slate-800'
+                        }`}
+                      >
+                        <i className={`fas ${currentMapProvider === opt.value ? 'fa-check-circle' : 'fa-circle-notch opacity-30'}`}></i>
+                        <span className="truncate">{opt.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <MapContainer 
                 center={[activePoint.lat, activePoint.lng]} 
-                zoom={getTileLayer(settings.mapProvider).maxNativeZoom} 
+                zoom={getTileLayer(currentMapProvider).maxNativeZoom} 
                 maxZoom={22}
                 style={{ height: '100%', width: '100%' }}
                 zoomControl={false}
                 attributionControl={false}
                 preferCanvas={true}
               >
-                {settings.mapProvider === 'Bing Satellite' ? (
+                {currentMapProvider === 'Bing Satellite' ? (
                   <BingTileLayer />
                 ) : (
                   <TileLayer
-                    url={getTileLayer(settings.mapProvider).url}
-                    attribution={getTileLayer(settings.mapProvider).attribution}
+                    url={getTileLayer(currentMapProvider).url}
+                    attribution={getTileLayer(currentMapProvider).attribution}
                     maxZoom={22}
-                    maxNativeZoom={getTileLayer(settings.mapProvider).maxNativeZoom}
-                    tms={getTileLayer(settings.mapProvider).tms}
+                    maxNativeZoom={getTileLayer(currentMapProvider).maxNativeZoom}
+                    tms={getTileLayer(currentMapProvider).tms}
                   />
                 )}
                 

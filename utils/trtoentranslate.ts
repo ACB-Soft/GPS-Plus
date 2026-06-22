@@ -159,6 +159,7 @@ export const trToEnMap: Record<string, string> = {
   "15s x 2oturum": "15s x 2sessions",
   "15s x 4oturum": "15s x 4sessions",
   "15s x 6oturum": "15s x 6sessions",
+  "90sn (Oturumsuz)": "90s (No Session)",
   "Hassasiyet": "Accuracy",
   "Kalan Süre": "Remaining Time",
   "Ölçüm": "Measurement",
