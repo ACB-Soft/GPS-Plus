@@ -540,14 +540,38 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
         });
       }
 
+      // Convert timestamp safely to numeric milliseconds since epoch
+      let ts = s.timestamp;
+      const baseTime = location.timestamp || Date.now();
+      if (!ts) {
+        ts = baseTime + chartIdx * 1000;
+      } else if (typeof ts === 'string') {
+        const parsed = Date.parse(ts);
+        if (!isNaN(parsed)) {
+          ts = parsed;
+        } else {
+          const num = parseFloat(ts);
+          ts = isNaN(num) ? baseTime + chartIdx * 1000 : num;
+        }
+      }
+      
+      if (typeof ts === 'number' && !isNaN(ts)) {
+        // If timestamp is in seconds (< 10 Billion), scale it to milliseconds
+        if (ts < 10000000000) {
+          ts = ts * 1000;
+        }
+      } else {
+        ts = baseTime + chartIdx * 1000;
+      }
+
       return {
         id: originalIdx + 1,
         x: conv.x, // Sağa (Y)
         y: conv.y, // Yukarı (X)
         alt: s.altitude || 0,
         acc: s.accuracy,
-        time: new Date(s.timestamp).toLocaleTimeString(),
-        timestamp: s.timestamp,
+        time: new Date(ts).toLocaleTimeString(),
+        timestamp: ts,
         errorHz: errorHz,
         clusterId,
         sessionIdx: 0
