@@ -77,7 +77,7 @@ interface Props {
 }
 
 const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = false, onCloseMap }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [showMap, setShowMap] = useState(initialShowMap);
   const [showWarning, setShowWarning] = useState(false);
   const [currentMapProvider, setCurrentMapProvider] = useState(() => localStorage.getItem('default_map_provider') || 'Google Hybrid');
@@ -157,15 +157,15 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
 
   return (
     <>
-      <div className="soft-card p-5 md:p-6 border-slate-200/60 space-y-5 md:space-y-6 text-center animate-in relative overflow-hidden bg-white w-full max-w-sm mx-auto shadow-2xl shadow-slate-300/50">
-        <div className="space-y-2 md:space-y-3">
-          <div className="space-y-1">
+      <div className="soft-card p-3.5 md:p-4 border-slate-200/60 space-y-3 md:space-y-3.5 text-center animate-in relative overflow-hidden bg-white w-full max-w-sm mx-auto shadow-2xl shadow-slate-300/50">
+        <div className="space-y-1.5 md:space-y-2">
+          <div className="space-y-0.5">
             <p className="text-[14px] md:text-[16px] font-black text-slate-400 uppercase tracking-[0.3em] leading-none">{location.folderName}</p>
             <h3 className="text-3xl md:text-4xl font-black text-slate-900 leading-none tracking-tight truncate px-4">{location.name}</h3>
           </div>
         </div>
 
-        <div className="space-y-4 pt-4 border-t border-slate-100">
+        <div className="space-y-2 pt-2 border-t border-slate-100">
           {location.coordinateSystem && (
             <div className="text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] leading-none">
               {t(getSystemDisplayLabel(location.coordinateSystem))} {zone && `(${zone})`}
@@ -173,27 +173,27 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
           )}
           {/* Restructured 3 Rows & 2 Columns Layout */}
           {(() => {
-            const boxBgClass = "bg-gradient-to-br from-slate-50 to-slate-100/80 border-slate-200/80 p-2.5 py-2.5 rounded-xl border flex flex-col items-center justify-center text-center shadow-sm";
+            const boxBgClass = "bg-gradient-to-br from-slate-50 to-slate-100/80 border-slate-200/80 p-2 py-1.5 rounded-xl border flex flex-col items-center justify-center text-center shadow-sm";
 
             return (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 {/* Row 1: Sağa, Yukarı */}
                 <div className={boxBgClass}>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t(labelX)}</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t(labelX)}</span>
                   <p className="text-[15px] md:text-[16px] mono-font text-slate-800 font-black leading-tight">{formattedX}</p>
                 </div>
                 <div className={boxBgClass}>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t(labelY)}</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t(labelY)}</span>
                   <p className="text-[15px] md:text-[16px] mono-font text-slate-800 font-black leading-tight">{formattedY}</p>
                 </div>
 
                 {/* Row 2: Yükseklik, GPS Sinyali */}
                 <div className={boxBgClass}>
-                  <span className="text-[10px] font-black text-slate-400 tracking-widest leading-none mb-1">{isOrthometric ? t('YÜKSEKLİK') : t('h-ELİPSOİD')}</span>
+                  <span className="text-[10px] font-black text-slate-400 tracking-widest leading-none mb-0.5">{isOrthometric ? t('YÜKSEKLİK') : t('h-ELİPSOİD')}</span>
                   <p className="text-[15px] md:text-[16px] mono-font text-slate-800 font-black leading-tight">{displayHeight !== null ? `${displayHeight.toFixed(heightPrecision)}m` : '---'}</p>
                 </div>
                 <div className={boxBgClass}>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t("GPS Sinyali")}</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t("GPS Sinyali")}</span>
                   <p className={`text-[11px] md:text-[12px] font-black uppercase tracking-widest leading-tight ${
                     reliability === 'HIGH' ? 'text-emerald-500' :
                     reliability === 'MEDIUM' || reliability === 'UNKNOWN' ? 'text-amber-500' : 
@@ -207,11 +207,11 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
 
                 {/* Row 3: Hassasiyet, Saçılım */}
                 <div className={boxBgClass}>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t("Hassasiyet")}</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t("Hassasiyet")}</span>
                   <p className={`text-[15px] md:text-[16px] mono-font font-black leading-tight ${getAccuracyColor(avgHardwareAccuracy)}`}>±{avgHardwareAccuracy.toFixed(1)}m</p>
                 </div>
                 <div className={boxBgClass}>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t("Saçılım")}</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t("Saçılım")}</span>
                   <p className={`text-[15px] md:text-[16px] mono-font font-black leading-tight ${
                     reliability === 'HIGH' ? 'text-emerald-500' :
                     reliability === 'MEDIUM' || reliability === 'UNKNOWN' ? 'text-amber-500' : 
@@ -223,10 +223,17 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
           })()}
         </div>
         
-        <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col gap-2">
+        <div className="mt-2 pt-2 border-t border-slate-100 flex flex-col gap-1.5">
+          <button 
+            onClick={() => import('./ExcelUtils').then(m => m.downloadTechnicalReport(location, settings, language))}
+            className="w-full py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-slate-600/20 cursor-pointer"
+          >
+            <i className="fas fa-file-excel"></i>
+            {t("Ölçüm Raporu")}
+          </button>
           <button 
             onClick={() => setShowMap(true)}
-            className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-blue-600/20 cursor-pointer"
+            className="w-full py-2 bg-blue-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-blue-600/20 cursor-pointer"
           >
             <i className="fas fa-map-location-dot"></i>
             {t("Harita Üzerinde Gör")}
@@ -236,7 +243,7 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
               const url = `https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lng}`;
               window.open(url, '_blank');
             }}
-            className="w-full py-2.5 bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-emerald-600/20 cursor-pointer"
+            className="w-full py-2 bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-emerald-600/20 cursor-pointer"
           >
             <i className="fas fa-route"></i>
             {t("Navigasyona Gönder")}

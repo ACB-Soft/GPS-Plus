@@ -28,7 +28,7 @@ const SavedLocationItem: React.FC<{
   onRenamePoint: (id: string, newName: string) => void;
   onViewOnMap: (l: SavedLocation) => void;
 }> = ({ l, settings, expanded, togglePoint, deletingPoint, setDeletingPoint, onDelete, onRenamePoint, onViewOnMap }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const geoidInfo = useOrthometricHeight(l.altitude, l.lat, l.lng, l.deviceOS);
   const isOrthometric = settings.heightType === 'orthometric';
   const displayHeight = isOrthometric ? geoidInfo.orthometricHeight : geoidInfo.ellipsoidalHeight;
@@ -197,9 +197,9 @@ const SavedLocationItem: React.FC<{
         </div>
       </div>
       {expanded && (
-        <div className="px-5 pb-5 animate-in fade-in duration-300">
+        <div className="px-4 pb-2.5 animate-in fade-in duration-300">
           {/* Top Row: Sağa, Yukarı, Yükseklik */}
-          <div className="grid grid-cols-3 gap-2 pt-4 border-t border-slate-100 mb-3">
+          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 mb-1.5">
             <div className="flex flex-col">
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t(labelX)}</span>
               <p className="text-[13px] mono-font text-slate-800 font-bold leading-tight">{formattedX}</p>
@@ -241,17 +241,24 @@ const SavedLocationItem: React.FC<{
             </div>
           </div>
 
-          <div className="mt-4 pt-4 border-t border-slate-50 flex flex-col gap-2">
+          <div className="mt-2 pt-2 border-t border-slate-50 flex flex-col gap-1">
+            <button 
+              onClick={() => import('./ExcelUtils').then(m => m.downloadTechnicalReport(l, settings, language))}
+              className="w-full py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-slate-600/20 cursor-pointer"
+            >
+              <i className="fas fa-file-excel"></i>
+              {t("Ölçüm Raporu")}
+            </button>
             <button 
               onClick={() => onViewOnMap(l)}
-              className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-blue-600/20"
+              className="w-full py-2 bg-blue-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-blue-600/20"
             >
               <i className="fas fa-map-location-dot"></i>
               {t("Harita Üzerinde Gör")}
             </button>
             <button 
               onClick={() => handleNavigate(l.lat, l.lng)}
-              className="w-full py-2.5 bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-emerald-600/20"
+              className="w-full py-2 bg-emerald-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-emerald-600/20"
             >
               <i className="fas fa-route"></i>
               {t("Navigasyona Gönder")}

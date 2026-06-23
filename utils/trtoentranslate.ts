@@ -429,6 +429,7 @@ export const trToEnMap: Record<string, string> = {
   "Auto (En az 10m)": "Auto (Min 10m)",
   "ZAMAN SERİSİ GRAFİK AYARLARI": "TIME SERIES CHART SETTINGS",
   "Veri Saçılımı Grafik Ayarları": "DATA DISPERSION CHART SETTINGS",
+  "İstatistiki Ölçüm Raporu": "Statistical Measurement Report",
   "Nokta:": "Point:",
   "Ham Ölçüm (Güvenilir)": "Raw Measurement (Reliable)",
   "Hass:": "Acc:",

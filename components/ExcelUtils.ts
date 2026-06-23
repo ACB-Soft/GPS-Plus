@@ -64,18 +64,24 @@ export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings
     const duration = (loc.measurementDuration || 0).toString();
 
     let reliabilityLabel = "";
-    if (loc.samples && loc.samples.length >= 5) {
-      const maxSpread = calculateMaxDistance(loc.samples);
-      const avgAcc = loc.samples.reduce((a, b) => a + b.accuracy, 0) / loc.samples.length;
-      const ratio = maxSpread / (avgAcc || 0.1);
-      if (ratio > 3) reliabilityLabel = "GÜVENSİZ";
-      else if (ratio > 1.0) reliabilityLabel = "ORTA GÜVEN";
-      else reliabilityLabel = "GÜVENLİ";
-    } else {
-      // Fallback to single point accuracy if no samples or too few
-      if (loc.accuracy <= 3.0) reliabilityLabel = "GÜVENLİ";
-      else if (loc.accuracy <= 8.0) reliabilityLabel = "ORTA GÜVEN";
-      else reliabilityLabel = "GÜVENSİZ";
+    const samples = loc.samples || [];
+    const avgSensorAcc = samples.length > 0 
+      ? samples.reduce((a, b) => a + b.accuracy, 0) / samples.length 
+      : loc.accuracy;
+    const maxSpread = samples.length >= 2 ? calculateMaxDistance(samples) : 0;
+    const samplesCount = samples.length;
+
+    // 1. GÜVENSİZ VERİ (LOW / RED): Donanımsal Hassasiyet > 20m VEYA Veri Saçılımı > 20m VEYA Veri Saçılımı > Donanımsal Hassasiyet * 3
+    if (avgSensorAcc > 20 || maxSpread > 20 || maxSpread > avgSensorAcc * 3) {
+      reliabilityLabel = "GÜVENSİZ";
+    }
+    // 2. GÜVENİLİR VERİ (HIGH / GREEN): Donanımsal Hassasiyet <= 5m VE Veri Saçılımı <= 5m VE Veri Sayısı >= 15 VE Veri Saçılımı <= Donanımsal Hassasiyet
+    else if (avgSensorAcc <= 5 && maxSpread <= 5 && samplesCount >= 15 && maxSpread <= avgSensorAcc) {
+      reliabilityLabel = "GÜVENLİ";
+    }
+    // 3. ORTA GÜVENLİ VERİ / VERİ AZ (MEDIUM / ORANGE)
+    else {
+      reliabilityLabel = "ORTA GÜVEN";
     }
 
     const displayHeight = heightType === 'orthometric' ? orthometricH : ellipsoidalH;
@@ -227,17 +233,41 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   });
 
   // --- Sinyal Güvenilirlik (Multipath) Analizi ---
-  const maxSpreadAll = calculateMaxDistance(location.samples);
-  const avgAccAll = location.samples.reduce((a, b) => a + b.accuracy, 0) / location.samples.length;
+  const samplesList = location.samples || [];
+  const maxSpreadAll = samplesList.length >= 2 ? calculateMaxDistance(samplesList) : 0;
+  const avgAccAll = samplesList.length > 0 
+    ? samplesList.reduce((a, b) => a + b.accuracy, 0) / samplesList.length 
+    : location.accuracy;
+  const samplesCount = samplesList.length;
   const spreadRatio = maxSpreadAll / (avgAccAll || 0.1);
-  let relLevel = txt("YÜKSEK (GÜVENLİ)", "HIGH (SAFE)");
-  let relMsg = txt("Veri saçılımı hassasiyet limitleri dahilinde. Sinyal yansıması (Multipath) riski düşük.", "Data spread is within accuracy boundaries. Multipath risk is low.");
-  if (spreadRatio > 3) {
+
+  // 1. GÜVENSİZ VERİ (KIRMIZI): Donanımsal Hassasiyet > 20m VEYA Veri Saçılımı > 20m VEYA Veri Saçılımı > Donanımsal Hassasiyet * 3
+  const isRed = avgAccAll > 20 || maxSpreadAll > 20 || maxSpreadAll > avgAccAll * 3;
+
+  // 2. GÜVENİLİR VERİ (YEŞİL): Donanımsal Hassasiyet <= 5m VE Veri Saçılımı <= 5m VE Veri Sayısı >= 15 VE Veri Saçılımı <= Donanımsal Hassasiyet
+  const isGreen = !isRed && avgAccAll <= 5 && maxSpreadAll <= 5 && samplesCount >= 15 && maxSpreadAll <= avgAccAll;
+
+  let relLevel = "";
+  let relMsg = "";
+
+  if (isRed) {
     relLevel = txt("DÜŞÜK (KRİTİK)", "LOW (CRITICAL)");
-    relMsg = txt("Kritik sinyal sapması! Saçılım, raporlanan hassasiyetin 3 katından fazla. Veriler güvenilir değil.", "Critical signal deviation! Spread is more than 3 times the reported accuracy. Data is not reliable.");
-  } else if (spreadRatio > 1.5) {
+    relMsg = txt(
+      "Veriler yüksek oranda sapmalı ve güvensizdir. Kriterler: Donanımsal Hassasiyet > 20m, Veri Saçılımı > 20m veya Veri Saçılımı > Donanımsal Hassasiyet * 3",
+      "Data has high drift and is unreliable. Criteria: Hardware Accuracy > 20m, Data Spread > 20m, or Data Spread > Hardware Accuracy * 3"
+    );
+  } else if (isGreen) {
+    relLevel = txt("YÜKSEK (GÜVENLİ)", "HIGH (SAFE)");
+    relMsg = txt(
+      "Veriler yüksek tutarlılıktadır. Çoklu yansıma (multipath) veya sapma (drift) etkisi gözlenmemiştir. Sinyal kalitesi son derece güvenli seviyededir.",
+      "Data is highly consistent. No multipath reflection or drift detected. Signal quality is at a very safe level."
+    );
+  } else {
     relLevel = txt("ORTA (TUTARSIZ)", "MED (INCONSISTENT)");
-    relMsg = txt("Şüpheli veri yayılımı. Sensör hassasiyetine oranla yüksek saçılım tespit edildi. Multipath etkisi olabilir.", "Suspicious data spread. High spread relative to sensor accuracy. Possible multipath effect.");
+    relMsg = txt(
+      "Veriler orta tutarlılıktadır. Kriterler: 5m < Donanımsal Hassasiyet <= 20m veya 5m < Veri Saçılımı <= 20m veya Veri Saçılımı > Donanımsal Hassasiyet veya Veri Sayısı < 15",
+      "Data has moderate consistency. Criteria: 5m < Hardware Accuracy <= 20m, 5m < Data Spread <= 20m, Data Spread > Hardware Accuracy, or Samples Count < 15"
+    );
   }
 
   const heightHeader = isOrthometricSetting ? txt("Yükseklik (m)", "Height (m)") : txt("Elipsoidal Yükseklik (m)", "Ellipsoidal Height (m)");
