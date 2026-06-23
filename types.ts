@@ -15,6 +15,7 @@ export interface Coordinate {
   gyroBeta?: number | null;
   gyroGamma?: number | null;
   deviceOS?: 'iOS' | 'Android';
+  sessionId?: number;
 }
 
 export type CalculationMethod = 

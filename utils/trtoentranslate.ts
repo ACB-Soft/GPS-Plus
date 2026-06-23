@@ -139,7 +139,7 @@ export const trToEnMap: Record<string, string> = {
   "ITRF96 - 6° - UTM": "ITRF96 - 6° - UTM",
   "ED50 - 3° - TM": "ED50 - 3° - TM",
   "ED50 - 6° - UTM": "ED50 - 6° - UTM",
-  "ÖLÇÜME HAZIRLAN": "PREPARE FOR MEASUREMENT",
+  "ÖLÇÜME HAZIRLAN": "PREPARE FOR SURVEY",
   "Konum izni reddedildi. Lütfen ayarlardan izin verin.": "Location permission denied. Please allow it in settings.",
   "Konum alınamıyor. GPS sinyali zayıf olabilir.": "Location cannot be retrieved. GPS signal might be weak.",
   "Zaman aşımı. GPS yanıt vermedi.": "Timeout. GPS did not respond.",
@@ -732,7 +732,9 @@ export const trToEnMap: Record<string, string> = {
   "KMeans, Baarda ve KMeans + Baarda + Huber yöntemleri için en az 30 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.": "A minimum of 30 epochs is strictly required for KMeans, Baarda, and KMeans + Baarda + Huber hybrid models. If less than 30 samples are collected, the system automatically and securely resolves the coordinates using the Weighted Least Squares (LSE) method.",
   "KMeans ve Huber yöntemleri için en az 30 epok; Baarda ve KMeans + Baarda + Huber hibrit yöntemleri için en az 60 epok (veri sayısı) toplanmış olması şarttır. Daha az veri içeren durumlarda, bu profesyonel yöntemler yerine otomatik olarak Ağırlıklı En Küçük Kareler yöntemi ile güvenli bir biçimde hesaplama yapılır.": "A minimum of 30 epochs is required for KMeans and Huber, and at least 60 epochs for Baarda and KMeans + Baarda + Huber hybrid models. If fewer samples are collected, the system automatically and securely falls back to the Weighted Least Squares (LSE) method.",
   "Akademik Teknik Rapor": "Academic Technical Report",
-  "Uygulamanın akademik arka planını, istatistiksel ve jeodezik hesaplama yöntemlerini, TUSAGA-Aktif ve BÖHHBÜY uyumluluğunu içeren detaylı teknik rapor dökümanı.": "A comprehensive geodetic document drafting the mathematical formulations, statistical filtering models, 3D Helmert projections, and compliance with Turkish TUSAGA-Aktif & BÖHHBÜY national cadastral standards."
+  "Uygulamanın akademik arka planını, istatistiksel ve jeodezik hesaplama yöntemlerini, TUSAGA-Aktif ve BÖHHBÜY uyumluluğunu içeren detaylı teknik rapor dökümanı.": "A comprehensive geodetic document drafting the mathematical formulations, statistical filtering models, 3D Helmert projections, and compliance with Turkish TUSAGA-Aktif & BÖHHBÜY national cadastral standards.",
+  "Oturum": "Session",
+  "Oturum No": "Session No"
 };
 
 /**

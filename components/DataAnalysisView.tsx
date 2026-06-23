@@ -622,14 +622,20 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     let sessionStartTime = mapped.length > 0 ? mapped[0].timestamp : 0;
 
     for (let i = 0; i < mapped.length; i++) {
-      const elapsedMs = mapped[i].timestamp - sessionStartTime;
-      if (elapsedMs > 20000) {
-        // This epoch is outside the 20-second window of the current session.
-        // It starts a new session.
-        currentSessionIdx++;
-        sessionStartTime = mapped[i].timestamp;
+      const origIdx = mapped[i].id - 1;
+      const s = location.samples ? location.samples[origIdx] : undefined;
+      if (s && s.sessionId !== undefined) {
+        mapped[i].sessionIdx = s.sessionId - 1;
+      } else {
+        const elapsedMs = mapped[i].timestamp - sessionStartTime;
+        if (elapsedMs > 20000) {
+          // This epoch is outside the 20-second window of the current session.
+          // It starts a new session.
+          currentSessionIdx++;
+          sessionStartTime = mapped[i].timestamp;
+        }
+        mapped[i].sessionIdx = currentSessionIdx;
       }
-      mapped[i].sessionIdx = currentSessionIdx;
     }
 
     return mapped;
@@ -1742,6 +1748,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         <option value="0.5">0.5m</option>
                         <option value="1.0">1.0m</option>
                         <option value="2.0">2.0m</option>
+                        <option value="5.0">5.0m</option>
                       </select>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -2083,16 +2090,16 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 tickLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                               />
                               <ZAxis type="number" range={[15, 15]} />
-                              <Tooltip 
-                                cursor={{ strokeDasharray: '3 3', stroke: '#475569' }} 
-                                content={({ active, payload }) => {
-                                  if (active && payload && payload.length) {
-                                    const data = payload[0].payload;
-                                    return (
-                                      <div className="bg-slate-900 border border-slate-800 text-white p-2.5 rounded-lg shadow-xl z-50 text-[8px] text-left">
-                                        <p className="font-bold uppercase text-blue-400 mb-0.5 pb-0.5 border-b border-slate-800 leading-none">
-                                          Epoch #{data.id}
-                                        </p>
+                                <Tooltip 
+                                  cursor={{ strokeDasharray: '3 3', stroke: '#475569' }} 
+                                  content={({ active, payload }) => {
+                                    if (active && payload && payload.length) {
+                                      const data = payload[0].payload;
+                                      return (
+                                        <div className="bg-slate-900 border border-slate-800 text-white p-2.5 rounded-lg shadow-xl z-50 text-[8px] text-left">
+                                          <p className="font-bold uppercase text-blue-400 mb-0.5 pb-0.5 border-b border-slate-800 leading-none">
+                                            Epoch #{data.id} {data.sessionIdx !== undefined ? `(${language === 'EN' ? 'Session' : 'Oturum'} ${data.sessionIdx + 1})` : ''}
+                                          </p>
                                         <div className="space-y-0.5 font-mono">
                                           <div className="flex justify-between gap-2">
                                             <span className="opacity-60 text-[7px] uppercase">Spatial Cluster:</span>
@@ -2423,14 +2430,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             return (
                               <div className="bg-white border-2 border-slate-200 text-slate-800 p-2.5 rounded-xl shadow-xl text-[10px] font-sans">
                                 <p className="font-extrabold text-blue-600 mb-0.5 leading-none">
-                                  Time: {elapsed} seconds
+                                  {language === 'EN' ? `Time: ${elapsed} seconds` : `Zaman: ${elapsed} saniye`}
                                 </p>
                                 <p className="font-extrabold text-slate-900 mb-1 leading-none">
-                                  Interval #{segmentIdx} (Session {sIdx + 1})
+                                  {language === 'EN' ? `Interval #${segmentIdx} (Session ${sIdx + 1})` : `Aralık #${segmentIdx} (Oturum ${sIdx + 1})`}
                                 </p>
                                 <div className="h-px bg-slate-100 my-1" />
                                 <p className="font-bold text-slate-500 font-mono leading-none">
-                                  Deviation: <span className="font-black text-slate-800">{devValue.toFixed(3)} m</span>
+                                  {language === 'EN' ? 'Deviation:' : 'Sapma:'} <span className="font-black text-slate-800">{devValue.toFixed(3)} m</span>
                                 </p>
                               </div>
                             );

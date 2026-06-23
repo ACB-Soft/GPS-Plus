@@ -243,13 +243,6 @@ const SavedLocationItem: React.FC<{
 
           <div className="mt-2 pt-2 border-t border-slate-50 flex flex-col gap-1">
             <button 
-              onClick={() => import('./ExcelUtils').then(m => m.downloadTechnicalReport(l, settings, language))}
-              className="w-full py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-slate-600/20 cursor-pointer"
-            >
-              <i className="fas fa-file-excel"></i>
-              {t("Ölçüm Raporu")}
-            </button>
-            <button 
               onClick={() => onViewOnMap(l)}
               className="w-full py-2 bg-blue-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-blue-600/20"
             >
@@ -262,6 +255,13 @@ const SavedLocationItem: React.FC<{
             >
               <i className="fas fa-route"></i>
               {t("Navigasyona Gönder")}
+            </button>
+            <button 
+              onClick={() => import('./ExcelUtils').then(m => m.downloadTechnicalReport(l, settings, language))}
+              className="w-full py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-slate-600/20 cursor-pointer"
+            >
+              <i className="fas fa-file-excel"></i>
+              {t("Ölçüm Raporu")}
             </button>
           </div>
         </div>

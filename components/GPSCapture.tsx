@@ -136,6 +136,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   
   const samplesRef = useRef<Coordinate[]>([]);
   const rawSamplesRef = useRef<Coordinate[]>([]);
+  const currentSessionIdRef = useRef<number>(1);
   const latestMotionRef = useRef<{ accelX: number | null; accelY: number | null; accelZ: number | null }>({
     accelX: null,
     accelY: null,
@@ -337,6 +338,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                   gyroAlpha: latestOrientationRef.current.gyroAlpha,
                   gyroBeta: latestOrientationRef.current.gyroBeta,
                   gyroGamma: latestOrientationRef.current.gyroGamma,
+                  sessionId: currentSessionIdRef.current,
                 });
               }
 
@@ -374,6 +376,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                     gyroAlpha: latestOrientationRef.current.gyroAlpha,
                     gyroBeta: latestOrientationRef.current.gyroBeta,
                     gyroGamma: latestOrientationRef.current.gyroGamma,
+                    sessionId: currentSessionIdRef.current,
                   });
                   lastSavedPositionRef.current = current;
                   lastSaveTimestampRef.current = Date.now();
@@ -519,6 +522,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
               setInstantAccuracy(null);
               justFinishedWaitingRef.current = true;
               waitingFinishedTimeRef.current = null;
+              currentSessionIdRef.current += 1;
               return 0;
             }
             return prev - 1;
@@ -556,6 +560,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
             gyroAlpha: latestOrientationRef.current.gyroAlpha,
             gyroBeta: latestOrientationRef.current.gyroBeta,
             gyroGamma: latestOrientationRef.current.gyroGamma,
+            sessionId: currentSessionIdRef.current,
           });
           lastSaveTimestampRef.current = now;
           lastSavedPositionRef.current = {
@@ -659,6 +664,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
         gyroAlpha: latestOrientationRef.current.gyroAlpha,
         gyroBeta: latestOrientationRef.current.gyroBeta,
         gyroGamma: latestOrientationRef.current.gyroGamma,
+        sessionId: 1,
       };
       samplesRef.current = [initialSample];
       rawSamplesRef.current = [initialSample];
@@ -676,6 +682,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       lastSaveTimestampRef.current = 0;
       setSampleCount(0);
     }
+    currentSessionIdRef.current = 1;
 
     setReliabilityStatus('UNKNOWN');
     setIsWaiting(false);

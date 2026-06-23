@@ -361,7 +361,7 @@ export const downloadCombinedAnalysisReport = (
     [txt("Yükseklik Tipi:", "Height Type:"), isOrthometric ? txt("Ortometrik (Jeoid)", "Orthometric (Geoid)") : txt("Elipsoidal", "Ellipsoidal")],
     [],
     [txt("GÖZLEM LİSTESİ (Tüm Örnekler - Ham)", "OBSERVATION LIST (All Samples - Raw)")],
-    ["No", headerX, headerY, isOrthometric ? txt("Kot (H)", "Elevation (H)") : txt("Alt (h)", "Alt (h)"), txt("Hassasiyet (m)", "Accuracy (m)"), txt("Hız (m/s)", "Speed (m/s)"), txt("Yön (Derece)", "Heading (Deg)"), txt("İvme X (m/s²)", "Accel X (m/s²)"), txt("İvme Y (m/s²)", "Accel Y (m/s²)"), txt("İvme Z (m/s²)", "Accel Z (m/s²)"), txt("Yönelim Alpha (°)", "Heading Alpha (°)"), txt("Eğim Beta (°)", "Roll Beta (°)"), txt("Eğim Gamma (°)", "Pitch Gamma (°)"), txt("Zaman", "Time")]
+    ["No", headerX, headerY, isOrthometric ? txt("Kot (H)", "Elevation (H)") : txt("Alt (h)", "Alt (h)"), txt("Hassasiyet (m)", "Accuracy (m)"), txt("Hız (m/s)", "Speed (m/s)"), txt("Yön (Derece)", "Heading (Deg)"), txt("İvme X (m/s²)", "Accel X (m/s²)"), txt("İvme Y (m/s²)", "Accel Y (m/s²)"), txt("İvme Z (m/s²)", "Accel Z (m/s²)"), txt("Yönelim Alpha (°)", "Heading Alpha (°)"), txt("Eğim Beta (°)", "Roll Beta (°)"), txt("Eğim Gamma (°)", "Pitch Gamma (°)"), txt("Oturum", "Session"), txt("Zaman", "Time")]
   ];
 
   const reportRawList = location.rawSamples && location.rawSamples.length > 0 ? location.rawSamples : (location.samples || []);
@@ -397,6 +397,7 @@ export const downloadCombinedAnalysisReport = (
         gyroAVal,
         gyroBVal,
         gyroGVal,
+        s.sessionId !== undefined ? s.sessionId : 1,
         new Date(s.timestamp).toLocaleTimeString(language === 'EN' ? 'en-US' : 'tr-TR')
       ]);
     });
