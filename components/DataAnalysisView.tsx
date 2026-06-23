@@ -256,15 +256,15 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
   // Grafik özelleştirme seçenekleri
   const [customScatterRange, setCustomScatterRange] = useState<string>('auto'); // 'auto', '1.0', '2.0', '3.0', '4.0', '5.0', '10.0', '15.0'
-  const [customScatterStep, setCustomScatterStep] = useState<string>('0.5'); // 'auto', '0.1', '0.2', '0.5', '1.0', '2.0'
+  const [customScatterStep, setCustomScatterStep] = useState<string>('1.0'); // 'auto', '0.1', '0.2', '0.5', '1.0', '2.0'
   const [customScatterFontSize, setCustomScatterFontSize] = useState<string>('10'); // '6', '7', '7.5', '8', '9', '10', '12'
-  const [customDotSize, setCustomDotSize] = useState<string>('1.5'); // '1.0', '1.5', '2.0', '2.5', '3.0', '4.0', '5.0', '6.0'
+  const [customDotSize, setCustomDotSize] = useState<string>('2.0'); // '1.0', '1.5', '2.0', '2.5', '3.0', '4.0', '5.0', '6.0'
   const [xOffset, setXOffset] = useState<number>(0);
   const [yOffset, setYOffset] = useState<number>(0);
   const [customTimeSeriesRange, setCustomTimeSeriesRange] = useState<string>('auto'); // 'auto', '2.0', '3.0', '4.0', '5.0', '10.0', '15.0', '20.0', '30.0', '50.0'
-  const [customTimeSeriesStep, setCustomTimeSeriesStep] = useState<string>('auto'); // 'auto', '0.1', '0.2', '0.5', '1.0', '2.0'
-  const [customTimeSeriesFontSize, setCustomTimeSeriesFontSize] = useState<string>('7'); // '6', '7', '8', '9', '10', '12'
-  const [customTimeSeriesDotSize, setCustomTimeSeriesDotSize] = useState<string>('2.5'); // '1.0', '1.5', '2.0', '2.5', '3.0', '4.0', '5.0', '6.0'
+  const [customTimeSeriesStep, setCustomTimeSeriesStep] = useState<string>('1.0'); // 'auto', '0.1', '0.2', '0.5', '1.0', '2.0'
+  const [customTimeSeriesFontSize, setCustomTimeSeriesFontSize] = useState<string>('10'); // '6', '7', '8', '9', '10', '12'
+  const [customTimeSeriesDotSize, setCustomTimeSeriesDotSize] = useState<string>('2.0'); // '1.0', '1.5', '2.0', '2.5', '3.0', '4.0', '5.0', '6.0'
 
 
 
@@ -1228,23 +1228,23 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       <Header title="ACB Labs" onBack={onClose} />
       
       <div className="flex-1 overflow-y-auto no-scrollbar">
-        <div className="px-8 pt-4 pb-4 w-full">
-          <div className="max-w-sm mx-auto w-full space-y-6">
+        <div className="px-5 pt-3 pb-3 w-full">
+          <div className="max-w-sm mx-auto w-full space-y-3.5">
 
           {/* STEP 1: Method Selection */}
-          <div className="bg-white rounded-3xl p-5 border border-slate-150/80 shadow-sm space-y-4">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">{t("1. Analiz Yöntemini Seçin")}</label>
-            <div className="flex flex-col gap-3">
+          <div className="bg-white rounded-2xl p-4 border border-slate-150/80 shadow-sm space-y-3">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">{t("Analiz Yöntemini Seçin")}</label>
+            <div className="flex flex-col gap-2.5">
               <button 
                 onClick={() => { setAnalysisType('precise'); setAnalysisResults(null); }}
-                className={`w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all border-2 ${analysisType === 'precise' ? 'bg-blue-600 text-white border-blue-600 shadow-xl shadow-blue-100' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
+                className={`w-full py-2.5 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all border-2 ${analysisType === 'precise' ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-100' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
               >
                 <i className="fas fa-bullseye mr-2"></i>
                 {t("Kesin Koordinatlı Analiz")}
               </button>
               <button 
                 onClick={() => { setAnalysisType('normal'); setAnalysisResults(null); }}
-                className={`w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all border-2 ${analysisType === 'normal' ? 'bg-blue-600 text-white border-blue-600 shadow-xl shadow-blue-100' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
+                className={`w-full py-2.5 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all border-2 ${analysisType === 'normal' ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-100' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
               >
                 <i className="fas fa-chart-line mr-2"></i>
                 {t("Koordinatsız Analiz")}
@@ -1282,12 +1282,12 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl p-5 border border-slate-150/80 shadow-sm space-y-4">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">{t("2. Proje ve Nokta Seçimi")}</label>
-            <div className="grid grid-cols-1 gap-4">
+          <div className="bg-white rounded-2xl p-4 border border-slate-150/80 shadow-sm space-y-3">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">{t("Proje ve Nokta Seçimi")}</label>
+            <div className="grid grid-cols-1 gap-3">
               {/* STEP 2: Project Selection */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">{t("2. Proje Seçin")}</label>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">{t("Proje Seçin")}</label>
               <div className="relative">
                 <select 
                   value={selectedFolder}
@@ -1297,7 +1297,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     setAnalysisResults(null);
                     setComputedClusters(null);
                   }}
-                  className="w-full p-4 bg-slate-100 rounded-2xl font-bold text-slate-900 appearance-none border-2 border-transparent focus:border-blue-500 outline-none transition-all text-sm"
+                  className="w-full py-2.5 px-4 bg-slate-100 rounded-xl font-bold text-slate-900 appearance-none border-2 border-transparent focus:border-blue-500 outline-none transition-all text-sm"
                 >
                   <option value="">{t("Proje Seçiniz...")}</option>
                   {folders.map(f => <option key={f} value={f}>{f}</option>)}
@@ -1309,8 +1309,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
             </div>
 
             {/* STEP 3: Point Selection */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">{t("3. Nokta Seçin")}</label>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">{t("Nokta Seçin")}</label>
               <div className="relative text-sm">
                 <select 
                   value={selectedPointId}
@@ -1327,7 +1327,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     setPreciseWgs(null);
                   }}
                   disabled={!selectedFolder}
-                  className="w-full p-4 bg-slate-100 rounded-2xl font-bold text-slate-900 appearance-none border-2 border-transparent focus:border-blue-500 outline-none transition-all text-sm disabled:opacity-50"
+                  className="w-full py-2.5 px-4 bg-slate-100 rounded-xl font-bold text-slate-900 appearance-none border-2 border-transparent focus:border-blue-500 outline-none transition-all text-sm disabled:opacity-50"
                 >
                   <option value="">{t("Nokta Seçiniz...")}</option>
                   {filteredPoints.map(p => (
@@ -1344,15 +1344,15 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
           {/* STEP 4: Data Entry (Only for Precise) */}
           {analysisType === 'precise' && selectedPointId && (
-            <div className="bg-white rounded-3xl p-5 border border-slate-150/80 shadow-sm space-y-4 pt-4">
+            <div className="bg-white rounded-2xl p-4 border border-slate-150/80 shadow-sm space-y-3 pt-3">
               <div className="flex justify-between items-center">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">
-                  {t("3. Kesin Koordinat Girişi (")}{getSystemDisplayLabel(location?.coordinateSystem)})
+                  {t("Kesin Koordinat Girişi (")}{getSystemDisplayLabel(location?.coordinateSystem)})
                 </label>
               </div>
 
               {isMemoryLoaded && (
-                <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100/60 px-3.5 py-2.5 rounded-2xl animate-in fade-in duration-300">
+                <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100/60 px-3.5 py-2 rounded-xl animate-in fade-in duration-300">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-emerald-500 text-xs shrink-0">
                       <i className="fas fa-sd-card"></i>
@@ -1377,7 +1377,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="space-y-1">
                   <label className="text-[9px] font-bold text-slate-500 uppercase ml-2">{useLocal ? t("Sağa (Y)") : t("Enlem (Lat)")}</label>
                   <input 
@@ -1388,7 +1388,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       setIsMemoryLoaded(false);
                     }} 
                     placeholder={useLocal ? "500000.000" : "39.9"}
-                    className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-900 border-2 border-slate-100 focus:border-blue-500 outline-none transition-all text-sm"
+                    className="w-full py-2.5 px-4 bg-slate-50 rounded-xl font-bold text-slate-900 border-2 border-slate-100 focus:border-blue-500 outline-none transition-all text-sm"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1401,7 +1401,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       setIsMemoryLoaded(false);
                     }} 
                     placeholder={useLocal ? "4400000.000" : "32.8"}
-                    className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-900 border-2 border-slate-100 focus:border-blue-500 outline-none transition-all text-sm"
+                    className="w-full py-2.5 px-4 bg-slate-50 rounded-xl font-bold text-slate-900 border-2 border-slate-100 focus:border-blue-500 outline-none transition-all text-sm"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1414,14 +1414,14 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       setIsMemoryLoaded(false);
                     }} 
                     placeholder="100.000"
-                    className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-900 border-2 border-slate-100 focus:border-blue-500 outline-none transition-all text-sm"
+                    className="w-full py-2.5 px-4 bg-slate-50 rounded-xl font-bold text-slate-900 border-2 border-slate-100 focus:border-blue-500 outline-none transition-all text-sm"
                   />
                 </div>
               </div>
 
               <button 
                 onClick={calculateAllMethods}
-                className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[12px] uppercase tracking-widest active:scale-95 transition-all shadow-xl flex items-center justify-center gap-3"
+                className="w-full py-3 bg-slate-900 text-white rounded-xl font-black text-[12px] uppercase tracking-widest active:scale-95 transition-all shadow-lg flex items-center justify-center gap-3"
               >
                 <i className="fas fa-microchip"></i>
                 {t("Analizi Gerçekleştir")}
@@ -1433,7 +1433,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
           {analysisType === 'normal' && selectedPointId && !analysisResults && (
             <button 
               onClick={calculateNormalStats}
-              className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[12px] uppercase tracking-widest active:scale-95 transition-all shadow-xl flex items-center justify-center gap-3"
+              className="w-full py-3 bg-slate-900 text-white rounded-xl font-black text-[12px] uppercase tracking-widest active:scale-95 transition-all shadow-lg flex items-center justify-center gap-3"
             >
               <i className="fas fa-chart-bar"></i>
               {t("İstatistikleri Göster")}
@@ -1442,34 +1442,34 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
           {/* STEP 5: Results and Visualization */}
           {analysisResults && analysisResults.length > 0 && (
-            <div className="space-y-6 animate-in slide-in-from-top-4 duration-500">
+            <div className="space-y-4 animate-in slide-in-from-top-4 duration-500">
               <div className="flex items-center justify-between px-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("5. Analiz Sonuçları")}</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("Analiz Sonuçları")}</label>
               </div>
 
               {/* Multipath / Reliability Analysis */}
               {multipathAnalysis && (
-                <div className={`p-6 rounded-[2.5rem] border-2 animate-in slide-in-from-top-4 ${
+                <div className={`p-4.5 rounded-2xl border-2 animate-in slide-in-from-top-4 ${
                   multipathAnalysis.signalQuality === 'low' ? 'bg-rose-50 border-rose-100' : 
                   multipathAnalysis.signalQuality === 'medium' ? 'bg-amber-50 border-amber-100' : 'bg-emerald-50 border-emerald-100'
                 }`}>
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-14 h-14 rounded-3xl flex items-center justify-center shadow-2xl ${
+                  <div className="flex items-center justify-between mb-3.5">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shadow-lg ${
                         multipathAnalysis.signalQuality === 'low' ? 'bg-rose-100 text-rose-600' : 
                         multipathAnalysis.signalQuality === 'medium' ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
                       }`}>
                         <i className={`fas ${
                           multipathAnalysis.signalQuality === 'low' ? 'fa-signal text-rose-600 opacity-60' : 
                           multipathAnalysis.signalQuality === 'medium' ? 'fa-signal text-amber-600' : 'fa-signal text-emerald-600'
-                        } text-2xl`}></i>
+                        } text-lg`}></i>
                       </div>
                       <div>
-                        <h3 className={`text-sm font-black uppercase tracking-[0.2em] leading-none mb-1.5 ${
+                        <h3 className={`text-xs font-black uppercase tracking-[0.2em] leading-none mb-1.5 ${
                           multipathAnalysis.signalQuality === 'low' ? 'text-rose-700' : 
                           multipathAnalysis.signalQuality === 'medium' ? 'text-amber-700' : 'text-emerald-700'
-                        }`}>{t("Güvenilirlik Analizi")}</h3>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-80 leading-none">
+                        }`}>{t("Güvenilirlik")}</h3>
+                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest opacity-80 leading-none">
                           {multipathAnalysis.signalQuality === 'safe' && t("GÜVENLİ SİNYAL (YEŞİL)")}
                           {multipathAnalysis.signalQuality === 'medium' && t("ORTA GÜVENLİ SİNYAL (TURUNCU)")}
                           {multipathAnalysis.signalQuality === 'low' && t("DÜŞÜK GÜVENLİ SİNYAL (KIRMIZI)")}
@@ -1479,70 +1479,70 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   </div>
 
                   {/* Veri Saçılım Analiz Özet Raporu */}
-                  <div className="bg-white/80 p-4 rounded-2xl border border-white/90 shadow-sm space-y-2">
-                    <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <div className="bg-white/80 p-3 h-auto rounded-xl border border-white/90 shadow-sm space-y-1.5">
+                    <div className="flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
                       <i className="fas fa-file-invoice text-blue-500 text-xs"></i>
-                      <span className="text-[9px] font-black text-slate-700 uppercase tracking-wider">{t("Veri Saçılım Özeti")}</span>
+                      <span className="text-[8px] font-black text-slate-700 uppercase tracking-wider">{t("Veri Saçılım Özeti")}</span>
                     </div>
-                    <div className="text-[10px] space-y-1.5 leading-relaxed text-slate-600 font-medium font-sans">
-                      <p className="flex justify-between border-b border-dashed border-slate-100 pb-1">
+                    <div className="text-[9.5px] space-y-1.5 leading-relaxed text-slate-600 font-medium font-sans">
+                      <p className="flex justify-between border-b border-dashed border-slate-100 pb-0.5">
                         <span className="text-slate-500">{t("Örnek Sayısı:")}</span>
                         <span className="font-bold text-slate-900 mono-font font-medium">{location?.samples?.length || 0}</span>
                       </p>
-                      <p className="flex justify-between border-b border-dashed border-slate-100 pb-1">
+                      <p className="flex justify-between border-b border-dashed border-slate-100 pb-0.5">
                         <span className="text-slate-500">{t("Maksimum Saçılım Genişliği:")}</span>
                         <span className="font-bold text-slate-900 mono-font font-medium">±{multipathAnalysis.maxSpread.toFixed(3)} m</span>
                       </p>
-                      <p className="flex justify-between border-b border-dashed border-slate-100 pb-1">
+                      <p className="flex justify-between border-b border-dashed border-slate-100 pb-0.5">
                         <span className="text-slate-500">{t("Konumsal Standart Sapma (1σ):")}</span>
                         <span className="font-bold text-slate-900 mono-font font-medium">±{multipathAnalysis.stdDev.toFixed(3)} m</span>
                       </p>
-                      <p className="flex justify-between border-b border-dashed border-slate-100 pb-1">
+                      <p className="flex justify-between border-b border-dashed border-slate-100 pb-0.5">
                         <span className="text-slate-500">{t("Alıcı Sensör Hassasiyeti:")}</span>
                         <span className="font-bold text-slate-900 mono-font font-medium">±{multipathAnalysis.avgSensorAcc.toFixed(3)} m</span>
                       </p>
-                      <div className="text-[11px] text-slate-700 bg-slate-50/50 p-3 rounded-xl border border-slate-100 mt-2 space-y-2">
-                        <span className="font-black text-slate-900 block uppercase text-[8px] tracking-wider border-b border-slate-100 pb-1 mb-1 shadow-none">
+                      <div className="text-[10px] text-slate-700 bg-slate-50/50 p-2.5 rounded-xl border border-slate-100 mt-1.5 space-y-1.5">
+                        <span className="font-black text-slate-900 block uppercase text-[7.5px] tracking-wider border-b border-slate-100 pb-1 mb-1 shadow-none">
                           {t("Geodezik Sinyal Raporu / Yorumu:")}
                         </span>
                         {multipathAnalysis.signalQuality === 'safe' && (
-                          <div className="space-y-1 text-slate-600">
-                            <p className="font-black text-emerald-600 uppercase text-[9px] tracking-wide mb-1">
+                          <div className="space-y-0.5 text-slate-600">
+                            <p className="font-black text-emerald-600 uppercase text-[8px] tracking-wide mb-0.5">
                               ● {t("Güvenilir Veri (Yeşil Sinyal)")}
                             </p>
                             <p className="font-medium">{t("Veriler yüksek tutarlılıktadır.")}</p>
-                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+                            <p className="text-[8.5px] text-slate-400 font-bold uppercase tracking-wider">
                               {t("Kriter: Donanımsal Hassasiyet ≤ 5m, Veri Saçılımı ≤ 5m, Veri Sayısı ≥ 15")}
                             </p>
                             {multipathAnalysis.maxSpread > multipathAnalysis.avgSensorAcc ? (
-                              <p className="text-amber-600 font-extrabold text-[10px] bg-amber-50 rounded-lg p-2 border border-amber-100/50 mt-1.5 normal-case">
+                              <p className="text-amber-600 font-extrabold text-[9px] bg-amber-50 rounded-lg p-1.5 border border-amber-100/50 mt-1 normal-case">
                                 {t("UYARI: Sinyal yeşildir fakat maksimum saçılım alıcı sensörün donanımsal hassasiyetinden fazla olduğu için hafif çoklu yansıma (multipath) etkisi mevcuttur.")}
                               </p>
                             ) : (
-                              <p className="text-emerald-600 font-extrabold text-[10px] bg-emerald-50 rounded-lg p-1 px-2 border border-emerald-100/30 mt-1.5 normal-case">
+                              <p className="text-emerald-600 font-extrabold text-[9px] bg-emerald-50 rounded-lg p-1 px-1.5 border border-emerald-100/30 mt-1 normal-case">
                                 {t("Konumsal dağılım son derece stabil ve kümelenmiştir, multipath / sapma etkisi saptanmamıştır.")}
                               </p>
                             )}
                           </div>
                         )}
                         {multipathAnalysis.signalQuality === 'medium' && (
-                          <div className="space-y-1 text-slate-600">
-                            <p className="font-black text-amber-600 uppercase text-[9px] tracking-wide mb-1">
+                          <div className="space-y-0.5 text-slate-600">
+                            <p className="font-black text-amber-600 uppercase text-[8px] tracking-wide mb-0.5">
                               ● {multipathAnalysis.samplesCount < 15 ? t("VERİ AZ (TURUNCU SİNYAL)") : t("ORTA GÜVENLİ VERİ (TURUNCU SİNYAL)")}
                             </p>
                             <p className="font-medium">{t("Veriler orta tutarlılıktadır.")}</p>
-                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+                            <p className="text-[8.5px] text-slate-400 font-bold uppercase tracking-wider">
                               {t("Kriterler: 5m < Donanımsal Hassasiyet ≤ 20m veya 5m < Veri Saçılımı ≤ 20m veya Veri Saçılımı > Donanımsal Hassasiyet veya Veri Sayısı < 15")}
                             </p>
                           </div>
                         )}
                         {multipathAnalysis.signalQuality === 'low' && (
-                          <div className="space-y-1 text-slate-600">
-                            <p className="font-black text-rose-600 uppercase text-[9px] tracking-wide mb-1">
+                          <div className="space-y-0.5 text-slate-600">
+                            <p className="font-black text-rose-600 uppercase text-[8px] tracking-wide mb-0.5">
                               ● {t("GÜVENSİZ VERİ (KIRMIZI SİNYAL)")}
                             </p>
                             <p className="font-medium text-rose-700/95 font-semibold bg-rose-50/70 p-1.5 rounded-lg border border-rose-100/30 leading-snug">{t("Veriler yüksek oranda sapmalı ve güvensizdir.")}</p>
-                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+                            <p className="text-[8.5px] text-slate-400 font-bold uppercase tracking-wider">
                               {t("Kriterler: Donanımsal Hassasiyet > 20m veya Veri Saçılımı > 20m veya Veri Saçılımı > Donanımsal Hassasiyet x 3")}
                             </p>
                           </div>
@@ -1555,7 +1555,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
               <button 
                 onClick={() => setShowMap(true)}
-                className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-[12px] uppercase tracking-widest active:scale-95 transition-all shadow-xl flex items-center justify-center gap-3"
+                className="w-full py-3 bg-emerald-600 text-white rounded-xl font-black text-[12px] uppercase tracking-widest active:scale-95 transition-all shadow-lg flex items-center justify-center gap-3"
               >
                 <i className="fas fa-map-marked-alt"></i>
                 {t("Analiz Sonuçlarını Haritada Gör")}
