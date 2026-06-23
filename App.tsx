@@ -456,9 +456,9 @@ const App = () => {
         )}
 
         {view === 'list' && (
-          <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-slate-200">
-            <Header title="Kayıtlı Ölçümler" />
-            <div className="px-8 pt-4 pb-4 w-full">
+          <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-slate-200">
+            <Header title="Kayıtlı Ölçümler" sticky={true} />
+            <div className="px-8 pt-4 pb-4 w-full flex-1 overflow-y-auto no-scrollbar">
               <div className="max-w-sm mx-auto w-full">
                 <SavedLocationsList 
                   locations={locations} 
@@ -481,9 +481,9 @@ const App = () => {
         )}
 
         {view === 'export' && (
-          <div className="flex-1 flex flex-col animate-in h-full overflow-y-auto no-scrollbar bg-slate-200">
-            <Header title="Veri Aktar" />
-            <div className="px-8 pt-4 pb-4">
+          <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-slate-200">
+            <Header title="Veri Aktar" sticky={true} />
+            <div className="px-8 pt-4 pb-4 flex-1 overflow-y-auto no-scrollbar">
                <ExportUnifiedView locations={locations} settings={settings} onOpenACBLabs={handleOpenACBLabs} />
             </div>
             <GlobalFooter />
