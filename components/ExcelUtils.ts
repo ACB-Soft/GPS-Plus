@@ -136,10 +136,9 @@ export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings
   XLSX.writeFile(workbook, fileName);
 };
 
-export const downloadTechnicalReport = (location: SavedLocation, settings?: AppSettings, language?: 'TR' | 'EN') => {
+export const getTechnicalReportWorksheet = (location: SavedLocation, settings?: AppSettings, language?: 'TR' | 'EN') => {
   if (!location.samples || location.samples.length === 0) {
-    alert(language === 'EN' ? "No raw data (samples) found for this point. Survey report can only be generated for newly measured points." : "Bu noktaya ait ham veri (örneklem) bulunamadı. Teknik rapor sadece yeni ölçülen noktalar için oluşturulabilir.");
-    return;
+    return null;
   }
 
   const txt = (tr: string, en: string) => language === 'EN' ? en : tr;
@@ -192,13 +191,6 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     const { x, y } = convertCoordinate(s.lat, s.lng, sys);
     const val1 = isWGS84 ? s.lat.toFixed(5) : x.toFixed(3);
     const val2 = isWGS84 ? s.lng.toFixed(5) : y.toFixed(3);
-    
-    let status = txt("Kayıtlı (Ham)", "Recorded (Raw)");
-    if (s.accuracy > accuracyLimit) {
-      status = language === 'EN' 
-        ? `High Deviation (> ${accuracyLimit.toFixed(2)}m)` 
-        : `Yüksek Sapma (> ${accuracyLimit.toFixed(2)}m)`;
-    }
 
     const hValue = isOrthometricSetting 
       ? getCorrectedHeight(s.lat, s.lng, s.altitude, s.deviceOS || location.deviceOS) 
@@ -230,8 +222,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
       gyroAVal,
       gyroBVal,
       gyroGVal,
-      s.sessionId !== undefined ? s.sessionId : 1,
-      status
+      s.sessionId !== undefined ? s.sessionId : 1
     ];
   });
 
@@ -276,7 +267,6 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   const heightHeader = isOrthometricSetting ? txt("Yükseklik (m)", "Height (m)") : txt("Elipsoidal Yükseklik (m)", "Ellipsoidal Height (m)");
 
   const ws_data = [
-    [txt("ÖLÇÜM RAPORU (TÜM HAM VERİLER - RAW)", "SURVEY REPORT (ALL RAW DATA - RAW)")],
     [txt("Nokta Adı:", "Point Name:"), location.name],
     [txt("Proje Adı:", "Project Name:"), location.folderName],
     [txt("Koordinat Sistemi:", "Coordinate System:"), getSystemDisplayLabel(sys)],
@@ -289,7 +279,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     [txt("Ortalama Sensör Hassasiyeti:", "Average Sensor Accuracy:"), `${avgAccAll.toFixed(2)} m`],
     [txt("Yayılım / Hassasiyet Oranı:", "Spread / Accuracy Ratio:"), spreadRatio.toFixed(2)],
     [],
-    ["No", txt("Saat", "Time"), header1, header2, heightHeader, txt("Hassasiyet (m)", "Accuracy (m)"), txt("Dikey Hass. (m)", "Vertical Acc. (m)"), txt("Hız (m/s)", "Speed (m/s)"), txt("Yön (Derece)", "Heading (Deg)"), txt("İvme X (m/s²)", "Accel X (m/s²)"), txt("İvme Y (m/s²)", "Accel Y (m/s²)"), txt("İvme Z (m/s²)", "Accel Z (m/s²)"), txt("Yönelim Alpha (°)", "Heading Alpha (°)"), txt("Eğim Beta (°)", "Roll Beta (°)"), txt("Eğim Gamma (°)", "Pitch Gamma (°)"), txt("Oturum", "Session"), txt("Durum", "Status")],
+    ["No", txt("Saat", "Time"), header1, header2, heightHeader, txt("Hassasiyet (m)", "Accuracy (m)"), txt("Dikey Hass. (m)", "Vertical Acc. (m)"), txt("Hız (m/s)", "Speed (m/s)"), txt("Yön (Derece)", "Heading (Deg)"), txt("İvme X (m/s²)", "Accel X (m/s²)"), txt("İvme Y (m/s²)", "Accel Y (m/s²)"), txt("İvme Z (m/s²)", "Accel Z (m/s²)"), txt("Yönelim Alpha (°)", "Heading Alpha (°)"), txt("Eğim Beta (°)", "Roll Beta (°)"), txt("Eğim Gamma (°)", "Pitch Gamma (°)"), txt("Oturum", "Session")],
     ...dataRows,
     [],
     [txt("ANALİZ YÖNTEMLERİ KARŞILAŞTIRMALI SONUÇLAR", "COMPARATIVE ANALYSIS METHODS RESULTS")],
@@ -322,9 +312,18 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     { wch: 18 }, // Alpha
     { wch: 14 }, // Beta
     { wch: 14 }, // Gamma
-    { wch: 12 }, // Oturum
-    { wch: 18 }  // Durum
+    { wch: 12 }  // Oturum
   ];
+
+  return worksheet;
+};
+
+export const downloadTechnicalReport = (location: SavedLocation, settings?: AppSettings, language?: 'TR' | 'EN') => {
+  const worksheet = getTechnicalReportWorksheet(location, settings, language);
+  if (!worksheet) {
+    alert(language === 'EN' ? "No raw data (samples) found for this point. Survey report can only be generated for newly measured points." : "Bu noktaya ait ham veri (örneklem) bulunamadı. Teknik rapor sadece yeni ölçülen noktalar için oluşturulabilir.");
+    return;
+  }
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "RAW");
@@ -351,64 +350,11 @@ export const downloadCombinedAnalysisReport = (
   const sys = location.coordinateSystem || 'WGS84';
   const isWgsPoint = sys === 'WGS84';
 
-  // --- SAYFA 1: HAM ÖLÇÜM VERİLERİ (60 SN KAYIT) ---
-  const headerX = isWgsPoint ? txt("Enlem (Lat)", "Latitude (Lat)") : txt("Sağa (Y)", "Easting (Y)");
-  const headerY = isWgsPoint ? txt("Boylam (Lng)", "Longitude (Lng)") : txt("Yukarı (X)", "Northing (X)");
-
-  const rawData: any[][] = [
-    [txt("HAM ÖLÇÜM VE GÖZLEM KAYITLARI (RAW)", "RAW MEASUREMENT AND OBSERVATION RECORDS (RAW)")],
-    [txt("Nokta Adı:", "Point Name:"), location.name],
-    [txt("Klasör:", "Folder:"), location.folderName],
-    [txt("Kayıt Tarihi:", "Record Date:"), new Date(location.timestamp).toLocaleString(language === 'EN' ? 'en-US' : 'tr-TR')],
-    [txt("Koordinat Sistemi:", "Coordinate System:"), getSystemDisplayLabel(sys)],
-    [txt("Dilim Numarası:", "Zone Number:"), convertCoordinate(location.lat, location.lng, sys).zone || "---"],
-    [txt("Yükseklik Tipi:", "Height Type:"), isOrthometric ? txt("Ortometrik (Jeoid)", "Orthometric (Geoid)") : txt("Elipsoidal", "Ellipsoidal")],
-    [],
-    [txt("GÖZLEM LİSTESİ (Tüm Örnekler - Ham)", "OBSERVATION LIST (All Samples - Raw)")],
-    ["No", headerX, headerY, isOrthometric ? txt("Kot (H)", "Elevation (H)") : txt("Alt (h)", "Alt (h)"), txt("Hassasiyet (m)", "Accuracy (m)"), txt("Hız (m/s)", "Speed (m/s)"), txt("Yön (Derece)", "Heading (Deg)"), txt("İvme X (m/s²)", "Accel X (m/s²)"), txt("İvme Y (m/s²)", "Accel Y (m/s²)"), txt("İvme Z (m/s²)", "Accel Z (m/s²)"), txt("Yönelim Alpha (°)", "Heading Alpha (°)"), txt("Eğim Beta (°)", "Roll Beta (°)"), txt("Eğim Gamma (°)", "Pitch Gamma (°)"), txt("Oturum", "Session"), txt("Zaman", "Time")]
-  ];
-
-  const reportRawList = location.rawSamples && location.rawSamples.length > 0 ? location.rawSamples : (location.samples || []);
-
-  if (reportRawList.length > 0) {
-    reportRawList.forEach((s, idx) => {
-      const conv = convertCoordinate(s.lat, s.lng, sys);
-      const hVal = isOrthometric 
-        ? getCorrectedHeight(s.lat, s.lng, s.altitude, s.deviceOS || location.deviceOS) 
-        : getEllipsoidalHeight(s.lat, s.lng, s.altitude, s.deviceOS || location.deviceOS);
-
-      const speedVal = s.speed !== null && s.speed !== undefined ? s.speed.toFixed(2) : '---';
-      const headingVal = s.heading !== null && s.heading !== undefined ? s.heading.toFixed(1) : '---';
-
-      const accelXVal = s.accelX !== null && s.accelX !== undefined ? s.accelX.toFixed(3) : '---';
-      const accelYVal = s.accelY !== null && s.accelY !== undefined ? s.accelY.toFixed(3) : '---';
-      const accelZVal = s.accelZ !== null && s.accelZ !== undefined ? s.accelZ.toFixed(3) : '---';
-      const gyroAVal = s.gyroAlpha !== null && s.gyroAlpha !== undefined ? s.gyroAlpha.toFixed(2) : '---';
-      const gyroBVal = s.gyroBeta !== null && s.gyroBeta !== undefined ? s.gyroBeta.toFixed(2) : '---';
-      const gyroGVal = s.gyroGamma !== null && s.gyroGamma !== undefined ? s.gyroGamma.toFixed(2) : '---';
-
-      rawData.push([
-        idx + 1, 
-        isWgsPoint ? s.lat.toFixed(5) : conv.x.toFixed(3), 
-        isWgsPoint ? s.lng.toFixed(5) : conv.y.toFixed(3), 
-        hVal !== null ? hVal.toFixed(3) : (s.altitude || 0).toFixed(3), 
-        s.accuracy.toFixed(3), 
-        speedVal,
-        headingVal,
-        accelXVal,
-        accelYVal,
-        accelZVal,
-        gyroAVal,
-        gyroBVal,
-        gyroGVal,
-        s.sessionId !== undefined ? s.sessionId : 1,
-        new Date(s.timestamp).toLocaleTimeString(language === 'EN' ? 'en-US' : 'tr-TR')
-      ]);
-    });
+  // --- SAYFA 1: İSTATİSTİKSEL YÖNTEM ANALİZLERİ ÖLÇÜM RAPORU (HAM VERİ & İSTATİSTİKLER) ---
+  const wsRaw = getTechnicalReportWorksheet(location, settings, language);
+  if (wsRaw) {
+    XLSX.utils.book_append_sheet(workbook, wsRaw, "RAW");
   }
-
-  const wsRaw = XLSX.utils.aoa_to_sheet(rawData);
-  XLSX.utils.book_append_sheet(workbook, wsRaw, "RAW");
 
   // --- SAYFA 2: İSTATİSTİKSEL ANALİZ VE AR-GE SONUÇLARI ---
   const calculationMethod = location.calculationMethod || 'WEIGHTED_LSE';
