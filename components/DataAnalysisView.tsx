@@ -1041,47 +1041,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
     if (mappedRawPoints.length === 0) return [];
 
-    // Create a continuous forward-filled timeline up to custom duration limit
-    const filledData: any[] = [];
     const limitSec = parseInt(timeSeriesDurationLimit);
-    for (let t = 0; t <= limitSec; t++) {
-      const exactMatch = mappedRawPoints.find(p => p.elapsedSeconds === t);
-      if (exactMatch) {
-        filledData.push(exactMatch);
-      } else {
-        // Forward fill: Find the nearest sample strictly before t
-        let lastKnown: any = null;
-        for (let i = mappedRawPoints.length - 1; i >= 0; i--) {
-          if (mappedRawPoints[i].elapsedSeconds < t) {
-            lastKnown = mappedRawPoints[i];
-            break;
-          }
-        }
-        if (lastKnown) {
-          filledData.push({
-            ...lastKnown,
-            second: t + 1,
-            elapsedSecondsInsideSession: t % 15,
-            elapsedSeconds: t,
-            timeLabel: `${t}.sec`,
-            sessionIdx: Math.min(5, Math.floor(t / 15))
-          });
-        } else {
-          // Backward-fill / First fallback: find the first available record
-          const firstKnown = mappedRawPoints[0];
-          filledData.push({
-            ...firstKnown,
-            second: t + 1,
-            elapsedSecondsInsideSession: t % 15,
-            elapsedSeconds: t,
-            timeLabel: `${t}.sec`,
-            sessionIdx: Math.min(5, Math.floor(t / 15))
-          });
-        }
-      }
-    }
-
-    return filledData;
+    return mappedRawPoints.filter(p => p.elapsedSeconds <= limitSec);
   }, [chartData, timeSeriesDurationLimit]);
 
   const segmentList = useMemo(() => {
