@@ -740,8 +740,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       const dx = p.x - refCenterX; // Easting offset in meters relative to reference
       const dy = p.y - refCenterY; // Northing offset in meters relative to reference
       
-      const speedFiltered = p.speed !== null && p.speed !== undefined && p.speed >= 0.10;
-      const passedBaarda = speedFiltered ? false : (usedIndices ? usedIndices.includes(p.idx) : true);
+      const speedFiltered = false;
+      const passedBaarda = usedIndices ? usedIndices.includes(p.idx) : true;
       
       let clusterId = 0;
       if (clusters) {
@@ -1796,7 +1796,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   {/* Top Panel: Large/Expanded Borderless Scatter Chart */}
                   <div className="w-full aspect-square relative shrink-0">
                     <ResponsiveContainer width="100%" height="100%">
-                      <ScatterChart margin={{ top: 8, right: 8, bottom: 2, left: 2 }}>
+                      <ScatterChart margin={{ top: 8, right: 12, bottom: 12, left: 12 }}>
                         <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" horizontal={true} vertical={true} />
                         <XAxis 
                           type="number" 
@@ -1823,7 +1823,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           domain={[-maxTickLimit + yOffset, maxTickLimit + yOffset]} 
                           ticks={yTicks}
                           interval={0}
-                          width={38}
+                          width={50}
                           tickFormatter={(val) => {
                             const isInteger = Math.abs(val - Math.round(val)) < 0.01;
                             return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
@@ -2053,7 +2053,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       <div className="w-full aspect-square relative shrink-0">
                         {hybridClusterChartData && hybridClusterChartData.points.length > 0 ? (
                           <ResponsiveContainer width="100%" height="100%">
-                            <ScatterChart margin={{ top: 8, right: 8, bottom: 2, left: 2 }}>
+                            <ScatterChart margin={{ top: 8, right: 12, bottom: 12, left: 12 }}>
                               <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.25} stroke="#64748b" horizontal={true} vertical={true} />
                               <XAxis 
                                 type="number" 
@@ -2080,7 +2080,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 domain={[-maxTickLimit + yOffset, maxTickLimit + yOffset]} 
                                 ticks={yTicks}
                                 interval={0}
-                                width={38}
+                                width={50}
                                 tickFormatter={(val) => {
                                   const isInteger = Math.abs(val - Math.round(val)) < 0.01;
                                   return isInteger ? `${Math.round(val).toFixed(1)}m` : '';
@@ -2161,18 +2161,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               {/* Rejected/Outlier Points Series - Yöntem (Kırmızı) */}
                               <Scatter 
                                 name="OUTLIERS" 
-                                data={hybridClusterChartData.points.filter(p => !p.passedBaarda && !p.speedFiltered)} 
+                                data={hybridClusterChartData.points.filter(p => !p.passedBaarda)} 
                                 fill="#ef4444"
-                                shape={<RawPointShape r={parseFloat(customDotSize)} />}
-                                onClick={(pt) => setActiveClusterPointId(pt.id)}
-                                className="cursor-pointer"
-                              />
-
-                              {/* Rejected Points Series - Hız Filtresi (Siyah) */}
-                              <Scatter 
-                                name="SPEED_OUTLIERS" 
-                                data={hybridClusterChartData.points.filter(p => !p.passedBaarda && p.speedFiltered)} 
-                                fill="#000000"
                                 shape={<RawPointShape r={parseFloat(customDotSize)} />}
                                 onClick={(pt) => setActiveClusterPointId(pt.id)}
                                 className="cursor-pointer"
@@ -2186,7 +2176,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
                       {/* Bottom Panel: Shrunk & Very Compact Legend */}
                       <div className="shrink-0 pt-1.5 flex flex-col gap-2 w-full mt-2">
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2 gap-y-1.5 font-sans">
+                        <div className="grid grid-cols-3 gap-x-2 gap-y-1.5 font-sans">
                           {(() => {
                             const fs = parseFloat(customScatterFontSize);
                             const badgeSize = `${fs + 6.5}px`;
@@ -2194,8 +2184,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             const titleFontSize = `${fs - 1}px`;
                             const subFontSize = `${fs - 2}px`;
                             const approvedCount = hybridClusterChartData.points.filter(p => p.passedBaarda).length;
-                            const rejectedCount = hybridClusterChartData.points.filter(p => !p.passedBaarda && !p.speedFiltered).length;
-                            const speedFiltCount = hybridClusterChartData.points.filter(p => !p.passedBaarda && p.speedFiltered).length;
+                            const rejectedCount = hybridClusterChartData.points.filter(p => !p.passedBaarda).length;
                             return (
                               <>
                                 <div className="flex flex-col gap-0.5 text-left min-w-0 font-sans">
@@ -2219,18 +2208,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   </div>
                                   <span className="font-mono font-black text-[#ef4444] pl-2.5" style={{ fontSize: `${fs + 1.5}px`, lineHeight: 1 }}>
                                     {rejectedCount}
-                                  </span>
-                                </div>
-
-                                <div className="flex flex-col gap-0.5 text-left min-w-0 font-sans">
-                                  <div className="flex items-center gap-1">
-                                    <div className="w-1.5 h-1.5 rounded-full shrink-0 bg-[#000005]" />
-                                    <span className="font-extrabold text-slate-700 uppercase tracking-wider truncate" style={{ fontSize: `${fs - 1.5}px` }}>
-                                      SpeedFilt
-                                    </span>
-                                  </div>
-                                  <span className="font-mono font-black text-slate-800 pl-2.5" style={{ fontSize: `${fs + 1.5}px`, lineHeight: 1 }}>
-                                    {speedFiltCount}
                                   </span>
                                 </div>
 
@@ -2376,7 +2353,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 >
                   <div className="w-full aspect-square relative shrink-0">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={timeSeriesChartData} margin={{ top: 8, right: 8, bottom: 2, left: 2 }}>
+                      <LineChart data={timeSeriesChartData} margin={{ top: 8, right: 12, bottom: 12, left: 12 }}>
                         <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={true} strokeOpacity={0.15} stroke="#000000" />
                         <XAxis 
                           type="number"
@@ -2414,7 +2391,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           tick={{ fontSize: parseFloat(customTimeSeriesFontSize), fontWeight: 800, fill: '#000000' }} 
                           axisLine={{ stroke: '#000000', strokeWidth: 1.5 }}
                           tickLine={{ stroke: '#000000', strokeWidth: 1.5 }}
-                          width={45} 
+                          width={55} 
                           tickFormatter={(val) => {
                             const isInteger = Math.abs(val - Math.round(val)) < 0.01;
                             return isInteger ? `${Math.round(val).toFixed(1)}m` : '';

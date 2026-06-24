@@ -930,42 +930,27 @@ export function calculateOptimalSPure(samples: Coordinate[]): { result: Coordina
 
     <div style="display:none;">
 
-  // 1. Stage: Speed Filtering (speed &lt; 1.0 m/s)
-  const checkIsMoving = (s: Coordinate) =&gt; {
-    if (s.speed !== null && s.speed !== undefined) {
-      const sp = typeof s.speed === 'string' ? parseFloat(s.speed) : Number(s.speed);
-      return !isNaN(sp) && sp &gt;= 1.0;
-    }
-    return false;
-  };
-  let speedFiltered = samples.map((s, idx) =&gt; ({ s, idx })).filter(x =&gt; !checkIsMoving(x.s));
-  if (speedFiltered.length &lt; 4) {
-    const sorted = samples.map((s, idx) =&gt; ({ s, idx, sp: Number(s.speed || 0) })).sort((a, b) =&gt; a.sp - b.sp);
-    speedFiltered = sorted.slice(0, 4).map(x =&gt; ({ s: x.s, idx: x.idx }));
-  }
+  // 1. Stage: Hodges-Lehmann Outlier Test
+  const hlRes = calculateHodgesLehmannPure(samples);
+  const hlFilteredIndices = hlRes.usedIndices;
+  const hlFilteredSamples = hlFilteredIndices.map(idx => samples[idx]);
 
-  // 2. Stage: Hodges-Lehmann Outlier Test
-  const hlInput = speedFiltered.map(x =&gt; x.s);
-  const hlRes = calculateHodgesLehmannPure(hlInput);
-  const hlFilteredIndices = hlRes.usedIndices.map(localIdx =&gt; speedFiltered[localIdx].idx);
-  const hlFilteredSamples = hlFilteredIndices.map(idx =&gt; samples[idx]);
-
-  // 3. Stage: G-Means Spatial Clustering
+  // 2. Stage: G-Means Spatial Clustering
   const validClustersLocal = getGMeansClusters(hlFilteredSamples);
-  const finalClusters = validClustersLocal.map(cl =&gt; cl.map(localIdx =&gt; hlFilteredIndices[localIdx]));
+  const finalClusters = validClustersLocal.map(cl => cl.map(localIdx => hlFilteredIndices[localIdx]));
 
-  // 4. Stage: Joint WLS resolution
-  const finalWeights = hlFilteredSamples.map((s, index) =&gt; {
-    const clusterIdx = validClustersLocal.findIndex(c =&gt; c.includes(index));
+  // 3. Stage: Joint WLS resolution
+  const finalWeights = hlFilteredSamples.map((s, index) => {
+    const clusterIdx = validClustersLocal.findIndex(c => c.includes(index));
     const clusterSize = clusterIdx !== -1 ? validClustersLocal[clusterIdx].length : 1.0;
     const wCluster = clusterSize / hlFilteredSamples.length;
     const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, s.accuracy), 2);
     return wCluster * hardwareWeight;
   });
 
-  const sumW = finalWeights.reduce((a, b) =&gt; a + b, 0) || 1.0;
-  const finalLat = hlFilteredSamples.reduce((sum, p, i) =&gt; sum + p.lat * finalWeights[i], 0) / sumW;
-  const finalLng = hlFilteredSamples.reduce((sum, p, i) =&gt; sum + p.lng * finalWeights[i], 0) / sumW;
+  const sumW = finalWeights.reduce((a, b) => a + b, 0) || 1.0;
+  const finalLat = hlFilteredSamples.reduce((sum, p, i) => sum + p.lat * finalWeights[i], 0) / sumW;
+  const finalLng = hlFilteredSamples.reduce((sum, p, i) => sum + p.lng * finalWeights[i], 0) / sumW;
 
   return {
     result: { lat: finalLat, lng: finalLng, accuracy: calculateAverage(hlFilteredSamples).accuracy, timestamp: Date.now() },
