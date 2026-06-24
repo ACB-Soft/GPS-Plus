@@ -230,6 +230,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
       gyroAVal,
       gyroBVal,
       gyroGVal,
+      s.sessionId !== undefined ? s.sessionId : 1,
       status
     ];
   });
@@ -288,7 +289,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     [txt("Ortalama Sensör Hassasiyeti:", "Average Sensor Accuracy:"), `${avgAccAll.toFixed(2)} m`],
     [txt("Yayılım / Hassasiyet Oranı:", "Spread / Accuracy Ratio:"), spreadRatio.toFixed(2)],
     [],
-    ["No", txt("Saat", "Time"), header1, header2, heightHeader, txt("Hassasiyet (m)", "Accuracy (m)"), txt("Dikey Hass. (m)", "Vertical Acc. (m)"), txt("Hız (m/s)", "Speed (m/s)"), txt("Yön (Derece)", "Heading (Deg)"), txt("İvme X (m/s²)", "Accel X (m/s²)"), txt("İvme Y (m/s²)", "Accel Y (m/s²)"), txt("İvme Z (m/s²)", "Accel Z (m/s²)"), txt("Yönelim Alpha (°)", "Heading Alpha (°)"), txt("Eğim Beta (°)", "Roll Beta (°)"), txt("Eğim Gamma (°)", "Pitch Gamma (°)"), txt("Durum", "Status")],
+    ["No", txt("Saat", "Time"), header1, header2, heightHeader, txt("Hassasiyet (m)", "Accuracy (m)"), txt("Dikey Hass. (m)", "Vertical Acc. (m)"), txt("Hız (m/s)", "Speed (m/s)"), txt("Yön (Derece)", "Heading (Deg)"), txt("İvme X (m/s²)", "Accel X (m/s²)"), txt("İvme Y (m/s²)", "Accel Y (m/s²)"), txt("İvme Z (m/s²)", "Accel Z (m/s²)"), txt("Yönelim Alpha (°)", "Heading Alpha (°)"), txt("Eğim Beta (°)", "Roll Beta (°)"), txt("Eğim Gamma (°)", "Pitch Gamma (°)"), txt("Oturum", "Session"), txt("Durum", "Status")],
     ...dataRows,
     [],
     [txt("ANALİZ YÖNTEMLERİ KARŞILAŞTIRMALI SONUÇLAR", "COMPARATIVE ANALYSIS METHODS RESULTS")],
@@ -321,6 +322,7 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
     { wch: 18 }, // Alpha
     { wch: 14 }, // Beta
     { wch: 14 }, // Gamma
+    { wch: 12 }, // Oturum
     { wch: 18 }  // Durum
   ];
 
