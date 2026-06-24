@@ -1014,8 +1014,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       
       points.forEach(point => {
         const dt = Math.round((point.timestamp - t_0) / 1000);
-        // Cap dt to ensure everything fits comfortably within the 15-second block (0 to 14)
-        const dt_capped = Math.min(14, Math.max(0, dt));
+        // Translate dt to 1-based index (1 to 15 seconds block)
+        const dt_1_based = dt + 1;
+        const dt_capped = Math.min(15, Math.max(1, dt_1_based));
         
         // Avoid duplicate seconds within the same session
         if (addedSecondsInSession.has(dt_capped)) {
@@ -1027,7 +1028,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
         
         mappedRawPoints.push({
           ...point,
-          second: absoluteSec + 1,
+          second: absoluteSec,
           elapsedSecondsInsideSession: dt_capped,
           elapsedSeconds: absoluteSec,
           timeLabel: `${absoluteSec}.sec`,
@@ -1062,7 +1063,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     const numSegments = Math.ceil(maxSec / 15);
 
     for (let i = 0; i < numSegments; i++) {
-      const startSec = i * 15;
+      const startSec = i * 15 + 1;
       const endSec = Math.min(maxSec, (i + 1) * 15);
       
       const pts = sessionsMap[i] || [];
@@ -1070,13 +1071,15 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
       list.push({
         segmentIdx: i,
-        label: `Session ${i + 1} (${startSec}-${endSec}s)`,
+        label: language === 'EN' 
+          ? `Session ${i + 1} (${startSec}-${endSec}s)`
+          : `Oturum ${i + 1} (${startSec}-${endSec}sn)`,
         color: SESSION_COLORS[i % SESSION_COLORS.length],
         count
       });
     }
     return list;
-  }, [chartData, timeSeriesDurationLimit]);
+  }, [chartData, timeSeriesDurationLimit, language]);
 
   const sessionsList = useMemo(() => {
     if (timeSeriesChartData.length === 0) return [];
@@ -1146,13 +1149,13 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const timeSeriesXTicks = useMemo(() => {
     const maxSec = parseInt(timeSeriesDurationLimit);
     if (maxSec === 15) {
-      return [0, 5, 10, 15];
+      return [1, 5, 10, 15];
     } else if (maxSec === 30) {
-      return [0, 5, 10, 15, 20, 25, 30];
+      return [1, 5, 10, 15, 20, 25, 30];
     } else if (maxSec === 60) {
-      return [0, 10, 20, 30, 40, 50, 60];
+      return [1, 10, 20, 30, 40, 50, 60];
     } else {
-      return [0, 15, 30, 45, 60, 75, 90];
+      return [1, 15, 30, 45, 60, 75, 90];
     }
   }, [timeSeriesDurationLimit]);
 
@@ -2343,7 +2346,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           type="number"
                           dataKey="elapsedSeconds" 
                           ticks={timeSeriesXTicks}
-                          domain={[0, parseInt(timeSeriesDurationLimit)]}
+                          domain={[1, parseInt(timeSeriesDurationLimit)]}
                           interval={0}
                           angle={-90}
                           textAnchor="end"
@@ -2354,15 +2357,16 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           tickFormatter={(value) => {
                             const sec = Number(value);
                             if (isNaN(sec)) return String(value);
+                            const unit = language === 'EN' ? 's' : 'sn';
                             const maxSec = parseInt(timeSeriesDurationLimit);
                             if (maxSec === 15) {
-                              if (sec % 5 === 0) return `${sec}s`;
+                              if (sec === 1 || sec % 5 === 0) return `${sec}${unit}`;
                             } else if (maxSec === 30) {
-                              if (sec % 5 === 0) return `${sec}s`;
+                              if (sec === 1 || sec % 5 === 0) return `${sec}${unit}`;
                             } else if (maxSec === 60) {
-                              if (sec % 10 === 0) return `${sec}s`;
+                              if (sec === 1 || sec % 10 === 0) return `${sec}${unit}`;
                             } else {
-                              if (sec % 15 === 0) return `${sec}s`;
+                              if (sec === 1 || sec % 15 === 0) return `${sec}${unit}`;
                             }
                             return "";
                           }}
@@ -2387,7 +2391,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             const sIdx = data.sessionIdx !== undefined ? data.sessionIdx : 0;
                             const devValue = data.errorHz !== undefined ? data.errorHz : 0;
                             const elapsed = data.elapsedSeconds !== undefined ? data.elapsedSeconds : 0;
-                            const segmentIdx = Math.min(5, Math.floor(elapsed / 15)) + 1;
+                            const segmentIdx = Math.min(5, Math.floor((elapsed - 1) / 15)) + 1;
                             return (
                               <div className="bg-white border-2 border-slate-200 text-slate-800 p-2.5 rounded-xl shadow-xl text-[10px] font-sans">
                                 <p className="font-extrabold text-blue-600 mb-0.5 leading-none">
