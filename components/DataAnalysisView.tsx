@@ -1009,11 +1009,47 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       const points = [...sessionsMap[sIdx]];
       points.sort((a, b) => a.timestamp - b.timestamp);
       
-      const t_0 = points[0].timestamp;
+      const n = points.length;
+      if (n === 0) return;
+
+      const adjustedTimestamps: number[] = [points[0].timestamp];
+      
+      // Calculate gaps and compress if sum of gaps > 14000ms (so total duration fits in 15s)
+      const gaps: number[] = [];
+      for (let i = 1; i < n; i++) {
+        gaps.push(points[i].timestamp - points[i - 1].timestamp);
+      }
+      
+      const sumGaps = gaps.reduce((sum, g) => sum + g, 0);
+      if (sumGaps <= 14000) {
+        // Gaps are small enough, keep as-is
+        for (let i = 1; i < n; i++) {
+          adjustedTimestamps.push(adjustedTimestamps[i - 1] + gaps[i - 1]);
+        }
+      } else {
+        // Compress larger pauses proportionally so they fit within the 15-second block
+        const excesses = gaps.map(g => Math.max(0, g - 1000));
+        const sumExcess = excesses.reduce((sum, e) => sum + e, 0);
+        const maxAllowedExcess = Math.max(0, 14000 - (n - 1) * 1000);
+        
+        if (sumExcess > maxAllowedExcess && sumExcess > 0) {
+          const scale = maxAllowedExcess / sumExcess;
+          const adjustedGaps = gaps.map((g, idx) => 1000 + excesses[idx] * scale);
+          for (let i = 1; i < n; i++) {
+            adjustedTimestamps.push(adjustedTimestamps[i - 1] + adjustedGaps[i - 1]);
+          }
+        } else {
+          for (let i = 1; i < n; i++) {
+            adjustedTimestamps.push(adjustedTimestamps[i - 1] + gaps[i - 1]);
+          }
+        }
+      }
+
+      const t_0 = adjustedTimestamps[0];
       const addedSecondsInSession = new Set<number>();
       
-      points.forEach(point => {
-        const dt = Math.round((point.timestamp - t_0) / 1000);
+      points.forEach((point, idx) => {
+        const dt = Math.round((adjustedTimestamps[idx] - t_0) / 1000);
         // Translate dt to 1-based index (1 to 15 seconds block)
         const dt_1_based = dt + 1;
         const dt_capped = Math.min(15, Math.max(1, dt_1_based));
