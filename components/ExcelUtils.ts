@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { SavedLocation, AppSettings, CalculationMethod } from '../types';
+import { SavedLocation, AppSettings, CalculationMethod, Coordinate } from '../types';
 import { convertCoordinate, getSystemDisplayLabel, getWGS84Coefficients } from '../utils/CoordinateUtils';
 import { calculateResult, calculateVariance, calculateMaxDistance } from '../utils/MathUtils';
 import { FULL_BRAND } from '../version';
@@ -235,6 +235,21 @@ export const getTechnicalReportWorksheet = (location: SavedLocation, settings?: 
   const samplesCount = samplesList.length;
   const spreadRatio = maxSpreadAll / (avgAccAll || 0.1);
 
+  // Standart sapma (StdDev) hesabı
+  let stdDevAll = 0;
+  if (samplesList.length >= 2) {
+    const meanLat = samplesList.reduce((a, b) => a + b.lat, 0) / samplesList.length;
+    const meanLng = samplesList.reduce((a, b) => a + b.lng, 0) / samplesList.length;
+    const { latCoeff, lngCoeff } = getWGS84Coefficients(meanLat);
+    const residuals = samplesList.map(s => {
+      const dLat = (s.lat - meanLat) * latCoeff;
+      const dLng = (s.lng - meanLng) * lngCoeff;
+      return dLat * dLat + dLng * dLng;
+    });
+    const sampleVariance = residuals.reduce((a, b) => a + b, 0) / Math.max(1, samplesList.length - 1);
+    stdDevAll = Math.sqrt(sampleVariance);
+  }
+
   // 1. GÜVENSİZ VERİ (KIRMIZI): Donanımsal Hassasiyet > 20m VEYA Veri Saçılımı > 20m VEYA Veri Saçılımı > Donanımsal Hassasiyet * 3
   const isRed = avgAccAll > 20 || maxSpreadAll > 20 || maxSpreadAll > avgAccAll * 3;
 
@@ -242,26 +257,13 @@ export const getTechnicalReportWorksheet = (location: SavedLocation, settings?: 
   const isGreen = !isRed && avgAccAll <= 5 && maxSpreadAll <= 5 && samplesCount >= 15 && maxSpreadAll <= avgAccAll;
 
   let relLevel = "";
-  let relMsg = "";
 
   if (isRed) {
-    relLevel = txt("DÜŞÜK (KRİTİK)", "LOW (CRITICAL)");
-    relMsg = txt(
-      "Veriler yüksek oranda sapmalı ve güvensizdir. Kriterler: Donanımsal Hassasiyet > 20m, Veri Saçılımı > 20m veya Veri Saçılımı > Donanımsal Hassasiyet * 3",
-      "Data has high drift and is unreliable. Criteria: Hardware Accuracy > 20m, Data Spread > 20m, or Data Spread > Hardware Accuracy * 3"
-    );
+    relLevel = txt("Güvensiz Veri", "Low-Integrity Data");
   } else if (isGreen) {
-    relLevel = txt("YÜKSEK (GÜVENLİ)", "HIGH (SAFE)");
-    relMsg = txt(
-      "Veriler yüksek tutarlılıktadır. Çoklu yansıma (multipath) veya sapma (drift) etkisi gözlenmemiştir. Sinyal kalitesi son derece güvenli seviyededir.",
-      "Data is highly consistent. No multipath reflection or drift detected. Signal quality is at a very safe level."
-    );
+    relLevel = txt("Güvenli Veri", "High-Integrity Data");
   } else {
-    relLevel = txt("ORTA (TUTARSIZ)", "MED (INCONSISTENT)");
-    relMsg = txt(
-      "Veriler orta tutarlılıktadır. Kriterler: 5m < Donanımsal Hassasiyet <= 20m veya 5m < Veri Saçılımı <= 20m veya Veri Saçılımı > Donanımsal Hassasiyet veya Veri Sayısı < 15",
-      "Data has moderate consistency. Criteria: 5m < Hardware Accuracy <= 20m, 5m < Data Spread <= 20m, Data Spread > Hardware Accuracy, or Samples Count < 15"
-    );
+    relLevel = txt("Orta Güvenli Veri", "Medium-Integrity Data");
   }
 
   const heightHeader = isOrthometricSetting ? txt("Yükseklik (m)", "Height (m)") : txt("Elipsoidal Yükseklik (m)", "Ellipsoidal Height (m)");
@@ -269,29 +271,29 @@ export const getTechnicalReportWorksheet = (location: SavedLocation, settings?: 
   const ws_data = [
     [txt("Nokta Adı:", "Point Name:"), location.name],
     [txt("Proje Adı:", "Project Name:"), location.folderName],
-    [txt("Koordinat Sistemi:", "Coordinate System:"), getSystemDisplayLabel(sys)],
-    [txt("Dilim Numarası:", "Zone Number:"), convertCoordinate(location.lat, location.lng, sys).zone || "---"],
-    [txt("Ölçüm Süresi:", "Measurement Duration:"), `${location.measurementDuration || 0} ${txt("sn", "sec")}`],
-    [txt("Hassasiyet Eşiği:", "Accuracy Threshold:"), `${accuracyLimit.toFixed(2)} m`],
-    [txt("Sinyal Güvenilirliği:", "Signal Reliability:"), relLevel],
-    [txt("Güvenilirlik Açıklaması:", "Reliability Explanation:"), relMsg],
-    [txt("Maksimum Yayılım (Spread):", "Maximum Spread:"), `${maxSpreadAll.toFixed(2)} m`],
-    [txt("Ortalama Sensör Hassasiyeti:", "Average Sensor Accuracy:"), `${avgAccAll.toFixed(2)} m`],
-    [txt("Yayılım / Hassasiyet Oranı:", "Spread / Accuracy Ratio:"), spreadRatio.toFixed(2)],
+    [txt("Koordinat Sistemi:", "Coordinate Reference System (CRS):"), getSystemDisplayLabel(sys)],
+    [txt("Dilim Numarası:", "Grid Projection Zone:"), convertCoordinate(location.lat, location.lng, sys).zone || "---"],
+    [txt("Ölçüm Süresi:", "Observation Duration:"), `${location.measurementDuration || 0} ${txt("sn", "sec")}`],
+    [txt("Hassasiyet Eşiği:", "Pre-Filtering Accuracy Threshold:"), `${accuracyLimit.toFixed(2)} m`],
+    [txt("Sinyal Güvenilirliği:", "Signal Quality & Integrity:"), relLevel],
+    [txt("Standart Sapma:", "Standard Deviation:"), `${stdDevAll.toFixed(3)} m`],
+    [txt("Maksimum Yayılım (Spread):", "Maximum Spatial Dispersion (Spread):"), `${maxSpreadAll.toFixed(2)} m`],
+    [txt("Ortalama Sensör Hassasiyeti:", "Mean Hardware-Estimated Accuracy (1σ):"), `${avgAccAll.toFixed(2)} m`],
+    [txt("Yayılım / Hassasiyet Oranı:", "Dispersion-to-Accuracy Ratio:"), spreadRatio.toFixed(2)],
     [],
-    ["No", txt("Saat", "Time"), header1, header2, heightHeader, txt("Hassasiyet (m)", "Accuracy (m)"), txt("Dikey Hass. (m)", "Vertical Acc. (m)"), txt("Hız (m/s)", "Speed (m/s)"), txt("Yön (Derece)", "Heading (Deg)"), txt("İvme X (m/s²)", "Accel X (m/s²)"), txt("İvme Y (m/s²)", "Accel Y (m/s²)"), txt("İvme Z (m/s²)", "Accel Z (m/s²)"), txt("Yönelim Alpha (°)", "Heading Alpha (°)"), txt("Eğim Beta (°)", "Roll Beta (°)"), txt("Eğim Gamma (°)", "Pitch Gamma (°)"), txt("Oturum", "Session")],
+    ["No", txt("Saat", "Time (Local)"), header1, header2, heightHeader, txt("Hassasiyet (m)", "Horizontal Accuracy (m)"), txt("Dikey Hass. (m)", "Vertical Accuracy (m)"), txt("Hız (m/s)", "Velocity (m/s)"), txt("Yön (Derece)", "Heading (Deg)"), txt("İvme X (m/s²)", "Linear Accel X (m/s²)"), txt("İvme Y (m/s²)", "Linear Accel Y (m/s²)"), txt("İvme Z (m/s²)", "Linear Accel Z (m/s²)"), txt("Yönelim Alpha (°)", "Orientation Alpha (°)"), txt("Eğim Beta (°)", "Roll Beta (°_office)"), txt("Eğim Gamma (°)", "Pitch Gamma (°_office)"), txt("Oturum", "Session No")],
     ...dataRows,
     [],
-    [txt("ANALİZ YÖNTEMLERİ KARŞILAŞTIRMALI SONUÇLAR", "COMPARATIVE ANALYSIS METHODS RESULTS")],
-    [txt("Yöntem", "Method"), header1, header2, heightHeader, txt("Kullanılan Örnek", "Samples Used"), txt("Hassasiyet (m)", "Accuracy (m)"), txt("Varyans (m²)", "Variance (m²)")],
+    [txt("ANALİZ YÖNTEMLERİ KARŞILAŞTIRMALI SONUÇLAR", "COMPARATIVE ANALYSIS OF ROBUST ESTIMATION METHODS")],
+    [txt("Yöntem", "Estimation Algorithm"), header1, header2, heightHeader, txt("Kullanılan Örnek", "Epochs Utilized"), txt("Hassasiyet (m)", "Horizontal Accuracy (m)"), txt("Varyans (m²)", "Spatial Variance (m²)")],
     ...methodResults.map(res => [
       getMethodName(res.method),
-      res.x.toFixed(2),
-      res.y.toFixed(2),
-      res.z !== null ? res.z.toFixed(2) : '---',
+      res.x.toFixed(isWGS84 ? 7 : 3),
+      res.y.toFixed(isWGS84 ? 7 : 3),
+      res.z !== null ? res.z.toFixed(3) : '---',
       `${res.usedCount} / ${location.samples!.length}`,
-      res.accuracy.toFixed(2),
-      res.variance.toFixed(2)
+      res.accuracy.toFixed(3),
+      res.variance.toFixed(4)
     ])
   ];
 
@@ -332,6 +334,8 @@ export const downloadTechnicalReport = (location: SavedLocation, settings?: AppS
   const fileName = `${prefixName}_${location.name}.xlsx`;
   XLSX.writeFile(workbook, fileName);
 };
+
+
 
 export const downloadCombinedAnalysisReport = (
   location: SavedLocation, 
@@ -394,51 +398,55 @@ export const downloadCombinedAnalysisReport = (
     const isGreen = !isRed && avgAccAll <= 5 && maxSpreadAll <= 5 && samplesCount >= 15 && maxSpreadAll <= avgAccAll;
 
     if (isRed) {
-      signalQualityLabel = txt("GÜVENSİZ VERİ (KIRMIZI SİNYAL)", "UNRELIABLE DATA (RED SIGNAL)");
+      signalQualityLabel = txt("Güvensiz Veri (Kırmızı Sinyal)", "Low-Integrity Data (Red Signal)");
       interpretation = txt(
         "Veriler yüksek oranda sapmalı ve güvensizdir. Kriterler: Donanımsal Hassasiyet > 20m, Veri Saçılımı > 20m veya Veri Saçılımı > Donanımsal Hassasiyet * 3",
-        "Data has high drift and is unreliable. Criteria: Hardware Accuracy > 20m, Data Spread > 20m, or Data Spread > Hardware Accuracy * 3"
+        "GNSS observations exhibit severe spatial drift and high variance. Classification Criteria: Hardware accuracy > 20m, 2D spatial dispersion > 20m, or spatial dispersion > hardware-reported accuracy * 3."
       );
     } else if (isGreen) {
-      signalQualityLabel = txt("GÜVENİLİR VERİ (YEŞİL SİNYAL)", "RELIABLE DATA (GREEN SIGNAL)");
+      signalQualityLabel = txt("Güvenli Veri (Yeşil Sinyal)", "High-Integrity Data (Green Signal)");
       interpretation = txt(
         "Veriler yüksek tutarlılıktadır. Çoklu yansıma (multipath) veya sapma (drift) etkisi gözlenmemiştir. Sinyal kalitesi son derece güvenli seviyededir.",
-        "Data is highly consistent. No multipath reflection or drift detected. Signal quality is at a very safe level."
+        "GNSS observations exhibit high spatial consistency and minimal noise. No multipath interference or atmospheric drift is detected. Spatial integrity exceeds standard tolerances."
       );
     } else {
       signalQualityLabel = samplesCount < 15 
-        ? txt("VERİ AZ / ORTA GÜVENLİ VERİ (TURUNCU SİNYAL)", "LOW SAMPLES / MODERATE SIGNAL (ORANGE SIGNAL)") 
-        : txt("ORTA GÜVENLİ VERİ (TURUNCU SİNYAL)", "MODERATE SIGNAL (ORANGE SIGNAL)");
+        ? txt("Veri Az / Orta Güvenli Veri (Turuncu Sinyal)", "Sparse Data / Medium-Integrity Data (Orange Signal)") 
+        : txt("Orta Güvenli Veri (Turuncu Sinyal)", "Medium-Integrity Data (Orange Signal)");
       interpretation = txt(
         "Veriler orta tutarlılıktadır. Kriterler: 5m < Donanımsal Hassasiyet <= 20m veya 5m < Veri Saçılımı <= 20m veya Veri Saçılımı > Donanımsal Hassasiyet veya Veri Sayısı < 15",
-        "Data has moderate consistency. Criteria: 5m < Hardware Accuracy <= 20m, 5m < Data Spread <= 20m, Data Spread > Hardware Accuracy, or Samples Count < 15"
+        "GNSS observations exhibit moderate spatial consistency. Classification Criteria: 5m < Hardware accuracy <= 20m, 5m < 2D spatial dispersion <= 20m, 2D spatial dispersion > hardware accuracy, or observed epochs < 15."
       );
     }
   }
 
   const analysisData: any[][] = [
-    [txt("DETAYLI İSTATİSTİKSEL ANALİZ VE ALGORİTMA PERFORMANS RAPORU", "DETAILED STATISTICAL ANALYSIS AND ALGORITHM PERFORMANCE REPORT")],
+    [txt("KESİN KOORDİNATLI İSTATİSTİKSEL ANALİZ RAPORU", "PRECISE COORDINATE STATISTICAL ANALYSIS REPORT")],
     [txt("Nokta Adı:", "Point Name:"), location.name],
-    [txt("Analiz Tarihi:", "Analysis Date:"), new Date().toLocaleString(language === 'EN' ? 'en-US' : 'tr-TR')],
+    [txt("Proje Adı:", "Project Name:"), location.folderName || ""],
     [],
-    [txt("1. UYGULAMA ANA HESAPLAMA SONUÇLARI", "1. APP CORE CALCULATION RESULTS")],
-    [txt("Koordinat Sistemi:", "Coordinate System:"), getSystemDisplayLabel(sys)],
-    [txt("Kullanılan Ana Yöntem:", "Core Method Used:"), getMethodName(calculationMethod)],
-    [txt("Hesaplanan X/Lat:", "Calculated X/Lat:"), location.lat.toFixed(6)],
-    [txt("Hesaplanan Y/Lng:", "Calculated Y/Lng:"), location.lng.toFixed(6)],
-    [txt("Hesaplanan Z/Alt:", "Calculated Z/Alt:"), (location.altitude || 0).toFixed(3)],
-    [txt("Yatay Hassasiyet (RMS):", "Horizontal Accuracy (RMS):"), `${location.accuracy.toFixed(3)} m`],
-    [txt("Ölçüm Süresi:", "Measurement Duration:"), `${location.measurementDuration || 0} ${txt("sn", "sec")}`],
-    [txt("Toplam Örnek Sayısı:", "Total Samples Count:"), `${location.samples?.length || 0}`],
-    [],
-    [txt("2. KESİN REFERANS DEĞERLER (GROUND TRUTH)", "2. PRECISE REFERENCE VALUES (GROUND TRUTH)")],
-    [preciseCoords.isWgs84 ? txt("Enlem", "Latitude") : txt("Sağa (Y)", "Easting (Y)"), preciseCoords.isWgs84 ? txt("Boylam", "Longitude") : txt("Yukarı (X)", "Northing (X)"), preciseCoords.isWgs84 ? txt("Alt (Elip.H)", "Alt (Ellip. H)") : txt("Kot (Z)", "Elevation (Z)")],
-    [preciseCoords.x.toFixed(preciseCoords.isWgs84 ? 7 : 3), preciseCoords.y.toFixed(preciseCoords.isWgs84 ? 7 : 3), preciseCoords.z.toFixed(3)],
-    [],
-    [txt("3. ALGORİTMA BAZLI HATA ANALİZİ (KIYASLAMA)", "3. ALGORITHM-BASED ERROR ANALYSIS (BENCHMARK)")],
-    [txt("Hassasiyet Hesaplama Metodu:", "Accuracy Calculation Method:"), txt("Max(İstatistiksel Hassasiyet, Maksimum Örnek Yayılımı)", "Max(Statistical Accuracy, Max Sample Spread)")],
-    [txt("Veri Filtreleme:", "Data Filtering:"), language === 'EN' ? `Only samples with accuracy under ${accuracyLimit.toFixed(2)}m were analyzed.` : `Analizde sadece hassasiyeti ${accuracyLimit.toFixed(2)}m altındaki veriler kullanılmıştır.`],
-    [txt("Yöntem", "Method"), preciseCoords.isWgs84 ? txt("Enlem (Lat)", "Latitude (Lat)") : txt("Sağa (Y)", "Easting (Y)"), preciseCoords.isWgs84 ? txt("Boylam (Lng)", "Longitude (Lng)") : txt("Yukarı (X)", "Northing (X)"), preciseCoords.isWgs84 ? txt("Alt (Elip.H)", "Alt (Ellip. H)") : txt("Kot (Z)", "Elevation (Z)"), txt("ΔX (m)", "ΔX (m)"), txt("ΔY (m)", "ΔY (m)"), txt("Yatay Hata (m)", "Horizontal Error (m)"), txt("DURUM", "STATUS")],
+    [
+      txt("Yöntem", "Method"), 
+      preciseCoords.isWgs84 ? txt("Enlem (Lat)", "Latitude (Lat)") : txt("Sağa (Y)", "Easting (Y)"), 
+      preciseCoords.isWgs84 ? txt("Boylam (Lng)", "Longitude (Lng)") : txt("Yukarı (X)", "Northing (X)"), 
+      preciseCoords.isWgs84 ? txt("Alt (Elip.H)", "Alt (Ellip. H)") : txt("Yükseklik (Z)", "Elevation (Z)"), 
+      txt("ΔX (m)", "ΔX (m)"), 
+      txt("ΔY (m)", "ΔY (m)"), 
+      txt("ΔZ (m)", "ΔZ (m)"),
+      txt("Yatay Hata (m)", "Horizontal Error (m)"), 
+      txt("DURUM", "STATUS")
+    ],
+    [
+      txt("KESİN", "PRECISE"),
+      preciseCoords.isWgs84 ? preciseCoords.x.toFixed(7) : preciseCoords.y.toFixed(3),
+      preciseCoords.isWgs84 ? preciseCoords.y.toFixed(7) : preciseCoords.x.toFixed(3),
+      preciseCoords.z.toFixed(3),
+      (0).toFixed(3),
+      (0).toFixed(3),
+      (0).toFixed(3),
+      (0).toFixed(3),
+      txt("REFERANS", "REFERENCE")
+    ],
     ...results.map(res => [
       getMethodName(res.method),
       res.calculated.x.toFixed(preciseCoords.isWgs84 ? 7 : 3),
@@ -446,95 +454,14 @@ export const downloadCombinedAnalysisReport = (
       (res.calculated.z ?? 0).toFixed(3),
       res.errors.dx.toFixed(3),
       res.errors.dy.toFixed(3),
+      (res.errors.dz ?? 0).toFixed(3),
       res.errors.dhz.toFixed(3),
       res.method === bestMethod.method ? txt("EN BAŞARILI (YATAY)", "BEST PERFORMER (2D)") : ""
-    ]),
-    [],
-    [txt("4. VERI SACILIMI VE SINYAL GUVENILIRLIK OZETI", "4. DATA SPREAD AND SIGNAL RELIABILITY SUMMARY")],
-    [txt("Maksimum Saçılım Genişliği (Spread):", "Max Spread Width (Spread):"), `${maxSpreadAll.toFixed(3)} m`],
-    [txt("Konumsal Standart Sapma (1σ):", "Spatial Standard Deviation (1σ):"), `${stdDevValue.toFixed(3)} m`],
-    [txt("Ortalama Alıcı Sensör Hassasiyeti:", "Average Sensor Accuracy:"), `${avgAccAll.toFixed(3)} m`],
-    [txt("Sinyal Güvenilirlik Durumu:", "Signal Reliability Status:"), signalQualityLabel],
-    [txt("Geodezik Analiz Genel Yorumu:", "Geodetic Analysis Comment:"), interpretation],
-    [],
-    [txt("HATA TERMİNOLOJİSİ VE NOTLAR:", "ERROR TERMINOLOGY AND NOTES:")],
-    [txt("- Delta (Δ): Kesin Değer - Hesaplanan Değer farkıdır.", "- Delta (Δ): Difference between True Reference and Calculated values.")],
-    [txt("- Yatay Hata: Konumsal (2D) vektörel sapmadır.", "- Horizontal Error: Position (2D) vector deviation.")],
-    [txt("- En Başarılı Seçimi: Yatay hatası (ΔHz) en düşük olan algoritmaya göre yapılmıştır.", "- Best Performer: Chosen based on the lowest horizontal error (ΔHz).")],
-    [`- ${txt("Bu rapor", "This report is generated by")} ${FULL_BRAND} ACB - Labs ${txt("platformu üzerinden otomatik üretilmiştir.", "platform.")}`]
+    ])
   ];
 
   const wsAnalysis = XLSX.utils.aoa_to_sheet(analysisData);
   XLSX.utils.book_append_sheet(workbook, wsAnalysis, txt("İstatistik ve Analiz", "Stats and Analysis"));
-
-  // --- SAYFA 3: ZAMAN BAZLI PERFORMANS ANALİZİ (SÜRE ETKİSİ) ---
-  const timeSteps = [5, 10, 15, 30, 60, 90].filter(t => t <= (location.measurementDuration || 0));
-  const timeSeriesData: any[][] = [
-    [txt("ZAMAN BAZLI KONUMLANMA PERFORMANS ANALİZİ", "TIME-BASED POSITIONING PERFORMANCE ANALYSIS")],
-    [txt("(Farklı algoritmaların gözlem süresine bağlı doğrusal hata değişimi)", "(Linear error variation of different algorithms over observation duration)")],
-    [],
-    [txt("Gözlem Süresi", "Observation Time"), txt("Hesaplama Yöntemi", "Method"), txt("Hesaplanan X/Lat", "Calculated X/Lat"), txt("Hesaplanan Y/Lng", "Calculated Y/Lng"), txt("Hesaplanan Z/H", "Calculated Z/H"), txt("Yatay Hata (m)", "Horizontal Error (m)"), txt("Örnek Sayısı", "Samples Count")],
-  ];
-
-  // Reference values in meters for comparison
-  let refNorth = 0;
-  let refEast = 0;
-  let refZ = preciseCoords.z;
-  const testSys = preciseCoords.isWgs84 ? 'ITRF96_3' : sys;
-
-  if (preciseCoords.isWgs84) {
-    const converted = convertCoordinate(preciseCoords.x, preciseCoords.y, testSys);
-    refNorth = converted.y; // Northing (Yukarı)
-    refEast = converted.x;  // Easting (Sağa)
-  } else {
-    refNorth = preciseCoords.x; // Northing (Yukarı)
-    refEast = preciseCoords.y;  // Easting (Sağa)
-  }
-
-  const allMethods: CalculationMethod[] = [
-    'WEIGHTED_LSE', 
-    'DBSCAN',
-    'HUBER',
-    'HAMPEL',
-    'HODGES_LEHMANN',
-    'TUKEYS_TRIMEAN',
-    'OPTIMAL_S'
-  ];
-
-  if (location.samples && location.samples.length > 0) {
-    timeSteps.forEach(t => {
-      const startTime = location.samples![0].timestamp;
-      const slice = location.samples!.filter(s => s.timestamp <= startTime + t * 1000 + 500);
-      if (slice.length < 2) return;
-
-      allMethods.forEach(mId => {
-        const { result } = calculateResult(slice, mId, accuracyLimit);
-        const convResult = convertCoordinate(result.lat, result.lng, testSys);
-        
-        // convResult.y is Northing, convResult.x is Easting
-        const dn = refNorth - convResult.y;
-        const de = refEast - convResult.x;
-        const dhz = Math.sqrt(dn*dn + de*de);
-
-        const dispConv = convertCoordinate(result.lat, result.lng, sys);
-
-        timeSeriesData.push([
-          `${t} ${txt("sn", "sec")}`,
-          getMethodName(mId),
-          (sys === "WGS84" ? result.lat : dispConv.x).toFixed(sys === "WGS84" ? 7 : 3),
-          (sys === "WGS84" ? result.lng : dispConv.y).toFixed(sys === "WGS84" ? 7 : 3),
-          (result.altitude || 0).toFixed(3),
-          dhz.toFixed(3),
-          slice.length
-        ]);
-      });
-      // Add an empty row for separation between time steps
-      timeSeriesData.push([]);
-    });
-  }
-
-  const wsTimeSeries = XLSX.utils.aoa_to_sheet(timeSeriesData);
-  XLSX.utils.book_append_sheet(workbook, wsTimeSeries, txt("Zaman Bazlı Analiz", "Time-Based Analysis"));
 
   // Save the combined book
   const prefixName = language === 'EN' ? 'Report' : 'Rapor';
