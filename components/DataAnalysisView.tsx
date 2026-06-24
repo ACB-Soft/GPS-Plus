@@ -91,7 +91,6 @@ const METHOD_COLORS: Record<string, string> = {
   DBSCAN: '#d946ef',
   HUBER: '#3b82f6',
   KMEANS_4: '#06b6d4',
-  BAARDA: '#f59e0b',
   HYBRID_v1: '#10b981',
   POPE_TAU: '#a855f7',
   HAMPEL: '#6366f1',
@@ -239,7 +238,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const timeErrorChartRef = React.useRef<HTMLDivElement>(null);
   const hybridClusterChartRef = React.useRef<HTMLDivElement>(null);
   const clusterChartRef = React.useRef<HTMLDivElement>(null);
-  const baardaChartRef = React.useRef<HTMLDivElement>(null);
+  const reliabilityChartRef = React.useRef<HTMLDivElement>(null);
 
   const [preciseN, setPreciseN] = useState<string>(''); // Northing (X)
   const [preciseE, setPreciseE] = useState<string>(''); // Easting (Y)
@@ -741,7 +740,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       const dy = p.y - refCenterY; // Northing offset in meters relative to reference
       
       const speedFiltered = false;
-      const passedBaarda = usedIndices ? usedIndices.includes(p.idx) : true;
+      const passedOutlierTest = usedIndices ? usedIndices.includes(p.idx) : true;
       
       let clusterId = 0;
       if (clusters) {
@@ -759,7 +758,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
         dy,
         lat: p.lat,
         lng: p.lng,
-        passedBaarda,
+        passedOutlierTest,
         speedFiltered,
         clusterId,
         accuracy: p.accuracy,
@@ -1319,15 +1318,15 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[9px] font-black text-amber-600 uppercase">{t("Baarda Eleme")}</p>
+                    <p className="text-[9px] font-black text-amber-600 uppercase">{t("Hodges-Lehmann Eleme")}</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      {t("Jeodezik Baarda kalın hata testi ile uyuşumsuz ve kaba hatalı uç koordinat verilerini sistemden döngüsel olarak temizler.")}
+                      {t("Jeodezik Hodges-Lehmann testi ile uyuşumsuz ve kaba hatalı uç koordinat verilerini sistemden döngüsel olarak temizler.")}
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[9px] font-black text-blue-600 uppercase">K-Means + Baarda + WLS</p>
+                    <p className="text-[9px] font-black text-blue-600 uppercase">{t("K-Means + Hodges-Lehmann + WLS")}</p>
                     <p className="text-[8px] font-medium text-slate-500 leading-relaxed italic">
-                      {t("Veriyi doğrudan K-Means (k = 4) ile gruplar. Her kümede bağımsız iç Baarda testi yapıp en yoğun grubu seçer ve nihai konumu ağırlıklı en küçük kareler (WLS) ile dengeler.")}
+                      {t("Veriyi doğrudan K-Means (k = 4) ile gruplar. Her kümede bağımsız iç Hodges-Lehmann testi yapıp en yoğun grubu seçer ve nihai konumu ağırlıklı en küçük kareler (WLS) ile dengeler.")}
                     </p>
                   </div>
                </div>
@@ -1590,10 +1589,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   <table className="w-full text-left border-collapse table-fixed">
                     <thead>
                       <tr className="bg-slate-900 text-white text-[8px] sm:text-[9.5px] uppercase tracking-wider">
-                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 rounded-tl-3xl w-[28%] whitespace-nowrap">Method</th>
-                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 w-[22%] whitespace-nowrap">Epochs</th>
-                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 w-[28%] whitespace-nowrap">ΔH (m)</th>
-                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 rounded-tr-3xl w-[22%] whitespace-nowrap">STATUS</th>
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 rounded-tl-3xl w-[28%] whitespace-nowrap">{language === 'EN' ? "Method" : "Yöntem"}</th>
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 w-[22%] whitespace-nowrap">{language === 'EN' ? "Epochs" : "Epok"}</th>
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 w-[28%] whitespace-nowrap">{language === 'EN' ? "Δ2D Dev. (m)" : "Yatay Hata (m)"}</th>
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 rounded-tr-3xl w-[22%] whitespace-nowrap">{language === 'EN' ? "STATUS" : "DURUM"}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1608,7 +1607,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             <td className="px-2 py-2 sm:px-3.5 sm:py-3.5 font-bold text-[9.5px] sm:text-xs text-blue-600 whitespace-nowrap">{res.errors.dhz.toFixed(3)}</td>
                             <td className="px-2 py-2 sm:px-3.5 sm:py-3.5 whitespace-nowrap">
                               {isBest && (
-                                <span className="bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full text-[7px] sm:text-[8px] font-black uppercase tracking-tighter whitespace-nowrap">{t("EN İYİ")}</span>
+                                <span className="bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full text-[7px] sm:text-[8px] font-black uppercase tracking-tighter whitespace-nowrap">{language === 'EN' ? "BEST" : "EN İYİ"}</span>
                               )}
                             </td>
                           </tr>
@@ -1622,10 +1621,18 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                    <table className="w-full text-left border-collapse table-fixed">
                     <thead>
                       <tr className="bg-slate-900 text-white text-[8px] sm:text-[9.5px] uppercase tracking-wider">
-                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 rounded-tl-3xl w-[28%] whitespace-nowrap">Method</th>
-                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 w-[22%] whitespace-nowrap">Epochs</th>
-                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 w-[25%] truncate">{useLocal ? "Y (m)" : "Lat"}</th>
-                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 rounded-tr-3xl w-[25%] truncate">{useLocal ? "X (m)" : "Lng"}</th>
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 rounded-tl-3xl w-[28%] whitespace-nowrap">{language === 'EN' ? "Method" : "Yöntem"}</th>
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 w-[22%] whitespace-nowrap">{language === 'EN' ? "Epochs" : "Epok"}</th>
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 w-[25%] truncate">
+                          {useLocal 
+                            ? (language === 'EN' ? "Y / East (m)" : "Y / Sağa (m)") 
+                            : (language === 'EN' ? "Latitude" : "Enlem")}
+                        </th>
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 rounded-tr-3xl w-[25%] truncate">
+                          {useLocal 
+                            ? (language === 'EN' ? "X / North (m)" : "X / Yukarı (m)") 
+                            : (language === 'EN' ? "Longitude" : "Boylam")}
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1633,7 +1640,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         const totalCount = location?.samples?.length || 0;
                         const baseCount = res.preFilteredCount ?? totalCount;
                         return (
-                          <tr key={res.method} className={`border-b border-slate-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                           <tr key={res.method} className={`border-b border-slate-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
                             <td className="px-2 py-2 sm:px-3.5 sm:py-3.5 font-black text-[9.5px] sm:text-[11px] text-slate-800 whitespace-nowrap truncate">{getMethodLabel(res.method)}</td>
                             <td className="px-2 py-2 sm:px-3.5 sm:py-3.5 font-mono text-[9.5px] sm:text-xs text-slate-600 font-medium whitespace-nowrap">{(res.usedCount ?? baseCount)}/{baseCount}</td>
                             <td className="px-2 py-2 sm:px-3.5 sm:py-3.5 font-bold text-[9.5px] sm:text-xs text-blue-600 whitespace-nowrap">{res.calculated.x.toFixed(useLocal ? 3 : 8)}</td>
@@ -1854,15 +1861,15 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               return (
                                 <div className="bg-slate-900 border border-slate-800 text-white p-2.5 rounded-lg shadow-xl z-50 text-[8px] text-left">
                                   <p className="font-bold uppercase text-blue-400 mb-0.5 pb-0.5 border-b border-slate-800 leading-none">
-                                    {isMethod ? `${getMethodLabelEn(data.method)}` : `Raw Epoch #${data.id} (Session ${(data.sessionIdx !== undefined ? data.sessionIdx : 0) + 1})`}
+                                    {isMethod ? `${getMethodLabelEn(data.method)}` : (language === 'EN' ? `Raw Epoch #${data.id} (Session ${(data.sessionIdx !== undefined ? data.sessionIdx : 0) + 1})` : `Ham Epok #${data.id} (Oturum ${(data.sessionIdx !== undefined ? data.sessionIdx : 0) + 1})`)}
                                   </p>
                                   <div className="space-y-0.5 font-mono">
                                     <div className="flex justify-between gap-2">
-                                      <span className="opacity-60 text-[7px] uppercase">ΔE (Easting):</span>
+                                      <span className="opacity-60 text-[7px] uppercase">{language === 'EN' ? 'ΔE (Easting):' : 'ΔY (Sağa/Easting):'}</span>
                                       <span className="font-bold text-emerald-400">{data.dE.toFixed(4)} m</span>
                                     </div>
                                     <div className="flex justify-between gap-2">
-                                      <span className="opacity-60 text-[7px] uppercase">ΔN (Northing):</span>
+                                      <span className="opacity-60 text-[7px] uppercase">{language === 'EN' ? 'ΔN (Northing):' : 'ΔX (Yukarı/Northing):'}</span>
                                       <span className="font-bold text-sky-400">{data.dN.toFixed(4)} m</span>
                                     </div>
                                   </div>
@@ -1879,7 +1886,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         {/* Layer 0: Ground Truth Point */}
                         {analysisType === 'precise' && (
                           <Scatter 
-                            name="GROUND TRUTH (REF)" 
+                            name={language === 'EN' ? "GROUND TRUTH (REF)" : "KESİN KOORDİNAT (REF)"} 
                             data={[{ dE: 0, dN: 0 }]} 
                             fill="#10b981" 
                             shape="diamond" 
@@ -1891,7 +1898,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
                         {/* Layer 1: Raw Points Cloud */}
                         <Scatter 
-                          name="Raw Satellite Epochs" 
+                          name={language === 'EN' ? "Raw Satellite Epochs" : "Ham Uydu Epokları"} 
                           data={distributionData.rawPoints} 
                           shape={<RawPointShape r={parseFloat(customDotSize)} />} 
                         >
@@ -1971,7 +1978,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 {getMethodLabelEn(m.method)}
                               </p>
                               <p className="font-bold text-blue-600 font-mono tracking-tight leading-none mt-0.5" style={{ fontSize: subFontSize }}>
-                                {m.errors?.dhz ? `Δ(2D) = ${m.errors.dhz.toFixed(2)}m` : 'BARYCENTER'}
+                                {m.errors?.dhz ? `Δ(2D) = ${m.errors.dhz.toFixed(2)}m` : (language === 'EN' ? 'BARYCENTER' : 'AĞIRLIK MERKEZİ')}
                               </p>
                             </div>
                           </div>
@@ -2006,7 +2013,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 </div>
               </div>
 
-              {/* SEPARATED SECTION: K-Means Clustering & Baarda Outlier Filtering with High-Fidelity Scatter Charts */}
+              {/* SEPARATED SECTION: K-Means Clustering & Robust Outlier Filtering with High-Fidelity Scatter Charts */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center px-1.5">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -2037,7 +2044,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         </select>
                       </div>
                       <button 
-                        onClick={() => exportChart(baardaChartRef, `gps-plus-${reliabilityPlotMethod.toLowerCase()}-reliability`)}
+                        onClick={() => exportChart(reliabilityChartRef, `gps-plus-${reliabilityPlotMethod.toLowerCase()}-reliability`)}
                         type="button"
                         className="bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 cursor-pointer flex items-center gap-1"
                       >
@@ -2046,7 +2053,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                     </div>
 
                     <div 
-                      ref={baardaChartRef}
+                      ref={reliabilityChartRef}
                       className="bg-white rounded-[1.5rem] border-2 border-slate-200 p-3.5 pb-2.5 flex flex-col gap-1 text-slate-900 w-full max-w-[500px] h-auto mx-auto relative overflow-hidden font-sans text-left shadow-sm select-none"
                     >
                       {/* Scatter Plot */}
@@ -2098,31 +2105,35 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                       return (
                                         <div className="bg-slate-900 border border-slate-800 text-white p-2.5 rounded-lg shadow-xl z-50 text-[8px] text-left">
                                           <p className="font-bold uppercase text-blue-400 mb-0.5 pb-0.5 border-b border-slate-800 leading-none">
-                                            Epoch #{data.id} {data.sessionIdx !== undefined ? `(${language === 'EN' ? 'Session' : 'Oturum'} ${data.sessionIdx + 1})` : ''}
+                                            {language === 'EN' ? "Epoch" : "Epok"} #{data.id} {data.sessionIdx !== undefined ? `(${language === 'EN' ? 'Session' : 'Oturum'} ${data.sessionIdx + 1})` : ''}
                                           </p>
                                         <div className="space-y-0.5 font-mono">
                                           <div className="flex justify-between gap-2">
-                                            <span className="opacity-60 text-[7px] uppercase">Spatial Cluster:</span>
-                                            <span className="font-bold text-indigo-400">Cluster {getClusterLetterLabel(data.clusterId)}</span>
+                                            <span className="opacity-60 text-[7px] uppercase">{language === 'EN' ? 'Spatial Cluster:' : 'Uzaysal Küme:'}</span>
+                                            <span className="font-bold text-indigo-400">{language === 'EN' ? 'Cluster' : 'Küme'} {getClusterLetterLabel(data.clusterId)}</span>
                                           </div>
                                           <div className="flex justify-between gap-2">
-                                            <span className="opacity-60 text-[7px] uppercase">ΔE (Easting):</span>
+                                            <span className="opacity-60 text-[7px] uppercase">{language === 'EN' ? 'ΔE (Easting):' : 'ΔY (Sağa/Easting):'}</span>
                                             <span className="font-bold text-emerald-400">{data.dx.toFixed(4)} m</span>
                                           </div>
                                           <div className="flex justify-between gap-2">
-                                            <span className="opacity-60 text-[7px] uppercase">ΔN (Northing):</span>
+                                            <span className="opacity-60 text-[7px] uppercase">{language === 'EN' ? 'ΔN (Northing):' : 'ΔX (Yukarı/Northing):'}</span>
                                             <span className="font-bold text-sky-400">{data.dy.toFixed(4)} m</span>
                                           </div>
                                           {data.speed !== undefined && data.speed !== null && (
                                             <div className="flex justify-between gap-2">
-                                              <span className="opacity-60 text-[7px] uppercase">Nokta Hızı:</span>
+                                              <span className="opacity-60 text-[7px] uppercase">{language === 'EN' ? 'Epoch Velocity:' : 'Epok Hızı:'}</span>
                                               <span className="font-bold text-amber-400">{data.speed.toFixed(3)} m/s</span>
                                             </div>
                                           )}
                                           <div className="flex justify-between gap-2">
-                                            <span className="opacity-60 text-[7px] uppercase">Filter Status:</span>
-                                            <span className={`font-bold ${data.passedBaarda ? 'text-emerald-500' : (data.speedFiltered ? 'text-slate-400' : 'text-rose-500')}`}>
-                                              {data.passedBaarda ? "PASSED (RELIABLE)" : (data.speedFiltered ? "SPEED LIMIT (OUTLIER)" : "GROSS ERROR (OUTLIER)")}
+                                            <span className="opacity-60 text-[7px] uppercase">{language === 'EN' ? 'Filter Status:' : 'Süzgeç Durumu:'}</span>
+                                            <span className={`font-bold ${data.passedOutlierTest ? 'text-emerald-500' : (data.speedFiltered ? 'text-slate-400' : 'text-rose-500')}`}>
+                                              {data.passedOutlierTest 
+                                                ? (language === 'EN' ? "PASSED (RELIABLE)" : "UYUMLU (GÜVENİLİR)") 
+                                                : (data.speedFiltered 
+                                                    ? (language === 'EN' ? "SPEED EXCEEDED (OUTLIER)" : "LİMİT DIŞI HIZ (AYKIRI)") 
+                                                    : (language === 'EN' ? "GROSS ERROR (OUTLIER)" : "AYKIRI DEĞER"))}
                                             </span>
                                           </div>
                                         </div>
@@ -2138,7 +2149,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               {/* Reference Point / Ground Truth (REF) */}
                               {analysisType === 'precise' && (
                                 <Scatter 
-                                  name="GROUND TRUTH (REF)" 
+                                  name={language === 'EN' ? "GROUND TRUTH (REF)" : "KESİN KOORDİNAT (REF)"} 
                                   data={[{ dx: 0, dy: 0 }]} 
                                   fill="#10b981" 
                                   shape="diamond" 
@@ -2150,8 +2161,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
                               {/* Approved Points Series */}
                               <Scatter 
-                                name="APPROVED" 
-                                data={hybridClusterChartData.points.filter(p => p.passedBaarda)} 
+                                name={language === 'EN' ? "APPROVED" : "UYUMLU ÖLÇÜM"} 
+                                data={hybridClusterChartData.points.filter(p => p.passedOutlierTest)} 
                                 fill="#10b981"
                                 shape={<RawPointShape r={parseFloat(customDotSize)} />}
                                 onClick={(pt) => setActiveClusterPointId(pt.id)}
@@ -2160,8 +2171,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               
                               {/* Rejected/Outlier Points Series - Yöntem (Kırmızı) */}
                               <Scatter 
-                                name="OUTLIERS" 
-                                data={hybridClusterChartData.points.filter(p => !p.passedBaarda)} 
+                                name={language === 'EN' ? "OUTLIERS" : "AYKIRI DEĞERLER"} 
+                                data={hybridClusterChartData.points.filter(p => !p.passedOutlierTest)} 
                                 fill="#ef4444"
                                 shape={<RawPointShape r={parseFloat(customDotSize)} />}
                                 onClick={(pt) => setActiveClusterPointId(pt.id)}
@@ -2183,15 +2194,15 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             const badgeFontSize = `${fs - 0.5}px`;
                             const titleFontSize = `${fs - 1}px`;
                             const subFontSize = `${fs - 2}px`;
-                            const approvedCount = hybridClusterChartData.points.filter(p => p.passedBaarda).length;
-                            const rejectedCount = hybridClusterChartData.points.filter(p => !p.passedBaarda).length;
+                            const approvedCount = hybridClusterChartData.points.filter(p => p.passedOutlierTest).length;
+                            const rejectedCount = hybridClusterChartData.points.filter(p => !p.passedOutlierTest).length;
                             return (
                               <>
                                 <div className="flex flex-col gap-0.5 text-left min-w-0 font-sans">
                                   <div className="flex items-center gap-1">
                                     <div className="w-1.5 h-1.5 rounded-full shrink-0 bg-[#10b981]" />
                                     <span className="font-extrabold text-slate-700 uppercase tracking-wider truncate" style={{ fontSize: `${fs - 1.5}px` }}>
-                                      Approved
+                                      {language === 'EN' ? "Approved" : "Uyumlu Ölçüm"}
                                     </span>
                                   </div>
                                   <span className="font-mono font-black text-[#10b981] pl-2.5" style={{ fontSize: `${fs + 1.5}px`, lineHeight: 1 }}>
@@ -2203,7 +2214,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                   <div className="flex items-center gap-1">
                                     <div className="w-1.5 h-1.5 rounded-full shrink-0 bg-[#ef4444]" />
                                     <span className="font-extrabold text-slate-700 uppercase tracking-wider truncate" style={{ fontSize: `${fs - 1.5}px` }}>
-                                      Outliers
+                                      {language === 'EN' ? "Outliers" : "Aykırı Değer"}
                                     </span>
                                   </div>
                                   <span className="font-mono font-black text-[#ef4444] pl-2.5" style={{ fontSize: `${fs + 1.5}px`, lineHeight: 1 }}>
@@ -2216,7 +2227,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                     <div className="flex items-center gap-1">
                                       <div className="w-1.5 h-1.5 rotate-45 shrink-0 bg-[#10b981]" />
                                       <span className="font-extrabold text-slate-700 uppercase tracking-wider truncate" style={{ fontSize: `${fs - 1.5}px` }}>
-                                        Reference
+                                        {language === 'EN' ? "Reference" : "Referans"}
                                       </span>
                                     </div>
                                     <span className="font-mono font-black text-emerald-600 pl-2.5" style={{ fontSize: `${fs + 1.5}px`, lineHeight: 1 }}>
@@ -2424,7 +2435,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         <Line 
                           type="monotone" 
                           dataKey="errorHz" 
-                          name="Deviation"
+                          name={language === 'EN' ? "Deviation" : "Yatay Hata"}
                           stroke="#cbd5e1" 
                           strokeWidth={2} 
                           dot={<ColoredDot r={parseFloat(customTimeSeriesDotSize)} />} 
@@ -2454,7 +2465,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 {label}
                               </p>
                               <p className="font-bold text-slate-400 font-mono tracking-tight leading-none mt-0.5" style={{ fontSize: subFontSize }}>
-                                {count} Epoch
+                                {count} {language === 'EN' ? "Epoch" : "Epok"}
                               </p>
                             </div>
                           </div>
