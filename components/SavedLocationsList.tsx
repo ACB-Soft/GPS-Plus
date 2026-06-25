@@ -209,7 +209,7 @@ const SavedLocationItem: React.FC<{
               <p className="text-[13px] mono-font text-slate-800 font-bold leading-tight">{formattedY}</p>
             </div>
             <div className="flex flex-col">
-              <span className="text-[9px] font-black text-slate-400 tracking-widest leading-none mb-0.5">{isOrthometric ? t('YÜKSEKLİK') : t('h-ELİPSOİD')}</span>
+              <span className="text-[9px] font-black text-slate-400 tracking-widest leading-none mb-0.5">{isOrthometric ? t('YÜKSEKLİK') : t('h-ELİPSOİD (Z)')}</span>
               <p className="text-[13px] mono-font text-slate-800 font-black leading-tight">{displayHeight !== null ? `${displayHeight.toFixed(heightPrecision)}m` : '---'}</p>
             </div>
           </div>

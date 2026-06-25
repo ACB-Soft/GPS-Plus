@@ -189,7 +189,7 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
 
                 {/* Row 2: Yükseklik, GPS Sinyali */}
                 <div className={boxBgClass}>
-                  <span className="text-[10px] font-black text-slate-400 tracking-widest leading-none mb-0.5">{isOrthometric ? t('YÜKSEKLİK') : t('h-ELİPSOİD')}</span>
+                  <span className="text-[10px] font-black text-slate-400 tracking-widest leading-none mb-0.5">{isOrthometric ? t('YÜKSEKLİK') : t('h-ELİPSOİD (Z)')}</span>
                   <p className="text-[15px] md:text-[16px] mono-font text-slate-800 font-black leading-tight">{displayHeight !== null ? `${displayHeight.toFixed(heightPrecision)}m` : '---'}</p>
                 </div>
                 <div className={boxBgClass}>
