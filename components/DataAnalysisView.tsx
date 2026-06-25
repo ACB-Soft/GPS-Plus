@@ -1456,7 +1456,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-500 uppercase ml-2">{useLocal ? t("Z (Kot)") : t("Alt (H)")}</label>
+                  <label className="text-[9px] font-bold text-slate-500 uppercase ml-2">{useLocal ? t("h-Elipsoid (Z)") : t("Alt (H)")}</label>
                   <input 
                     type="number" 
                     value={preciseZ} 

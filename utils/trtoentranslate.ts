@@ -433,7 +433,7 @@ export const trToEnMap: Record<string, string> = {
   "Nokta:": "Point:",
   "Ham Ölçüm (Güvenilir)": "Raw Measurement (Reliable)",
   "Hass:": "Acc:",
-  "Z (Kot)": "Z (Elev)",
+  "h-Elipsoid (Z)": "h-Ellipsoid (Z)",
   "Alt (H)": "Alt (H)",
   "ΔYatay (m)": "ΔHz (m)",
   "DURUM": "STATUS",
