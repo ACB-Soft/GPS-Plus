@@ -4,6 +4,7 @@ import { saveAs } from 'file-saver';
 import { useLanguage } from '../utils/LanguageContext';
 import { SavedLocation, AppSettings, CalculationMethod } from '../types';
 import { geoidService } from '../services/GeoidService';
+import { getEllipsoidalHeight } from './GeoidUtils';
 import { convertCoordinate, getSystemDisplayLabel, getWGS84Coefficients } from '../utils/CoordinateUtils';
 import { calculateResult, calculateAverage, calculateMaxDistance } from '../utils/MathUtils';
 import { downloadCombinedAnalysisReport } from './ExcelUtils';
@@ -228,9 +229,20 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const location = useMemo(() => {
     const orig = locations.find(l => l.id === selectedPointId);
     if (!orig) return undefined;
+    
+    const processedSamples = orig.samples ? orig.samples.map(s => {
+      // Analize giren verilerin tüm platformlarda elipsoidal (h) olmasını sağlıyoruz.
+      // iOS'tan gelen ham ortometrik (EGM96) kotları elipsoidale geri çevirir (Zaten Android'de elipsoid geliyor).
+      const elipAlt = getEllipsoidalHeight(s.lat, s.lng, s.altitude, orig.deviceOS);
+      return {
+        ...s,
+        altitude: elipAlt !== null ? elipAlt : s.altitude
+      };
+    }) : [];
+    
     return {
       ...orig,
-      samples: orig.samples ? [...orig.samples] : []
+      samples: processedSamples
     };
   }, [locations, selectedPointId]);
   const rawChartRef = React.useRef<HTMLDivElement>(null);
@@ -265,6 +277,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [customTimeSeriesStep, setCustomTimeSeriesStep] = useState<string>('1.0'); // 'auto', '0.1', '0.2', '0.5', '1.0', '2.0'
   const [customTimeSeriesFontSize, setCustomTimeSeriesFontSize] = useState<string>('10'); // '6', '7', '8', '9', '10', '12'
   const [customTimeSeriesDotSize, setCustomTimeSeriesDotSize] = useState<string>('2.0'); // '1.0', '1.5', '2.0', '2.5', '3.0', '4.0', '5.0', '6.0'
+  const [splitBySessions, setSplitBySessions] = useState<boolean>(false);
 
 
 
@@ -988,6 +1001,23 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const timeSeriesChartData = useMemo(() => {
     if (chartData.length === 0) return [];
     
+    if (!splitBySessions) {
+      const points = [...chartData].sort((a, b) => a.timestamp - b.timestamp);
+      const mappedRawPoints = points.map((point, idx) => {
+        const sec = idx + 1;
+        return {
+          ...point,
+          second: sec,
+          elapsedSecondsInsideSession: sec,
+          elapsedSeconds: sec,
+          timeLabel: `${sec}.sec`,
+          sessionIdx: 0
+        };
+      });
+      const limitSec = parseInt(timeSeriesDurationLimit);
+      return mappedRawPoints.filter(p => p.elapsedSeconds <= limitSec);
+    }
+    
     // Group original points by sessionIdx and sort them
     const sessionsMap: Record<number, typeof chartData> = {};
     chartData.forEach(p => {
@@ -1079,9 +1109,18 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
     const limitSec = parseInt(timeSeriesDurationLimit);
     return mappedRawPoints.filter(p => p.elapsedSeconds <= limitSec);
-  }, [chartData, timeSeriesDurationLimit]);
+  }, [chartData, timeSeriesDurationLimit, splitBySessions]);
 
   const segmentList = useMemo(() => {
+    if (!splitBySessions) {
+      return [{
+        segmentIdx: 0,
+        label: language === 'EN' ? "All Measurements" : "Tüm Ölçümler",
+        color: SESSION_COLORS[0],
+        count: chartData.length
+      }];
+    }
+    
     const list = [];
     
     // Group original points by sessionIdx
@@ -1114,7 +1153,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       });
     }
     return list;
-  }, [chartData, timeSeriesDurationLimit, language]);
+  }, [chartData, timeSeriesDurationLimit, language, splitBySessions]);
 
   const sessionsList = useMemo(() => {
     if (timeSeriesChartData.length === 0) return [];
@@ -2354,6 +2393,18 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         <option value="6.0">6.0px</option>
                       </select>
                     </div>
+                    <div className="flex items-center gap-1.5 ml-2 border-l pl-3 border-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={splitBySessions}
+                        onChange={(e) => setSplitBySessions(e.target.checked)}
+                        className="w-3.5 h-3.5 accent-rose-500 cursor-pointer"
+                        id="splitSessionsToggle"
+                      />
+                      <label htmlFor="splitSessionsToggle" className="text-[8.5px] font-bold text-slate-500 uppercase cursor-pointer select-none">
+                        {language === 'EN' ? "Split by Sessions" : "Oturumlara Böl"}
+                      </label>
+                    </div>
                   </div>
                 </div>
 
@@ -2421,9 +2472,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 <p className="font-extrabold text-blue-600 mb-0.5 leading-none">
                                   {language === 'EN' ? `Time: ${elapsed} seconds` : `Zaman: ${elapsed} saniye`}
                                 </p>
-                                <p className="font-extrabold text-slate-900 mb-1 leading-none">
-                                  {language === 'EN' ? `Interval #${segmentIdx} (Session ${sIdx + 1})` : `Aralık #${segmentIdx} (Oturum ${sIdx + 1})`}
-                                </p>
+                                {splitBySessions && (
+                                  <p className="font-extrabold text-slate-900 mb-1 leading-none">
+                                    {language === 'EN' ? `Interval #${segmentIdx} (Session ${sIdx + 1})` : `Aralık #${segmentIdx} (Oturum ${sIdx + 1})`}
+                                  </p>
+                                )}
                                 <div className="h-px bg-slate-100 my-1" />
                                 <p className="font-bold text-slate-500 font-mono leading-none">
                                   {language === 'EN' ? 'Deviation:' : 'Sapma:'} <span className="font-black text-slate-800">{devValue.toFixed(3)} m</span>
