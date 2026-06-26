@@ -106,7 +106,7 @@ export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings
     ["Koordinat Sistemi:", getSystemDisplayLabel(projectSystem)],
     ["Dilim Numarası:", projectZone],
     [], 
-    ["Nokta İsmi", header1, header2, "Yükseklik (m)", "Elipsoidal Yükseklik (m)", "Ondülasyon (m)", "Hassasiyet (m)", "Gözlem Süresi (sn)", "Güvenilirlik", "Tarih"],
+    ["Nokta İsmi", header1, header2, "Yükseklik (m)", "h-Elipsoid (m)", "Ondülasyon (N)", "Hassasiyet (m)", "Gözlem Süresi (sn)", "Güvenilirlik", "Tarih"],
     ...dataRows
   ];
 
@@ -172,13 +172,17 @@ export const getTechnicalReportWorksheet = (location: SavedLocation, settings?: 
     const usedSamples = usedIndices.map(i => location.samples![i]);
     const variance = calculateVariance(usedSamples, result);
     
+    const resOrth = getCorrectedHeight(result.lat, result.lng, result.altitude, location.deviceOS);
     const resEllip = getEllipsoidalHeight(result.lat, result.lng, result.altitude, location.deviceOS);
+    const resUndulation = (resOrth !== null && resEllip !== null) ? (resEllip - resOrth).toFixed(3) : '---';
 
     return {
       method,
       x: isWGS84 ? result.lat : x,
       y: isWGS84 ? result.lng : y,
-      z: isOrthometricSetting ? getCorrectedHeight(result.lat, result.lng, result.altitude, location.deviceOS) : resEllip,
+      z: resOrth,
+      ellip: resEllip,
+      und: resUndulation,
       usedCount: usedIndices.length,
       accuracy: result.accuracy,
       variance: variance
@@ -192,9 +196,9 @@ export const getTechnicalReportWorksheet = (location: SavedLocation, settings?: 
     const val1 = isWGS84 ? s.lat.toFixed(5) : x.toFixed(3);
     const val2 = isWGS84 ? s.lng.toFixed(5) : y.toFixed(3);
 
-    const hValue = isOrthometricSetting 
-      ? getCorrectedHeight(s.lat, s.lng, s.altitude, s.deviceOS || location.deviceOS) 
-      : getEllipsoidalHeight(s.lat, s.lng, s.altitude, s.deviceOS || location.deviceOS);
+    const hOrth = getCorrectedHeight(s.lat, s.lng, s.altitude, s.deviceOS || location.deviceOS);
+    const hEllip = getEllipsoidalHeight(s.lat, s.lng, s.altitude, s.deviceOS || location.deviceOS);
+    const undVal = (hOrth !== null && hEllip !== null) ? (hEllip - hOrth).toFixed(3) : '---';
 
     const speedVal = s.speed !== null && s.speed !== undefined ? s.speed.toFixed(2) : '---';
     const headingVal = s.heading !== null && s.heading !== undefined ? s.heading.toFixed(1) : '---';
@@ -211,7 +215,9 @@ export const getTechnicalReportWorksheet = (location: SavedLocation, settings?: 
       new Date(s.timestamp).toLocaleTimeString(language === 'EN' ? 'en-US' : 'tr-TR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
       val1,
       val2,
-      hValue !== null ? hValue.toFixed(3) : '---',
+      hOrth !== null ? hOrth.toFixed(3) : '---',
+      hEllip !== null ? hEllip.toFixed(3) : '---',
+      undVal,
       s.accuracy.toFixed(3),
       s.altitudeAccuracy !== null ? s.altitudeAccuracy.toFixed(3) : '---',
       speedVal,
@@ -266,8 +272,6 @@ export const getTechnicalReportWorksheet = (location: SavedLocation, settings?: 
     relLevel = txt("Orta Güvenli Veri", "Medium-Integrity Data");
   }
 
-  const heightHeader = isOrthometricSetting ? txt("Yükseklik (m)", "Height (m)") : txt("Elipsoidal Yükseklik (m)", "Ellipsoidal Height (m)");
-
   const ws_data = [
     [txt("Nokta Adı:", "Point Name:"), location.name],
     [txt("Proje Adı:", "Project Name:"), location.folderName],
@@ -281,16 +285,18 @@ export const getTechnicalReportWorksheet = (location: SavedLocation, settings?: 
     [txt("Ortalama Sensör Hassasiyeti:", "Mean Hardware-Estimated Accuracy (1σ):"), `${avgAccAll.toFixed(2)} m`],
     [txt("Yayılım / Hassasiyet Oranı:", "Dispersion-to-Accuracy Ratio:"), spreadRatio.toFixed(2)],
     [],
-    ["No", txt("Saat", "Time (Local)"), header1, header2, heightHeader, txt("Hassasiyet (m)", "Horizontal Accuracy (m)"), txt("Dikey Hass. (m)", "Vertical Accuracy (m)"), txt("Hız (m/s)", "Velocity (m/s)"), txt("Yön (Derece)", "Heading (Deg)"), txt("İvme X (m/s²)", "Linear Accel X (m/s²)"), txt("İvme Y (m/s²)", "Linear Accel Y (m/s²)"), txt("İvme Z (m/s²)", "Linear Accel Z (m/s²)"), txt("Yönelim Alpha (°)", "Orientation Alpha (°)"), txt("Eğim Beta (°)", "Roll Beta (°_office)"), txt("Eğim Gamma (°)", "Pitch Gamma (°_office)"), txt("Oturum", "Session No")],
+    ["No", txt("Saat", "Time (Local)"), header1, header2, txt("Yükseklik (m)", "Height (m)"), txt("h-Elipsoid (m)", "Ellipsoidal Height (m)"), txt("Ondülasyon (N)", "Undulation (N)"), txt("Hassasiyet (m)", "Horizontal Accuracy (m)"), txt("Dikey Hass. (m)", "Vertical Accuracy (m)"), txt("Hız (m/s)", "Velocity (m/s)"), txt("Yön (Derece)", "Heading (Deg)"), txt("İvme X (m/s²)", "Linear Accel X (m/s²)"), txt("İvme Y (m/s²)", "Linear Accel Y (m/s²)"), txt("İvme Z (m/s²)", "Linear Accel Z (m/s²)"), txt("Yönelim Alpha (°)", "Orientation Alpha (°)"), txt("Eğim Beta (°)", "Roll Beta (°_office)"), txt("Eğim Gamma (°)", "Pitch Gamma (°_office)"), txt("Oturum", "Session No")],
     ...dataRows,
     [],
     [txt("ANALİZ YÖNTEMLERİ KARŞILAŞTIRMALI SONUÇLAR", "COMPARATIVE ANALYSIS OF ROBUST ESTIMATION METHODS")],
-    [txt("Yöntem", "Estimation Algorithm"), header1, header2, heightHeader, txt("Kullanılan Örnek", "Epochs Utilized"), txt("Hassasiyet (m)", "Horizontal Accuracy (m)"), txt("Varyans (m²)", "Spatial Variance (m²)")],
+    [txt("Yöntem", "Estimation Algorithm"), header1, header2, txt("Yükseklik (m)", "Height (m)"), txt("h-Elipsoid (m)", "Ellipsoidal Height (m)"), txt("Ondülasyon (N)", "Undulation (N)"), txt("Kullanılan Örnek", "Epochs Utilized"), txt("Hassasiyet (m)", "Horizontal Accuracy (m)"), txt("Varyans (m²)", "Spatial Variance (m²)")],
     ...methodResults.map(res => [
       getMethodName(res.method),
       res.x.toFixed(isWGS84 ? 7 : 3),
       res.y.toFixed(isWGS84 ? 7 : 3),
       res.z !== null ? res.z.toFixed(3) : '---',
+      res.ellip !== null ? res.ellip.toFixed(3) : '---',
+      res.und,
       `${res.usedCount} / ${location.samples!.length}`,
       res.accuracy.toFixed(3),
       res.variance.toFixed(4)
@@ -304,6 +310,8 @@ export const getTechnicalReportWorksheet = (location: SavedLocation, settings?: 
     { wch: 20 }, // Val1
     { wch: 20 }, // Val2
     { wch: 15 }, // Yükseklik
+    { wch: 15 }, // Elipsoidal Yükseklik
+    { wch: 15 }, // Ondülasyon
     { wch: 15 }, // Hassasiyet
     { wch: 15 }, // Dikey Hass
     { wch: 12 }, // Hız
@@ -429,7 +437,9 @@ export const downloadCombinedAnalysisReport = (
       txt("Yöntem", "Method"), 
       preciseCoords.isWgs84 ? txt("Enlem (Lat)", "Latitude (Lat)") : txt("Sağa (Y)", "Easting (Y)"), 
       preciseCoords.isWgs84 ? txt("Boylam (Lng)", "Longitude (Lng)") : txt("Yukarı (X)", "Northing (X)"), 
-      preciseCoords.isWgs84 ? txt("Alt (Elip.H)", "Alt (Ellip. H)") : txt("Yükseklik (Z)", "Elevation (Z)"), 
+      txt("Yükseklik (m)", "Height (m)"), 
+      txt("h-Elipsoid (m)", "h-Ellipsoid (m)"),
+      txt("Ondülasyon (N)", "Undulation (N)"),
       txt("ΔX (m)", "ΔX (m)"), 
       txt("ΔY (m)", "ΔY (m)"), 
       txt("ΔZ (m)", "ΔZ (m)"),
@@ -440,24 +450,34 @@ export const downloadCombinedAnalysisReport = (
       txt("KESİN", "PRECISE"),
       preciseCoords.isWgs84 ? preciseCoords.x.toFixed(7) : preciseCoords.y.toFixed(3),
       preciseCoords.isWgs84 ? preciseCoords.y.toFixed(7) : preciseCoords.x.toFixed(3),
-      preciseCoords.z.toFixed(3),
+      isOrthometric ? preciseCoords.z.toFixed(3) : '---',
+      !isOrthometric ? preciseCoords.z.toFixed(3) : '---',
+      '---',
       (0).toFixed(3),
       (0).toFixed(3),
       (0).toFixed(3),
       (0).toFixed(3),
       txt("REFERANS", "REFERENCE")
     ],
-    ...results.map(res => [
-      getMethodName(res.method),
-      res.calculated.x.toFixed(preciseCoords.isWgs84 ? 7 : 3),
-      res.calculated.y.toFixed(preciseCoords.isWgs84 ? 7 : 3),
-      (res.calculated.z ?? 0).toFixed(3),
-      res.errors.dx.toFixed(3),
-      res.errors.dy.toFixed(3),
-      (res.errors.dz ?? 0).toFixed(3),
-      res.errors.dhz.toFixed(3),
-      res.method === bestMethod.method ? txt("EN BAŞARILI (YATAY)", "BEST PERFORMER (2D)") : ""
-    ])
+    ...results.map(res => {
+      const hOrth = getCorrectedHeight(res.lat, res.lng, res.calculated.z, location.deviceOS);
+      const hEllip = getEllipsoidalHeight(res.lat, res.lng, res.calculated.z, location.deviceOS);
+      const undVal = (hOrth !== null && hEllip !== null) ? (hEllip - hOrth).toFixed(3) : '---';
+
+      return [
+        getMethodName(res.method),
+        res.calculated.x.toFixed(preciseCoords.isWgs84 ? 7 : 3),
+        res.calculated.y.toFixed(preciseCoords.isWgs84 ? 7 : 3),
+        hOrth !== null ? hOrth.toFixed(3) : '---',
+        hEllip !== null ? hEllip.toFixed(3) : '---',
+        undVal,
+        res.errors.dx.toFixed(3),
+        res.errors.dy.toFixed(3),
+        (res.errors.dz ?? 0).toFixed(3),
+        res.errors.dhz.toFixed(3),
+        res.method === bestMethod.method ? txt("EN BAŞARILI (YATAY)", "BEST PERFORMER (2D)") : ""
+      ];
+    })
   ];
 
   const wsAnalysis = XLSX.utils.aoa_to_sheet(analysisData);
