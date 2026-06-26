@@ -23,37 +23,47 @@ export const downloadTXT = (locations: SavedLocation[], settings: AppSettings) =
   const isWGS84 = projectSystem === 'WGS84';
   const header1 = isWGS84 ? "Enlem" : "Sağa (Y)";
   const header2 = isWGS84 ? "Boylam" : "Yukarı (X)";
-  const heightLabel = settings.heightType === 'orthometric' ? "Yükseklik (m)" : "Elipsoidal Yükseklik (m)";
 
   let content = `Proje Adi:\t${projectName}\n`;
   content += `Koordinat Sistemi:\t${projectSystem}\n`;
   content += `Dilim Numarasi:\t${projectZone}\n\n`;
   
-  content += `Nokta\t${header1}\t${header2}\t${heightLabel}\n`;
-  content += "----------------------------------------------------------------\n";
+  content += `Nokta\t${header1}\t${header2}\tYükseklik (m)\th-Elipsoid (m)\tOndülasyon (N)\n`;
+  content += "------------------------------------------------------------------------------------------------\n";
 
   locations.forEach(loc => {
     const { x, y } = convertCoordinate(loc.lat, loc.lng, loc.coordinateSystem || 'WGS84');
     const isUTM = loc.coordinateSystem && loc.coordinateSystem !== 'WGS84';
     
-    // Konum duyarlılığı ayardan alınır (WGS84 için 6-7 basamak kalabilir veya ayar uygulanabilir)
     const prec = settings.locationPrecision || 2;
     const valX = isUTM ? x.toFixed(prec) : x.toFixed(6);
     const valY = isUTM ? y.toFixed(prec) : y.toFixed(6);
     
     const hPrec = settings.heightPrecision || 2;
     const gInfo = getGeoidInfo(loc.lat, loc.lng, loc.altitude, loc.deviceOS);
-    const ellipsoidalH = loc.altitude;
+    
+    // For iOS deviceOS logic:
+    const isIOSDevice = /iPad|iPhone|iPod/.test(typeof navigator !== 'undefined' ? navigator.userAgent : '') || (typeof navigator !== 'undefined' && (navigator as any).platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
+    const isIOS = loc.deviceOS ? (loc.deviceOS === 'iOS') : isIOSDevice;
+    
+    let ellipsoidalH = loc.altitude;
+    if (isIOS && loc.altitude !== null) {
+      ellipsoidalH = loc.altitude + gInfo.undulation;
+    }
+    
     const orthometricH = gInfo.orthometricHeight;
+    let undulationVal = '---';
+    if (ellipsoidalH !== null && orthometricH !== null) {
+      undulationVal = (ellipsoidalH - orthometricH).toFixed(hPrec);
+    }
     
-    const displayHeight = settings.heightType === 'orthometric' ? orthometricH : ellipsoidalH;
-    
-    // WGS84 ise valY (Enlem) önce gelir, valX (Boylam) sonra.
-    // UTM ise valX (Sağa Y) önce gelir, valY (Yukarı X) sonra.
+    const orthStr = orthometricH !== null ? orthometricH.toFixed(hPrec) : '---';
+    const ellipStr = ellipsoidalH !== null ? ellipsoidalH.toFixed(hPrec) : '---';
+
     const firstVal = isWGS84 ? valX : valY;
     const secondVal = isWGS84 ? valY : valX;
     
-    content += `${loc.name}\t${firstVal}\t${secondVal}\t${displayHeight !== null ? displayHeight.toFixed(hPrec) : '---'}\n`;
+    content += `${loc.name}\t${firstVal}\t${secondVal}\t${orthStr}\t${ellipStr}\t${undulationVal}\n`;
   });
 
   const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });

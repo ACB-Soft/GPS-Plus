@@ -538,7 +538,6 @@ export const trToEnMap: Record<string, string> = {
   "Ölçüm sırasında çevresel ve donanımsal faktörler nedeniyle hatalar tespit edildi.": "Errors were detected during measurement due to environmental and hardware factors.",
   "Gerçek konumunuz gösterilenden farklı olabilir. Ölçümü gökyüzü açık bir alanda tekrarlamanız önerilir.": "Your actual location may differ from what is shown. It is highly recommended to repeat the measurement in an open sky area.",
   "h-ELİPSOİD": "h-ELLIPSOID",
-  "h-ELİPSOİD (Z)": "h-ELLIPSOID (Z)",
   "ANLADIM": "UNDERSTOOD",
   "Değişiklikleri Kaydet": "Save Changes",
   "Sistem": "System",

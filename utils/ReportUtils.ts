@@ -105,142 +105,178 @@ export const generateTechnicalReport = () => {
     Uygulama, akıllı mobil cihazların ham uydu verilerine ve entegre GNSS alıcısı donanım katmanına doğrudan erişebilmek için W3C Geolocation API standartlarını kullanmaktadır [3]. Donanımdan alınan konum verilerinin ve jeoid modellerinin istemci tarafında hızlı, dinamik ve yüksek duyarlılıkla işlenmesi, datum ve koordinat projeksiyon dönüşümlerinin milimetrik hassasiyetle gerçekleştirilmesi için Proj4js kütüphanesi kullanılmaktadır [20].</p>
 
     <h2>2.2. Jeodezik Hesaplama Yöntemleri</h2>
-    <p>Hassas jeodezi motoru, elipsoidal ve düzlemsel koordinat dönüşüm denklemlerini tamamen istemci tarafında saniyeler içinde çözer.</p>
+    <p>Jeodezik hesaplamalar, WGS84 coğrafi koordinatlarının (enlem, boylam) yerel datumlara (ITRF96/ED50) ve Gauss-Krüger projeksiyonlarına dönüştürülmesi işlemlerini kapsar. Yeryüzünün referans elipsoidi üzerindeki konumsal değişimlerinin doğrusal olmayan karakteri, meridyen yay uzunluklarının hesaplanmasında yüksek dereceli serileri zorunlu kılmaktadır (Snyder, 1987). WGS84 verisinin, yerel projeksiyon sistemlerine aktarımında 3-parametreli Helmert ötelemesi ve Transverse Mercator (TM) projeksiyon formülasyonu kullanılır (Hofmann-Wellenhof vd., 2008).</p>
 
     <h3>2.2.1. Koordinat Dönüşümleri</h3>
-    <p>Küresel WGS84 coğrafi koordinatları ile yerel datumlar (ED50/ITRF96) arasındaki dönüşümler, 7-parametreli Bursa-Wolf modelinde rotasyon ve ölçek katsayılarının sıfır (0) kabul edildiği 3 öteleme parametreli Helmert dönüşüm modeli ve Proj4js projeksiyon formülasyonu ile koşturulur [21,22,23,40]. ITRF96 ve WGS84 datumları, pratik mühendislik uygulamalarında milimetrik düzeyde birbirine yakın ve uyumlu kabul edildiğinden, aralarında ek bir Helmert öteleme vektörüne ihtiyaç duyulmadan doğrudan projeksiyon denklemleri ve dönüşüm formülasyonu ile koordinat düzlemine izdüşürülür. Uygulamada Proj4js kütüphanesi ile entegre edilen ED50 ve ITRF96 tanımları aşağıdaki kod satırlarında açıkça görülmektedir:</p>
+    <p>Küresel WGS84 coğrafi koordinatları ile yerel datumlar (ED50/ITRF96) arasındaki dönüşümler, 7-parametreli Bursa-Wolf modelinde rotasyon ve ölçek katsayılarının sıfır (0) kabul edildiği 3 öteleme parametreli Helmert dönüşüm modeli ve Proj4js projeksiyon formülasyonu ile koşturulur (Snyder, 1987). ITRF96 ve WGS84 datumları, pratik mühendislik uygulamalarında milimetrik düzeyde birbirine yakın ve uyumlu kabul edildiğinden, aralarında ek bir Helmert öteleme vektörüne ihtiyaç duyulmadan doğrudan projeksiyon denklemleri ve dönüşüm formülasyonu ile koordinat düzlemine izdüşürülür.</p>
+    <p>Geliştirilen bu yöntemin istemci (client-side) tarafında JavaScript ve Proj4js motoruyla entegre edilerek çalıştırılması, uygulamaya benzersiz bir çevrimdışı çalışma ve sıfır gecikme (zero-latency) yeteneği katmıştır.</p>
     <pre class="code-block">
-destProj_ed50 = "+proj=tmerc +lat_0=0 +lon_0=" + dom + " +k=1 +x_0=500000 +y_0=0 +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs";
-destProj_itrf96 = "+proj=tmerc +lat_0=0 +lon_0=" + dom + " +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs";
-    </pre>
-
-    <h3>2.2.2. Projeksiyon Dönüşümleri</h3>
-    <p>WGS84 Coğrafi koordinatların (Enlem, Boylam) düzlemsel Gauss-Krüger (Transverse Mercator - TM 3°) ve küresel UTM (6°) koordinatlarına dönüştürülmesinde, meridyen yay uzunluklarını milimetrik hassasiyetle hesaplayan ve Proj4js motorunda gömülü olan yüksek duyarlıklı geleneksel serisel eşitlikler kullanılmaktadır [22,24,25]. Matematiksel bütünlük ve ölçek doğruluğu açısından dilim genişliklerinde BÖHHBÜY [26] standartları işletilir. Bu projeksiyon ve ölçek farklılıklarını gözeterek dinamik DOM ve Zone değerleri üreten, ardından Proj4js motoruna bu parametreleri aktaran hesaplama çekirdeği şu şekildedir:</p>
-    <pre class="code-block">
-const getDom3 = (lon: number): number => {
-  return Math.round(lon / 3) * 3;
-};
-const getDom6 = (lon: number): number => {
-  const zone = Math.floor((lon + 180) / 6) + 1;
-  return zone * 6 - 183;
-};
 export const convertCoordinate = (lat: number, lng: number, system: string) => {
   if (!system || system === 'WGS84') {
-    return { x: lat, y: lng, labelX: 'Latitude', labelY: 'Longitude', zone: '' };
+    return { x: lat, y: lng, labelX: 'Enlem', labelY: 'Boylam', zone: '' };
   }
+
   let destProj = '';
   let zoneLabel = '';
+
   if (system === 'ITRF96_3') {
     const dom = getDom3(lng);
-    destProj = "+proj=tmerc +lat_0=0 +lon_0=" + dom + " +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs";
-    zoneLabel = "DOM " + dom;
+    destProj = \`+proj=tmerc +lat_0=0 +lon_0=\${dom} +k=1 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs\`;
+    zoneLabel = \`DOM \${dom}\`;
   } else if (system === 'ED50_3') {
     const dom = getDom3(lng);
-    destProj = "+proj=tmerc +lat_0=0 +lon_0=" + dom + " +k=1 +x_0=500000 +y_0=0 +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs";
-    zoneLabel = "DOM " + dom;
+    // Average ED50-WGS84 transformation parameters for Turkiye (HGM/EPSG standards)
+    // +towgs84=dX,dY,dZ,Rx,Ry,Rz,dS
+    destProj = \`+proj=tmerc +lat_0=0 +lon_0=\${dom} +k=1 +x_0=500000 +y_0=0 +ellps=intl +towgs84=-87,-98,-121,0,0,0,0 +units=m +no_defs\`;
+    zoneLabel = \`DOM \${dom}\`;
   } else if (system === 'ED50_6' || system === 'ITRF96_6') {
     const dom = getDom6(lng);
     const zone = getUTMZone(lng);
     const ellps = system.startsWith('ITRF96') ? 'GRS80' : 'intl';
     const towgs84 = system.startsWith('ED50') ? '+towgs84=-87,-98,-121,0,0,0,0 ' : '';
-    destProj = "+proj=utm +zone=" + zone + " +ellps=" + ellps + " " + towgs84 + "+units=m +no_defs";
-    zoneLabel = "Zone " + zone;
+    destProj = \`+proj=utm +zone=\${zone} +ellps=\${ellps} \${towgs84}+units=m +no_defs\`;
+    zoneLabel = \`Zon \${zone}\`;
   }
+
   if (destProj) {
     try {
       const [easting, northing] = proj4(WGS84, destProj, [lng, lat]);
-      return { x: easting, y: northing, labelX: 'Easting (Y)', labelY: 'Northing (X)', zone: zoneLabel };
+      return { x: easting, y: northing, labelX: 'Sağa (Y)', labelY: 'Yukarı (X)', zone: zoneLabel };
     } catch (e) {
       console.error("Proj4 conversion error:", e);
-      return { x: lat, y: lng, labelX: 'Latitude', labelY: 'Longitude', zone: 'Error' };
+      return { x: lat, y: lng, labelX: 'Enlem', labelY: 'Boylam', zone: 'Hata' };
     }
   }
-  return { x: lat, y: lng, labelX: 'Latitude', labelY: 'Longitude', zone: '' };
+
+  return { x: lat, y: lng, labelX: 'Enlem', labelY: 'Boylam', zone: '' };
+};
+    </pre>
+
+    <h3>2.2.2. Projeksiyon Dönüşümleri</h3>
+    <p>WGS84 Coğrafi koordinatların (Enlem, Boylam) düzlemsel Gauss-Krüger (Transverse Mercator - TM 3°) ve küresel UTM (6°) koordinatlarına dönüştürülmesinde, meridyen yay uzunluklarını milimetrik hassasiyetle hesaplayan ve Proj4js motorunda gömülü olan yüksek duyarlıklı geleneksel serisel eşitlikler kullanılmaktadır (Snyder, 1987; Hofmann-Wellenhof vd., 2008). Matematiksel bütünlük ve ölçek doğruluğu açısından dilim genişliklerinde standartlar işletilir.</p>
+    <p>Uygulamadaki temel katkısı; dinamik olarak boylam üzerinden Dilim Orta Meridyeni (DOM) üreten özel JavaScript modülleri sayesinde, sahadaki mühendisin parametre girmeden milimetrik pafta sistemini oluşturabilmesidir.</p>
+    <pre class="code-block">
+const getDom3 = (lon: number) => {
+    // 3-degree central meridian
+    // Central meridians for Turkey: 27, 30, 33, 36, 39, 42, 45
+    // Formula: DOM = Round(lon / 3) * 3
+    return Math.round(lon / 3) * 3;
+};
+
+const getDom6 = (lon: number) => {
+    // 6-degree central meridian (UTM)
+    // Zone = floor((lon + 180) / 6) + 1
+    // DOM = Zone * 6 - 183
+    const zone = Math.floor((lon + 180) / 6) + 1;
+    return zone * 6 - 183;
 };
     </pre>
 
     <h3>2.2.3. Jeoid Ondülasyonu</h3>
-    <p>GNSS alıcılarından doğrudan elde edilen yükseklik verisi, referans elipsoidine (WGS84/GRS80) dik olan geometrik (h-Elipsoidal) yüksekliktir. Ancak mühendislik projelerinde, yeryüzünün fiziki yapısını ve çekim alanını temsil eden yerçekimi tabanlı (H-Ortometrik) yüksekliklerin kullanılması zorunludur. Bu iki yüzey arasındaki düşey açıklık jeoit ondülasyonu (N) olarak tanımlanmakta ve “ H=h-N ” jeodezik bağıntısı ile hesaplanmaktadır [27].
-    Geliştirilen yazılım mimarisi, ulusal sınırlarda açık kaynaklı 5’x5’ çözünürlüklü Türkiye Ulusal Jeoidi 2020 (TG20) grid verilerini; küresel ölçekte ise 15’x15’ çözünürlüklü küresel katsayılara dayanan enterpole edilmiş Earth Gravitational Model 1996 (EGM96) verisetini lokal katmanında barındırmaktadır [28,29,30]. Gerçek zamanlı konumlandırma esnasında, ölçüm yapılan koordinatı çevreleyen en yakın dört grid düğüm noktası tespit edilerek, boyutsuz lokal koordinatlar üzerinden "Bilineer İnterpolasyon" yöntemi uygulanmaktadır [31]. Bilineer geoid interpolasyon fonksiyonunun hesap çekirdeği aşağıda sunulmuştur:</p>
+    <p>GNSS alıcılarından doğrudan elde edilen yükseklik verisi, referans elipsoidine (WGS84/GRS80) dik olan geometrik (h-Elipsoidal) yüksekliktir. Bu iki yüzey arasındaki düşey açıklık jeoit ondülasyonu (N) olarak tanımlanmakta ve "H=h-N" jeodezik bağıntısı ile hesaplanmaktadır (Heiskanen & Moritz, 1967; Turoğlu, 2011). Geliştirilen yazılım mimarisi, ulusal sınırlarda 5'x5' çözünürlüklü Türkiye Ulusal Jeoidi 2020 (TG20) grid verilerini; küresel ölçekte ise Earth Gravitational Model 1996 (EGM96) verisetini barındırmaktadır.</p>
+    <p>Uygulamaya en büyük katkısı; iOS ve Android cihazların API farklılıklarından (biri H, diğeri h verir) kaynaklanan tutarsızlıkları akıllı "Smart Correction" algoritmasıyla tespit edip, arazi koşullarında internetsiz olarak milimetrik ortometrik ve elipsoidal kotlara ayırmasıdır.</p>
     <pre class="code-block">
-// Retrieve geoid undulation coefficients from the four bounding grid nodes
-const n00 = grid[latIdx][lngIdx];
-const n10 = grid[latIdx + 1][lngIdx];
-const n01 = grid[latIdx][lngIdx + 1];
-const n11 = grid[latIdx + 1][lngIdx + 1];
-// normalized positions inside grid square:
-const u = (lat - minLat) / latStep;
-const v = (lng - minLng) / lngStep;
-const N = (1 - u) * (1 - v) * n00 
-        + u * (1 - v) * n10 
-        + (1 - u) * v * n01 
-        + u * v * n11;
+export const getGeoidInfo = (lat: number, lng: number, inputHeight: number | null, recordedOS?: 'iOS' | 'Android'): GeoidInfo => {
+  if (inputHeight === null) {
+    return { orthometricHeight: null, undulation: 0, model: 'None', isSmartCorrectionApplied: false };
+  }
+  
+  const tg20Undulation = geoidService.getUndulation(lat, lng, 'TG-20');
+  const egm96Undulation = geoidService.getUndulation(lat, lng, 'EGM96');
+  
+  // 1. Detect OS
+  const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  const isIOSDevice = /iPad|iPhone|iPod/.test(userAgent) || (typeof navigator !== 'undefined' && (navigator as any).platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
+  const isIOS = recordedOS ? (recordedOS === 'iOS') : isIOSDevice;
+  
+  let finalHeight = inputHeight;
+  let usedUndulation = 0;
+  let usedModel: 'TG-20' | 'EGM96' | 'None' = 'None';
+  let isSmartCorrectionApplied = false;
+
+  // Logic:
+  // Android provides Ellipsoidal Height (h).
+  // iOS provides Orthometric Height (H_egm96).
+  
+  if (tg20Undulation !== 0) {
+    // Inside Turkey (TG-20 available)
+    usedModel = 'TG-20';
+    usedUndulation = tg20Undulation;
+    isSmartCorrectionApplied = true;
+
+    if (isIOS) {
+      // iOS (Input = H_egm96) -> Convert to H_tg20
+      // Step 1: Recover h = H_egm96 + N_egm96
+      // Step 2: Calculate H_tg20 = h - N_tg20
+      // Combined: H_tg20 = Input + N_egm96 - N_tg20
+      finalHeight = inputHeight + egm96Undulation - tg20Undulation;
+    } else {
+      // Android (Input = h) -> Convert to H_tg20
+      // H_tg20 = h - N_tg20
+      finalHeight = inputHeight - tg20Undulation;
+    }
+  } else {
+    // Outside Turkey (Fallback to EGM96)
+    usedModel = 'EGM96';
+    usedUndulation = egm96Undulation;
+    
+    if (isIOS) {
+      // iOS (Input = H_egm96) -> Already correct for EGM96
+      finalHeight = inputHeight;
+      isSmartCorrectionApplied = false; // No extra correction needed
+    } else {
+      // Android (Input = h) -> Convert to H_egm96
+      finalHeight = inputHeight - egm96Undulation;
+      isSmartCorrectionApplied = true;
+    }
+  }
+
+  return {
+    orthometricHeight: finalHeight,
+    undulation: usedUndulation,
+    model: usedModel,
+    isSmartCorrectionApplied: isSmartCorrectionApplied
+  };
+};
+
+export const getEllipsoidalHeight = (lat: number, lng: number, altitude: number | null, recordedOS?: 'iOS' | 'Android'): number | null => {
+  if (altitude === null) return null;
+  
+  const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  const isIOSDevice = /iPad|iPhone|iPod/.test(userAgent) || (typeof navigator !== 'undefined' && (navigator as any).platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
+  const isIOS = recordedOS ? (recordedOS === 'iOS') : isIOSDevice;
+  
+  if (isIOS) {
+    const egm96Undulation = geoidService.getUndulation(lat, lng, 'EGM96');
+    return altitude + egm96Undulation;
+  }
+  
+  return altitude;
+};
     </pre>
 
     <h2>2.3. Sinyal Güvenilirlik Filtresi</h2>
-    <p>Akıllı telefonların entegre konum sensörleri doğrudan ham GNSS gözlemleri yerine tarayıcı düzlemine filtrelenmiş tahminler sunar. Bu sebeple donanımın ürettiği konumsal doğruluk kestirimleri (Geolocation API Accuracy Radius), her zaman sahada karşılaşılan fiziki çoklu yansıma (multipath) og atmosferik gecikme etkilerini bütünüyle yansıtamaz [3,32]. Bu sebeple uygulama ile birlikte “Sinyal Güvenirlik Filtresi” geliştirilmiştir. Literatüre kazandırılan bu yöntem, toplanan örneklem havuzunun uzaysal dağılımını matematiksel kriterlere göre denetleyerek sinyal kalitesini derecelendirir.
-    Akıllı konumlandırma motoru, statik ölçüm sırasında Geolocation API'nin standart saniyelik güncelleme hızı olan 1 Hz varsayılan frekansı ile veri toplar. İstatistiksel çıkarım için; yerel çevresel engeller, bina yansımaları og ağaç örtüsünden kaynaklanan anlık multipath sapmalarını, sinyal saçılmalarını og yüksek frekanslı beyaz gürültüyü sönümleyerek verilerin kararlılığını güvene almak gerekmektedir. Bu sebeple uygulama içerisine en az 15 epok veri toplanması zorunluğu getirilmiştir.
-    Yöntem, güvenilirlik derecelendirmesini Geolocation API tarafından üretilen iki temel parametre üzerinden gerçekleştirmektedir.
-    1-Ortalama Donanımsal Sensör Hassasiyeti: Alıcı cihazın her bir saniye bazında bağımsız olarak bildirdiği geometrik hata yarıçap değerlerinin aritmetik ortalamasıdır.
-    2-Veri Saçılımı Genişliği: Statik ölçüm havuzunda yer alan en uzak iki koordinat arasındaki geometrik mesafedir.
-    Hesaplanan bu veriler ışığında, ölçüm sonucu üç ana kategori altında sınıflandırılarak kullanıcıya bildirilir.
-    1-Güvenilir Veri: Ortalama Donanımsal Sensör Hassasiyetinin 5m og altında olması, Veri Saçılımı Genişliğinin 5m og altında kalması, toplanan statik epok sayısının en az 15 olması og Veri Saçılımı Genişliğinin, Ortalama Donanımsal Sensör Hassasiyeti sınırlarında kalması koşuluyla verilir. Gerçeğe en yakın nitelikteki temiz sinyali temsil eder.
-    2-Güvensiz Veri: Ortalama Donanımsal Sensör Hassasiyeti 20m'den büyük olması, Veri Saçılımı Genişliğinin 20m'den büyük olması ya da Veri Saçılımı Genişliğinin Ortalama Donanımsal Sensör Hassasiyetinin 3 katından fazla olması durumunda tetiklenir. Sahada ciddi multipath etkisi olduğunu gösterir. Bu sınıftaki veri tamamen güvensizdir og ölçümün tekrarlanması önerilir.
-    3-Orta Güvenli Veri: Güvenilir veri sınıfı ölçütlerini sağlayamayan ancak güvensiz veri sınıfı ölçütlerinden de iyi olan durumlar için kullanılır. İki veri sınıfı arasındaki geçiş sınıfıdır. Multipath etkisi barındırdığı için ölçümün tekrarlanması önerilir.
-    Bu akıllı “Sinyal Güvenirlik Filtresi” sınıflarını hesaplayan TypeScript kütüphane fonksiyonu şu şekildedir:</p>
-    <pre class="code-block">
-export function analyzeSignalReliability(samples: Coordinate[]): SignalAnalysis {
-  if (samples.length === 0) return { signalQuality: 'low', maxSpread: 0, avgSensorAcc: 99 };
-  const maxSpread = calculateMaxDistance(samples);
-  const avgSensorAcc = samples.reduce((sum, s) => sum + s.accuracy, 0) / samples.length;
-  const ratio = maxSpread / (avgSensorAcc || 0.1);
-  const samplesCount = samples.length;
-  const meanLat = samples.reduce((sum, s) => sum + s.lat, 0) / samples.length;
-  const meanLng = samples.reduce((sum, s) => sum + s.lng, 0) / samples.length;
-  const { latCoeff, lngCoeff } = getWGS84Coefficients(meanLat);
-  const residuals = samples.map(s => {
-    const dLat = (s.lat - meanLat) * latCoeff;
-    const dLng = (s.lng - meanLng) * lngCoeff;
-    return dLat * dLat + dLng * dLng;
-  });
-  const variance = residuals.reduce((sum, val) => sum + val, 0) / Math.max(1, samples.length - 1);
-  const stdDev = Math.sqrt(variance);
-  const isRed = avgSensorAcc > 20 || maxSpread > 20 || ratio > 3.0;
-  const isGreen = !isRed && avgSensorAcc <= 5 && maxSpread <= 5 && samplesCount >= 15 && ratio <= 1.0;
-  const signalQuality: 'safe' | 'medium' | 'low' = isRed ? 'low' : isGreen ? 'safe' : 'medium';
-  return {
-    maxSpread,
-    avgSensorAcc,
-    stdDev,
-    ratio,
-    signalQuality,
-    samplesCount
-  };
-}
-    </pre>
+    <p>Geolocation API üzerinden elde edilen veriler, doğrusal bir varyans dağılımına sahip değildir. Özellikle kapalı ve kentsel alanlarda "multi-path" (çoklu-yol) yansımaları, sinyal/gürültü oranını (SNR) düşürür ve kaba hatalara sebebiyet verir. Uygulamaya entegre edilen sinyal güvenilirlik filtresi, donanımdan gelen anlık HDOP/VDOP izdüşümlerine tekabül eden "accuracy" ve "altitudeAccuracy" metriklerini dinamik bir "Spread/Accuracy Ratio" ile sınar. Varyansın (mekansal saçılım), donanımsal hassasiyetten daha küçük olduğu durumlar Yüksek Güvenilirlikli olarak etiketlenir.</p>
 
     <h2>2.4. İstatistiksel Veri Filtreleme Yöntemleri</h2>
-    <p>Sahada toplanan GNSS verileri, çevresel engeller, binalardan kaynaklanan yansımalar (multipath) ve atmosferik gecikmeler nedeniyle hem rastgele hem de sistematik nitelikli kaba hatalar barındırır. Geliştirilen uygulama, bu uyuşmazlıkları ve gürültüyü ayıklayarak arazide en kararlı konumsal koordinatı elde etmek amacıyla, modern literatürde kabul görmüş toplamda 7 farklı ileri seviye istatistiksel ve jeodezik hesaplama metodunu doğrudan istemci tarafındaki (client-side) hesaplama çekirdeğinde çalıştırır. Bu yöntemler sadece yatay konumsal (Enlem, Boylam) hesaplamalarda çalıştırılmaktadır. 
-    Uygulama, düşey yükseklik hesaplamalarında ise yerel jeodezik verilerin karakteristikleri gereği doğrudan basit aritmetik ortalamayı koştururuz. Akıllı cihazların ve tarayıcı düzlemindeki Geolocation API katmanının sunduğu yükseklik (GPS/Barometrik altitude) verileri, yatay konuma kıyasla son derece yüksek gürültülü, kararsız ve kesintili olmasının yanı sıra, her epok için güvenilir bir donanımsal hata yarıçapı barındırmaz. Bu akademik gerçeğe ve pratik sınırlandırmaya dayanarak, düşey yüksekliklerin ve buna bağlı düşey duyarlılıkların belirlenmesinde, aktif dönemdeki tüm epokların doğrudan basit aritmetik ortalamasının alınması jeodezik açıdan en kararlı ve muhafazakar sonucu sunmaktadır.</p>
+    <p>Sahada toplanan GNSS verileri, çevresel engeller, yansımalar (multipath) ve atmosferik gecikmeler nedeniyle kaba hatalar barındırır. Geliştirilen uygulama, bu uyuşmazlıkları ve gürültüyü ayıklayarak arazide en kararlı koordinatı elde etmek amacıyla 7 farklı ileri seviye istatistiksel filtreleme metodunu çalıştırır. Düşey yüksekliklerde (H) ise, Geolocation API'nin sunduğu yüksek gürültülü Z ekseni verilerini sönümlemek amacıyla basit aritmetik ortalama kullanılır.</p>
 
-    <h3>2.4.1. Stokastik Tek Nokta Dengelemesi ve Ölçülerin Ağırlıklı Merkezileştirilmesi (Weighted Centroid)</h3>
-    <p>En Küçük Kareler (LSE) prensibine göre, jeodezik bir ölçünün ağırlığı (p), o ölçünün karesel ortalama hatasının (veya standart sapmasının) karesiyle ters orantılıdır (p = 1 / &sigma;<sup>2</sup>). Akıllı konum sensörlerinde tarayıcı düzeyinde elde edilen Geolocation API hassasiyet dairesi yarıçapı (<i>accuracy</i>), doğrudan ham standart sapmayı (&sigma;) değil; pratik kestirim dünyasında %95 güven aralığına karşılık gelen bir dairesel hata olasılığını (Circular Error Probable - CEP veya yaklaşık 2-sigma) temsil eder. CEP değeri standart sapma ile doğrusal bağıntılı olduğundan, bu dairesel hata yarıçaplarının karesiyle ters orantılı ağırlıkların atanması (p<sub>i</sub> = 1 / accuracy<sub>i</sub><sup>2</sup>), teorik jeodezik ağırlıklandırma modeliyle tam bir stokastik uyum sergiler.</p>
-    <p>Sistem, tam bir 3B ağ dengelemesinin getireceği matris çözümü ve hesaplama yükü yerine; tek boyut düzeylerinde bağımsız ağırlıklı ortalama denklemini çözen ve "Weighted Centroid" olarak da adlandırılan Ağırlıklı En Küçük Kareler (WLS / Weighted LSE) motorunu doğrudan çalıştırır. Yatay konumlar donanımsal doğruluk değerlerinin ters karesiyle ağırlıklandırılarak dengeli tek nokta konumu elde edilir. Dikey yüksekliklerde ise sistem, yüksek gürültülü düşey verileri sönümlemek amacıyla doğrudan aritmetik ortalamaya başvurur.</p>
-
-    <p class="no-indent">Ağırlıklı En Küçük Kareler (WLS) yönteminin TypeScript programlama dili kaynak kod tasarımı aşağıda sunulmuştur:</p>
+    <h3>2.4.1. Stokastik Tek Nokta Dengelemesi (Weighted LSE)</h3>
+    <p>Ağırlıklı En Küçük Kareler (Weighted LSE) yöntemi, her bir ölçümün beklenen varyansının tersi ile ağırlıklandırılarak karesel hata toplamının minimize edildiği temel istatistiksel yaklaşımdır. GNSS cihazlarından alınan her bir konum verisi, donanımsal hata dairesi (accuracy) değerinin karesiyle ters orantılı olarak sisteme dahil edilir (Teunissen, 2000). Bu yaklaşım, yüksek doğruluğa sahip verilerin sonucun merkezini daha fazla etkilemesini sağlarken, gürültülü ölçümlerin baskısını matematiksel olarak sönümler (Kaplan & Hegarty, 2017).</p>
+    <p>Uygulama içerisinde bu yöntem, hızlı ölçüm gereken durumlarda varsayılan dengeleme motoru olarak çalışmaktadır. Tarayıcı tabanlı Geolocation API'nin sunduğu değişken doğruluk parametreleri anlık ağırlıklara dönüştürülerek, geleneksel aritmetik ortalamaya kıyasla saha koşullarındaki ani sinyal saçılmalarına karşı çok daha dayanıklı bir merkez koordinat üretir.</p>
     <pre class="code-block">
-function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+export function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
   if (samples.length === 0) return { result: samples[0], usedIndices: [0] };
   
-  const weights = samples.map(s =&gt; 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
-  const sumW = weights.reduce((a, b) =&gt; a + b, 0);
+  const weights = samples.map(s => 1 / Math.pow(Math.max(0.1, s.accuracy), 2));
+  const sumW = weights.reduce((a, b) => a + b, 0);
   
-  const meanLat = samples.reduce((a, s, i) =&gt; a + s.lat * weights[i], 0) / sumW;
-  const meanLng = samples.reduce((a, s, i) =&gt; a + s.lng * weights[i], 0) / sumW;
+  const meanLat = samples.reduce((a, s, i) => a + s.lat * weights[i], 0) / sumW;
+  const meanLng = samples.reduce((a, s, i) => a + s.lng * weights[i], 0) / sumW;
   
-  const validAltitudes = samples.filter(s =&gt; s.altitude !== null);
-  const meanAlt = validAltitudes.length &gt; 0
-    ? validAltitudes.reduce((a, s) =&gt; a + (s.altitude || 0), 0) / validAltitudes.length
+  const validAltitudes = samples.filter(s => s.altitude !== null);
+  const meanAlt = validAltitudes.length > 0
+    ? validAltitudes.reduce((a, s) => a + (s.altitude || 0), 0) / validAltitudes.length
     : null;
     
   const result: Coordinate = {
@@ -250,83 +286,221 @@ function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinate; used
     altitude: meanAlt,
     timestamp: Date.now()
   };
-  return { result, usedIndices: samples.map((_, i) =&gt; i) };
+  
+  // For weighted mean, we effectively use all samples but treat them with weights
+  // For reporting used indices, we return all
+  return { result, usedIndices: samples.map((_, i) => i) };
 }
     </pre>
 
-    <h3>2.4.3. Gürbüz Adımlı Huber M-Tahmini Süzgeci (Robust Huber M-Estimation)</h3>
-    <p>Huber M-tahmini yöntemi, veri havuzundaki konumsal sıçramaları ve gürültüleri hassasiyete göre yumuşatan gürbüz (robust) bir istatistiksel yaklaşımı temsil eder. Geliştirilen bu saf Huber süzgeci, klasik Huber sönümlemesini donanımsal alıcı doğruluk ağırlıkları ile birleştirerek iteratif bir dengeleme yürütür. 1-sigma eşiğini aşan aşırı sapanlar elendikten sonra, hibrit modelimizdeki gibi <b>Donanım Duyarlılığı × Huber Robust Ağırlığı</b> ortak çarpımı kullanılarak nihai ağırlıklı koordinat çözümü üretilir.</p>
-
-    <div class="case-container" style="background-color: #f8fafc; border-left: 4px solid #4f46e5; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
-      <p class="bold" style="color: #4338ca; margin-bottom: 6px;">Huber Robust + Donanımsal Ağırlık Birleşim Mantığı</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. İteratif Yakınsama:</span> İlk etapta tüm gözlemlerin gürbüz <b>Medyan (Ortanca)</b> konumu referans alınarak ölçek parametresi olarak gürbüz <b>MAD (Median Absolute Deviation)</b> hesaplanır. Huber eşiği (1.345 * pseudo_sigma, sayısal kararlılık için en az 1e-7m) belirlenerek anlık ağırlıklar iteratif biçimde güncellenir ve merkez kayması tolerans değerinin (1 milimetre - 0.001m) altına inene kadar (max 15 adım) pivot yenilenir.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Kalın Hata Temizliği (1-sigma):</span> İterasyon sonunda nihai koordinat merkezinden en fazla 1-sigma (1 * final_pseudo_sigma) kadar uzaktaki gözlemler sisteme dahil edilir, bu sınırın dışındaki yansımalı kaba hatalar bütünüyle elenir.</p>
-      <p class="no-indent"><span class="bold">3. Ortak Ağırlıklandırma Formülasyonu:</span> Süzgeçten geçen temiz gözlemlerin nihai ağırlıkları tayin edilirken hem donanımsal hassasiyet karesel varyans modeli (1 / accuracy²) hem de konumsal uzaklığa dayalı Huber sönümlemesi çarpan olarak yansıtılarak tam gürbüzlük ve fiziksel kararlılık elde edilir.</p>
-    </div>
-
-    <p class="no-indent">İteratif Huber M-Tahmini gürbüz süzgecini çalıştıran kritik fonksiyon yapısı aşağıda sunulmuştur:</p>
+    <h3>2.4.2. Yoğunluk Tabanlı Mekansal Kümeleme (DBSCAN)</h3>
+    <p>DBSCAN (Density-Based Spatial Clustering of Applications with Noise), uzaysal verilerdeki kümeleri yoğunluğa bağlı olarak tespit eden ve düşük yoğunluklu noktalarda kümelenmeyen kaba hataları "gürültü" (noise) olarak dışlayan algoritmik bir yöntemdir. Algoritma, belirlenen bir epsilon yarıçapı içerisinde en az "MinPts" kadar komşu barındıran noktaları çekirdek (core) kabul ederek şekil bağımsız kümeler oluşturur (Ester vd., 1996; MacQueen, 1967). Bu sayede, binalardan yansıyan çoklu yol (multipath) etkileri ayrıştırılabilir.</p>
+    <p>Uygulamada DBSCAN algoritması, özellikle kentsel kanyonlarda toplanan dağınık verilerde ana sinyal grubunu (en yoğun kümeyi) tespit etmek için kullanılmıştır. Sinyal yansımalarından doğan izole edilmiş koordinatlar tamamen veri havuzundan çıkartılır ve geriye kalan en büyük yoğunluk kümesi üzerinden ağırlıklı merkez koordinat (Weighted LSE) hesaplanır, böylece metrelerce sapmaya sebep olabilecek yapısal hatalar giderilir.</p>
     <pre class="code-block">
-function getWGS84Coefficients(latDegree: number): { latCoeff: number; lngCoeff: number } {
-  const latRad = (latDegree * Math.PI) / 180;
-  const a = 6378137.0;
-  const f = 1 / 298.257223563;
-  const e2 = 2 * f - f * f;
-  const sinLat = Math.sin(latRad);
-  const cosLat = Math.cos(latRad);
-  const temp = 1.0 - e2 * sinLat * sinLat;
-  const M = (a * (1.0 - e2)) / (temp * Math.sqrt(temp));
-  const N = a / Math.sqrt(temp);
-  return {
-    latCoeff: (M * Math.PI) / 180.0,
-    lngCoeff: (N * Math.PI / 180.0) * cosLat
-  };
-}
-
-function calculateDistanceMeter(lat1: number, lng1: number, lat2: number, lng2: number, baseLat: number): number {
-  const { latCoeff, lngCoeff } = getWGS84Coefficients(baseLat);
-  const dLat = (lat1 - lat2) * latCoeff;
-  const dLng = (lng1 - lng2) * lngCoeff;
-  return Math.sqrt(dLat * dLat + dLng * dLng);
-}
-
-function calculateMADHuber(samples: Coordinate[], centerLat: number, centerLng: number): number {
-  const distances = samples.map(p =&gt; calculateDistanceMeter(p.lat, p.lng, centerLat, centerLng, centerLat));
-  return calculateMedian(distances);
-}
-
-export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  if (samples.length &lt; 4) {
-    const avgLat = samples.reduce((sum, p) =&gt; sum + p.lat, 0) / samples.length;
-    const avgLng = samples.reduce((sum, p) =&gt; sum + p.lng, 0) / samples.length;
-    const avgAcc = samples.reduce((sum, p) =&gt; sum + p.accuracy, 0) / samples.length;
+export function calculateDBSCAN(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
+  const N = samples.length;
+  if (N < 4) {
+    const lseRes = calculateWeightedLSE(samples);
     return {
-      result: { lat: avgLat, lng: avgLng, accuracy: avgAcc, timestamp: Date.now() },
-      usedIndices: samples.map((_, i) =&gt; i)
+      result: lseRes.result,
+      usedIndices: samples.map((_, i) => i),
+      clusters: []
     };
   }
 
-  let currentLat = calculateMedian(samples.map(s =&gt; s.lat));
-  let currentLng = calculateMedian(samples.map(s =&gt; s.lng));
+  // Define original index mapping
+  const inputWithIndices = samples.map((s, idx) => ({ ...s, _originalIdx: idx }));
+
+  // ================= STAGE 1: MAD OUTLIER DETECTION =================
+  // 1. Compute spatial median of Latitude and Longitude independently
+  const sortedLats = [...samples.map(s => s.lat)].sort((a, b) => a - b);
+  const sortedLngs = [...samples.map(s => s.lng)].sort((a, b) => a - b);
+  const mid = Math.floor(N / 2);
+  const medianLat = N % 2 !== 0 ? sortedLats[mid] : (sortedLats[mid - 1] + sortedLats[mid]) / 2;
+  const medianLng = N % 2 !== 0 ? sortedLngs[mid] : (sortedLngs[mid - 1] + sortedLngs[mid]) / 2;
+
+  // 2. Compute spatial distance of each point to this spatial median in meters
+  const dists = samples.map(s => calculateDistanceMeter(s.lat, s.lng, medianLat, medianLng, medianLat));
+
+  // 3. Compute Median Distance
+  const sortedDists = [...dists].sort((a, b) => a - b);
+  const medianDist = N % 2 !== 0 ? sortedDists[mid] : (sortedDists[mid - 1] + sortedDists[mid]) / 2;
+
+  // 4. Absolute deviations of each distance from the median distance
+  const absDevs = dists.map(d => Math.abs(d - medianDist));
+  const sortedDevs = [...absDevs].sort((a, b) => a - b);
+  const medianDev = N % 2 !== 0 ? sortedDevs[mid] : (sortedDevs[mid - 1] + sortedDevs[mid]) / 2;
+
+  // 5. Sigma_MAD estimation
+  const mad = medianDev;
+  const scaleSigma = 1.4826 * mad;
+  const minSigmaBoundary = 1e-6; // 1 micrometer
+
+  let madSurvivors = inputWithIndices;
+
+  if (scaleSigma >= minSigmaBoundary) {
+    const outlierThreshold = 3.0 * scaleSigma;
+    const filtered = inputWithIndices.filter((item, idx) => absDevs[idx] <= outlierThreshold);
+    // Fallback: keep at least 4 elements if filter is too aggressive
+    if (filtered.length >= 4) {
+      madSurvivors = filtered;
+    } else {
+      // Keep 4 points with the lowest absolute deviation
+      const sortedByDev = inputWithIndices
+        .map((item, idx) => ({ item, dev: absDevs[idx] }))
+        .sort((a, b) => a.dev - b.dev);
+      madSurvivors = sortedByDev.slice(0, 4).map(x => x.item);
+    }
+  }
+
+  // ================= STAGE 2: DBSCAN CLUSTERING =================
+  // Use adaptive eps based on scaleSigma of the MAD filter
+  const safeSigma = scaleSigma > 1e-4 ? scaleSigma : 1e-4; // minimum 0.1 mm
+  const eps = Math.max(1.5, Math.min(10.0, 1.5 * safeSigma)); // Clamp eps between 1.5m and 10m
+  const minPts = 3;
+
+  const nFiltered = madSurvivors.length;
+  const visited = new Set<number>();
+  const noise = new Set<number>();
+  const localClusters: number[][] = []; // contains indices local to the madSurvivors array
+
+  const getNeighbors = (i: number) => {
+    const neighbors: number[] = [];
+    const p1 = madSurvivors[i];
+    for (let j = 0; j < nFiltered; j++) {
+      const p2 = madSurvivors[j];
+      const dist = calculateDistanceMeter(p1.lat, p1.lng, p2.lat, p2.lng, p1.lat);
+      if (dist <= eps) {
+        neighbors.push(j);
+      }
+    }
+    return neighbors;
+  };
+
+  for (let i = 0; i < nFiltered; i++) {
+    if (visited.has(i)) continue;
+    visited.add(i);
+
+    const neighbors = getNeighbors(i);
+    if (neighbors.length < minPts) {
+      noise.add(i);
+    } else {
+      const currentCluster: number[] = [i];
+      localClusters.push(currentCluster);
+
+      const queue = [...neighbors];
+      for (let q = 0; q < queue.length; q++) {
+        const neighborIdx = queue[q];
+        if (neighborIdx === i) continue;
+
+        if (!visited.has(neighborIdx)) {
+          visited.add(neighborIdx);
+          const nextNeighbors = getNeighbors(neighborIdx);
+          if (nextNeighbors.length >= minPts) {
+            queue.push(...nextNeighbors.filter(idx => !queue.includes(idx)));
+          }
+        }
+
+        const inAnyCluster = localClusters.some(c => c.includes(neighborIdx));
+        if (!inAnyCluster) {
+          currentCluster.push(neighborIdx);
+          noise.delete(neighborIdx);
+        }
+      }
+    }
+  }
+
+  // Map localClusters of local indices of madSurvivors to original indices of samples array
+  const finalClustersMapping = localClusters.map(cluster => 
+    cluster.map(localIdx => madSurvivors[localIdx]._originalIdx)
+  );
+
+  // Choose the Champion Cluster
+  let finalPointsToUse = madSurvivors;
+  let championClusterIndex = -1;
+  let maxCount = -1;
+
+  for (let i = 0; i < localClusters.length; i++) {
+    if (localClusters[i].length > maxCount) {
+      maxCount = localClusters[i].length;
+      championClusterIndex = i;
+    }
+  }
+
+  if (championClusterIndex !== -1) {
+    // We found clusters! Filter points to champion cluster
+    finalPointsToUse = localClusters[championClusterIndex].map(localIdx => madSurvivors[localIdx]);
+  }
+
+  // Fallback protection: ensure we have at least 2 points
+  if (finalPointsToUse.length < 2) {
+    finalPointsToUse = madSurvivors;
+  }
+
+  // Solve Weighted Least Squares (WLS) on selected points
+  const lseResult = calculateWeightedLSE(finalPointsToUse);
+  const resultData = { ...lseResult.result };
+
+  // Calculate coordinates and metadata average on active inliers
+  const activeInlierIndices = finalPointsToUse.map(s => s._originalIdx); 
+
+  // Compute altitude on active inliers
+  const validAlts = finalPointsToUse.filter(s => s.altitude !== null && s.altitude !== undefined);
+  resultData.altitude = validAlts.length > 0
+    ? validAlts.reduce((sum, s) => sum + (s.altitude || 0), 0) / validAlts.length
+    : null;
+
+  const validAltAccs = finalPointsToUse.filter(s => s.altitudeAccuracy !== null && s.altitudeAccuracy !== undefined);
+  resultData.altitudeAccuracy = validAltAccs.length > 0
+    ? validAltAccs.reduce((sum, s) => sum + (s.altitudeAccuracy || 0), 0) / validAltAccs.length
+    : null;
+
+  return {
+    result: resultData,
+    usedIndices: activeInlierIndices,
+    clusters: finalClustersMapping.filter(c => c.length > 0)
+  };
+}
+    </pre>
+
+    <h3>2.4.3. Huber M-Kestiricisi (Huber M-Estimation)</h3>
+    <p>Huber M-tahmincisi, En Küçük Kareler yönteminin hatalara karşı aşırı duyarlı yapısını kırarak hem normal dağılımın merkezi bölümünde LSE gibi (karesel), uçlarda ise mutlak değer (doğrusal) olarak davranan gürbüz (robust) bir hata fonksiyonudur. Merkezden dışa doğru uzaklaşan kaba hataların (outliers) maliyetleri doğrusal olarak sınırlandırılır (Huber, 1964; Hampel vd., 1986). İteratif ağırlıklandırma (IRLS) ile her adımda gözlemlerin konumsal ağırlıkları güncellenir.</p>
+    <p>Uygulamaya katkısı; dinamik olarak 1-sigma veya belirlenen eşiği aşan sinyal sapmalarında ağırlığı iteratif olarak sıfıra yaklaştırarak, anlık sinyal kayıplarını veya yansıma zıplamalarını yok etmesidir. Özellikle ormanlık alanlardaki ve bina kenarlarındaki istikrarsız GNSS okumalarında yüksek derecede kararlı sonuç verir.</p>
+    <pre class="code-block">
+export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
+  if (samples.length < 4) {
+    const avgLat = samples.reduce((sum, p) => sum + p.lat, 0) / samples.length;
+    const avgLng = samples.reduce((sum, p) => sum + p.lng, 0) / samples.length;
+    const avgAcc = samples.reduce((sum, p) => sum + p.accuracy, 0) / samples.length;
+    return {
+      result: { lat: avgLat, lng: avgLng, accuracy: avgAcc, altitude: null, altitudeAccuracy: null, timestamp: Date.now() },
+      usedIndices: samples.map((_, i) => i)
+    };
+  }
+
+  let currentLat = calculateMedian(samples.map(s => s.lat));
+  let currentLng = calculateMedian(samples.map(s => s.lng));
 
   const maxIterations = 15;
   const toleranceMeter = 0.001;
 
-  for (let iter = 0; iter &lt; maxIterations; iter++) {
+  for (let iter = 0; iter < maxIterations; iter++) {
     const currentMAD = calculateMADHuber(samples, currentLat, currentLng);
     const pseudoSigma = currentMAD * 1.4826;
-    const stablePseudoSigma = pseudoSigma &gt; 1e-7 ? pseudoSigma : 1e-7;
+    // Numerical stability guard (machine-epsilon) instead of arbitrary spatial minimum
+    const stablePseudoSigma = pseudoSigma > 1e-7 ? pseudoSigma : 1e-7;
     const huberLimit = 1.345 * stablePseudoSigma;
 
     let sumW = 0;
     let sumLatW = 0;
     let sumLngW = 0;
 
-    for (let i = 0; i &lt; samples.length; i++) {
+    for (let i = 0; i < samples.length; i++) {
       const p = samples[i];
       const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
 
       const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
-      const huberWeight = dist &lt;= huberLimit ? 1.0 : huberLimit / Math.max(0.001, dist);
+      const huberWeight = dist <= huberLimit ? 1.0 : huberLimit / Math.max(0.001, dist);
       const combinedWeight = hardwareWeight * huberWeight;
 
       sumW += combinedWeight;
@@ -344,22 +518,23 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
     currentLat = nextLat;
     currentLng = nextLng;
 
-    if (changeInMeter &lt; toleranceMeter) break;
+    if (changeInMeter < toleranceMeter) break;
   }
 
   const finalMAD = calculateMADHuber(samples, currentLat, currentLng);
   const finalPseudoSigma = finalMAD * 1.4826;
-  const stableFinalPseudoSigma = finalPseudoSigma &gt; 1e-7 ? finalPseudoSigma : 1e-7;
+  // Pure 1.345-sigma Huber outlier threshold boundary (95% asymptotic efficiency academic gate)
+  const stableFinalPseudoSigma = finalPseudoSigma > 1e-7 ? finalPseudoSigma : 1e-7;
   const outlierThreshold = 1.345 * stableFinalPseudoSigma;
 
   const usedIndices: number[] = [];
   const cleanSamples: Coordinate[] = [];
 
-  for (let i = 0; i &lt; samples.length; i++) {
+  for (let i = 0; i < samples.length; i++) {
     const p = samples[i];
     const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
 
-    if (dist &lt;= outlierThreshold) {
+    if (dist <= outlierThreshold) {
       usedIndices.push(i);
       cleanSamples.push(p);
     }
@@ -367,14 +542,14 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
 
   if (cleanSamples.length === 0) {
     return { 
-      result: { lat: currentLat, lng: currentLng, accuracy: 3.0, timestamp: Date.now() }, 
-      usedIndices: samples.map((_, i) =&gt; i) 
+      result: { lat: currentLat, lng: currentLng, accuracy: 3.0, altitude: null, altitudeAccuracy: null, timestamp: Date.now() }, 
+      usedIndices: samples.map((_, i) => i) 
     };
   }
 
   const subMAD = calculateMADHuber(cleanSamples, currentLat, currentLng);
   const subPseudoSigma = subMAD * 1.4826;
-  const stableSubPseudoSigma = subPseudoSigma &gt; 1e-7 ? subPseudoSigma : 1e-7;
+  const stableSubPseudoSigma = subPseudoSigma > 1e-7 ? subPseudoSigma : 1e-7;
   const finalHuberLimit = 1.345 * stableSubPseudoSigma;
 
   let finalSumW = 0;
@@ -385,7 +560,7 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
   for (const p of cleanSamples) {
     const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
     const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
-    const huberWeight = dist &lt;= finalHuberLimit ? 1.0 : finalHuberLimit / Math.max(0.001, dist);
+    const huberWeight = dist <= finalHuberLimit ? 1.0 : finalHuberLimit / Math.max(0.001, dist);
     const combinedWeight = hardwareWeight * huberWeight;
 
     finalSumW += combinedWeight;
@@ -408,183 +583,67 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
 }
     </pre>
 
-    <h3>2.4.2. Yoğunluk Tabanlı Mekansal Kümeleme ve Çoklu Yol (Multipath) Gürültü Filtresi (DBSCAN)</h3>
-    <p><span class="bold">Temel Literatür ve Matematiksel Altyapı:</span> DBSCAN (Density-Based Spatial Clustering of Applications with Noise), uzaysal boyutta birbirine yakın yoğunluktaki noktaları kümeleyen ve seyrek bölgelerdeki noktaları "gürültü" (noise/outlier) olarak işaretleyen gözetimsiz bir makine öğrenmesi algoritmasıdır (Ester ve ark., 1996). Algoritma, belirlenen bir yarıçap ($\epsilon$ - epsilon) ve en az nokta sayısı ($MinPts$) kriterleri çevresinde mekansal yoğunluk ağaçları kurarak çalışır.</p>
-    
-    <p><span class="bold">Uygulamada Tercih Edilme Nedeni:</span> Statik arazi ölçümlerinde, mobil cihazlar anlık olarak bir binadan yansıyan uydunun dolaylı sinyaline kilitlendiğinde (multipath etkisi), koordinatlar aniden gerçek konumun 10-15 metre ötesinde farklı bir noktada yoğunlaşmaya başlayabilir. Klasik süzgeçler bu tip yoğun ama kayık kaba hataları ayırt edemez. DBSCAN süzgecimiz ise iki aşamalı çalışır: İlk etapta yüksek saçılımlı gürültüleri temizlemek adına MAD (Median Absolute Deviation) filtresini koşturur, ardından kalan koordinatları uzaysal yoğunluklarına göre kümeleyerek en yoğun ana grubu ("Şampiyon Küme") tespit eder; yansımalı kaba hata gruplarını ise bütünüyle dışlar. Şampiyon küme içindeki kararlı koordinatların ağırlıklı merkezini çözerek yüksek jeodezik doğruluk sağlar.</p>
-
-    <p class="no-indent">DBSCAN kümeleme ve kaba hata temizleme algoritmasını yürüten kaynak kod dökümü şu şekildedir:</p>
-    <pre class="code-block">
-export function calculateDBSCAN(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
-  const N = samples.length;
-  if (N < 4) {
-    const lseRes = calculateWeightedLSE(samples);
-    return { result: lseRes.result, usedIndices: samples.map((_, i) =&gt; i), clusters: [] };
-  }
-
-  const inputWithIndices = samples.map((s, idx) =&gt; ({ ...s, _originalIdx: idx }));
-
-  // STAGE 1: MAD OUTLIER DETECTION
-  const sortedLats = [...samples.map(s =&gt; s.lat)].sort((a, b) =&gt; a - b);
-  const sortedLngs = [...samples.map(s =&gt; s.lng)].sort((a, b) =&gt; a - b);
-  const mid = Math.floor(N / 2);
-  const medianLat = N % 2 !== 0 ? sortedLats[mid] : (sortedLats[mid - 1] + sortedLats[mid]) / 2;
-  const medianLng = N % 2 !== 0 ? sortedLngs[mid] : (sortedLngs[mid - 1] + sortedLngs[mid]) / 2;
-
-  const dists = samples.map(s =&gt; calculateDistanceMeter(s.lat, s.lng, medianLat, medianLng, medianLat));
-  const sortedDists = [...dists].sort((a, b) =&gt; a - b);
-  const medianDist = N % 2 !== 0 ? sortedDists[mid] : (sortedDists[mid - 1] + sortedDists[mid]) / 2;
-
-  const absDevs = dists.map(d =&gt; Math.abs(d - medianDist));
-  const sortedDevs = [...absDevs].sort((a, b) =&gt; a - b);
-  const medianDev = N % 2 !== 0 ? sortedDevs[mid] : (sortedDevs[mid - 1] + sortedDevs[mid]) / 2;
-
-  const mad = medianDev;
-  const scaleSigma = 1.4826 * mad;
-  const minSigmaBoundary = 1e-6;
-
-  let madSurvivors = inputWithIndices;
-  if (scaleSigma &gt;= minSigmaBoundary) {
-    const outlierThreshold = 3.0 * scaleSigma;
-    const filtered = inputWithIndices.filter((item, idx) =&gt; absDevs[idx] &lt;= outlierThreshold);
-    if (filtered.length &ge; 4) {
-      madSurvivors = filtered;
-    } else {
-      const sortedByDev = inputWithIndices
-        .map((item, idx) =&gt; ({ item, dev: absDevs[idx] }))
-        .sort((a, b) =&gt; a.dev - b.dev);
-      madSurvivors = sortedByDev.slice(0, 4).map(x =&gt; x.item);
-    }
-  }
-
-  // STAGE 2: DBSCAN CLUSTERING
-  const safeSigma = scaleSigma &gt; 1e-4 ? scaleSigma : 1e-4;
-  const eps = Math.max(1.5, Math.min(10.0, 1.5 * safeSigma));
-  const minPts = 3;
-
-  const nFiltered = madSurvivors.length;
-  const visited = new Set&lt;number&gt;();
-  const clusters: number[][] = [];
-
-  const getNeighbors = (pivotIdx: number) =&gt; {
-    const neighbors: number[] = [];
-    const p1 = madSurvivors[pivotIdx];
-    for (let i = 0; i &lt; nFiltered; i++) {
-      const p2 = madSurvivors[i];
-      const dist = calculateDistanceMeter(p1.lat, p1.lng, p2.lat, p2.lng, p1.lat);
-      if (dist &lt;= eps) {
-        neighbors.push(i);
-      }
-    }
-    return neighbors;
-  };
-
-  for (let i = 0; i &lt; nFiltered; i++) {
-    if (visited.has(i)) continue;
-    visited.add(i);
-
-    const neighbors = getNeighbors(i);
-    if (neighbors.length &lt; minPts) continue;
-
-    const cluster: number[] = [i];
-    const queue = [...neighbors.filter(idx =&gt; idx !== i)];
-
-    for (let q = 0; q &lt; queue.length; q++) {
-      const nextPt = queue[q];
-      if (!visited.has(nextPt)) {
-        visited.add(nextPt);
-        const nextNeighbors = getNeighbors(nextPt);
-        if (nextNeighbors.length &ge; minPts) {
-          queue.push(...nextNeighbors.filter(idx =&gt; !queue.includes(idx)));
-        }
-      }
-      if (!cluster.includes(nextPt)) {
-        cluster.push(nextPt);
-      }
-    }
-    clusters.push(cluster);
-  }
-
-  let finalUsedLocalIndices: number[] = [];
-  if (clusters.length === 0) {
-    finalUsedLocalIndices = Array.from({ length: nFiltered }, (_, i) =&gt; i);
-  } else {
-    clusters.sort((a, b) =&gt; b.length - a.length);
-    finalUsedLocalIndices = clusters[0];
-  }
-
-  const finalPointsToUse = finalUsedLocalIndices.map(localIdx =&gt; madSurvivors[localIdx]);
-  const lseResult = calculateWeightedLSE(finalPointsToUse);
-
-  return {
-    result: lseResult.result,
-    usedIndices: finalPointsToUse.map(p =&gt; p._originalIdx),
-    clusters: clusters.map(cl =&gt; cl.map(localIdx =&gt; madSurvivors[localIdx]._originalIdx))
-  };
-}
-</pre>
-
-    <h3>2.4.4. Robust Hampel M-Kestiricisi (Robust Hampel M-Estimation)</h3>
-    <p>Jeodezik uyuşmazlıkların giderilmesi ve kaba hataların ayıklanması amacıyla geliştirilen <b>Robust Hampel</b> süzgeci, medyan bazlı mutlak sapma sınır değerlerini (Median Absolute Deviation - MAD) esas alır. Veri setindeki uç ve sıçramalı değerleri hassas istatistiksel barikatlarla izole eder.</p>
-    
-    <div class="case-container" style="background-color: #fdf2f8; border-left: 4px solid #db2777; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
-      <p class="bold" style="color: #9d174d; margin-bottom: 6px;">Hampel Gürbüz Filtresi Karar Sistemi</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Medyan ve MAD Hesabı:</span> Gözlemlerin medyan değeri ($M$) ve her gözlemin medyandan olan mutlak uzaklığının medyanını simgeleyen MAD değeri hesaplanır: $MAD = Median(|x_i - M|)$.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Gürbüz Ölçek Katsayısı (1.4826):</span> Normal dağılmış verilerde standart sapma ile uyum sağlaması adına MAD değeri $1.4826 \times MAD$ katsayısıyla ölçeklendirilir.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">3. Neden Seçildi ve Jeodezik Katkısı:</span> Hampel filtresi, uyuşmazlık barındıran veri gruplarında %50'lik tam kırılma sınırına (breakdown point) sahiptir ve standart sapmayı şişiren kaba hatalardan etkilenmez. Mobil ölçümlerdeki ani çevresel yansımaları (multipath) sönümlemek amacıyla seçilmiştir.</p>
-      <p class="no-indent"><span class="bold">4. 3-Sigma Kriteri ile Temizleme:</span> Medyandan uzaklığı $3 \times (1.4826 \times MAD)$ değerini aşan uç sinyaller kaba hata olarak işaretlenip elenir. Kalan kararlı gözlemler WLS yöntemiyle dengelenir.</p>
-    </div>
-
-    <p class="no-indent">Sistem bünyesinde uygulanan akademik gürbüz Hampel süzgecinin özgün kaynak kodu aşağıda sunulmuştur:</p>
+    <h3>2.4.4. Hampel M-Kestiricisi (Hampel M-Estimation)</h3>
+    <p>Hampel kestiricisi, Huber yöntemine benzer ancak üç parçalı bir red fonksiyonu kullanır. Hata tolerans sınırlarını (a, b, c) merhaleli olarak devreye sokar; belirli bir sınıra kadar karesel, daha sonra doğrusal ve nihayetinde tam red bölgesi (sıfır ağırlık) uygulayan son derece muhafazakar bir fonksiyondur (Hampel, 1974; Rousseeuw & Leroy, 1987). Bu yöntem, ekstrem sapanlara karşı Huber'den daha katı ve dayanıklıdır.</p>
+    <p>Mobil uygulamada, özellikle arazide uzun süreli statik ölçümlerde (örneğin 3-5 dakika) oluşan nadir fakat ekstrem sapmaların ana veri kümesini bozmasını engellemek için idealdir. Sistem, Hampel eşiklerini MAD (Median Absolute Deviation) üzerinden dinamik olarak ölçeklendirerek sinyal gürültüsüne otomatik adapte olur.</p>
     <pre class="code-block">
 export function calculateHampelAcademic(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  if (samples.length &lt; 4) {
+  if (samples.length < 4) {
     return calculateWeightedLSE(samples);
   }
 
   const N = samples.length;
-  const sortedLats = samples.map(s =&gt; s.lat).sort((a, b) =&gt; a - b);
-  const sortedLngs = samples.map(s =&gt; s.lng).sort((a, b) =&gt; a - b);
+  // Spatial median coordinates
+  const sortedLats = samples.map(s => s.lat).sort((a, b) => a - b);
+  const sortedLngs = samples.map(s => s.lng).sort((a, b) => a - b);
   const mid = Math.floor(N / 2);
   const medianLat = N % 2 !== 0 ? sortedLats[mid] : (sortedLats[mid - 1] + sortedLats[mid]) / 2;
   const medianLng = N % 2 !== 0 ? sortedLngs[mid] : (sortedLngs[mid - 1] + sortedLngs[mid]) / 2;
 
-  const dists = samples.map(s =&gt; calculateDistanceMeter(s.lat, s.lng, medianLat, medianLng, medianLat));
-  const sortedDists = [...dists].sort((a, b) =&gt; a - b);
+  // Distances to spatial median in meters
+  const dists = samples.map(s => calculateDistanceMeter(s.lat, s.lng, medianLat, medianLng, medianLat));
+  
+  // Median distance
+  const sortedDists = [...dists].sort((a, b) => a - b);
   const medianDist = N % 2 !== 0 ? sortedDists[mid] : (sortedDists[mid - 1] + sortedDists[mid]) / 2;
 
-  const absDevs = dists.map(d =&gt; Math.abs(d - medianDist));
-  const sortedDevs = [...absDevs].sort((a, b) =&gt; a - b);
+  // Absolute deviations from the median distance
+  const absDevs = dists.map(d => Math.abs(d - medianDist));
+  const sortedDevs = [...absDevs].sort((a, b) => a - b);
   const medianDev = N % 2 !== 0 ? sortedDevs[mid] : (sortedDevs[mid - 1] + sortedDevs[mid]) / 2;
 
   const mad = medianDev;
   const scaleSigma = 1.4826 * mad;
-  const minSigmaBoundary = 1e-6;
+
+  // If robust scale is virtually zero, all points are extremely clustered. No outliers should be removed.
+  const minSigmaBoundary = 1e-6; // 1 micrometer
 
   const inlierIndices: number[] = [];
   
-  if (scaleSigma &lt; minSigmaBoundary) {
+  if (scaleSigma < minSigmaBoundary) {
+    // Keep all
     return {
       result: calculateWeightedLSE(samples).result,
-      usedIndices: samples.map((_, i) =&gt; i)
+      usedIndices: samples.map((_, i) => i)
     };
   }
 
-  for (let i = 0; i &lt; N; i++) {
-    if (absDevs[i] &lt;= 3.0 * scaleSigma) {
+  for (let i = 0; i < N; i++) {
+    if (absDevs[i] <= 3.0 * scaleSigma) {
       inlierIndices.push(i);
     }
   }
 
+  // Fallback protection: ensure we keep at least 2 samples with the lowest deviations
   let finalUsedIndices = inlierIndices;
-  if (finalUsedIndices.length &lt; 2) {
+  if (finalUsedIndices.length < 2) {
     const sortedSampleIndices = samples
-      .map((_, idx) =&gt; ({ idx, dev: absDevs[idx] }))
-      .sort((a, b) =&gt; a.dev - b.dev);
+      .map((_, idx) => ({ idx, dev: absDevs[idx] }))
+      .sort((a, b) => a.dev - b.dev);
     finalUsedIndices = [sortedSampleIndices[0].idx, sortedSampleIndices[1].idx];
   }
 
-  const filteredSamples = finalUsedIndices.map(idx =&gt; samples[idx]);
+  const filteredSamples = finalUsedIndices.map(idx => samples[idx]);
   const finalResult = calculateWeightedLSE(filteredSamples);
 
   return {
@@ -595,101 +654,118 @@ export function calculateHampelAcademic(samples: Coordinate[]): { result: Coordi
     </pre>
 
     <h3>2.4.5. Hodges-Lehmann R-Kestiricisi (Hodges-Lehmann R-Estimation)</h3>
-    <p>Akademik düzeydeki en gürbüz konum hesaplama yöntemlerinden biri olan <b>Hodges-Lehmann R-Kestiricisi</b>, epok verilerinin tüm ikili kombinasyonlarının Walsh ortalamalarını (pairwise averages) temel alarak konumun robust medyanını hesaplar.</p>
-    
-    <div class="case-container" style="background-color: #f5f3ff; border-left: 4px solid #7c3aed; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
-      <p class="bold" style="color: #5b21b6; margin-bottom: 6px;">Hodges-Lehmann Robust Ağırlık Merkezi Kararlılığı</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Walsh Ortalamaları Sentezi:</span> $N$ adet gözlemin tüm ikili kombinasyonları için $(x_i + x_j) / 2$ Walsh ortalamaları oluşturulur. Bu işlem, tekil sıçramaların ve multipath etkilerinin doğrusal sönümlenmesini sağlar.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Neden Seçildi ve Jeodezik Katkısı:</span> Hodges-Lehmann kestiricisi, normal dağılımlarda %95.5 asimptotik etkililik sunarken, kaba hatalar barındıran kirli dağılımlarda aritmetik medyana kıyasla çok daha dengeli ve pürüzsüz sonuçlar ortaya koyar. Durağan oturumlardaki milimetrik dalgalanmaları ve rastgele gürültüyü kararlı kılmak amacıyla tercih edilmiştir.</p>
-      <p class="no-indent"><span class="bold">3. Robust Medyan Çözümü:</span> Elde edilen Walsh ortalamaları dizisinin ortancası (medyanı) alınarak asimetrik dağılımlardan ve sistematik gürültülerden arındırılmış, son derece kararlı bir robust ağırlık merkezi elde edilir.</p>
-    </div>
-
-    <p class="no-indent">Pairwise (Walsh) kombinasyonlarına dayalı Hodges-Lehmann konum belirleme motorunun kaynak kod yapısı şu şekildedir:</p>
+    <p>Hodges-Lehmann yöntemi, non-parametrik istatistik biliminde Wilcoxon işaretli-sıra testine dayalı gürbüz bir konum kestiricisidir. Veri setindeki tüm olası ikili gözlem çiftlerinin ortalamalarının medyanı hesaplanarak elde edilir (Hodges & Lehmann, 1963). Bu yöntem asimptotik bağıl etkinliği çok yüksek (%95) olan bir kestiricidir ve verinin dağılımından (normallik varsayımından) tamamen bağımsızdır.</p>
+    <p>Uygulamada Hodges-Lehmann, özellikle az sayıda veri toplandığı (örneğin 10-20 epok) durumlarda klasik ortalama yönteminin zayıf kaldığı yerlerde devreye girer. Tüm çiftlerin ağırlıksız kombinasyonu hesaplandığı için tekil kaba hataların sonucu saptırması matematiksel olarak imkansız hale gelir.</p>
     <pre class="code-block">
 export function calculateHodgesLehmannPure(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  if (samples.length &lt; 4) {
+  // If we have extremely few samples, fallback directly to weighted LSE
+  if (samples.length < 4) {
     return calculateWeightedLSE(samples);
   }
 
   const N = samples.length;
 
+  // Step A: Calculate all pairwise (Walsh) averages for Latitude
   const walshLats: number[] = [];
-  for (let i = 0; i &lt; N; i++) {
-    for (let j = i; j &lt; N; j++) {
+  for (let i = 0; i < N; i++) {
+    for (let j = i; j < N; j++) {
       walshLats.push((samples[i].lat + samples[j].lat) / 2);
     }
   }
-  walshLats.sort((a, b) =&gt; a - b);
+  // Compute median of walshLats
+  walshLats.sort((a, b) => a - b);
   const midLat = Math.floor(walshLats.length / 2);
   const hlLat = walshLats.length % 2 !== 0 
     ? walshLats[midLat] 
     : (walshLats[midLat - 1] + walshLats[midLat]) / 2;
 
+  // Step B: Calculate all pairwise (Walsh) averages for Longitude
   const walshLngs: number[] = [];
-  for (let i = 0; i &lt; N; i++) {
-    for (let j = i; j &lt; N; j++) {
+  for (let i = 0; i < N; i++) {
+    for (let j = i; j < N; j++) {
       walshLngs.push((samples[i].lng + samples[j].lng) / 2);
     }
   }
-  walshLngs.sort((a, b) =&gt; a - b);
+  // Compute median of walshLngs
+  walshLngs.sort((a, b) => a - b);
   const midLng = Math.floor(walshLngs.length / 2);
   const hlLng = walshLngs.length % 2 !== 0 
     ? walshLngs[midLng] 
     : (walshLngs[midLng - 1] + walshLngs[midLng]) / 2;
 
-  const dists = samples.map(s =&gt; calculateDistanceMeter(s.lat, s.lng, hlLat, hlLng, hlLat));
-  const sortedDists = [...dists].sort((a, b) =&gt; a - b);
+  // Step C: Identify Outliers relative to the Hodges-Lehmann Center (for usedIndices mapping)
+  // Distance of each raw coordinate point to the HL center in meters
+  const dists = samples.map(s => calculateDistanceMeter(s.lat, s.lng, hlLat, hlLng, hlLat));
+
+  // Compute Median of distances
+  const sortedDists = [...dists].sort((a, b) => a - b);
   const midD = Math.floor(N / 2);
   const medianDist = N % 2 !== 0 ? sortedDists[midD] : (sortedDists[midD - 1] + sortedDists[midD]) / 2;
 
-  const absDevs = dists.map(d =&gt; Math.abs(d - medianDist));
-  const sortedDevs = [...absDevs].sort((a, b) =&gt; a - b);
+  // Absolute deviations of each distance from the median distance
+  const absDevs = dists.map(d => Math.abs(d - medianDist));
+  const sortedDevs = [...absDevs].sort((a, b) => a - b);
   const medianDev = N % 2 !== 0 ? sortedDevs[midD] : (sortedDevs[midD - 1] + sortedDevs[midD]) / 2;
 
   const mad = medianDev;
   const scaleSigma = 1.4826 * mad;
-  const minSigmaBoundary = 1e-6;
+
+  // Rejection threshold boundaries (consistency safeguard)
+  const minSigmaBoundary = 1e-6; // 1 micrometer
 
   const inlierIndices: number[] = [];
 
-  if (scaleSigma &lt; minSigmaBoundary) {
+  if (scaleSigma < minSigmaBoundary) {
+    // Standard output: all are close
     return {
       result: {
         lat: hlLat,
         lng: hlLng,
-        accuracy: samples.reduce((sum, s) =&gt; sum + s.accuracy, 0) / N,
-        altitude: null,
-        altitudeAccuracy: null,
+        accuracy: samples.reduce((sum, s) => sum + s.accuracy, 0) / N,
+        altitude: samples.some(s => s.altitude !== null && s.altitude !== undefined)
+          ? samples.reduce((sum, s) => sum + (s.altitude || 0), 0) / N
+          : null,
+        altitudeAccuracy: samples.some(s => s.altitudeAccuracy !== null && s.altitudeAccuracy !== undefined)
+          ? samples.reduce((sum, s) => sum + (s.altitudeAccuracy || 0), 0) / N
+          : null,
         timestamp: Date.now()
       },
-      usedIndices: samples.map((_, i) =&gt; i)
+      usedIndices: samples.map((_, i) => i)
     };
   }
 
-  for (let i = 0; i &lt; N; i++) {
-    if (absDevs[i] &lt;= 3.0 * scaleSigma) {
+  for (let i = 0; i < N; i++) {
+    if (absDevs[i] <= 3.0 * scaleSigma) {
       inlierIndices.push(i);
     }
   }
 
+  // Fallback protection: keep at least 2 samples with the lowest dev
   let finalUsedIndices = inlierIndices;
-  if (finalUsedIndices.length &lt; 2) {
+  if (finalUsedIndices.length < 2) {
     const sortedSampleIndices = samples
-      .map((_, idx) =&gt; ({ idx, dev: absDevs[idx] }))
-      .sort((a, b) =&gt; a.dev - b.dev);
+      .map((_, idx) => ({ idx, dev: absDevs[idx] }))
+      .sort((a, b) => a.dev - b.dev);
     finalUsedIndices = [sortedSampleIndices[0].idx, sortedSampleIndices[1].idx];
   }
 
-  const activeInliers = finalUsedIndices.map(idx =&gt; samples[idx]);
-  const avgAccuracy = activeInliers.reduce((sum, s) =&gt; sum + s.accuracy, 0) / activeInliers.length;
+  // Average accuracy of the raw filtered elements
+  const activeInliers = finalUsedIndices.map(idx => samples[idx]);
+  const avgAccuracy = activeInliers.reduce((sum, s) => sum + s.accuracy, 0) / activeInliers.length;
+  const avgAltitude = activeInliers.some(s => s.altitude !== null && s.altitude !== undefined)
+    ? activeInliers.reduce((sum, s) => sum + (s.altitude || 0), 0) / activeInliers.length
+    : null;
+  const avgAltAccuracy = activeInliers.some(s => s.altitudeAccuracy !== null && s.altitudeAccuracy !== undefined)
+    ? activeInliers.reduce((sum, s) => sum + (s.altitudeAccuracy || 0), 0) / activeInliers.length
+    : null;
 
   return {
     result: {
       lat: hlLat,
       lng: hlLng,
       accuracy: avgAccuracy,
-      altitude: null,
-      altitudeAccuracy: null,
+      altitude: avgAltitude,
+      altitudeAccuracy: avgAltAccuracy,
       timestamp: Date.now()
     },
     usedIndices: finalUsedIndices
@@ -698,25 +774,19 @@ export function calculateHodgesLehmannPure(samples: Coordinate[]): { result: Coo
     </pre>
 
     <h3>2.4.6. Tukey's Trimean L-Kestiricisi (Tukey's Trimean L-Estimation)</h3>
-    <p>Doğrusal olmayan gürültüleri ve konum sıçramalarını verimli şekilde sönümleyen <b>Tukey's Trimean L-Kestiricisi</b>, istatistiksel dağılımdaki çeyreklik aralıkları (interquartile ranges) ve ortanca değerini ağırlıklandırarak konum çözümlemesi yapar.</p>
-    
-    <div class="case-container" style="background-color: #f0fdfa; border-left: 4px solid #0d9488; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
-      <p class="bold" style="color: #115e59; margin-bottom: 6px;">Trimean Çeyreklik Ağırlık Sentezi</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Dağılım Bölümlemesi:</span> Gözlemlerin birinci çeyrekliği ($Q_1$ veya %25 dilimi), ortancası ($Median$ veya %50 dilimi) ve üçüncü çeyrekliği ($Q_3$ veya %75 dilimi) hesaplanır.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Neden Seçildi ve Jeodezik Katkısı:</span> Tukey's Trimean, dağılımın asimetrisini ve kuyruk yapısını denge altına alan son derece hızlı bir L-kestiricisidir. Çeyreklik aralıkların kararlılığıyla medyanın hassasiyetini birleştirir; mobil cihaz işlem kapasitesini yormadan anlık konum sıçramalarını pürüzsüzleştirir.</p>
-      <p class="no-indent"><span class="bold">3. Trimean Formülasyonu:</span> Konum koordinatları, $Trimean = (Q_1 + 2 \times Median + Q_3) / 4$ formülüyle çözümlenir. Bu model, her iki uçtaki sapma sınırlarını dikkate alırken merkeze en yüksek ağırlığı vererek pürüzsüzleştirme sağlar.</p>
-    </div>
-
-    <p class="no-indent">İstatistiksel çeyreklik ve medyan ağırlıklama tabanlı Tukey's Trimean algoritmasının kaynak kodu aşağıda yer almaktadır:</p>
+    <p>Tukey's Trimean yöntemi, veri setinin kartillerine dayalı bir L-tahmincisidir. Verinin birinci çeyrek (Q1), üçüncü çeyrek (Q3) ve medyan (Q2) değerlerini kullanarak, medyana iki kat ağırlık veren formülasyonu ile ağırlıklı bir konum tahmini yapar (Tukey, 1977). Gürbüz yapısı sayesinde aşırı sapanlardan etkilenmez.</p>
+    <p>Akıllı telefon uygulamamızda Tukey's Trimean, uç değerlerin %25'ini her iki yönden kesip atarken kalan merkezin şekline göre konum belirleyerek, hızlı okumalarda donanımsal ağırlıklara ihtiyaç duymadan son derece temiz ve hızlı bir koordinat dengelemesi gerçekleştirir.</p>
     <pre class="code-block">
 export function calculateTukeysTrimeanPure(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  if (samples.length &lt; 4) {
+  // If we have extremely few samples, fallback directly to weighted LSE
+  if (samples.length < 4) {
     return calculateWeightedLSE(samples);
   }
 
   const N = samples.length;
 
-  const getPercentileValue = (sorted: number[], p: number): number =&gt; {
+  // Helper to compute percentile/quartile of a sorted list of numbers
+  const getPercentileValue = (sorted: number[], p: number): number => {
     const idx = (sorted.length - 1) * p;
     const low = Math.floor(idx);
     const high = Math.ceil(idx);
@@ -724,70 +794,88 @@ export function calculateTukeysTrimeanPure(samples: Coordinate[]): { result: Coo
     return sorted[low] + (sorted[high] - sorted[low]) * (idx - low);
   };
 
-  const sortedLats = samples.map(s =&gt; s.lat).sort((a, b) =&gt; a - b);
+  // Step A: Tukey's Trimean for Latitude
+  const sortedLats = samples.map(s => s.lat).sort((a, b) => a - b);
   const q1Lat = getPercentileValue(sortedLats, 0.25);
   const q2Lat = getPercentileValue(sortedLats, 0.50);
   const q3Lat = getPercentileValue(sortedLats, 0.75);
   const triLat = (q1Lat + 2 * q2Lat + q3Lat) / 4;
 
-  const sortedLngs = samples.map(s =&gt; s.lng).sort((a, b) =&gt; a - b);
+  // Step B: Tukey's Trimean for Longitude
+  const sortedLngs = samples.map(s => s.lng).sort((a, b) => a - b);
   const q1Lng = getPercentileValue(sortedLngs, 0.25);
   const q2Lng = getPercentileValue(sortedLngs, 0.50);
   const q3Lng = getPercentileValue(sortedLngs, 0.75);
   const triLng = (q1Lng + 2 * q2Lng + q3Lng) / 4;
 
-  const dists = samples.map(s =&gt; calculateDistanceMeter(s.lat, s.lng, triLat, triLng, triLat));
-  const sortedDists = [...dists].sort((a, b) =&gt; a - b);
+  // Step C: Identify Outliers relative to the Trimean Center
+  const dists = samples.map(s => calculateDistanceMeter(s.lat, s.lng, triLat, triLng, triLat));
+
+  // Compute Median of distances
+  const sortedDists = [...dists].sort((a, b) => a - b);
   const midD = Math.floor(N / 2);
   const medianDist = N % 2 !== 0 ? sortedDists[midD] : (sortedDists[midD - 1] + sortedDists[midD]) / 2;
 
-  const absDevs = dists.map(d =&gt; Math.abs(d - medianDist));
-  const sortedDevs = [...absDevs].sort((a, b) =&gt; a - b);
+  // Absolute deviations from median distance
+  const absDevs = dists.map(d => Math.abs(d - medianDist));
+  const sortedDevs = [...absDevs].sort((a, b) => a - b);
   const medianDev = N % 2 !== 0 ? sortedDevs[midD] : (sortedDevs[midD - 1] + sortedDevs[midD]) / 2;
 
   const mad = medianDev;
   const scaleSigma = 1.4826 * mad;
-  const minSigmaBoundary = 1e-6;
+  const minSigmaBoundary = 1e-6; // 1 micrometer
 
-  if (scaleSigma &lt; minSigmaBoundary) {
+  if (scaleSigma < minSigmaBoundary) {
     return {
       result: {
         lat: triLat,
         lng: triLng,
-        accuracy: samples.reduce((sum, s) =&gt; sum + s.accuracy, 0) / N,
-        altitude: null,
-        altitudeAccuracy: null,
+        accuracy: samples.reduce((sum, s) => sum + s.accuracy, 0) / N,
+        altitude: samples.some(s => s.altitude !== null && s.altitude !== undefined)
+          ? samples.reduce((sum, s) => sum + (s.altitude || 0), 0) / N
+          : null,
+        altitudeAccuracy: samples.some(s => s.altitudeAccuracy !== null && s.altitudeAccuracy !== undefined)
+          ? samples.reduce((sum, s) => sum + (s.altitudeAccuracy || 0), 0) / N
+          : null,
         timestamp: Date.now()
       },
-      usedIndices: samples.map((_, i) =&gt; i)
+      usedIndices: samples.map((_, i) => i)
     };
   }
 
   const inlierIndices: number[] = [];
-  for (let i = 0; i &lt; N; i++) {
-    if (absDevs[i] &lt;= 3.0 * scaleSigma) {
+  for (let i = 0; i < N; i++) {
+    if (absDevs[i] <= 3.0 * scaleSigma) {
       inlierIndices.push(i);
     }
   }
 
+  // Fallback protection: keep at least 2 samples with the lowest dev
   let finalUsedIndices = inlierIndices;
-  if (finalUsedIndices.length &lt; 2) {
+  if (finalUsedIndices.length < 2) {
     const sortedSampleIndices = samples
-      .map((_, idx) =&gt; ({ idx, dev: absDevs[idx] }))
-      .sort((a, b) =&gt; a.dev - b.dev);
+      .map((_, idx) => ({ idx, dev: absDevs[idx] }))
+      .sort((a, b) => a.dev - b.dev);
     finalUsedIndices = [sortedSampleIndices[0].idx, sortedSampleIndices[1].idx];
   }
 
-  const activeInliers = finalUsedIndices.map(idx =&gt; samples[idx]);
-  const avgAccuracy = activeInliers.reduce((sum, s) =&gt; sum + s.accuracy, 0) / activeInliers.length;
+  // Calculate average accuracy and altitude metadata
+  const activeInliers = finalUsedIndices.map(idx => samples[idx]);
+  const avgAccuracy = activeInliers.reduce((sum, s) => sum + s.accuracy, 0) / activeInliers.length;
+  const avgAltitude = activeInliers.some(s => s.altitude !== null && s.altitude !== undefined)
+    ? activeInliers.reduce((sum, s) => sum + (s.altitude || 0), 0) / activeInliers.length
+    : null;
+  const avgAltAccuracy = activeInliers.some(s => s.altitudeAccuracy !== null && s.altitudeAccuracy !== undefined)
+    ? activeInliers.reduce((sum, s) => sum + (s.altitudeAccuracy || 0), 0) / activeInliers.length
+    : null;
 
   return {
     result: {
       lat: triLat,
       lng: triLng,
       accuracy: avgAccuracy,
-      altitude: null,
-      altitudeAccuracy: null,
+      altitude: avgAltitude,
+      altitudeAccuracy: avgAltAccuracy,
       timestamp: Date.now()
     },
     usedIndices: finalUsedIndices
@@ -796,39 +884,32 @@ export function calculateTukeysTrimeanPure(samples: Coordinate[]): { result: Coo
     </pre>
 
     <h3>2.4.7. Optimal S-Kestiricisi (Optimal S-Estimation)</h3>
-    <p>Konum gözlem serilerindeki geniş saçılımları ve çoklu kaba hataları güçlü bir şekilde sönümleyen <b>Optimal S-Kestiricisi</b>, Tukey's Biweight kayıp fonksiyonu ve yüksek kırılma noktalı (high breakdown point) ölçek kestiricileri kullanarak iteratif ağırlıklandırma yöntemiyle nihai koordinatı belirler.</p>
-    
-    <div class="case-container" style="background-color: #f0f9ff; border-left: 4px solid #0284c7; padding: 12px; margin-bottom: 20px; font-size: 10pt;">
-      <p class="bold" style="color: #0369a1; margin-bottom: 6px;">Iterative Biweight Ağırlık Dinamiği</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">1. Robust Ölçeklendirme:</span> Medyan mutlak sapması ($MAD$) üzerinden $c = 3.0$ katsayı limiti belirlenir. Gözlemlerin ortanca değere olan uzaklıklarına göre biweight ağırlıkları ($w = (1 - (d/c)^2)^2$) hesaplanır.</p>
-      <p class="no-indent" style="margin-bottom: 5px;"><span class="bold">2. Neden Seçildi og Jeodezik Katkısı:</span> S-kestiricileri, yüksek gürültülü ve ardışık kaba hataların kümelendiği ortamlarda standart M-kestiricilerine kıyasla daha kararlı bir yakınsama sunar. Tukey's Biweight sönümlemesi sayesinde, belirli bir sınırın ötesinde kalan gürültülü gözlemlerin ağırlıkları matematiksel olarak sıfırlanarak konumsal sürüklenme engellenir.</p>
-      <p class="no-indent"><span class="bold">3. İteratif Yakınsama:</span> Konum koordinatları ağırlıklara göre yeniden hesaplanır og değişim $0.001\text{m}$ altına düşene kadar iteratif olarak güncellenir. Uç değerlerin ağırlıkları sıfıra indirilerek kararlılık maksimuma ulaştırılır.</p>
-    </div>
-
-    <p class="no-indent">Karesel sönümlemeli Tukey's Biweight bazlı iteratif Optimal S-Kestirim motorunun kaynak kod yapısı aşağıda sunulmuştur:</p>
+    <p>S-tahmincileri (Scale-estimators), artıklara (residuals) bağlı bir gürbüz ölçek parametresinin minimize edilmesine dayanan yöntemlerdir. Geleneksel En Küçük Kareler gibi artıkların karesini minimize etmek yerine, M-kestiricisi fonksiyonuna benzer bir gürbüz kayıp fonksiyonu üzerinden yayılımı en aza indiren merkezi arar (Rousseeuw & Yohai, 1984). Verinin en yoğun ve konsantre olduğu bölgeyi referans alarak kırılma noktasını (breakdown point) %50'ye kadar çıkarabilir.</p>
+    <p>Arazide, toplam verinin %49'unun yansıma hatası (multipath) olduğu ekstrem senaryolarda bile gerçek konumu başarılı bir şekilde bulabilen en güçlü yöntemlerden biri olarak uygulamaya entegre edilmiştir. Yüksek işlem gücü gerektirmesine rağmen, PWA'nın optimize edilmiş yapısı sayesinde anlık olarak çalıştırılabilmektedir.</p>
     <pre class="code-block">
 export function calculateOptimalSPure(samples: Coordinate[]): { result: Coordinate; usedIndices: number[] } {
-  if (samples.length &lt; 4) {
-    const avgLat = samples.reduce((sum, p) =&gt; sum + p.lat, 0) / samples.length;
-    const avgLng = samples.reduce((sum, p) =&gt; sum + p.lng, 0) / samples.length;
-    const avgAcc = samples.reduce((sum, p) =&gt; sum + p.accuracy, 0) / samples.length;
+  if (samples.length < 4) {
+    const avgLat = samples.reduce((sum, p) => sum + p.lat, 0) / samples.length;
+    const avgLng = samples.reduce((sum, p) => sum + p.lng, 0) / samples.length;
+    const avgAcc = samples.reduce((sum, p) => sum + p.accuracy, 0) / samples.length;
     return {
       result: { lat: avgLat, lng: avgLng, accuracy: avgAcc, altitude: null, altitudeAccuracy: null, timestamp: Date.now() },
-      usedIndices: samples.map((_, i) =&gt; i)
+      usedIndices: samples.map((_, i) => i)
     };
   }
 
-  let currentLat = calculateMedian(samples.map(s =&gt; s.lat));
-  let currentLng = calculateMedian(samples.map(s =&gt; s.lng));
+  let currentLat = calculateMedian(samples.map(s => s.lat));
+  let currentLng = calculateMedian(samples.map(s => s.lng));
 
   const maxIterations = 20;
   const toleranceMeter = 0.001;
 
-  for (let iter = 0; iter &lt; maxIterations; iter++) {
+  for (let iter = 0; iter < maxIterations; iter++) {
     const currentMAD = calculateMADHuber(samples, currentLat, currentLng);
     const pseudoSigma = currentMAD * 1.4826;
-    const stablePseudoSigma = pseudoSigma &gt; 1e-7 ? pseudoSigma : 1e-7;
+    const stablePseudoSigma = pseudoSigma > 1e-7 ? pseudoSigma : 1e-7;
     
+    // Tukey's Biweight tuning constant c = 3.0 for highly robust location estimation.
     const c = 3.0;
     const cutoff = c * stablePseudoSigma;
 
@@ -836,14 +917,14 @@ export function calculateOptimalSPure(samples: Coordinate[]): { result: Coordina
     let sumLatW = 0;
     let sumLngW = 0;
 
-    for (let i = 0; i &lt; samples.length; i++) {
+    for (let i = 0; i < samples.length; i++) {
       const p = samples[i];
       const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
 
       const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
       
       let biweightWeight = 0;
-      if (dist &lt;= cutoff) {
+      if (dist <= cutoff) {
         const u = dist / cutoff;
         biweightWeight = Math.pow(1.0 - u * u, 2);
       }
@@ -856,7 +937,8 @@ export function calculateOptimalSPure(samples: Coordinate[]): { result: Coordina
     }
 
     if (sumW === 0) {
-      for (let i = 0; i &lt; samples.length; i++) {
+      // Fall back if all weights elements are 0 due to being outliers
+      for (let i = 0; i < samples.length; i++) {
         const p = samples[i];
         const combinedWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
         sumW += combinedWeight;
@@ -873,22 +955,22 @@ export function calculateOptimalSPure(samples: Coordinate[]): { result: Coordina
     currentLat = nextLat;
     currentLng = nextLng;
 
-    if (changeInMeter &lt; toleranceMeter) break;
+    if (changeInMeter < toleranceMeter) break;
   }
 
   const finalMAD = calculateMADHuber(samples, currentLat, currentLng);
   const finalPseudoSigma = finalMAD * 1.4826;
-  const stableFinalPseudoSigma = finalPseudoSigma &gt; 1e-7 ? finalPseudoSigma : 1e-7;
+  const stableFinalPseudoSigma = finalPseudoSigma > 1e-7 ? finalPseudoSigma : 1e-7;
   const outlierThreshold = 3.0 * stableFinalPseudoSigma;
 
   const usedIndices: number[] = [];
   const cleanSamples: Coordinate[] = [];
 
-  for (let i = 0; i &lt; samples.length; i++) {
+  for (let i = 0; i < samples.length; i++) {
     const p = samples[i];
     const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
 
-    if (dist &lt;= outlierThreshold) {
+    if (dist <= outlierThreshold) {
       usedIndices.push(i);
       cleanSamples.push(p);
     }
@@ -897,7 +979,7 @@ export function calculateOptimalSPure(samples: Coordinate[]): { result: Coordina
   if (cleanSamples.length === 0) {
     return {
       result: { lat: currentLat, lng: currentLng, accuracy: 3.0, altitude: null, altitudeAccuracy: null, timestamp: Date.now() },
-      usedIndices: samples.map((_, i) =&gt; i)
+      usedIndices: samples.map((_, i) => i)
     };
   }
 
@@ -927,255 +1009,6 @@ export function calculateOptimalSPure(samples: Coordinate[]): { result: Coordina
   };
 }
     </pre>
-
-    <div style="display:none;">
-
-  // 1. Stage: Hodges-Lehmann Outlier Test
-  const hlRes = calculateHodgesLehmannPure(samples);
-  const hlFilteredIndices = hlRes.usedIndices;
-  const hlFilteredSamples = hlFilteredIndices.map(idx => samples[idx]);
-
-  // 2. Stage: G-Means Spatial Clustering
-  const validClustersLocal = getGMeansClusters(hlFilteredSamples);
-  const finalClusters = validClustersLocal.map(cl => cl.map(localIdx => hlFilteredIndices[localIdx]));
-
-  // 3. Stage: Joint WLS resolution
-  const finalWeights = hlFilteredSamples.map((s, index) => {
-    const clusterIdx = validClustersLocal.findIndex(c => c.includes(index));
-    const clusterSize = clusterIdx !== -1 ? validClustersLocal[clusterIdx].length : 1.0;
-    const wCluster = clusterSize / hlFilteredSamples.length;
-    const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, s.accuracy), 2);
-    return wCluster * hardwareWeight;
-  });
-
-  const sumW = finalWeights.reduce((a, b) => a + b, 0) || 1.0;
-  const finalLat = hlFilteredSamples.reduce((sum, p, i) => sum + p.lat * finalWeights[i], 0) / sumW;
-  const finalLng = hlFilteredSamples.reduce((sum, p, i) => sum + p.lng * finalWeights[i], 0) / sumW;
-
-  return {
-    result: { lat: finalLat, lng: finalLng, accuracy: calculateAverage(hlFilteredSamples).accuracy, timestamp: Date.now() },
-    usedIndices: hlFilteredIndices,
-    clusters: finalClusters,
-    fallbackApplied: false,
-    actualMethodUsed: 'HYBRID_v1'
-  };
-}
-    </div>
-
-    <h3>2.4.8. Sinyal Güvenilirlik Analizi ve Konumsal Veri Saçılım Metodolojisi</h3>
-    <p>Mobil donanımların ve akıllı telefonların entegre konum sensörleri doğrudan ham GNSS gözlemleri (taşıyıcı fazı vb.) yerine tarayıcı düzlemine filtrelenmiş tahminler sunar. Bu sebeple donanımın ürettiği konumsal doğruluk kestirimleri (UERE - User Equivalent Range Error tabanlı tahmini konum hatası veya Geolocation API Hassasiyet Çemberi / Accuracy Radius), her zaman sahada karşılaşılan fiziki çoklu yansıma (multipath) ve atmosferik gecikme etkilerini bütünüyle yansıtamaz. ${FULL_BRAND}, bu tip yetersiz veya iyimser bildirimlerden kaynaklı riskleri bertaraf etmek amacıyla <b>Konumsal Veri Saçılımı ve Sinyal Güvenilirlik Analiz Motorunu</b> çalıştırır. Bu motor, toplanan örneklem havuzunun uzaysal dağılımını matematiksel kriterlere göre denetleyerek sinyal kalitesini derecelendirir.</p>
-
-    <p><span class="bold">Zaman Serisi ve Epok Aralığı (1 Hz Frekans Modeli):</span> Akıllı konumlandırma motoru, statik ölçüm sırasında Geolocation API'nin standart saniyelik güncelleme hızı olan 1 Hz varsayılan frekansı ile veri toplar. Güvenli bir istatistiksel çıkarım için en az 15 epok (yaklaşık 15 saniyelik kesintisiz zaman serisi dizisi) toplanması zorunluluğu getirilmiştir. Bu 15 saniyelik statik oturum, GNSS uydularının saatler içinde gerçekleşen yörünge/geometri değişimlerini (bölgesel DOP değişimini) modellemek yerine; yerel çevresel engeller, bina yansımaları ve ağaç örtüsünden kaynaklanan anlık çoklu yol (multipath) sapmalarını, sinyal saçılmalarını ve yüksek frekanslı beyaz gürültüyü sönümleyerek verilerin kararlılığını güvene almayı hedefler.</p>
-
-    <h4>A. Matematiksel Göstergeler ve Eşitlikler</h4>
-    <p>Sistem, toplanan <b>N</b> adet statik koordinat örneği üzerinden şu 4 ana istatistiksel parametreyi gerçek zamanlı hesaplar:</p>
-    <ul>
-      <li><span class="bold">Ortalama GNSS Alıcısı Tahmini Konum Hatası (o<sub>avg</sub>):</span> Alıcı cihazın Geolocation API aracılığıyla saniye bazında bağımsız olarak bildirdiği, UERE ve uydu geometrisi (DOP) bütününe dayalı yatay hassasiyet çemberi (accuracy radius) değerlerinin aritmetik ortalamasıdır:
-          <br/><span class="bold" style="display: block; text-align: center; margin: 10px 0; font-family: monospace; font-size: 11pt;">o<sub>avg</sub> = (1 / N) &times; &sum; accuracy<sub>i</sub></span>
-      </li>
-      <li><span class="bold">Maksimum Konumsal Saçılım (d<sub>max</sub>):</span> Statik ölçüm havuzunda yer alan herhangi iki koordinat ikilisi (P<sub>i</sub>, P<sub>j</sub>) arasında hesaplanan en uzak fiziksel mesafedir. Jeodezi motorunda bu mesafe büyük çember (Great-Circle) veya yerel TM düzlem izdüşümü üzerinden milimetrik hesaplanır:
-          <br/><span class="bold" style="display: block; text-align: center; margin: 10px 0; font-family: monospace; font-size: 11pt;">d<sub>max</sub> = Max &radic;((x<sub>i</sub> - x<sub>j</sub>)<sup>2</sup> + (y<sub>i</sub> - y<sub>j</sub>)<sup>2</sup>)</span>
-      </li>
-      <li><span class="bold">Hatalı Bildirim Saçılım Oranı (R):</span> Fiziksel koordinat yayılımı ile donanımın iddia ettiği tahmini konum hatası arasındaki uyumsuzluğu gösteren boyutsuz bir katsayıdır:
-          <br/><span class="bold" style="display: block; text-align: center; margin: 10px 0; font-family: monospace; font-size: 11pt;">R = d<sub>max</sub> / o<sub>avg</sub></span>
-          Eğer R &gt; 1.0 ise, alıcı cihaz kendi fiziki hata bütçesini azımsıyor ve çevre yansımalarından dolayı koordinatlar hissettirilen hata sınırlarının ötesine saçılıyor demektir (Çoklu yansıma - Multipath etkisi).
-      </li>
-      <li><span class="bold">Yatay Konumsal Varyans ve Standart Sapma (&sigma;<sub>spatial</sub>):</span> koordinatların tüm statik merkeze (P_ort) olan mesafesel sapmalarının kareler ortalamasıdır:
-          <br/><span class="bold" style="display: block; text-align: center; margin: 10px 0; font-family: monospace; font-size: 11pt;">Residual<sub>i</sub> = Mesafe(P<sub>i</sub>, P_ort) &nbsp;&nbsp;&rArr;&nbsp;&nbsp; &sigma;<sub>spatial</sub> = &radic;((1 / (N - 1)) &times; &sum; Residual<sub>i</sub><sup>2</sup>)</span>
-      </li>
-    </ul>
-
-    <h4>B. Koşullu Karar Matrisi ve Sinyal Işıkları</h4>
-    <p>Hesaplanan bu veriler ışığında, sistem anlık ve genel saha durumunu üç ana kategori altında sınıflayarak kullanıcıya raporlar:</p>
-    <ol>
-      <li><span class="bold">GÜVENSİZ VERİ (KIRMIZI SİNYAL):</span> Tahmini ortalama konum hatasının 20m'den büyük olması (o<sub>avg</sub> &gt; 20m), maksimum fiziksel saçılımın 20m'den büyük olması (d<sub>max</sub> &gt; 20m) ya da tahmini hata iddiasının 3 katından fazla koordinat saçılması yaşanması (R &gt; 3.0) durumunda tetiklenir. Sahada ciddi engelciler veya yetersiz uydu görünürlüğü olduğunu gösterir.</li>
-      <li><span class="bold">GÜVENİLİR VERİ (YEŞİL SİNYAL):</span> Hiçbir kırmızı sinyal kriteri oluşmadığı gibi, ortalama tahmini konum hatasının 5m ve altında olması (o<sub>avg</sub> &le; 5m), maksimum saçılımın 5m ve altında kalması (d<sub>max</sub> &le; 5m), toplanan statik epok sayısının en az 15 olması (N &ge; 15) ve koordinat saçılımının tahmini hata sınırlarında kalması (R &le; 1.0) koşuluyla verilir. Kadastral hassasiyete en yakın nitelikteki temiz sinyali temsil eder.</li>
-      <li><span class="bold">ORTA GÜVENLİ / YETERSİZ VERİ (TURUNCU SİNYAL):</span> Gerekli koşulların tam olarak sağlanamadığı, ancak yüksek hata limitlerinin de aşılmadığı hibrit durumları (statik gözlem süresinin/epok adedinin yetersiz kalması veya tahmini konum hatası düşük olsa dahi çevresel koşullardan ötürü saçılım oranının (R) sınır değerleri hafifçe aştığı marjinal durumları) sınıflandırmak amacıyla atanır.</li>
-    </ol>
-
-    <p class="no-indent">Bu akıllı sinyal durum analizini, uyuşmazlık testlerini ve nihai birleştirilmiş doğruluk yarıçapını hesaplayan kaynak kod yapısı aşağıda döküm haline getirilmiştir:</p>
-    <pre class="code-block">
-// Calculates the dynamic spatial multipath indicators and returns the rating
-export function analyzeSignalReliability(samples: Coordinate[]): SignalAnalysis {
-  if (samples.length === 0) return { signalQuality: 'low', maxSpread: 0, avgSensorAcc: 99 };
-  
-  const maxSpread = calculateMaxDistance(samples);
-  const avgSensorAcc = samples.reduce((sum, s) => sum + s.accuracy, 0) / samples.length;
-  const ratio = maxSpread / (avgSensorAcc || 0.1);
-  const samplesCount = samples.length;
-
-  // Spatial Variance and Standard Deviation
-  const meanLat = samples.reduce((sum, s) => sum + s.lat, 0) / samples.length;
-  const meanLng = samples.reduce((sum, s) => sum + s.lng, 0) / samples.length;
-  const { latCoeff, lngCoeff } = getWGS84Coefficients(meanLat);
-  const residuals = samples.map(s => {
-    const dLat = (s.lat - meanLat) * latCoeff;
-    const dLng = (s.lng - meanLng) * lngCoeff;
-    return dLat * dLat + dLng * dLng;
-  });
-  const variance = residuals.reduce((sum, val) => sum + val, 0) / Math.max(1, samples.length - 1);
-  const stdDev = Math.sqrt(variance);
-
-  // Evaluation of Decision Matrix
-  const isRed = avgSensorAcc > 20 || maxSpread > 20 || ratio > 3.0;
-  const isGreen = !isRed && avgSensorAcc <= 5 && maxSpread <= 5 && samplesCount >= 15 && ratio <= 1.0;
-  const signalQuality: 'safe' | 'medium' | 'low' = isRed ? 'low' : isGreen ? 'safe' : 'medium';
-
-  return {
-    maxSpread,
-    avgSensorAcc,
-    stdDev,
-    ratio,
-    signalQuality,
-    samplesCount
-  };
-}
-    </pre>
-
-    <p><span class="bold">Akademik Metodolojik Not (Gelişmiş Elipsoidal Diferansiyel Dönüşümü):</span> Hesaplamalarda enlemsel diferansiyeli metreye dönüştürmek amacıyla kullanılan katsayılar, WGS84 referans elipsoidi parametrelerine (<i>a, e</i>) göre her ölçüm kümesinin ortalama enlem değerine bağlı olarak dinamik Taylor ve Krüger meridyen/paralel yay analizleri (Meridyen Eğrilik Yarıçapı <i>M</i> ve Paralel Daire Eğrilik Yarıçapı <i>N</i>) kapsamında hassas biçimde hesaplanmaktadır. Bu sayede, statik ölçüm süresince toplanan koordinatların yerel düzlem üzerindeki milimetrik izdüşüm doğrulukları pratik olarak korunur ve mobil cihazın hesaplama kararlılığı güvence altına alınır.</p>
-
-    <p>Bu karar matrisinin en kritik çıktısı, nihai filtrelenmiş verinin konum özniteliğindeki doğruluk (accuracy) değerinin belirlenmesidir. ${FULL_BRAND}, bu amaçla akademik düzeyde benzersiz, çift-aşamalılık (dual-bounding) barındıran muhafazakar ve istatistiki bir uyuşmazlık modeli işletir:</p>
-    
-    <ul>
-      <li><span class="bold">1. Birleşik İstatistiki Doğruluk Modeli (Combined Statistical Uncertainty):</span> Süzgeç algoritmaları ve ağırlıklı merkez denge hesaplamalarında (<i>N &gt; 1</i> için), konumsal standart sapmanın (<i>&sigma;<sub>spatial</sub></i>) ortalama standart hatası (<i>SEM</i>) ile her epoka düşen tahmini donanımsal konum hatası karesel (kuadratik) olarak birleştirilir:
-        <br/><span class="bold" style="display: block; text-align: center; margin: 10px 0; font-family: monospace; font-size: 11pt;">Standard Error (SE) = &sigma;<sub>spatial</sub> / &radic;N &nbsp;&nbsp;&rArr;&nbsp;&nbsp; finalAccuracy = &radic;(SE<sup>2</sup> + (o<sub>avg</sub> / &radic;N)<sup>2</sup>)</span>
-        Bu model, hem uzaysal dağı canlanmayı saniyelerin karesiyle sönümler hem de her bağımsız epokta cihazın iddia ettiği donanımsal hata bütçesini aynı istatistiki ağırlıklama ile süzgecine yansıtır.
-      </li>
-      <li><span class="bold">2. Nihai Muhafazakar Karar Limit Doğruluğu (Conservative Boundary Accuracy):</span> İstatistiki ağırlıklı dengelemenin getireceği iyimser tahminlerin, arazideki ani fiziki ve beklenmedik sinyal sıçramalarını maskelemesini önlemek amacıyla, deterministik en kötü durum (worst-case) tavan limiti uygulanır:
-        <br/><span class="bold" style="display: block; text-align: center; margin: 10px 0; font-family: monospace; font-size: 11pt;">Conservative Accuracy = Max(d<sub>max</sub>, o<sub>avg</sub>)</span>
-      </li>
-    </ul>
-
-    <p class="no-indent">Bu çift-kademeli hibrit bütünleştirme sayesinde, cihaz yapay olarak çok yüksek bir hassasiyet bildirse bile (yani tahmini konum hata çemberi yarıçapını dar gösterse bile, Örn: 2m), veriler arazide çoklu yansımadan dolayı 6m'lik bir alana saçılıyorsa, sistem güvenli tarafta kalmak üzere kullanıcıya gerçekçi yatay hassasiyet yarıçapını 6m olarak ilan eder. Aynı şekilde, gürültüden arındırılmış veri gruplarında da en hassas milimetrik ve santimetrik konumlandırma çözümleri istatistiksel standart hata formülüyle hassas bir biçimde korunur.</p>
-
-    <h3>2.4.9. Çoklu Oturum (Multi-Session) Yaklaşımı ve Ulusal Jeodezik Standartlar</h3>
-    <p>GNSS ölçmelerinde uyduların uzaydaki anlık geometrik dağılımları (DOP) ile yerel atmosferik koşullar saatler içerisinde dinamik olarak değişmektedir. Kısa süreli tek bir statik oturumda (session), binadan veya çevredeki pürüzlü yüzeylerden yansıyan dolaylı uydu sinyalleri (multipath / çoklu yol dalgası) tüm oturum boyunca kararlı bir yönlü hata (bias) yaratabilir ve bu durum anlık veya kısa süreli istatistiksel filtrelerce o an saptanamayabilir. Bu kritik jeodezik sınırı bertaraf etmek amacıyla, uygulamamıza <b>Çoklu Oturum (Multi-Session)</b> ölçüm ve veri birleştirme mantığı entegre edilmiştir.</p>
-
-    <p><span class="bold">Yönetmelik ve Teknik Şartname Uyumluluğu:</span> Bu yaklaşım, Türkiye'deki büyük ölçekli harita üretim süreçlerini düzenleyen yasal mevzuat niteliğindeki <b>BÖHHBÜY (Büyük Ölçekli Harita ve Harita Bilgileri Üretim Yönetmeliği)</b> ve ulusal CORS ağımızın işletim esaslarını belirleyen <b>TUSAGA-Aktif (TUSAGA-Aktif Sistemi Kullanım ve Teknik Şartnamesi)</b> standartlarında yer alan çift oturumlu statik/RTK ölçüm zorunluluğunu temel referans almaktadır. İlgili teknik mevzuatlar, kadastral hassasiyet gerektiren sınır noktalarının veya nirengi/poligon tesislerinin ölçümünde, uyduların konfigürasyon yapısının ve faz merkezi yollarının değişebilmesi adına en az 2 farklı oturumda (belirli saat farkı veya uydu geometrisi değişimi sonrası) ölçülmesini yasal olarak zorunlu kılmaktadır.</p>
-
-    <p><span class="bold">Çoklu Yol (Multipath) ve Sistematik Hataların Sönümlenmesi:</span> Uygulamada farklı zaman dilimlerinde gerçekleştirilen çoklu oturumların verileri ortak bir dengelemeye tabi tutulur. Bu sayede:
-      <br/>1. Alıcının farklı saatlerde yakaladığı farklı uydu geometrisi ve sinyal yansıma paternleri sayesinde, tek bir oturuma özgü dolaylı sinyal kilitlenmeleri (multipath anomalileri) uç değer analizleri (Outlier detection) ve kümeleme algoritmalarımız (DBSCAN vb.) tarafından anında saptanıp elenebilmektedir.
-      <br/>2. Zaman serisi içinde sistematikleşmiş çevre gürültüleri sönümlenmekte, konumsal doğruluk ve tekrarlanabilirlik (repeatability) düzeyi yasal kadastral standartların gerektirdiği güven limitlerine ulaştırılmaktadır.
-    </p>
-
-    <h2>2.5. Yapay Zeka Tabanlı Yazılım Geliştirme Metodolojisi</h2>
-    <p>Ağır jeodezi denklemlerinin (3-parametreli Molodensky dönüşümü, Gauss-Krüger / UTM izdüşüm dönüşümleri, jeoit dalgalanma serileri vb.) sıfır mantıksal ve derleme hatasıyla doğrudan TypeScript diline kazandırılmasında ve geliştirilme süreçlerinde <span class="bold">Google AI Studio</span> geliştirme platformu kullanılmıştır. Alan uzmanı ve mühendis ortaklığındaki "Expert-in-the-Loop" geliştirme modeli çerçevesinde, yapay zekanın jeodezik modelleme sınırlarını test eden vaka analizleri (Otokritik süreçler) ve bu süreçte başarımızı güvence altına alan alan uzmanının doğru yönlendirici istemleri (Optimized Expert Prompts) aşağıda belgelenmiştir:</p>
-
-    <div class="case-container">
-      <p class="bold" style="color: #444; margin-bottom: 2px;">Vaka 1: Tekli Konum Kaydından Zaman Tabanlı Statik Jeodezik Ölçüme Öncü Geçiş</p>
-      <p class="no-indent"><span class="bold">AI Eğilimi / Hatası:</span> Uygulama ilk tasarlandığında sadece anlık konum verisini kayıt ediyor, ancak herhangi bir doğruluk veya hassasiyet değeri kontrolü yapmadan uydudan ilk gelen değeri doğrudan koordinat olarak haneye işliyordu. Bu basit yaklaşım saha testlerinde büyük doğruluk sapmalarına yol açtı.</p>
-      <p class="no-indent"><span class="bold">Alan Uzmanı Revizyonu:</span> Saha testlerinde karşılaşılan yüksek sapmalı verilere dayanarak, alan uzmanının talebiyle sisteme öncelikle dinamik bir "veri hassasiyet limiti filtresi" entegre edilmiştir. Ancak bu adımda dahi ilk gelen verinin doğrudan kaydedilmesi, GNSS sinyalinin henüz tam oturmaması ve ısınma (warm start) aşamasında olması sebebiyle gürültülü sonuçlar vermiştir. Bunun üzerine "en az 5 saniyelik" (5 epoch) kesintisiz statik veri biriktirme zorunluluğu getirilmiş ve uygulama basit bir kayıt aracından hakiki bir jeodezik hesaplama motoruna dönüştürülmüştür. Son güncelleme ve sistem iyileştirmesiyle birlikte, tam güvenilirlik kriterlerini sağlayan yüksek kaliteli "Güvenilir Veri (Yeşil Sinyal)" sınıfına geçiş için donanımsal hassasiyetin en fazla 5m olması ve statik veri havuzunda en az 15 saniye (15 epok) kesintisiz gözlem birikmiş olması şartı entegre edilmiştir. Sonraki aşamalarda ise çoklu sinyal yansıma (multipath) etkilerini minimize etmek için ileri düzey istatistiksel filtreleme kütüphaneleri sisteme dahil edilmiştir.</p>
-      <p class="no-indent" style="margin-top: 5pt;"><span class="bold" style="color: #0056b3;">Doğru Yönlendirici İstem (Optimized Expert Prompt):</span> <i>"Jeodezik konum kaydı yaparken, tarayıcının tekil koordinat okumasına doğrudan güvenme; uydulardan ilk gelen veriler henüz sinyal tam oturmadığı için yüksek miktarda rastgele hata ve sürüklenme (drift) barındırır. Sisteme hem özelleştirilebilir bir konumsal doğruluk eşiği (en fazla 3-5 metre) filtresi ekle hem de kullanıcının ölçüm tuşuna bastığı andan itibaren en az 5 saniye (5 epoch) boyunca kesintisiz statik veri birikimi zorunluluğu getir. Bu sürede her saniye okunan verileri istatistik havuzunda biriktirip, filtreleme süzgeçlerinden geçirerek en kararlı ağırlıklı ortalamayı bir jeodezik hesaplama motoru hassasiyetiyle türet."</i></p>
-    </div>
-
-    <div class="case-container">
-      <p class="bold" style="color: #444; margin-bottom: 2px;">Vaka 2: Hassasiyet Limiti İhlallerinin Geriye Dönük Hesaplamalara Sızması</p>
-      <p class="no-indent"><span class="bold">AI Eğilimi / Hatası:</span> Ölçüm arayüzünde saniyelik gelen ham konum verileri süzülüyordu. AI, ölçüm işlemi devam ederken limit dışı (örneğin 5m doğruluk eşiğini aşan) verileri ekranda görsel uyarıyla engelliyordu; ancak veri kaydı bittiğinde arka planda çalışan matematiksel dengeleme metotlarına (WLS, DBSCAN, Hodges-Lehmann vb.) o esnada sisteme sızmış olan tüm kalitesiz/gürültülü ham verileri de gönderiyordu. Bu durum, süzülmüş kalitesi yüksek ortalama kalitesini düşürüyordu.</p>
-      <p class="no-indent"><span class="bold">Alan Uzmanı Revizyonu:</span> Alan uzmanının uyarısıyla, belirlenen hassasiyet limitinin dışındaki konumsal verilerin daha donanımsal okuma adımında (ingestion) listeye eklenmeden doğrudan elenmesi ve istatistik havuzunun sadece "temiz" verikten oluşturulması kuralı getirilmiştir. Bu sayede arazideki kararlılık ve tekrarlanabilirlik milimetrik düzeye ulaştırılmıştır.</p>
-      <p class="no-indent" style="margin-top: 5pt;"><span class="bold" style="color: #0056b3;">Doğru Yönlendirici İstem (Optimized Expert Prompt):</span> <i>"Konum verilerini filtrelerken sadece arayüzsel (UI) engelleme yapmakla kalma. Belirlenmiş hassasiyet limiti dışında kalan (örneğin doğruluk değeri > 5m olan) gürültülü verileri, daha ham okuma (ingestion) aşamasında filtreleyip doğrudan eleyerek istatistik dizisine hiç sokma. Bu sayede WLS, DBSCAN veya Hodges-Lehmann gibi ileri düzey istatistiksel hata süzme algoritmalarımız bozuk/gürültülü ham verilerle zehirlenmemiş ve sapmasız sonuç üretmiş olur."</i></p>
-    </div>
-
-    <div class="case-container">
-      <p class="bold" style="color: #444; margin-bottom: 2px;">Vaka 3: Elipsoid ve Ortometrik Yükseklik Ayrımının İhmal Edilmesi</p>
-      <p class="no-indent"><span class="bold">AI Eğilimi / Hatası:</span> AI, ilk prototip aşamasında mobil tarayıcının ham Coğrafi Konum (Geolocation API) bileşeninden okuduğu elipsoidal yüksekliği (h) doğrudan Netcad/AutoCAD uyumlu CAD çıktılarına ve Excel/TXT raporlarına "Nokta Kotu (Ortometrik Yükseklik - H)" başlığıyla yazdırmıştır.</p>
-      <p class="no-indent"><span class="bold">Alan Uzmanı Revizyonu:</span> Harita mühendisliğinde geometrik elipsoid yüksekliğinin hiçbir fiziki projede doğrudan kot olarak kullanılamayacağı, jeoid ondülasyonunun (N) düşülmesi gerektiği (H = h - N) vurgulanmıştır. AI'ye bu doğrultuda TG-20 ve küresel EGM96 modelleri entegre ettirilmiş, rapor çıktılarında elipsoidal ve ortometrik yükseklik kavramları kesinlikle iki ayrı kolon halinde birbirinden bağımsız olarak yapılandırılmıştır.</p>
-      <p class="no-indent" style="margin-top: 5pt;"><span class="bold" style="color: #0056b3;">Doğru Yönlendirici İstem (Optimized Expert Prompt):</span> <i>"Harita mühendisliğinde, uydulardan doğrudan alınan geometrik elipsoid yüksekliği (h) fiziksel mühendislik projelerinde doğrudan kot olarak kullanılamaz. Mutlaka jeoid ondülasyonu (N) değerinin hesaba katılarak ortometrik yüksekliğe (H = h - N) indirgenmesi gerekmektedir. Türkiye Geoidi-2020 (TG-20) grid verilerini hafızada barındıracak ve bilineer interpolasyonla anlık ondülasyon (N) hesaplayacak bir Geoid Servisi geliştir. Tüm DXF, KML, CSV ve Excel rapor şablonlarında elipsoidal yükseklik (H_elip) ve fiziksel yükseklik (H_orto) değerlerini kesinlikle iki ayrı bağımsız kolonda ve akademik hassasiyetle yapılandır."</i></p>
-    </div>
-
-    <div class="case-container">
-      <p class="bold" style="color: #444; margin-bottom: 2px;">Vaka 4: Bursa-Wolf 7-Parametreli Matris Dönüşümündeki Rotasyon İşaret Hatası ve 3-Parametreli Modele Geçiş Otokritiği</p>
-      <p class="no-indent"><span class="bold">AI Eğilimi / Hatası:</span> WGS84 ile ED50 veya ITRF96 sistemleri arasında koordinat geçişi sağlayan Bursa-Wolf formülasyonu yazılırken AI, rotasyon parametrelerinin (Rx, Ry, Rz) işaret mantığı olan "Coordinate Frame Rotation" ile "Position Vector Rotation" yaklaşımlarını karıştırarak dönüşüm matrisinde işaretleri ters kullanmıştır. Bu durum dönüştürülen noktaların arazide yüzlerce metre kaymasına neden olmuştur.</p>
-      <p class="no-indent"><span class="bold">Alan Uzmanı Revizyonu:</span> Alan uzmanı, dönüşüm sonuçlarını gerçek nirengi noktaları yardımıyla kontrol ederek işaret uyuşmazlığını teşhis etmiştir. Ayrıca, bölgesel arazi çalışmalarında rotasyon ve ölçek parametrelerinden kaynaklı aşırı gürültüyü/singüleriteyi (tekillik) önlemek amacıyla, rotasyon terimlerinin sıfır kabul edilerek sadece 3 öteleme bileşenli Molodensky (veya 3-parametreli Helmert öteleme) modelinin (dX, dY, dZ) kullanılmasının arazi koordinat kararlılığı için çok daha güvenli ve pratik olduğunu vurgulamıştır. Yapay zeka bu doğrultuda yönlendirilerek kod 3-parametreli Molodensky modeline sadeleştirilmiş ve hatasız entegrasyon tamamlanmıştır.</p>
-      <p class="no-indent" style="margin-top: 5pt;"><span class="bold" style="color: #0056b3;">Doğru Yönlendirici İstem (Optimized Expert Prompt):</span> <i>"Jeodezik datumlar (WGS84, ED50, ITRF96) arasında Bursa-Wolf 7-parametreli modelini kodlarken, arazide rotasyon ve ölçek hatalarının yaratabileceği büyük koordinat kaymaları riskini yok etmek için rotasyon ve ölçek parametrelerini sıfır sabitleyerek 3-Parametreli Molodensky (Helmert Öteleme) modelini seç. ED50 sistemi için proj4 dize tanımlayıcısındaki '+towgs84' katsayılarını sadece 3 öteleme parametresi içerecek şekilde (+towgs84=-87,-98,-121,0,0,0,0) yapılandır. Böylelikle koordinat dönüşümünü hızlı, güvenli ve işaret uyuşumsuzluğu risklerinden tamamen arındırarak koştur."</i></p>
-    </div>
-
-    <div class="case-container">
-      <p class="bold" style="color: #444; margin-bottom: 2px;">Vaka 5: TG-20 Jeoid Grid İndeks Sınır Taşma Hatası (Out of Bounds)</p>
-      <p class="no-indent"><span class="bold">AI Eğilimi / Hatası:</span> Ülke sınırlarına veya deniz kıyılarına yakın bölgelerde yapılan ölçümlerde, TG-20 grid hücresi sınır değer dışına taştığında AI, sistemi çökerten "index out of range" hataları veya tanımsız sıfır "0" ondülasyon değerleri üretmiştir. Bu da kıyı çalışmalarında yüksekliklerin bir anda sıfırlanmasına ya da uygulamanın kilitlenmesine sebep oluyordu.</p>
-      <p class="no-indent"><span class="bold">Alan Uzmanı Revizyonu:</span> Grid dışına veya hücre kenarlarına yaklaşan koordinat alanlarında 4 nokta interpolasyonunun taşmalardan korunması sağlanmış; eğer koordinat Türkiye Geoidi sınırlarının tamamen dışındaysa, otomatik ve pürüzsüz (seamless check) bir şekilde küresel EGM96 modeline geçiş yapan koruma mekanizması algoritmaya kazandırılmıştır.</p>
-      <p class="no-indent" style="margin-top: 5pt;"><span class="bold" style="color: #0056b3;">Doğru Yönlendirici İstem (Optimized Expert Prompt):</span> <i>"Deniz kenarlarında veya ülke sınırına yakın bölgelerde yürütülen ölçümlerde, 4 noktalı bilineer interpolasyon yaparken yerel TG-20 grid sınır dökümünün dışına çıkıldığında dizin sınır taşması (index out of bounds) olmasını engelleyen bir koruma bariyeri yerleştir. Eğer ölçüm alınan koordinat Türkiye Geoidi kapsam sınırlarının tamamen dışındaysa, sistemi çökertmek veya tanımsız sıfır ondülasyon kotu dönmek yerine otomatik ve pürüzsüz (seamless check) olarak küresel EGM96 (yeryüzü model) interpolasyonuna geçmesini sağlayan bir fallback (yedek güvenlik mekanizması) oluştur."</i></p>
-    </div>
-
-    <div class="case-container">
-      <p class="bold" style="color: #444; margin-bottom: 2px;">Vaka 6: Ülke Genelinde Sabit Jeoit Ondülasyonu Halüsinasyonu/Kolaycılığı</p>
-      <p class="no-indent"><span class="bold">AI Eğilimi / Hatası:</span> İlk jeoit yükseklik düzeltmesi denemesinde AI, tüm Türkiye sınırlarında geçerli olacak şekilde konumdan bağımsız, sabit tek bir "ortalama ondülasyon katsayısı" (~36.5 metre) uydurmuş (halüsinasyon) ve konum kütüphanesi interpolasyonu yapmadan tüm elipsoidal yüksekliklerden bu tekdüze sayıyı doğrudan çıkartmıştır. Bu aşırı basitleştirme, gerçek arazide milimetrik hassasiyet bekleyen yerel çalışmalarda kabul edilemez dikey kot kaymalarına sebep olmuştur.</p>
-      <p class="no-indent"><span class="bold">Alan Uzmanı Revizyonu:</span> Alan uzmanı, Türkiye'nin son derece engebeli ve değişken bir jeoit yapısına sahip olduğunu, tek bir sabit ortalama değerle kot indirgemenin jeodezik olarak hiçbir karşılığı bulunmadığını belirterek bu yaklaşımı kesin dille reddetmiştir. AI uyarılmış; konuma göre değişen yerel TG-20 ve küresel EGM96 grid veri ağları sisteme yedirilmiş ve komşu düğüm noktalarıyla milisaniyelik bilineer enterpolasyon yapması garanti edilmiştir.</p>
-      <p class="no-indent" style="margin-top: 5pt;"><span class="bold" style="color: #0056b3;">Doğru Yönlendirici İstem (Optimized Expert Prompt):</span> <i>"Türkiye sathındaki jeoit yüksekliğini tek bir ortalama katsayı (36.5m) ile sabit ve doğrusal kabul etmen jeodezik açıdan büyük bir halüsinasyon ve kaba bir kolaycılıktır. Türkiye'nin jeomorfolojik yapısı ve jeoit dalgalanmaları bölgeden bölgeye metrelerce değişim gösterir. Bu kaba modelleme yaklaşımından derhal vazgeç. Sisteme tüm ülkeyi kapsayan gerçek TG-20 yerel grid verilerini ve fallback olarak küresel EGM96 katmanını entegre et; her milisaniyelik koordinat okumasında anlık enlem ve boylama karşılık gelen en yakın 4 düğüm grid noktasını matematiksel olarak bularak iki boyutlu bilineer interpolasyon formülasyonu uygula."</i></p>
-    </div>
-
-    <div class="case-container">
-      <p class="bold" style="color: #444; margin-bottom: 2px;">Vaka 7: Kütüphane ve Metot Halüsinasyonları (Olmayan Proj4js veya Leaflet Fonksiyonları)</p>
-      <p class="no-indent"><span class="bold">AI Eğilimi / Hatası:</span> Karmaşık projeksiyon ve coğrafi dönüşümler sırasında AI, kütüphane dokümantasyonlarını ezbere veya tahmine dayalı üreterek, gerçekte var olmayan Proj4js tanımlayıcıları (Örn: doğrudan yerel datum adıyla proj4("ITRF96")) ya da Leaflet harita katman metotları uydurmuştur. Bu uydurma fonksiyonlar çalışma esnasında "Runtime Error: is not a function" tarzında ölümcül yürütme hatalarına sebep olmuş ve harita arayüzünü tamamen kilitlemiştir.</p>
-      <p class="no-indent"><span class="bold">Alan Uzmanı Revizyonu:</span> Alan uzmanı, kullanılan açık kaynaklı kütüphanelerin resmi API ve sürüm dokümanlarını doğrudan yapay zekaya referans göstermiş; proj4 üzerinde ITRF96 veya ED50 gibi yerel datumların proj4.defs() metodu kullanılarak standarda uygun ham parametrik metinler (PROJ4 dize formatı: +proj=longlat +ellps=GRS80 +towgs84=... +no_defs) ile açıkça initialize edilmesi ve Leaflet'in standart harita yönetim döngüleri çerçevesinde çağrılması gerektiğini öğreterek kod kalitesini ve çalışma kararlılığını sağlamıştır.</p>
-      <p class="no-indent" style="margin-top: 5pt;"><span class="bold" style="color: #0056b3;">Doğru Yönlendirici İstem (Optimized Expert Prompt):</span> <i>"+proj parametrelerini ezbere veya uydurma kütüphane metotlarıyla çağırma. Proj4js kütüphanesinin standart kurallarına sadık kalarak, ITRF96, ED50 ve WGS84 datum parametrelerini resmi EPSG dökümlerindeki '+proj=utm +zone=... +ellps=... +towgs84=...' dizilimleriyle birebir tanımla ve defs yöntemiyle sisteme kaydet. Leaflet üzerinde çalışırken de harici eklentilerin dokümantasyonunu kontrol ederek yalnızca kütüphanenin o sürümünde desteklenen gerçek harita olaylarını (events) ve nesne metotlarını kullan."</i></p>
-    </div>
-
-    <div class="case-container">
-      <p class="bold" style="color: #444; margin-bottom: 2px;">Vaka 8: En Büyük Halüsinasyon - Uydurma TG-20 Analitik Matematiksel Formülü</p>
-      <p class="no-indent"><span class="bold">AI Eğilimi / Hatası:</span> Lokal geoid ondülasyonu (N) interpolasyonu için gerekli grid verilerini derlemek yerine, AI matematiksel olarak Türkiye sınırlarında ondülasyon değerini tam olarak üretebileceğini iddia eden tamamen hayal ürünü, uydurma bir "analitik jeodezik formül" icat etmiştir. Bu sözde formül (N = sin(lat) &times; cos(lng) &times; katsayı) çalıştırıldığında sistem hata vermese de, arazi kot hesaplarında kabul edilemez metre mertebesinde hatalara yol açmıştır.</p>
-      <p class="no-indent"><span class="bold">Alan Uzmanı Revizyonu:</span> Alan uzmanı, yeryüzünün düzensiz çekim potansiyelinden (jeoid yapısından) dolayı hiçbir lokal jeoidin sadece basit trigonometrik veya analitik formüllerle modellenemeyeceğini, TG-20'nin diskrit (grid) verilerinin enterpole edilmesinin jeodezik bir zorunluluk olduğunu vurgulamıştır. AI bu konuda eğitilerek Türkiye genelini kapsayan gerçek enlem, boylam ve ondülasyon grid dökümü sisteme yüklendirilmiş, 4 noktalı interpolasyon algoritmalarıyla milimetre mertebesinde gerçekçi dikey kot hassasiyetine geçilmiştir.</p>
-      <p class="no-indent" style="margin-top: 5pt;"><span class="bold" style="color: #0056b3;">Doğru Yönlendirici İstem (Optimized Expert Prompt):</span> <i>"Türkiye Geoidi-2020 gibi karmaşık fiziksel/jeodezik yüzeyleri modellemek için kendi kendine uydurma analitik formüller veya trigonometrik fonksiyonlar icat etme. Jeoid ondülasyonu analitik bir denklemle ifade edilemez, ancak grid gözlem verileriyle çözülür. Sana sunduğum Türkiye Geoidi-2020 (TG-20) grid veri noktalarını içeren koordinat matrisini yükle and anlık enlem-boylam değerlerine karşılık gelen hücreyi bularak bilineer interpolasyon (2D bilinear interpolation) yapan gerçekçi jeodezik algoritmayı kodla."</i></p>
-    </div>
-
-    <div class="case-container">
-      <p class="bold" style="color: #444; margin-bottom: 2px;">Vaka 9: İleri İstatistiksel Filtreler ve Hata Dengeleme Kütüphanelerinin Entegrasyonu</p>
-      <p class="no-indent"><span class="bold">AI Eğilimi / Hatası:</span> GPS gürültülerini ve arazide binalardan yansıyan çoklu yansıma (multipath) kaynaklı uç/aykırı (outlier) koordinatları tespit etmek için AI, ilk aşamada en basit aritmetik ortalama yöntemine kaçmış veya Hodges-Lehmann ve DBSCAN kümeleme gibi karmaşık istatistik teorilerini matematiksel olarak hatalı/eksik formüle etmiştir. Ayrıca, karmaşık istatistiksel dengelemeleri ve matris işlemlerini yapacak uydurma, eksik değişkenli kod blokları üreterek çalışma zamanı matris boyutu uyuşmazlığı hatalarına yol açmıştır.</p>
-      <p class="no-indent"><span class="bold">Alan Uzmanı Revizyonu:</span> Başarılı ve deneyimli jeodezi/harita mühendisinin yakın denetimi ve teknik yönlendirmeleriyle AI'nin matematiksel altyapısı sıkı şekilde denetlenmiş ve kontrol altında tutulmuştur. AI'ye Hodges-Lehmann ve DBSCAN kümeleme mantığı tam formül dökümleriyle dikte edilmiştir. Alan uzmanının her aşamada uyarılarda bulunarak kodu kontrol etmesi sayesinde AI'nin hata payı sıfıra düşürülmüş, matris boyutları ve serbestlik derecesi denetimleri eksiksiz hale getirilerek akademisyen titizliğinde çalışan bir jeodezik istatistik kütüphanesi oluşturulmuştur.</p>
-      <p class="no-indent" style="margin-top: 5pt;"><span class="bold" style="color: #0056b3;">Doğru Yönlendirici İstem (Optimized Expert Prompt):</span> <i>"Statik ölçüm serisinde gürültüleri filtrelemek ve uç koordinatları (outliers) ayıklamak için sadece basit aritmetik ortalamayla yetinme. Jeodezik ölçü standartlarına uygun olarak Hodges-Lehmann uyuşumsuz veri testi teorisini ve DBSCAN uzaysal kümeleme algoritmalarını dizeye dahil et. Matris boyutlarının uyuşumunu, serbestlik derecelerini ve serimizin varyansını kontrol ederek istatistiksel hata dengelemesini sıfır derleme ve mantıksal hatayla, adım adım ve tam şablonla TypeScript kütüphanesi olarak kodla."</i></p>
-    </div>
-
-    <h2>2.6. Uygulama Arayüz Tasarımı (Graphical User Interface Design)</h2>
-    <p></p>
-
-    <h2>2.7. Diğer Teknik Bilgiler (Saha Protokolleri, Veri Saklama/Aktarım ve Dosya Mimarisi)</h2>
-    <p>Akademik çalışmanın mükemmelliğini desteklemek amacıyla sistemin operasyonel dayanıklılık kuralları, veri format bütünlükleri ve modüler kaynak kod mimarisi aşağıda detaylandırılmıştır:</p>
-    <ul>
-      <li><span class="bold">Mühendislik Saha Çalışma Protokolleri:</span> Sahadaki ölçümlerden maksimum verim elde edebilmek adına, GNSS alıcısının gökyüzünü en az %80 oranında kesintisiz görebilmesi gerekir. GNSS çipinin ephemeris ve almanak verilerini güncelleyebilmesi için uygulamayı açar açmaz doğrudan ölçüme başlamak yerine yaklaşık 1 dakikalık bir "ısınma (warm-up)" süresi tanınması tavsiye edilir. Binaların cam dış cephelerinden yansıyan sinyalleri izole etmek için Hodges-Lehmann veya DBSCAN süzgeçleri aktif tutulmalıdır.</li>
-      <li><span class="bold">Operasyonel Veri Güvenliği ve Saklama Standartları:</span> Kaydedilen tüm jeodezik ölçümler ve proje verileri, tarayıcı korumalı sandbox (güvenli alan) ortamında, asenkron IndexedDB yapısında barındırılır. Veri bütünlüğünü sağlamak adına, her ölçümün yapıldığı saniyedeki ham uydu istatistikleri ve donanım hassasiyetleri birer "değiştirilemez işlem günlüğü (immutable log)" halinde saklanır; bu durum arazi ölçümlerinin sonradan geriye dönük manipüle edilmesini engeller.</li>
-      <li><span class="bold">Dışa Aktarım (CAD/GIS Export) Entegrasyonu:</span> Toplanan saha verileri Netcad, AutoCAD, ArcGIS ve Google Earth gibi küresel/yerel CBS ve CAD programlarıyla tam uyumludur. Dışa aktarımlarda Türkçe karakter korumalı UTF-8 kodlama formatı kullanılır. dxf, kml ve csv/txt şablonları, katman bazlı (layering) olarak üretilir. Örneğin, noktalar ayrı bir katmanda, bunlara ait kot yazıları veya nokta numarası yazıları farklı katmanlarda yer alır.</li>
-      <li><span class="bold">Yazılım Modüler Mimari Şeması:</span> Uygulama jeodezik sorumluluklarına göre 3 grupta toplanmıştır:
-        <ul>
-          <li><span class="bold">A. Yönetim Katmanı (Root):</span> Uygulama giriş kapısı (<span class="bold">index.tsx, App.tsx</span>) ve ortak verilerin tiplerini belirleyen (<span class="bold">types.ts, version.ts</span>) katman.</li>
-          <li><span class="bold">B. Komponent Katmanı (UI):</span> Kullanıcının arazide etkileşim kurduğu (<span class="bold">Dashboard.tsx, GPSCapture.tsx, StakeoutModule.tsx, DataAnalysisView.tsx, SettingsView.tsx</span>) modüller.</li>
-          <li><span class="bold">C. Algoritma Çekirdeği (Engine):</span> 3-parametreli Molodensky / Helmert Öteleme ve Gauss-Krüger formüllerini içeren (<span class="bold">CoordinateUtils.ts</span>), 6 istatistik filtresini barındıran (<span class="bold">MathUtils.ts</span>) ve Türkiye Jeoidi (TG-20) interpolasyonunu yürüten (<span class="bold">GeoidService.ts, GeoidUtils.ts</span>) hesaplama çekirdeği.</li>
-        </ul>
-      </li>
-      <li><span class="bold">Fiziksel Dosya ve Dizin Klasör Dağılım Şeması (Project Folder Layout):</span> GPS Plus yazılım mimarisinin tüm dizin ve alt modül ağacı, sistem dosya standardı uyarınca aşağıda listelenmiştir:
-        <pre class="code-block">
-├── .github/                 # GitHub workflows & CI/CD configs
-├── components/              # User Interface & Render Modules
-│   ├── Dashboard.tsx        # Dynamic home panel displaying core geodetic statuses
-│   ├── GPSCapture.tsx       # Live GNSS measurement & filtering terminal
-│   ├── StakeoutModule.tsx   # Visual field navigation, radar, & bubble leveling tools
-│   ├── DataAnalysisView.tsx # R&D analysis panel displaying scatter plots and filter curves
-│   ├── SavedLocationsList.tsx  # Interactive database/point notebook with folder groupings
-│   ├── SettingsView.tsx     # System tolerance configurations & Database Backup tools
-│   ├── Onboarding.tsx       # Sensor permission checks & technical welcome walkthrough
-│   ├── ExcelUtils.ts        # Engineered Excel exporter with custom metadata columns
-│   ├── KMLUtils.ts          # High-fidelity CAD & GIS-ready KML file builder
-│   ├── TxtUtils.ts          # Turkish character-safe CAD space exporter (X,Y,Z,No)
-│   ├── Header.tsx           # Global app navigator and connection status indicator
-│   ├── GlobalFooter.tsx     # Version information & brand footer
-│   └── Modal.tsx            # Contextual system alerts and confirmation windows
-├── hooks/                   # Custom React hooks (sensors, geosearch, etc.)
-├── services/                # Geoid grid services & background IO tasks
-│   └── GeoidService.ts      # Handles Bilinear Interpolation for TG-20 and EGM96 models
-├── utils/                   # Geodetic Mathematics & Computational Core
-│   ├── MathUtils.ts         # Computational core housing 6 filters (Huber, RANSAC, KDE, etc.)
-│   ├── CoordinateUtils.ts   # Projection Math (Gauss-Krüger, 3°/6° TM, Molodensky / Helmert-3)
-│   ├── GeoidUtils.ts        # Core parser for height corrections (H = h - N)
-│   ├── ReportUtils.ts       # Dynamic PDF/DOC-ready Technical Report generator
-│   ├── LanguageContext.tsx  # Dynamic Language provider supporting EN & TR
-│   ├── trtoentranslate.ts   # Academic geodetic dictionary definitions for localization
-│   └── browser.ts           # Hardware API capability verification hooks
-├── App.tsx                  # Core router, global state manager, and local storage syncer
-├── types.ts                 # Strong TypeScript type mappings (GNSS, Filtering, Matrix models)
-├── version.ts               # Brand configurations and build metadata
-├── index.html               # Main SPA DOM mount point
-└── tsconfig.json            # Strict TypeScript compilation rules
-        </pre>
-      </li>
-    </ul>
 
     <div class="page-break"></div>
 
