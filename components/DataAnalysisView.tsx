@@ -89,7 +89,6 @@ const BingTileLayer = () => {
 const METHOD_COLORS: Record<string, string> = {
   ARITHMETIC_MEAN: '#ec4899',
   WEIGHTED_LSE: '#8b5cf6',
-  DBSCAN: '#d946ef',
   HUBER: '#3b82f6',
   KMEANS_4: '#06b6d4',
   HYBRID_v1: '#10b981',
@@ -324,7 +323,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
   const methods = useMemo<CalculationMethod[]>(() => [
     'WEIGHTED_LSE',
-    'DBSCAN',
     'HUBER',
     'HAMPEL',
     'HODGES_LEHMANN',
@@ -335,7 +333,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const getMethodLabel = (m: CalculationMethod) => {
     const labels: Record<string, string> = {
       'WEIGHTED_LSE': "WLSE",
-      'DBSCAN': "DBSCAN",
       'HUBER': "HUBER-M",
       'HAMPEL': "HAMPEL-M",
       'HODGES_LEHMANN': "HODGES-R",
@@ -1888,7 +1885,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                               const getMethodLabelEn = (m: CalculationMethod) => {
                                 const labels: Record<string, string> = {
                                   'WEIGHTED_LSE': 'WLSE',
-                                  'DBSCAN': 'DBSCAN',
                                   'HUBER': 'HUBER-M',
                                   'HAMPEL': 'HAMPEL-M',
                                   'HODGES_LEHMANN': 'HODGES-R',
@@ -1959,7 +1955,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           const getMethodLabelEn = (m: CalculationMethod) => {
                             const labels: Record<string, string> = {
                               'WEIGHTED_LSE': 'WLSE',
-                              'DBSCAN': 'DBSCAN',
                               'HUBER': 'HUBER-M',
                               'HAMPEL': 'HAMPEL-M',
                               'HODGES_LEHMANN': 'HODGES-R',
@@ -1995,7 +1990,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         const getMethodLabelEn = (m: CalculationMethod) => {
                           const labels: Record<string, string> = {
                             'WEIGHTED_LSE': 'WLSE',
-                            'DBSCAN': 'DBSCAN',
                             'HUBER': 'HUBER-M',
                             'HAMPEL': 'HAMPEL-M',
                             'HODGES_LEHMANN': 'HODGES-R',

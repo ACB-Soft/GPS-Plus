@@ -580,12 +580,11 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
                   <option value="WEIGHTED_LSE">{t("1. Ağırlıklı En Küçük Kareler")}</option>
-                  <option value="DBSCAN">{t("2. DB SCAN (MAD + DBSCAN)")}</option>
-                  <option value="HUBER">{t("3. Huber M-Kestiricisi")}</option>
-                  <option value="HAMPEL">{t("4. Hampel M-Kestiricisi")}</option>
-                  <option value="HODGES_LEHMANN">{t("5. Hodges-Lehmann R-Kestiricisi")}</option>
-                  <option value="TUKEYS_TRIMEAN">{t("6. Tukey's Trimean L-Kestiricisi")}</option>
-                  <option value="OPTIMAL_S">{t("7. Optimal S-Kestiricisi")}</option>
+                  <option value="HUBER">{t("2. Huber M-Kestiricisi")}</option>
+                  <option value="HAMPEL">{t("3. Hampel M-Kestiricisi")}</option>
+                  <option value="HODGES_LEHMANN">{t("4. Hodges-Lehmann R-Kestiricisi")}</option>
+                  <option value="TUKEYS_TRIMEAN">{t("5. Tukey's Trimean L-Kestiricisi")}</option>
+                  <option value="OPTIMAL_S">{t("6. Optimal S-Kestiricisi")}</option>
                 </select>
               </div>
 

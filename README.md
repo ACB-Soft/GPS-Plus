@@ -4,7 +4,7 @@
 
 **GPS Plus v5.0** is an advanced, high-precision GNSS capture, geodetic transformation, stakeout, and spatial data analysis application developed by **ACB Maps**. 
 
-Integrating state-of-the-art smartphone sensor capabilities with rigorous geodetic engineering mathematics, the system enables surveyors, geophysicists, and civil engineers to perform reliable field measurements directly through a web browser. It features support for the **Turkish National Geoid Model 2020 (TG-20)**, global **EGM96** fallback, 7-Parameter Bursa-Wolf coordinate transformations, and robust statistical filters (Huber M-Estimation, RANSAC, Kalman Filter, DBSCAN, and Monte Carlo Particle Filters).
+Integrating state-of-the-art smartphone sensor capabilities with rigorous geodetic engineering mathematics, the system enables surveyors, geophysicists, and civil engineers to perform reliable field measurements directly through a web browser. It features support for the **Turkish National Geoid Model 2020 (TG-20)**, global **EGM96** fallback, 7-Parameter Bursa-Wolf coordinate transformations, and robust statistical filters (Huber M-Estimation, RANSAC, Kalman Filter, and Monte Carlo Particle Filters).
 
 This software represents an active case study in Human-AI co-development, engineered through the synergic partnership of **Google AI Studio** and Geodetic Engineering Domain Specialist **Cihat Başara**.
 

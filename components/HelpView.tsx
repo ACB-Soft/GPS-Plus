@@ -314,39 +314,34 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 dangerouslySetInnerHTML={{ __html: t("Uygulama, toplanan ham GPS/GNSS verilerini nihai bir koordinata dönüştürmek için 7 farklı gelişmiş akademik model sunar.") }}
               />
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-3">
                 <div className="bg-white p-3 px-4 rounded-xl border border-blue-100 shadow-sm ring-1 ring-blue-50 flex items-center justify-between">
                   <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight">{t("1. Ağırlıklı En Küçük Kareler")}</h4>
                   <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold">{t("VARSAYILAN")}</span>
                 </div>
 
                 <div className="bg-white p-3 px-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
-                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("2. MAD + DBSCAN")}</h4>
-                  <span className="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full font-bold">{t("KÜMELEME")}</span>
-                </div>
-
-                <div className="bg-white p-3 px-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
-                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("3. Huber M-Kestiricisi")}</h4>
+                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("2. Huber M-Kestiricisi")}</h4>
                   <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">{t("ROBUST")}</span>
                 </div>
 
                 <div className="bg-white p-3 px-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
-                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("4. Hampel M-Kestiricisi")}</h4>
+                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("3. Hampel M-Kestiricisi")}</h4>
                   <span className="text-[10px] bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full font-bold">{t("ROBUST")}</span>
                 </div>
 
                 <div className="bg-white p-3 px-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
-                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("5. Hodges-Lehmann R-Kestiricisi")}</h4>
+                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("4. Hodges-Lehmann R-Kestiricisi")}</h4>
                   <span className="text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full font-bold">{t("ROBUST")}</span>
                 </div>
 
                 <div className="bg-white p-3 px-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
-                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("6. Tukey's Trimean L-Kestiricisi")}</h4>
+                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("5. Tukey's Trimean L-Kestiricisi")}</h4>
                   <span className="text-[10px] bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full font-bold">{t("ROBUST")}</span>
                 </div>
 
-                <div className="bg-white p-3 px-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between md:col-span-2">
-                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("7. Optimal S-Kestiricisi")}</h4>
+                <div className="bg-white p-3 px-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("6. Optimal S-Kestiricisi")}</h4>
                   <span className="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full font-bold">{t("ROBUST")}</span>
                 </div>
               </div>

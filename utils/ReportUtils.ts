@@ -293,177 +293,7 @@ export function calculateWeightedLSE(samples: Coordinate[]): { result: Coordinat
 }
     </pre>
 
-    <h3>2.4.2. Yoğunluk Tabanlı Mekansal Kümeleme (DBSCAN)</h3>
-    <p>DBSCAN (Density-Based Spatial Clustering of Applications with Noise), uzaysal verilerdeki kümeleri yoğunluğa bağlı olarak tespit eden ve düşük yoğunluklu noktalarda kümelenmeyen kaba hataları "gürültü" (noise) olarak dışlayan algoritmik bir yöntemdir. Algoritma, belirlenen bir epsilon yarıçapı içerisinde en az "MinPts" kadar komşu barındıran noktaları çekirdek (core) kabul ederek şekil bağımsız kümeler oluşturur (Ester vd., 1996; MacQueen, 1967). Bu sayede, binalardan yansıyan çoklu yol (multipath) etkileri ayrıştırılabilir.</p>
-    <p>Uygulamada DBSCAN algoritması, özellikle kentsel kanyonlarda toplanan dağınık verilerde ana sinyal grubunu (en yoğun kümeyi) tespit etmek için kullanılmıştır. Sinyal yansımalarından doğan izole edilmiş koordinatlar tamamen veri havuzundan çıkartılır ve geriye kalan en büyük yoğunluk kümesi üzerinden ağırlıklı merkez koordinat (Weighted LSE) hesaplanır, böylece metrelerce sapmaya sebep olabilecek yapısal hatalar giderilir.</p>
-    <pre class="code-block">
-export function calculateDBSCAN(samples: Coordinate[]): { result: Coordinate; usedIndices: number[]; clusters?: number[][] } {
-  const N = samples.length;
-  if (N < 4) {
-    const lseRes = calculateWeightedLSE(samples);
-    return {
-      result: lseRes.result,
-      usedIndices: samples.map((_, i) => i),
-      clusters: []
-    };
-  }
-
-  // Define original index mapping
-  const inputWithIndices = samples.map((s, idx) => ({ ...s, _originalIdx: idx }));
-
-  // ================= STAGE 1: MAD OUTLIER DETECTION =================
-  // 1. Compute spatial median of Latitude and Longitude independently
-  const sortedLats = [...samples.map(s => s.lat)].sort((a, b) => a - b);
-  const sortedLngs = [...samples.map(s => s.lng)].sort((a, b) => a - b);
-  const mid = Math.floor(N / 2);
-  const medianLat = N % 2 !== 0 ? sortedLats[mid] : (sortedLats[mid - 1] + sortedLats[mid]) / 2;
-  const medianLng = N % 2 !== 0 ? sortedLngs[mid] : (sortedLngs[mid - 1] + sortedLngs[mid]) / 2;
-
-  // 2. Compute spatial distance of each point to this spatial median in meters
-  const dists = samples.map(s => calculateDistanceMeter(s.lat, s.lng, medianLat, medianLng, medianLat));
-
-  // 3. Compute Median Distance
-  const sortedDists = [...dists].sort((a, b) => a - b);
-  const medianDist = N % 2 !== 0 ? sortedDists[mid] : (sortedDists[mid - 1] + sortedDists[mid]) / 2;
-
-  // 4. Absolute deviations of each distance from the median distance
-  const absDevs = dists.map(d => Math.abs(d - medianDist));
-  const sortedDevs = [...absDevs].sort((a, b) => a - b);
-  const medianDev = N % 2 !== 0 ? sortedDevs[mid] : (sortedDevs[mid - 1] + sortedDevs[mid]) / 2;
-
-  // 5. Sigma_MAD estimation
-  const mad = medianDev;
-  const scaleSigma = 1.4826 * mad;
-  const minSigmaBoundary = 1e-6; // 1 micrometer
-
-  let madSurvivors = inputWithIndices;
-
-  if (scaleSigma >= minSigmaBoundary) {
-    const outlierThreshold = 3.0 * scaleSigma;
-    const filtered = inputWithIndices.filter((item, idx) => absDevs[idx] <= outlierThreshold);
-    // Fallback: keep at least 4 elements if filter is too aggressive
-    if (filtered.length >= 4) {
-      madSurvivors = filtered;
-    } else {
-      // Keep 4 points with the lowest absolute deviation
-      const sortedByDev = inputWithIndices
-        .map((item, idx) => ({ item, dev: absDevs[idx] }))
-        .sort((a, b) => a.dev - b.dev);
-      madSurvivors = sortedByDev.slice(0, 4).map(x => x.item);
-    }
-  }
-
-  // ================= STAGE 2: DBSCAN CLUSTERING =================
-  // Use adaptive eps based on scaleSigma of the MAD filter
-  const safeSigma = scaleSigma > 1e-4 ? scaleSigma : 1e-4; // minimum 0.1 mm
-  const eps = Math.max(1.5, Math.min(10.0, 1.5 * safeSigma)); // Clamp eps between 1.5m and 10m
-  const minPts = 3;
-
-  const nFiltered = madSurvivors.length;
-  const visited = new Set<number>();
-  const noise = new Set<number>();
-  const localClusters: number[][] = []; // contains indices local to the madSurvivors array
-
-  const getNeighbors = (i: number) => {
-    const neighbors: number[] = [];
-    const p1 = madSurvivors[i];
-    for (let j = 0; j < nFiltered; j++) {
-      const p2 = madSurvivors[j];
-      const dist = calculateDistanceMeter(p1.lat, p1.lng, p2.lat, p2.lng, p1.lat);
-      if (dist <= eps) {
-        neighbors.push(j);
-      }
-    }
-    return neighbors;
-  };
-
-  for (let i = 0; i < nFiltered; i++) {
-    if (visited.has(i)) continue;
-    visited.add(i);
-
-    const neighbors = getNeighbors(i);
-    if (neighbors.length < minPts) {
-      noise.add(i);
-    } else {
-      const currentCluster: number[] = [i];
-      localClusters.push(currentCluster);
-
-      const queue = [...neighbors];
-      for (let q = 0; q < queue.length; q++) {
-        const neighborIdx = queue[q];
-        if (neighborIdx === i) continue;
-
-        if (!visited.has(neighborIdx)) {
-          visited.add(neighborIdx);
-          const nextNeighbors = getNeighbors(neighborIdx);
-          if (nextNeighbors.length >= minPts) {
-            queue.push(...nextNeighbors.filter(idx => !queue.includes(idx)));
-          }
-        }
-
-        const inAnyCluster = localClusters.some(c => c.includes(neighborIdx));
-        if (!inAnyCluster) {
-          currentCluster.push(neighborIdx);
-          noise.delete(neighborIdx);
-        }
-      }
-    }
-  }
-
-  // Map localClusters of local indices of madSurvivors to original indices of samples array
-  const finalClustersMapping = localClusters.map(cluster => 
-    cluster.map(localIdx => madSurvivors[localIdx]._originalIdx)
-  );
-
-  // Choose the Champion Cluster
-  let finalPointsToUse = madSurvivors;
-  let championClusterIndex = -1;
-  let maxCount = -1;
-
-  for (let i = 0; i < localClusters.length; i++) {
-    if (localClusters[i].length > maxCount) {
-      maxCount = localClusters[i].length;
-      championClusterIndex = i;
-    }
-  }
-
-  if (championClusterIndex !== -1) {
-    // We found clusters! Filter points to champion cluster
-    finalPointsToUse = localClusters[championClusterIndex].map(localIdx => madSurvivors[localIdx]);
-  }
-
-  // Fallback protection: ensure we have at least 2 points
-  if (finalPointsToUse.length < 2) {
-    finalPointsToUse = madSurvivors;
-  }
-
-  // Solve Weighted Least Squares (WLS) on selected points
-  const lseResult = calculateWeightedLSE(finalPointsToUse);
-  const resultData = { ...lseResult.result };
-
-  // Calculate coordinates and metadata average on active inliers
-  const activeInlierIndices = finalPointsToUse.map(s => s._originalIdx); 
-
-  // Compute altitude on active inliers
-  const validAlts = finalPointsToUse.filter(s => s.altitude !== null && s.altitude !== undefined);
-  resultData.altitude = validAlts.length > 0
-    ? validAlts.reduce((sum, s) => sum + (s.altitude || 0), 0) / validAlts.length
-    : null;
-
-  const validAltAccs = finalPointsToUse.filter(s => s.altitudeAccuracy !== null && s.altitudeAccuracy !== undefined);
-  resultData.altitudeAccuracy = validAltAccs.length > 0
-    ? validAltAccs.reduce((sum, s) => sum + (s.altitudeAccuracy || 0), 0) / validAltAccs.length
-    : null;
-
-  return {
-    result: resultData,
-    usedIndices: activeInlierIndices,
-    clusters: finalClustersMapping.filter(c => c.length > 0)
-  };
-}
-    </pre>
-
-    <h3>2.4.3. Huber M-Kestiricisi (Huber M-Estimation)</h3>
+    <h3>2.4.2. Huber M-Kestiricisi (Huber M-Estimation)</h3>
     <p>Huber M-tahmincisi, En Küçük Kareler yönteminin hatalara karşı aşırı duyarlı yapısını kırarak hem normal dağılımın merkezi bölümünde LSE gibi (karesel), uçlarda ise mutlak değer (doğrusal) olarak davranan gürbüz (robust) bir hata fonksiyonudur. Merkezden dışa doğru uzaklaşan kaba hataların (outliers) maliyetleri doğrusal olarak sınırlandırılır (Huber, 1964; Hampel vd., 1986). İteratif ağırlıklandırma (IRLS) ile her adımda gözlemlerin konumsal ağırlıkları güncellenir.</p>
     <p>Uygulamaya katkısı; dinamik olarak 1-sigma veya belirlenen eşiği aşan sinyal sapmalarında ağırlığı iteratif olarak sıfıra yaklaştırarak, anlık sinyal kayıplarını veya yansıma zıplamalarını yok etmesidir. Özellikle ormanlık alanlardaki ve bina kenarlarındaki istikrarsız GNSS okumalarında yüksek derecede kararlı sonuç verir.</p>
     <pre class="code-block">
@@ -583,7 +413,7 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
 }
     </pre>
 
-    <h3>2.4.4. Hampel M-Kestiricisi (Hampel M-Estimation)</h3>
+    <h3>2.4.3. Hampel M-Kestiricisi (Hampel M-Estimation)</h3>
     <p>Hampel kestiricisi, Huber yöntemine benzer ancak üç parçalı bir red fonksiyonu kullanır. Hata tolerans sınırlarını (a, b, c) merhaleli olarak devreye sokar; belirli bir sınıra kadar karesel, daha sonra doğrusal ve nihayetinde tam red bölgesi (sıfır ağırlık) uygulayan son derece muhafazakar bir fonksiyondur (Hampel, 1974; Rousseeuw & Leroy, 1987). Bu yöntem, ekstrem sapanlara karşı Huber'den daha katı ve dayanıklıdır.</p>
     <p>Mobil uygulamada, özellikle arazide uzun süreli statik ölçümlerde (örneğin 3-5 dakika) oluşan nadir fakat ekstrem sapmaların ana veri kümesini bozmasını engellemek için idealdir. Sistem, Hampel eşiklerini MAD (Median Absolute Deviation) üzerinden dinamik olarak ölçeklendirerek sinyal gürültüsüne otomatik adapte olur.</p>
     <pre class="code-block">
@@ -653,7 +483,7 @@ export function calculateHampelAcademic(samples: Coordinate[]): { result: Coordi
 }
     </pre>
 
-    <h3>2.4.5. Hodges-Lehmann R-Kestiricisi (Hodges-Lehmann R-Estimation)</h3>
+    <h3>2.4.4. Hodges-Lehmann R-Kestiricisi (Hodges-Lehmann R-Estimation)</h3>
     <p>Hodges-Lehmann yöntemi, non-parametrik istatistik biliminde Wilcoxon işaretli-sıra testine dayalı gürbüz bir konum kestiricisidir. Veri setindeki tüm olası ikili gözlem çiftlerinin ortalamalarının medyanı hesaplanarak elde edilir (Hodges & Lehmann, 1963). Bu yöntem asimptotik bağıl etkinliği çok yüksek (%95) olan bir kestiricidir ve verinin dağılımından (normallik varsayımından) tamamen bağımsızdır.</p>
     <p>Uygulamada Hodges-Lehmann, özellikle az sayıda veri toplandığı (örneğin 10-20 epok) durumlarda klasik ortalama yönteminin zayıf kaldığı yerlerde devreye girer. Tüm çiftlerin ağırlıksız kombinasyonu hesaplandığı için tekil kaba hataların sonucu saptırması matematiksel olarak imkansız hale gelir.</p>
     <pre class="code-block">
@@ -773,7 +603,7 @@ export function calculateHodgesLehmannPure(samples: Coordinate[]): { result: Coo
 }
     </pre>
 
-    <h3>2.4.6. Tukey's Trimean L-Kestiricisi (Tukey's Trimean L-Estimation)</h3>
+    <h3>2.4.5. Tukey's Trimean L-Kestiricisi (Tukey's Trimean L-Estimation)</h3>
     <p>Tukey's Trimean yöntemi, veri setinin kartillerine dayalı bir L-tahmincisidir. Verinin birinci çeyrek (Q1), üçüncü çeyrek (Q3) ve medyan (Q2) değerlerini kullanarak, medyana iki kat ağırlık veren formülasyonu ile ağırlıklı bir konum tahmini yapar (Tukey, 1977). Gürbüz yapısı sayesinde aşırı sapanlardan etkilenmez.</p>
     <p>Akıllı telefon uygulamamızda Tukey's Trimean, uç değerlerin %25'ini her iki yönden kesip atarken kalan merkezin şekline göre konum belirleyerek, hızlı okumalarda donanımsal ağırlıklara ihtiyaç duymadan son derece temiz ve hızlı bir koordinat dengelemesi gerçekleştirir.</p>
     <pre class="code-block">
@@ -883,7 +713,7 @@ export function calculateTukeysTrimeanPure(samples: Coordinate[]): { result: Coo
 }
     </pre>
 
-    <h3>2.4.7. Optimal S-Kestiricisi (Optimal S-Estimation)</h3>
+    <h3>2.4.6. Optimal S-Kestiricisi (Optimal S-Estimation)</h3>
     <p>S-tahmincileri (Scale-estimators), artıklara (residuals) bağlı bir gürbüz ölçek parametresinin minimize edilmesine dayanan yöntemlerdir. Geleneksel En Küçük Kareler gibi artıkların karesini minimize etmek yerine, M-kestiricisi fonksiyonuna benzer bir gürbüz kayıp fonksiyonu üzerinden yayılımı en aza indiren merkezi arar (Rousseeuw & Yohai, 1984). Verinin en yoğun ve konsantre olduğu bölgeyi referans alarak kırılma noktasını (breakdown point) %50'ye kadar çıkarabilir.</p>
     <p>Arazide, toplam verinin %49'unun yansıma hatası (multipath) olduğu ekstrem senaryolarda bile gerçek konumu başarılı bir şekilde bulabilen en güçlü yöntemlerden biri olarak uygulamaya entegre edilmiştir. Yüksek işlem gücü gerektirmesine rağmen, PWA'nın optimize edilmiş yapısı sayesinde anlık olarak çalıştırılabilmektedir.</p>
     <pre class="code-block">

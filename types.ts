@@ -20,7 +20,6 @@ export interface Coordinate {
 
 export type CalculationMethod = 
   | 'WEIGHTED_LSE' 
-  | 'DBSCAN'
   | 'HUBER'
   | 'HAMPEL'
   | 'HODGES_LEHMANN'

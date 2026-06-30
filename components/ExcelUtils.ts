@@ -9,7 +9,6 @@ import { geoidService } from '../services/GeoidService';
 const getMethodName = (m: CalculationMethod) => {
   switch(m) {
     case 'WEIGHTED_LSE': return "WLSE";
-    case 'DBSCAN': return "DBSCAN";
     case 'HUBER': return "HUBER-M";
     case 'HAMPEL': return "HAMPEL-M";
     case 'HODGES_LEHMANN': return "HODGES-R";
@@ -157,7 +156,6 @@ export const getTechnicalReportWorksheet = (location: SavedLocation, settings?: 
   
   const methods: CalculationMethod[] = [
     'WEIGHTED_LSE', 
-    'DBSCAN',
     'HUBER',
     'HAMPEL',
     'HODGES_LEHMANN',
