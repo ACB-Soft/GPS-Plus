@@ -360,17 +360,17 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             <div className="soft-card p-6 space-y-4">
               <p 
                 className="text-sm text-slate-700 font-medium leading-relaxed text-justify mb-4"
-                dangerouslySetInnerHTML={{ __html: t("Uygulama, en yüksek hassasiyeti sağlamak için <b>Hibrit (Karma) Konumlama</b> teknolojisini kullanır. Bu teknoloji, aşağıdaki 4 kaynağı birleştirerek çalışır:") }}
+                dangerouslySetInnerHTML={{ __html: t("Uygulama, en yüksek hassasiyeti sağlamak için <b>Hibrit (Karma) Konumlama</b> teknolojisini kullanır. Bu teknoloji, aşağıdaki 3 kaynağı birleştirerek çalışır:") }}
               />
               
-              <div className="space-y-4">
+              <div className="flex flex-col gap-4">
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                   <div className="flex items-center gap-2 mb-2">
                     <i className="fas fa-satellite text-indigo-600"></i>
                     <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">{t("1. GNSS (Uydu)")}</h4>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                    {t("GPS, GLONASS, Galileo ve BeiDou uydularından gelen sinyalleri kullanır. Açık alanda hassas (±2m) konum verisi sağlar.")}
+                    {t("GPS, GLONASS, Galileo ve BeiDou uydularından gelen sinyalleri kullanır. İnternet destekli A-GPS ile uydu yörünge verilerini saniyeler içinde indirerek çok hızlı (Fix) kilitlenme sağlar. Açık alanda hassas (±2m) konum verisi sunar.")}
                   </p>
                 </div>
 
@@ -380,7 +380,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                     <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">{t("2. Baz İstasyonları")}</h4>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                    {t("Uyduların görülemediği kapalı alanlarda veya tünellerde, telefonunuzun bağlı olduğu baz istasyonlarına göre yaklaşık konum belirler. Hassiyeti düşüktür.")}
+                    {t("Uyduların görülemediği kapalı alanlarda veya tünellerde, telefonunuzun bağlı olduğu hücresel ağ baz istasyonlarına (Cell ID / Trilateration) göre yaklaşık konum belirler. Hassiyeti düşüktür.")}
                   </p>
                 </div>
 
@@ -390,17 +390,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                     <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">{t("3. Wi-Fi Ağları")}</h4>
                   </div>
                   <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                    {t("Şehir içinde bina aralarında, çevredeki kablosuz ağların sinyal gücünü kullanarak konumu keskinleştirir (IPS). Hassiyeti oldukça düşüktür.")}
-                  </p>
-                </div>
-
-                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                  <div className="flex items-center gap-2 mb-2">
-                    <i className="fas fa-bolt text-indigo-600"></i>
-                    <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">{t("4. A-GPS (İnternet)")}</h4>
-                  </div>
-                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                    {t("İnternet üzerinden güncel uydu yörünge verilerini (almanak) indirerek, GPS'in saniyeler içinde kilitlenmesini (Fix) sağlar. Hassiyeti oldukça düşüktür.")}
+                    {t("Şehir içinde bina aralarında veya iç mekanlarda, çevredeki Wi-Fi erişim noktalarının MAC adresleri ve sinyal güçlerini (WPS) kullanarak konumu keskinleştirir. Hassiyeti oldukça düşüktür.")}
                   </p>
                 </div>
               </div>
