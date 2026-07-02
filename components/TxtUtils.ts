@@ -60,8 +60,8 @@ export const downloadTXT = (locations: SavedLocation[], settings: AppSettings) =
     const orthStr = orthometricH !== null ? orthometricH.toFixed(hPrec) : '---';
     const ellipStr = ellipsoidalH !== null ? ellipsoidalH.toFixed(hPrec) : '---';
 
-    const firstVal = isWGS84 ? valX : valY;
-    const secondVal = isWGS84 ? valY : valX;
+    const firstVal = valX;
+    const secondVal = valY;
     
     content += `${loc.name}\t${firstVal}\t${secondVal}\t${orthStr}\t${ellipStr}\t${undulationVal}\n`;
   });

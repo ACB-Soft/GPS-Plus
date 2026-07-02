@@ -25,6 +25,7 @@
     "react-dom": "^19.2.4",
     "react-leaflet": "^5.0.0",
     "recharts": "^3.8.1",
+    "shp-write": "^0.3.2",
     "tailwindcss": "^4.0.0-beta.8",
     "xlsx": "^0.18.5"
   },

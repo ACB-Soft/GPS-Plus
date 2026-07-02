@@ -3,6 +3,7 @@ import { SavedLocation, AppSettings } from '../types';
 import { downloadKML } from './KMLUtils';
 import { downloadExcel } from './ExcelUtils';
 import { downloadTXT } from './TxtUtils';
+import { downloadSHP } from './ShpUtils';
 import { useLanguage } from '../utils/LanguageContext';
 
 interface Props {
@@ -61,11 +62,11 @@ const ExportUnifiedView: React.FC<Props> = ({ locations, settings, onOpenACBLabs
         )}
       </div>
 
-      <div className="space-y-4 border-t border-slate-100 pt-8">
+      <div className="space-y-2.5 border-t border-slate-100 pt-5">
         <button 
           onClick={() => downloadKML(getFiltered())} 
           disabled={!hasSelection} 
-          className={`w-full py-3 md:py-4 px-6 text-white rounded-xl md:rounded-2xl font-black text-sm md:text-base uppercase flex items-center gap-5 transition-all duration-300 shadow-xl ${
+          className={`w-full py-2.5 md:py-3.5 px-6 text-white rounded-xl md:rounded-2xl font-black text-sm md:text-base uppercase flex items-center gap-5 transition-all duration-300 shadow-xl ${
             hasSelection ? 'bg-indigo-600 shadow-indigo-200 active:scale-[0.98]' : 'bg-slate-300 opacity-40 grayscale cursor-not-allowed shadow-none'
           }`}
         >
@@ -78,7 +79,7 @@ const ExportUnifiedView: React.FC<Props> = ({ locations, settings, onOpenACBLabs
         <button 
           onClick={() => downloadExcel(getFiltered(), settings)} 
           disabled={!hasSelection} 
-          className={`w-full py-3 md:py-4 px-6 text-white rounded-xl md:rounded-2xl font-black text-sm md:text-base uppercase flex items-center gap-5 transition-all duration-300 shadow-xl ${
+          className={`w-full py-2.5 md:py-3.5 px-6 text-white rounded-xl md:rounded-2xl font-black text-sm md:text-base uppercase flex items-center gap-5 transition-all duration-300 shadow-xl ${
             hasSelection ? 'bg-emerald-600 shadow-emerald-200 active:scale-[0.98]' : 'bg-slate-300 opacity-40 grayscale cursor-not-allowed shadow-none'
           }`}
         >
@@ -91,7 +92,7 @@ const ExportUnifiedView: React.FC<Props> = ({ locations, settings, onOpenACBLabs
         <button 
           onClick={() => downloadTXT(getFiltered(), settings)} 
           disabled={!hasSelection} 
-          className={`w-full py-3 md:py-4 px-6 text-white rounded-xl md:rounded-2xl font-black text-sm md:text-base uppercase flex items-center gap-5 transition-all duration-300 shadow-xl ${
+          className={`w-full py-2.5 md:py-3.5 px-6 text-white rounded-xl md:rounded-2xl font-black text-sm md:text-base uppercase flex items-center gap-5 transition-all duration-300 shadow-xl ${
             hasSelection ? 'bg-sky-600 shadow-sky-200 active:scale-[0.98]' : 'bg-slate-300 opacity-40 grayscale cursor-not-allowed shadow-none'
           }`}
         >
@@ -99,6 +100,19 @@ const ExportUnifiedView: React.FC<Props> = ({ locations, settings, onOpenACBLabs
             <i className="fas fa-file-lines text-xl"></i>
           </div>
           <span className="tracking-tight">{t("Metin Belgesi (.TXT)")}</span>
+        </button>
+
+        <button 
+          onClick={() => downloadSHP(getFiltered(), settings)} 
+          disabled={!hasSelection} 
+          className={`w-full py-2.5 md:py-3.5 px-6 text-white rounded-xl md:rounded-2xl font-black text-sm md:text-base uppercase flex items-center gap-5 transition-all duration-300 shadow-xl ${
+            hasSelection ? 'bg-slate-700 shadow-slate-300 active:scale-[0.98]' : 'bg-slate-300 opacity-40 grayscale cursor-not-allowed shadow-none'
+          }`}
+        >
+          <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/30 shrink-0">
+            <i className="fas fa-layer-group text-xl"></i>
+          </div>
+          <span className="tracking-tight">SHAPE FILE (.SHP)</span>
         </button>
 
         <div className="pt-6 mt-4 border-t border-slate-100 flex flex-col gap-4">
