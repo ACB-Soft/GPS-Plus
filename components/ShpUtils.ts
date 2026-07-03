@@ -28,19 +28,16 @@ export const downloadSHP = (locations: SavedLocation[], settings: AppSettings) =
     }
     const orthometricH = gInfo.orthometricHeight;
 
-    // Output coordinates in the requested coordinate system
-    // For WGS84: GeoJSON requires [Longitude, Latitude]
-    // For local grid: [Easting (Y), Northing (X)]
-    // x is Easting for Grid and Latitude for WGS84
-    // y is Northing for Grid and Longitude for WGS84
-    const outX = isWGS84 ? y : x; // Lng or Easting (Y)
-    const outY = isWGS84 ? x : y; // Lat or Northing (X)
+    // GeoJSON geometries MUST be in WGS84 [Longitude, Latitude] for standard compatibility,
+    // especially since we use the default WGS84 .prj file provided by shp-write.
+    const outLng = loc.lng;
+    const outLat = loc.lat;
     
     return {
       type: "Feature" as const,
       geometry: {
         type: "Point" as const,
-        coordinates: [outX, outY] 
+        coordinates: [outLng, outLat] 
       },
       properties: {
         Nokta_Adi: loc.name,
