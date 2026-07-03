@@ -1,7 +1,7 @@
 import { SavedLocation, AppSettings } from '../types';
 import { convertCoordinate } from '../utils/CoordinateUtils';
 import { getGeoidInfo } from './GeoidUtils';
-import shpwrite from 'shp-write';
+import shpwrite from '@mapbox/shp-write';
 
 export const downloadSHP = (locations: SavedLocation[], settings: AppSettings) => {
   if (locations.length === 0) {
@@ -37,9 +37,9 @@ export const downloadSHP = (locations: SavedLocation[], settings: AppSettings) =
     const outY = isWGS84 ? x : y; // Lat or Northing (X)
     
     return {
-      type: "Feature",
+      type: "Feature" as const,
       geometry: {
-        type: "Point",
+        type: "Point" as const,
         coordinates: [outX, outY] 
       },
       properties: {
@@ -56,7 +56,7 @@ export const downloadSHP = (locations: SavedLocation[], settings: AppSettings) =
   });
 
   const geojson = {
-    type: "FeatureCollection",
+    type: "FeatureCollection" as const,
     features: features
   };
 
@@ -66,13 +66,28 @@ export const downloadSHP = (locations: SavedLocation[], settings: AppSettings) =
       point: 'Noktalar',
       polygon: 'Alanlar',
       line: 'Cizgiler'
-    }
+    },
+    outputType: 'blob',
+    compression: 'DEFLATE'
   };
 
   // shpwrite.download expects a geojson object and options
   // It automatically triggers a download of a .zip file
   try {
-    shpwrite.download(geojson, options);
+    shpwrite.zip(geojson as any, options as any).then((content: any) => {
+      // content is typically an ArrayBuffer or Blob depending on shpwrite version, 
+      // @mapbox/shp-write's zip returns a Promise that resolves to an ArrayBuffer or Blob
+      // Wait, let's see what zip() returns: we can just wrap it in a Blob.
+      const blob = content instanceof Blob ? content : new Blob([content], { type: 'application/zip' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${projectName}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    });
   } catch (error) {
     console.error("Shapefile oluşturulurken hata:", error);
     alert("Shapefile oluşturulamadı. Konsolu kontrol edin.");
