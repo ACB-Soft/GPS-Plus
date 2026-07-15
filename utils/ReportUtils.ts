@@ -1,7 +1,7 @@
 import { FULL_BRAND, APP_VERSION } from '../version';
 
 /**
- * GPS Plus Akademik Teknik Rapor Üreticisi v7.0
+ * GPS Plus Akademik Teknik Rapor Üreticisi v1.0
  * Bu modül, Arial fontlarında, son derece akademik, detaylı ve profesyonel bir rapor üretir.
  * "Jeodezik Formüller için AI Tabanlı Bir PWA Platformu Geliştirilmesi: Akıllı Telefon GNSS Örnek Çalışması"
  */
@@ -67,7 +67,7 @@ export const generateTechnicalReport = () => {
 
     <div class="header-info">
       <p class="no-indent"><span class="bold">Yazılım Sürümü:</span> ${APP_VERSION}</p>
-      <p class="no-indent"><span class="bold">Sistem Kimliği:</span> GPS-TECH-REP-${year}-V7.0</p>
+      <p class="no-indent"><span class="bold">Sistem Kimliği:</span> GPS-TECH-REP-${year}-V1.0</p>
       <p class="no-indent"><span class="bold">Akademik Alan:</span> Yapay Zeka Destekli Harita ve Jeodezi Yazılımları, Taşınabilir CBS</p>
       <p class="no-indent"><span class="bold">Raporlama Tarihi:</span> ${dateStr}</p>
       <p class="no-indent"><span class="bold">Baş Editör ve Alan Uzmanı:</span> Cihat Başara (Mühendis & Ürün Geliştirme Yöneticisi)</p>
@@ -857,20 +857,45 @@ export function calculateOptimalSPure(samples: Coordinate[]): { result: Coordina
     <h3>2.6.1. Vektörel Veri Entegrasyonu ve Görselleştirme</h3>
     <p>Uygulama, endüstri standardı OGC (Open Geospatial Consortium) formatlarından KML (Keyhole Markup Language) ve KMZ (Sıkıştırılmış KML) veri tiplerini yerel istemci ortamında (client-side) ayrıştırarak harita altlığı üzerine izdüşürmektedir (Wilson, 2008). <i>Leaflet.js</i> kütüphanesi üzerine inşa edilen harita motoru; poligonal alanları, vektör çizgileri ve tekil noktaları WGS84 koordinat sisteminde dinamik olarak görselleştirmektedir. Yüksek performanslı render mimarisi sayesinde sahadaki kullanıcılar, kompleks parsel veya yol projelerini Google Uydu veya OpenStreetMap altlıkları üzerinde eşzamanlı ve akıcı bir şekilde inceleyebilmektedir.</p>
 
-    <h3>2.6.2. Gerçek Zamanlı Konum İzleme ve Mesafe Geometrisi</h3>
-    <p>Aplikasyon süreci, operatörün (kullanıcının) dinamik GNSS konumu ile hedeflenen (seçilen) köşe noktası arasındaki uzamsal vektörün yüksek frekansta hesaplanması prensibine dayanır. Sistem, hedef noktaya olan yatay mesafeyi (distance) ve coğrafi azimut (bearing) açısını, WGS84 referans küresi üzerinde formülize eden Haversine algoritmasını kullanarak anlık olarak üretir (Sinnott, 1984; Vincenty, 1975). Kullanıcının mevcut konumu ile hedef noktası arasına çizilen "Gözlem Çizgisi" (Line of Sight), sahada operatörün hangi yöne ve ne kadar mesafe yürümesi gerektiğini anında görselleştirir.</p>
+    <h3>2.6.2. Veri Giriş Yöntemleri ve Hedef Seçimi</h3>
+    <p>Aplikasyon modülü, esnek veri giriş yöntemleriyle çeşitli arazi senaryolarını desteklemektedir. Kullanıcılar, yalnızca KML/KMZ dosyalarını içe aktarmakla kalmayıp, manuel koordinat girişi fonksiyonu ile WGS84 veya yerel grid projeksiyon (ED50, ITRF96) formatında tekil hedef noktaları tanımlayabilmektedir. Uygulama arayüzünde, eklenecek olan hedefler liste üzerinden (Noktalar) seçilebileceği gibi, doğrudan harita üzerindeki vektörel CAD objelerinin (çizgi ve poligon) köşe noktalarına (vertex) tıklanarak da interaktif bir şekilde belirlenebilmektedir.</p>
+
+    <h3>2.6.3. Dinamik Yönlendirme ve Pusula Algoritmaları</h3>
+    <p>Aplikasyon süreci, operatörün (kullanıcının) dinamik GNSS konumu ile hedeflenen (seçilen) köşe noktası arasındaki uzamsal vektörün yüksek frekansta hesaplanması prensibine dayanır. Sistem, hedef noktaya olan yatay mesafeyi (distance) ve coğrafi azimut (bearing) açısını, WGS84 referans küresi üzerinde formülize eden Haversine algoritmasını kullanarak anlık olarak üretir (Sinnott, 1984; Vincenty, 1975). Elde edilen yönelim verileri, cihazın dahili manyetometresi (pusulası) veya GPS tabanlı hareket vektörü (heading) ile birleştirilerek, kullanıcıya anlık "İleri/Geri" ve "Sağa/Sola" yürüme komutları sağlayan ortogonal bir navigasyon arayüzüne dönüştürülür. Bu sayede cihaz ekranındaki "Gözlem Çizgisi" (Line of Sight) ile birlikte, operatörün hedefe sıfır yanaşma manevraları kolaylaştırılmaktadır.</p>
+
+    <h3>2.6.4. Hassasiyet Analizi ve Dış Harita Servisleri Entegrasyonu</h3>
+    <p>Kullanıcının mevcut konum doğruluk (accuracy) yarıçapı, harita üzerinde dinamik olarak büyüyüp küçülen saydam bir hassasiyet çemberi (Accuracy Circle) şeklinde görselleştirilir. Bu çemberin rengi ve büyüklüğü, alınan GNSS sinyallerinin kalitesine göre anlık olarak (iyi, orta, zayıf) güncellenerek operatöre görsel bir güvenilirlik geribildirimi sunar. Ayrıca aplikasyon yapılacak noktanın mevcut konuma çok uzak olduğu durumlar için modül içine "Navigasyon" kısayolu entegre edilmiştir. Bu buton sayesinde hedef koordinatlar, cihazdaki yüklü Google Haritalar (Google Maps) veya benzeri dış servis uygulamalarına iletilerek rotalama ve araçlı yol tarifi hizmetleri kullanılabilmektedir.</p>
+
     <p>Bu akıllı navigasyon yaklaşımı sayesinde tarım arazilerinin sınırlarının bulunması, orman kadastro işaretlemeleri, gayrimenkul değerleme sırasındaki yaklaşık sınır tespiti ve altyapı güzergahı incelemeleri gibi birçok mekansal problem, harici profesyonel ekipmana ihtiyaç duyulmadan (mobil GNSS donanımının sinyal kapasitesi dahilinde) çözülebilmektedir.</p>
 
     <div class="page-break"></div>
 
-    <h1>3. SONUÇ (CONCLUSION)</h1>
-    <p>Bu araştırma kapsamında geliştirilen <span class="bold">${FULL_BRAND} v5.0</span>, harita mühendisliği alanındaki ağır ve sunucu bağımlı jeodezik hesaplamaları, akıllı telefonların yerel donanım güçlerini kullanarak tamamen çevrimdışı ve tarayıcı tabanlı yürütebilen öncü bir PWA platformu ortaya koymuştur. Geliştirilen platform; yerel ITRF96/ED50 projeksiyon sistemleri, Türkiye Ulusal Jeoid Modeli (TG-20) interpolasyon şemaları ve gürültü elemede kullanılan 6 farklı ileri düzey istatistiksel filtreleme algoritması ile tüketici sınıfı akıllı telefonların bile haritacılık mühendisliği çalışmalarında güvenle kullanılabileceğini kanıtlamıştır.</p>
+    <h1>3. KULLANICI ARAYÜZÜ VE TASARIM PRENSİPLERİ (USER INTERFACE AND DESIGN PRINCIPLES)</h1>
+    <p>Akıllı telefon tabanlı mühendislik yazılımlarında kullanıcı arayüzü (UI) ve kullanıcı deneyimi (UX), sahadaki çalışma verimliliğini doğrudan etkileyen kritik unsurlardır. <span class="bold">${FULL_BRAND}</span> uygulamasının arayüzü, zorlu arazi koşullarında (yüksek güneş ışığı, yağmur, toz ve kısıtlı görüş) maksimum okunabilirlik ve operasyonel hız sağlamak amacıyla modern web tasarım prensipleriyle (Tailwind CSS tabanlı) geliştirilmiştir.</p>
+    
+    <h3>3.1. Ergonomi ve Görsel Hiyerarşi</h3>
+    <p>Uygulamanın arayüzünde kullanılan renk paletleri, yüksek kontrast oranları ve tipografi, açık havada ekran parlamasını minimize edecek ve önemli GNSS metriklerini (hassasiyet, uydu sayısı, yükseklik) ön plana çıkaracak şekilde tasarlanmıştır. "Plus Jakarta Sans" ve "JetBrains Mono" gibi okunaklı (sans-serif ve monospace) tipografik ögeler kullanılarak, ondalık hassasiyet gerektiren veri girişlerinin hatasız yapılması ve sonuçların kolayca algılanması hedeflenmiştir. Arayüz elemanları (butonlar, giriş kutuları, harita kontrolleri), dokunmatik ekranlı mobil cihazlarda tek elle ve hatta iş eldiveniyle rahatça kullanılabilecek büyüklükte optimize edilmiştir.</p>
+
+    <h3>3.2. Modüler Ekran Yapısı ve Harita Etkileşimi</h3>
+    <p>Sistem; ölçüm, aplikasyon, veri analizi ve proje yönetimi gibi farklı mühendislik süreçlerini mantıksal olarak ayrıştırılmış sekmeler ve modüler ekranlar (Ölçüm, Aplikasyon, Analiz, Dosyalar) halinde sunar. Özellikle Aplikasyon ve Harita görünümlerinde ekran alanının büyük bir bölümü interaktif harita bileşenine ayrılarak kullanıcının mekansal farkındalığı artırılmıştır. Ölçüm ekranlarında anlık koordinat akışı ve istatistiksel grafikler, kullanıcıyı yormayacak animasyonlar ve gerçek zamanlı bildirimlerle (toast mesajları) desteklenerek sürecin takibi kolaylaştırılmıştır.</p>
+
+    <h3>3.3. Uygulama Ekran Görüntüleri</h3>
+    <p>Aşağıdaki alanda, uygulamanın arazi kullanımı sırasındaki temel fonksiyonlarını ve ekran düzenlerini gösteren arayüz görselleri yer almaktadır. <i>[Bu bölüme uygulamanın ana ölçüm ekranı, aplikasyon navigasyon arayüzü, istatistiksel analiz grafikleri ve harita katmanı görünümleri rapor basımından önce eklenebilir.]</i></p>
+
+    <div style="width: 100%; height: 300px; border: 2px dashed #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-top: 20px; margin-bottom: 20px; background-color: #f8fafc;">
+      <span style="color: #64748b; font-family: monospace; font-size: 12px;">-- Ekran Görüntüleri İçin Ayrılmış Alan --</span>
+    </div>
+
+    <div class="page-break"></div>
+
+    <h1>4. SONUÇ (CONCLUSION)</h1>
+    <p>Bu araştırma kapsamında geliştirilen <span class="bold">${FULL_BRAND}</span>, harita mühendisliği alanındaki ağır ve sunucu bağımlı jeodezik hesaplamaları, akıllı telefonların yerel donanım güçlerini kullanarak tamamen çevrimdışı ve tarayıcı tabanlı yürütebilen öncü bir PWA platformu ortaya koymuştur. Geliştirilen platform; yerel ITRF96/ED50 projeksiyon sistemleri, Türkiye Ulusal Jeoid Modeli (TG-20) interpolasyon şemaları ve gürültü elemede kullanılan 6 farklı ileri düzey istatistiksel filtreleme algoritması ile tüketici sınıfı akıllı telefonların bile haritacılık mühendisliği çalışmalarında güvenle kullanılabileceğini kanıtlamıştır.</p>
     <p>Ayrıca çalışma dahilinde yürütülen "Yapay Zeka Destekli Yazılım Geliştirme Metodolojisi", Google AI Studio'nun mühendislik alanındaki karmaşık formülleri hatasız bir şekilde TypeScript diline tercüme edebildiğini, alan uzmanı kontrolünde (Expert-in-the-Loop) işletildiğinde yazılım üretim ve test maliyetlerini %85 mertebesinde azalttığını ortaya koymuştur. Sonuç olarak ${FULL_BRAND}, sunduğu üstün arazi ergonomisi, çevrimdışı çalışma kabiliyeti ve yüksek matematiksel hassasiyeti ile yer bilimleri, coğrafi bilgi sistemleri ve arazi kadastro çalışmalarında yeni nesil sunucusuz jeodezi çağını başlatmıştır.</p>
 
-    <h1>4. KAYNAKÇA, MEVZUAT VE VERİ KAYNAKLARI (REFERENCES & DATA SOURCES)</h1>
+    <h1>5. KAYNAKÇA, MEVZUAT VE VERİ KAYNAKLARI (REFERENCES & DATA SOURCES)</h1>
     <p class="no-indent" style="margin-bottom: 8pt;"><span class="bold">Atıf Gösterim ve Güven Rehberi:</span> Bu çalışmada işletilen tüm istatistiksel, konumsal, düşey kartografik dönüşümler ve veri görselleştirme/ihraç yaklaşımları aşağıdaki uluslararası standartlara, veri kaynaklarına ve yazılım kütüphanelerine dayanmaktadır:</p>
     
-    <p class="bold" style="color: #0056b3; margin-top: 10pt; margin-bottom: 4pt; font-size: 11pt;">4.1. Akademik Yayınlar ve Jeodezik Standartlar (Academic Literature)</p>
+    <p class="bold" style="color: #0056b3; margin-top: 10pt; margin-bottom: 4pt; font-size: 11pt;">5.1. Akademik Yayınlar ve Jeodezik Standartlar (Academic Literature)</p>
     <ol style="margin-top: 0; padding-left: 20px;">
       <li><span class="bold">Huber, P. J. (1964).</span> Robust estimation of a location parameter. Annals of Mathematical Statistics. (Huber M-tahmincileri, Hodges-Lehmann ve dayanıklı robust istatistik teorisi analizleri için).</li>
       <li><span class="bold">Bursa, M. (1962).</span> The theory of the determination of the non-parallelism of the minor axis of the reference ellipsoid. Studia Geophysica et Geodaetica. (7-Parametreli Bursa-Wolf datum dönüşüm modeli referansı için).</li>
@@ -888,7 +913,7 @@ export function calculateOptimalSPure(samples: Coordinate[]): { result: Coordina
       <li><span class="bold">Press, W. H., Teukolsky, S. A., Vetterling, W. T., & Flannery, B. P. (2007).</span> Numerical Recipes 3rd Edition: The Art of Scientific Computing. Cambridge University Press. (Bilineer interpolasyon şemaları ve grid matris ağırlıklandırma hesaplamaları için).</li>
     </ol>
 
-    <p class="bold" style="color: #0056b3; margin-top: 10pt; margin-bottom: 4pt; font-size: 11pt;">4.2. Donanım Verileri, Jeoit ve Yer Çekimi Modelleri (Hardware & Geodetic Models)</p>
+    <p class="bold" style="color: #0056b3; margin-top: 10pt; margin-bottom: 4pt; font-size: 11pt;">5.2. Donanım Verileri, Jeoit ve Yer Çekimi Modelleri (Hardware & Geodetic Models)</p>
     <ol style="margin-top: 0; padding-left: 20px;">
       <li><span class="bold">W3C Geolocation API Specification (2016).</span> World Wide Web Consortium. (Akıllı mobil cihazların ham uydu verilerine ve GPS/GNSS alıcısı donanım katmanına erişmek için).</li>
       <li><span class="bold">Harita Genel Müdürlüğü (HGM). (2020).</span> Türkiye Geoidi - 2020 (TG-20) Teknik Dökümanı. (5'x5' çözünürlüklü yerel düşey datum, anlık ondülasyon ve iki boyutlu bilineer interpolasyon katsayı hesaplamaları için).</li>
@@ -896,13 +921,13 @@ export function calculateOptimalSPure(samples: Coordinate[]): { result: Coordina
       <li><span class="bold">EPSG Geodetic Parameter Dataset.</span> International Association of Oil & Gas Producers (IOGP). (ED50, ITRF96, WGS84 yerel dilim ortak parametreleri ve Transverse Mercator projeksiyon dönüşüm katsayıları için).</li>
     </ol>
 
-    <p class="bold" style="color: #0056b3; margin-top: 10pt; margin-bottom: 4pt; font-size: 11pt;">4.3. Harita Servisleri ve Sağlayıcıları (Map Services & Providers)</p>
+    <p class="bold" style="color: #0056b3; margin-top: 10pt; margin-bottom: 4pt; font-size: 11pt;">5.3. Harita Servisleri ve Sağlayıcıları (Map Services & Providers)</p>
     <ol style="margin-top: 0; padding-left: 20px;">
       <li><span class="bold">Google Maps API (Satellite/Hybrid Tiles).</span> Google LLC. (Gerçek zamanlı uydu fotoğrafları, hibrit altlık görselleri ve arazi koordinat haritalama doğruluk testleri için).</li>
       <li><span class="bold">OpenStreetMap (OSM) Contributors.</span> © OpenStreetMap Vakfı. (Açık kaynaklı harita altlık servisi ve vektörel sokak/topografya katmanları için).</li>
     </ol>
 
-    <p class="bold" style="color: #0056b3; margin-top: 10pt; margin-bottom: 4pt; font-size: 11pt;">4.4. Yazılım ve Yazım Kütüphaneleri (Software & Presentation Libraries)</p>
+    <p class="bold" style="color: #0056b3; margin-top: 10pt; margin-bottom: 4pt; font-size: 11pt;">5.4. Yazılım ve Yazım Kütüphaneleri (Software & Presentation Libraries)</p>
     <ol style="margin-top: 0; padding-left: 20px;">
       <li><span class="bold">Proj4js Library (v2.20).</span> OSGeo (Open Source Geospatial Foundation). (İstemci tarafında hızlı ve yüksek duyarlılıklı datum ve koordinat projeksiyon dönüşümleri için).</li>
       <li><span class="bold">Leaflet JS Engine (v1.9) & React-Leaflet (v5.0).</span> Vladimir Agafonkin. (Mobil uyumlu ve yüksek performanslı harita katman kontrolü, çokgen çizim ve Web-CAD görselleştirmesi için).</li>

@@ -135,11 +135,11 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
   const handleCreateBackup = () => {
     try {
       const backupKeys = [
-        'gps_locations_v5.0',
+        'gps_locations_v1.0', 'gps_locations_v5.0',
         'stakeout_points_v1',
         'stakeout_geometries_v1',
         'last_folder_name',
-        'onboarding_v5.0_done',
+        'onboarding_v1.0_done',
         'language_preference',
         'show_onboarding_every_time',
         'default_coord_system',
@@ -256,13 +256,13 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
     try {
       const dataToRestore = activePayload.data;
 
-      // 1. Ölçümler (gps_locations_v5.0) kurgusu
-      const currentLocsJson = localStorage.getItem('gps_locations_v5.0');
+      // 1. Ölçümler (gps_locations_v1.0) kurgusu
+      const currentLocsJson = localStorage.getItem('gps_locations_v1.0');
       let currentLocations: any[] = currentLocsJson ? JSON.parse(currentLocsJson) : [];
       if (!Array.isArray(currentLocations)) currentLocations = [];
 
       // Desteklenen tüm eski ve yeni lokasyon yedek anahtarları
-      const backupLocsValue = dataToRestore['gps_locations_v5.0'] || 
+      const backupLocsValue = dataToRestore['gps_locations_v1.0'] || dataToRestore['gps_locations_v5.0'] || 
                               dataToRestore['gps_locations_v7.8.8'] || 
                               dataToRestore['gps_locations_v7.8.0'] || 
                               dataToRestore['locations'];
@@ -342,7 +342,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
         });
 
         // localStorage'a geri eşitleyelim
-        localStorage.setItem('gps_locations_v5.0', JSON.stringify(currentLocations));
+        localStorage.setItem('gps_locations_v1.0', 'gps_locations_v5.0', JSON.stringify(currentLocations));
         if (onRestoreLocations) {
           onRestoreLocations(currentLocations);
         }
@@ -430,7 +430,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
 
       // 4. Diğer konfigürasyon ayarlarını olduğu gibi üstüne yazabiliriz
       const skippedKeys = [
-        'gps_locations_v5.0', 
+        'gps_locations_v1.0', 'gps_locations_v5.0', 
         'gps_locations_v7.8.8', 
         'gps_locations_v7.8.0', 
         'locations', 

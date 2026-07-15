@@ -34,9 +34,9 @@ const App = () => {
   }, [view, subView]);
 
   const [locations, setLocations] = useState<SavedLocation[]>(() => {
-    const CURRENT_KEY = 'gps_locations_v5.0';
-    const PREV_KEY = 'gps_locations_v7.8.8';
-    const OLD_KEY = 'gps_locations_v7.8.0';
+    const CURRENT_KEY = 'gps_locations_v1.0';
+    const PREV_KEY = 'gps_locations_v5.0';
+    const OLD_KEY = 'gps_locations_v7.8.8';
     let saved = localStorage.getItem(CURRENT_KEY);
     if (!saved) {
       const prevData = localStorage.getItem(PREV_KEY);
@@ -113,7 +113,7 @@ const App = () => {
     geoidService.initialize();
 
     const showOnboardingEveryTime = localStorage.getItem('show_onboarding_every_time') !== 'false';
-    const onboardingDone = localStorage.getItem('onboarding_v5.0_done') === 'true';
+    const onboardingDone = localStorage.getItem('onboarding_v1.0_done') === 'true';
     
     // Start with onboarding if not done or if requested to show every time
     const initialView = (!onboardingDone || showOnboardingEveryTime) ? 'onboarding' : 'dashboard';
@@ -294,11 +294,11 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('gps_locations_v5.0', JSON.stringify(locations));
+    localStorage.setItem('gps_locations_v1.0', JSON.stringify(locations));
   }, [locations]);
 
   const handleFinishOnboarding = () => {
-    localStorage.setItem('onboarding_v5.0_done', 'true');
+    localStorage.setItem('onboarding_v1.0_done', 'true');
     navigateTo('dashboard');
   };
 
