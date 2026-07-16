@@ -76,6 +76,7 @@ export const generateTechnicalReport = () => {
       <li><b>w<sub>Huber</sub>(v<sub>i</sub><sup>(k)</sup>)</b>: The robust weight coefficient for the <i>i</i>-th point. Points within the h-limit are unattenuated (1.0), whereas those outside are downweighted linearly.</li>
       <li><b>w<sub>total,i</sub><sup>(k)</sup></b>: The product of the hardware's stochastic weight (w<sub>i</sub>) and Huber's robust weight (w<sub>Huber</sub>), establishing the overall weight of the epoch.</li>
       <li><b>calculateDistanceMeter</b>: The geodetic Haversine/WGS-84 metric distance function projecting latitude/longitude differentials into planar meters.</li>
+      <li><b>Inliers (Geçerli Gözlemler)</b>: IRLS yakınsaması tamamlandıktan sonra, nihai gürbüz merkez etrafındaki son gürbüz Rayleigh sınırını (<i>v<sub>i</sub> &le; h<sup>(final)</sup></i>) aşmayan epoklar geçerli gözlem seti (usedIndices) olarak işaretlenerek harita arayüzünde yeşil renkle aktif gösterilir.</li>
     </ul>
 
     <h2>3. Hampel M-Estimator (Hampel Outlier Rejection)</h2>
@@ -103,6 +104,7 @@ export const generateTechnicalReport = () => {
       <li><b>i, j</b>: Loop indices representing pair combinations of geodetic epochs. By restricting j &ge; i, we include the self-averages of the individual points.</li>
       <li><b>M</b>: The cardinality of the symmetric combination matrix of size n &times; n, which mathematically equals n(n+1)/2.</li>
       <li><b>Median</b>: The statistical operator that extracts the central value of a sorted numeric array. For an even number of elements, it computes the average of the two central values.</li>
+      <li><b>Inliers (Geçerli Gözlemler)</b>: 1D Hodges-Lehmann merkez koordinatları elde edildikten sonra, bu merkeze göre hesaplanan 2D metrik mesafelerin Rayleigh MAD tabanlı ardıl süzmesi uygulanır. Sapma eşiğini (<i>absDevs &le; 3 &middot; &sigma;<sub>MAD</sub></i>) aşmayan epoklar geçerli gözlem seti (usedIndices) olarak haritada yeşil renkle gösterilir.</li>
     </ul>
 
     <h2>5. Tukey's Trimean</h2>
@@ -117,6 +119,7 @@ export const generateTechnicalReport = () => {
       <li><b>Q2<sub>Lat</sub>, Q2<sub>Lng</sub></b>: The second quartile or statistical median (50th percentile) of the coordinate distributions.</li>
       <li><b>Q3<sub>Lat</sub>, Q3<sub>Lng</sub></b>: The third quartile (75th percentile) of the coordinate distributions.</li>
       <li><b>Percentile(X, p)</b>: The linear interpolation percentile operator that calculates the value below which a percentage <i>p &times; 100</i> of the observations fall.</li>
+      <li><b>Inliers (Geçerli Gözlemler)</b>: 1D Tukey's Trimean merkezi elde edildikten sonra, bu merkeze göre 2D Rayleigh MAD tabanlı ardıl süzme icra edilerek sapması <i>3 &middot; &sigma;<sub>MAD</sub></i> sınırının altında kalan gözlemler geçerli gözlem indeksi (usedIndices) olarak işaretlenir.</li>
     </ul>
 
     <h2>6. Optimal S-Estimator (Optimal S-Estimation)</h2>
@@ -130,6 +133,7 @@ export const generateTechnicalReport = () => {
       <li><b>S<sup>(k)</sup></b>: The dynamic robust outlier boundary calculated at the <i>k</i>-th iteration. Any observation lying beyond this metric boundary (i.e., |u| &gt; 1.0) is assigned a weight of exactly 0.0.</li>
       <li><b>w<sub>Biweight</sub>(u<sub>i</sub><sup>(k)</sup>)</b>: The robust weight multiplier. It smoothly decreases from 1.0 (for zero residual) to 0.0 as the standardized residual approaches the boundary of 1.0.</li>
       <li><b>w<sub>total,i</sub><sup>(k)</sup></b>: The final composite weight assigned to both coordinate components at iteration <i>k</i>, combining the stochastic weight (w<sub>i</sub>) and the robust biweight (w<sub>Biweight</sub>).</li>
+      <li><b>Inliers (Geçerli Gözlemler)</b>: İteratif yakınsama sonrasında, nihai konum merkezine göre hesaplanan Tukey iki-ağırlıklı sönümleme sınırını (<i>v<sub>i</sub> &le; S<sup>(final)</sup></i>, yani standardized residual <i>|u<sub>i</sub>| &le; 1.0</i>) aşmayan gözlemler geçerli küme (usedIndices) olarak seçilir ve görselleştirilir.</li>
     </ul>
 
     <h2>LİTERATÜR VE AKADEMİK KAYNAKLAR (BIBLIOGRAPHY)</h2>
