@@ -36,68 +36,37 @@ export const generateTechnicalReport = () => {
     
     <p><b>2. İki Boyutlu (2D) Uzaysal Yaklaşım:</b> Bu yaklaşımda her bir gözlem noktasının (epokun) iki boyutlu uzaydaki konumu bir bütün olarak değerlendirilir. Noktaların güncel ağırlık merkezine veya uzaysal robust medyana olan metrik (Euclidean) mesafeleri (residuals) hesaplanır. Her gözlem epoku için 2D uzayda tek bir robust sönümleme katsayısı (weight factor) belirlenir ve bu ortak katsayı Enlem ile Boylam bileşenlerine ortak bir çarpan olarak uygulanır (Örn: Huber M-Kestiricisi, Hampel Outlier Rejection, Optimal S-Kestiricisi). Bu sayede koordinat bileşenleri arasındaki uzaysal korelasyon ve yön bilgisi (spatial anisotropy) korunur.</p>
 
-    <h2>WGS-84 Elipsoidal Diferansiyel İzdüşüm ve Metrik Dönüşüm Modeli</h2>
+    <h2>WGS-84 Ellipsoidal Differential Projection and Metric Transformation Model</h2>
     <p>Yazılım bünyesinde icra edilen tüm iki boyutlu gürbüz istatistiksel analizler, dinamik eşik tayinleri ve mesafe metrikleri (residuals, MAD, sönümleme sınırları) ham açısal derece birimleri (decimal degrees) yerine, <b>kesin metrik formatta (metre cinsinden)</b> icra edilmektedir. Coğrafi koordinatların (Enlem, Boylam) doğrudan öklid dairesel mesafelerine tabi tutulması, kutuplara doğru meridyenlerin daralması ve yer kürenin basıklığı nedeniyle jeodezik açıdan büyük hatalar doğurur. Yer küreyi mükemmel bir küre kabul eden klasik Haversine formülü ise yerel ağlarda (~10-100m) basıklığı ihmal ettiği için 3-5 cm'ye varan geometrik bozulmalara yol açabilmektedir. Bu bozucu etkileri engellemek amacıyla, her bir oturumun (session) gözlem epokları, yerel oturum merkezinin enlem açısına (&phi;) bağlı olarak <b>WGS-84 Referans Elipsoidi</b> üzerinde yerel diferansiyel teğet düzleme projekte edilmektedir.</p>
     
     <p>Bu amaçla, her bir oturumun ortalama koordinat merkezindeki enlem açısı (&phi;) referans alınarak WGS-84 elipsoidi parametreleri doğrultusunda 1 saniyelik veya 1 derecelik enlem ve boylam farklarının o bölgedeki yerel metrik karşılık katsayıları (Meridional and Prime Vertical radii of curvature) analitik olarak türetilir:</p>
 
-    <div class="formula">
-      a = 6378137.0 \text{ m} \quad \text{(WGS-84 Büyük Yarıçapı)}<br/>
-      f = 1 / 298.257223563 \quad \text{(WGS-84 Basıklık Oranı)}<br/>
-      e^2 = 2f - f^2 \approx 0.00669437999014 \quad \text{(Birinci Eksantriklik Karesi)}<br/><br/>
-      M = \frac{a \cdot (1 - e^2)}{(1 - e^2 \cdot \sin^2\phi)^{1.5}} \quad \text{(N-S Yönündeki Meridyen Eğrilik Yarıçapı)}<br/><br/>
-      N = \frac{a}{\sqrt{1 - e^2 \cdot \sin^2\phi}} \quad \text{(E-W Yönündeki Birinci Düşey Eğrilik Yarıçapı)}<br/><br/>
-      latCoeff = M \cdot \frac{\pi}{180.0} \quad \text{(1 Derecelik Enlem Farkının Metrik Çarpanı)}<br/>
-      lngCoeff = N \cdot \cos\phi \cdot \frac{\pi}{180.0} \quad \text{(1 Derecelik Boylam Farkının Metrik Çarpanı)}
-    </div>
+    <div class="formula" style="line-height: 1.3; margin: 10pt 0; padding: 8pt;">a = 6,378,137.0 m (WGS-84 Semi-Major Axis)<br/>f = 1 / 298.257223563 (WGS-84 Flattening Ratio)<br/>e² = 2f - f² ≈ 0.00669437999014 (First Eccentricity Squared)<br/>M = [a · (1 - e²)] / [1 - e² · sin²(φ)]<sup>1.5</sup> (Meridional Radius of Curvature)<br/>N = a / √(1 - e² · sin²(φ)) (Prime Vertical Radius of Curvature)<br/>latCoeff = M · (π / 180.0) (Latitude Metric Coefficient in m/deg)<br/>lngCoeff = N · cos(φ) · (π / 180.0) (Longitude Metric Coefficient in m/deg)</div>
 
     <p>Herhangi iki coğrafi epok (Lat<sub>1</sub>, Lng<sub>1</sub>) ve (Lat<sub>2</sub>, Lng<sub>2</sub>) arasındaki uzaysal metrik mesafe, bu diferansiyel projeksiyon katsayıları kullanılarak doğrusal yerel teğet düzlemde (ellipsoidal local tangent plane) son derece hassas ve milimetrik doğrulukta hesaplanır:</p>
 
-    <div class="formula">
-      dLat = (Lat_1 - Lat_2) \cdot latCoeff<br/>
-      dLng = (Lng_1 - Lng_2) \cdot lngCoeff<br/><br/>
-      \text{Distance (m)} = \sqrt{dLat^2 + dLng^2}
-    </div>
+    <div class="formula" style="line-height: 1.3; margin: 10pt 0; padding: 8pt;">dLat = (Lat₁ - Lat₂) · latCoeff<br/>dLng = (Lng₁ - Lng₂) · lngCoeff<br/>Distance (m) = √(dLat² + dLng²)</div>
 
     <p>Bu yaklaşım, lokal jeodezik ağlarda (~1 km altındaki GPS epok kümelerinde), Vincenty'nin elipsoidal jeodezik formülünün sunduğu doğruluğu, herhangi bir iteratif yakınsama kararsızlığı veya ağır işlemci yükü oluşturmaksızın milimetrik düzeyde sağlamaktadır. Bu diferansiyel dönüşüm modeli sayesinde; Huber, Hampel ve Optimal S modellerinin tüm iterasyonlarındaki mesafe artıkları (residuals, v<sub>i</sub>), gürbüz sapmalar (MAD) ve donanımsal hassasiyetler (accuracy) aynı fiziksel ve geometrik uzayda (metre) dengelenmektedir.</p>
 
-    <h2>1. Stokastik Tek Nokta Dengelemesi (Weighted Least Squares - WLS)</h2>
+    <h2>1. Stochastic Single-Point Adjustment (Weighted Least Squares - WLS)</h2>
     <p>Ağırlıklı En Küçük Kareler (WLS) yöntemi, jeodezik ağ dengelemeleri ve uydu konumlandırma teorisinde, gözlemlerin kalitelerinin veya varyanslarının birbirinden farklı olduğu durumlarda Gauss-Markov modeli çerçevesinde en iyi doğrusal tarafsız kestirimi (BLUE) elde etmek için kullanılır (Teunissen, 2000). Alıcı donanım katmanından okunan yatay hassasiyet standard sapması (&sigma;<sub>i</sub>, accuracy) kullanılarak her bir epoka ters karesel stokastik ağırlık matrisi elemanı atanır. Bu yöntem, kaba hataların bulunmadığı temiz Gaussian gürültülü ortamlarda matematiksel olarak en yüksek etkinliğe sahiptir. Hesaplama, Enlem ve Boylam için bağımsız (1D) olarak şu şekilde gerçekleştirilir:</p>
     
-    <div class="formula">
-      w<sub>i</sub> = 1 / (&sigma;<sub>i</sub>)<sup>2</sup>  (where &sigma;<sub>i</sub> = accuracy<sub>i</sub>, constrained by &sigma;<sub>i</sub> &ge; 0.1 m)<br/><br/>
-      Lat<sub>WLS</sub> = ( &Sigma;<sub>i=1</sub><sup>n</sup> w<sub>i</sub> &middot; Lat<sub>i</sub> ) / ( &Sigma;<sub>i=1</sub><sup>n</sup> w<sub>i</sub> )<br/><br/>
-      Lng<sub>WLS</sub> = ( &Sigma;<sub>i=1</sub><sup>n</sup> w<sub>i</sub> &middot; Lng<sub>i</sub> ) / ( &Sigma;<sub>i=1</sub><sup>n</sup> w<sub>i</sub> )
-    </div>
+    <div class="formula" style="line-height: 1.3; margin: 10pt 0; padding: 8pt;">w<sub>i</sub> = 1 / (&sigma;<sub>i</sub>)<sup>2</sup> &nbsp; (where &sigma;<sub>i</sub> = accuracy<sub>i</sub>, constrained by &sigma;<sub>i</sub> &ge; 0.1 m)<br/>Lat<sub>WLS</sub> = ( &Sigma;<sub>i=1</sub><sup>n</sup> w<sub>i</sub> · Lat<sub>i</sub> ) / ( &Sigma;<sub>i=1</sub><sup>n</sup> w<sub>i</sub> )<br/>Lng<sub>WLS</sub> = ( &Sigma;<sub>i=1</sub><sup>n</sup> w<sub>i</sub> · Lng<sub>i</sub> ) / ( &Sigma;<sub>i=1</sub><sup>n</sup> w<sub>i</sub> )</div>
     
     <ul class="symbols">
-      <li><b>Lat<sub>WLS</sub></b>: The estimated optimal Latitude coordinate (in decimal degrees) utilizing Weighted Least Squares adjustment.</li>
-      <li><b>Lng<sub>WLS</sub></b>: The estimated optimal Longitude coordinate (in decimal degrees) utilizing Weighted Least Squares adjustment.</li>
-      <li><b>Lat<sub>i</sub></b>: The raw observed Latitude of the <i>i</i>-th epoch (in decimal degrees).</li>
-      <li><b>Lng<sub>i</sub></b>: The raw observed Longitude of the <i>i</i>-th epoch (in decimal degrees).</li>
-      <li><b>w<sub>i</sub></b>: The stochastic measurement weight assigned to the <i>i</i>-th observation epoch (dimensionless or s<sup>-2</sup>).</li>
-      <li><b>&sigma;<sub>i</sub> (accuracy<sub>i</sub>)</b>: The hardware-reported horizontal standard deviation (accuracy metric) of the <i>i</i>-th epoch, in meters. A numerical threshold of 0.1 meters is strictly enforced to prevent singularity or division-by-zero errors.</li>
+      <li><b>Lat<sub>WLS</sub>, Lng<sub>WLS</sub></b>: The estimated optimal coordinates (in decimal degrees) utilizing Weighted Least Squares (WLS) adjustment.</li>
+      <li><b>Lat<sub>i</sub>, Lng<sub>i</sub></b>: The raw observed latitude and longitude coordinates of the <i>i</i>-th epoch (in decimal degrees).</li>
+      <li><b>w<sub>i</sub></b>: The stochastic measurement weight assigned to the <i>i</i>-th observation epoch (m<sup>-2</sup>).</li>
+      <li><b>&sigma;<sub>i</sub> (accuracy<sub>i</sub>)</b>: The hardware-reported horizontal standard deviation (accuracy metric) of the <i>i</i>-th epoch, in meters. A numerical threshold of 0.1 meters is strictly enforced to prevent singularity.</li>
       <li><b>n</b>: The total count of active valid geodetic epochs within the observation sequence.</li>
-      <li><b>&Sigma;</b>: The classical summation operator representing the accumulation of weighted coordinate variables over the interval [1, n].</li>
+      <li><b>&Sigma;</b>: The summation operator representing the accumulation of weighted coordinate variables over the interval [1, n].</li>
     </ul>
 
-    <h2>2. Huber M-Kestiricisi (Huber M-Estimation)</h2>
+    <h2>2. Huber M-Estimator (Huber M-Estimation)</h2>
     <p>Huber M-tahmini (Huber, 1964), kaba hataların varlığında parametre kestiriminin bozulmasını önlemek amacıyla tasarlanmış gürbüz bir minimizasyon şemasıdır. Küçük artıklar (residuals) için karesel L<sub>2</sub> normunu (En Küçük Kareler), büyük artıklar için ise mutlak L<sub>1</sub> normunu uygulayan parçalı bir amaç fonksiyonuna dayanır. İki boyutlu jeodezik koordinat kestirimi, İteratif Ağırlıklı En Küçük Kareler (Iteratively Reweighted Least Squares - IRLS) yöntemi kullanılarak yakınsanır. İterasyonun başlangıç noktası (seed), koordinat eksenlerinin dönüşünden bağımsız (rotation-invariant) olan ve Weiszfeld Algoritması ile iteratif olarak yakınsanan <b>Uzaysal L1 Medyan (Spatial L1 Median / Geometric Median)</b> değeridir. Klasik koordinat bazlı (marginal) medyan, eksen dönüşümlerine karşı duyarlı (rotation-dependent) olduğundan jeodezik ağlarda geometrik tutarsızlığa yol açar; Weiszfeld bazlı uzaysal medyan ise bu sorunu tamamen ortadan kaldırır. Her iterasyonda noktaların güncel merkezine olan metrik uzaklığı (v<sub>i</sub>) hesaplanır. İki boyutlu öklid mesafeleri (residuals), Gaussian enlem ve boylam hatalarının bileşkesi olarak <b>Rayleigh Dağılımı</b> gösterir. Dolayısıyla, 1D normal dağılımdaki klasik 1.4826 ölçek katsayısı yerine, 2D uzaysal mesafelerin medyanını doğrudan bileşen standard sapmasına (&sigma;) dönüştüren robust Rayleigh ölçek katsayısı (<b>0.8493</b>) kullanılır:</p>
     
-    <div class="formula">
-      <b>Mathematical Formulation and IRLS Routine:</b><br/>
-      1. Initialize coordinates using Weiszfeld's Spatial L1 Median: Lat<sup>(0)</sup> = Lat<sub>Weiszfeld</sub> , Lng<sup>(0)</sup> = Lng<sub>Weiszfeld</sub><br/><br/>
-      2. Compute spatial residual for each epoch: v<sub>i</sub><sup>(k)</sup> = calculateDistanceMeter(Lat<sub>i</sub>, Lng<sub>i</sub>, Lat<sup>(k)</sup>, Lng<sup>(k)</sup>)<br/><br/>
-      3. Compute robust scale (2D Rayleigh Consistency): &sigma;<sub>MAD</sub><sup>(k)</sup> = 0.8493 &middot; Median( v<sub>i</sub><sup>(k)</sup> )  (stable limit: &sigma;<sub>MAD</sub><sup>(k)</sup> &ge; 10<sup>-7</sup>)<br/><br/>
-      4. Calculate Huber tuning cutoff: h<sup>(k)</sup> = 1.345 &middot; &sigma;<sub>MAD</sub><sup>(k)</sup><br/><br/>
-      5. Evaluate robust weight factor:<br/>
-      w<sub>Huber</sub>(v<sub>i</sub><sup>(k)</sup>) = { 1.0  if v<sub>i</sub><sup>(k)</sup> &le; h<sup>(k)</sup> ;  h<sup>(k)</sup> / v<sub>i</sub><sup>(k)</sup>  if v<sub>i</sub><sup>(k)</sup> &gt; h<sup>(k)</sup> }<br/><br/>
-      6. Combine with stochastic weight: w<sub>total,i</sub><sup>(k)</sup> = w<sub>i</sub> &middot; w<sub>Huber</sub>(v<sub>i</sub><sup>(k)</sup>)<br/><br/>
-      7. Re-estimate parameter vectors:<br/>
-      Lat<sup>(k+1)</sup> = ( &Sigma;<sub>i=1</sub><sup>n</sup> w<sub>total,i</sub><sup>(k)</sup> &middot; Lat<sub>i</sub> ) / ( &Sigma;<sub>i=1</sub><sup>n</sup> w<sub>total,i</sub><sup>(k)</sup> )<br/>
-      Lng<sup>(k+1)</sup> = ( &Sigma;<sub>i=1</sub><sup>n</sup> w<sub>total,i</sub><sup>(k)</sup> &middot; Lng<sub>i</sub> ) / ( &Sigma;<sub>i=1</sub><sup>n</sup> w<sub>total,i</sub><sup>(k)</sup> )<br/><br/>
-      8. Check convergence: Stop if distance(Lat<sup>(k+1)</sup>, Lng<sup>(k+1)</sup>, Lat<sup>(k)</sup>, Lng<sup>(k)</sup>) &lt; 0.001 m or iteration k = 15.
-    </div>
+    <div class="formula" style="line-height: 1.3; margin: 10pt 0; padding: 8pt;"><b>Iteratively Reweighted Least Squares (IRLS) Routine:</b><br/>1. Initialize Coordinates (Weiszfeld's Spatial L1 Median): Lat<sup>(0)</sup> = Lat<sub>Weiszfeld</sub> , Lng<sup>(0)</sup> = Lng<sub>Weiszfeld</sub><br/>2. Compute Spatial Residual: v<sub>i</sub><sup>(k)</sup> = calculateDistanceMeter(Lat<sub>i</sub>, Lng<sub>i</sub>, Lat<sup>(k)</sup>, Lng<sup>(k)</sup>)<br/>3. Compute Robust Scale (2D Rayleigh Consistency): &sigma;<sub>MAD</sub><sup>(k)</sup> = 0.8493 · Median( v<sub>i</sub><sup>(k)</sup> ) &nbsp; (&sigma;<sub>MAD</sub><sup>(k)</sup> &ge; 10<sup>-7</sup> m)<br/>4. Calculate Huber Tuning Cutoff: h<sup>(k)</sup> = 1.345 · &sigma;<sub>MAD</sub><sup>(k)</sup><br/>5. Evaluate Robust Huber Weight Factor:<br/>w<sub>Huber</sub>(v<sub>i</sub><sup>(k)</sup>) = { 1.0 if v<sub>i</sub><sup>(k)</sup> &le; h<sup>(k)</sup> ; &nbsp; h<sup>(k)</sup> / v<sub>i</sub><sup>(k)</sup> if v<sub>i</sub><sup>(k)</sup> &gt; h<sup>(k)</sup> }<br/>6. Combine with Stochastic Weight: w<sub>total,i</sub><sup>(k)</sup> = w<sub>i</sub> · w<sub>Huber</sub>(v<sub>i</sub><sup>(k)</sup>)<br/>7. Re-estimate Parameter Vector:<br/>Lat<sup>(k+1)</sup> = ( &Sigma;<sub>i=1</sub><sup>n</sup> w<sub>total,i</sub><sup>(k)</sup> · Lat<sub>i</sub> ) / ( &Sigma;<sub>i=1</sub><sup>n</sup> w<sub>total,i</sub><sup>(k)</sup> ) &nbsp; , &nbsp; Lng<sup>(k+1)</sup> = ( &Sigma;<sub>i=1</sub><sup>n</sup> w<sub>total,i</sub><sup>(k)</sup> · Lng<sub>i</sub> ) / ( &Sigma;<sub>i=1</sub><sup>n</sup> w<sub>total,i</sub><sup>(k)</sup> )<br/>8. Check Convergence: Stop if distance(Lat<sup>(k+1)</sup>, Lng<sup>(k+1)</sup>, Lat<sup>(k)</sup>, Lng<sup>(k)</sup>) &lt; 0.001 m or iteration k = 15.</div>
     
     <ul class="symbols">
       <li><b>Lat<sup>(k)</sup>, Lng<sup>(k)</sup></b>: The coordinates of the robust geodetic center at the <i>k</i>-th iteration of the IRLS algorithm.</li>
@@ -109,17 +78,10 @@ export const generateTechnicalReport = () => {
       <li><b>calculateDistanceMeter</b>: The geodetic Haversine/WGS-84 metric distance function projecting latitude/longitude differentials into planar meters.</li>
     </ul>
 
-    <h2>3. Hampel M-Kestiricisi (Hampel Outlier Rejection)</h2>
+    <h2>3. Hampel M-Estimator (Hampel Outlier Rejection)</h2>
     <p>Hampel (1974) tarafından etki fonksiyonları kuramı çerçevesinde tanımlanan bu gürbüz yöntem, jeodezik veri setlerindeki ağır kaba hataları katı bir sınırla (hard rejection) tamamen ortadan kaldıran güçlü bir ayıklama mekanizmasıdır. Klasik 3-sigma kuralının gürbüzleştirilmiş bir versiyonunu sunar. İlk olarak, eksen dönüşümlerine karşı tam koruma (rotation-invariance) sağlayan ve Weiszfeld algoritması ile üretilen özgün <b>Spatial L1 Median (Geometric Median)</b> referans merkezi bağımsız olarak belirlenir. Ardından tüm noktaların bu merkeze olan iki boyutlu metrik uzaklıkları analiz edilerek 3 &middot; &sigma;<sub>MAD</sub> eşiğini aşan her türlü çoklu yol yansıması, uydu kayması veya anlık donanımsal atlama sistemden tamamen elenir (ağırlığı 0 yapılır). İki boyutlu mesafe dağılımının Rayleigh karakteri göz önüne alınarak &sigma;<sub>MAD</sub> ölçeği <b>0.8493</b> çarpanı ile elde edilir. Geriye kalan temizlenmiş "inlier" alt kümesi üzerinde Ağırlıklı En Küçük Kareler (WLS) dengelemesi çalıştırılarak yüksek hassasiyetli nihai konum elde edilir:</p>
     
-    <div class="formula">
-      Lat<sub>L1_median</sub> = Lat<sub>Weiszfeld</sub> , Lng<sub>L1_median</sub> = Lng<sub>Weiszfeld</sub><br/><br/>
-      v<sub>i</sub> = calculateDistanceMeter(Lat<sub>i</sub>, Lng<sub>i</sub>, Lat<sub>L1_median</sub>, Lng<sub>L1_median</sub>)<br/><br/>
-      &sigma;<sub>MAD</sub> = 0.8493 &middot; Median( v<sub>1...n</sub> )  (where Median(v) represents the median of metric residuals)<br/><br/>
-      w<sub>Hampel</sub>(v<sub>i</sub>) = { 1.0  if v<sub>i</sub> &le; 3 &middot; &sigma;<sub>MAD</sub> ;  0.0  if v<sub>i</sub> &gt; 3 &middot; &sigma;<sub>MAD</sub> }<br/><br/>
-      Lat<sub>Hampel</sub> = ( &Sigma;<sub>i &isin; Inliers</sub> w<sub>i</sub> &middot; Lat<sub>i</sub> ) / ( &Sigma;<sub>i &isin; Inliers</sub> w<sub>i</sub> )<br/>
-      Lng<sub>Hampel</sub> = ( &Sigma;<sub>i &isin; Inliers</sub> w<sub>i</sub> &middot; Lng<sub>i</sub> ) / ( &Sigma;<sub>i &isin; Inliers</sub> w<sub>i</sub> )
-    </div>
+    <div class="formula" style="line-height: 1.3; margin: 10pt 0; padding: 8pt;">Lat<sub>L1_median</sub> = Lat<sub>Weiszfeld</sub> , Lng<sub>L1_median</sub> = Lng<sub>Weiszfeld</sub><br/>v<sub>i</sub> = calculateDistanceMeter(Lat<sub>i</sub>, Lng<sub>i</sub>, Lat<sub>L1_median</sub>, Lng<sub>L1_median</sub>)<br/>&sigma;<sub>MAD</sub> = 0.8493 · Median( v<sub>1...n</sub> ) &nbsp; (where Median(v) is the median of metric residuals)<br/>w<sub>Hampel</sub>(v<sub>i</sub>) = { 1.0 if v<sub>i</sub> &le; 3 · &sigma;<sub>MAD</sub> ; &nbsp; 0.0 if v<sub>i</sub> &gt; 3 · &sigma;<sub>MAD</sub> }<br/>Lat<sub>Hampel</sub> = ( &Sigma;<sub>i &isin; Inliers</sub> w<sub>i</sub> · Lat<sub>i</sub> ) / ( &Sigma;<sub>i &isin; Inliers</sub> w<sub>i</sub> ) &nbsp; , &nbsp; Lng<sub>Hampel</sub> = ( &Sigma;<sub>i &isin; Inliers</sub> w<sub>i</sub> · Lng<sub>i</sub> ) / ( &Sigma;<sub>i &isin; Inliers</sub> w<sub>i</sub> )</div>
     
     <ul class="symbols">
       <li><b>Lat<sub>L1_median</sub>, Lng<sub>L1_median</sub></b>: The coordinate components of the true rotation-invariant Spatial L1 Median computed via Weiszfeld's algorithm, possessing a breakdown point of 50%.</li>
@@ -130,39 +92,23 @@ export const generateTechnicalReport = () => {
       <li><b>Inliers</b>: The index set {i | w<sub>Hampel</sub>(v<sub>i</sub>) = 1.0} of epochs passing the Hampel filter. If fewer than 2 epochs remain, the algorithm automatically falls back to full WLS as a numerical safety guard.</li>
     </ul>
 
-    <h2>4. Hodges-Lehmann R-Kestiricisi (Hodges-Lehmann R-Estimation)</h2>
+    <h2>4. Hodges-Lehmann R-Estimator (Hodges-Lehmann R-Estimation)</h2>
     <p>Hodges ve Lehmann (1963) tarafından geliştirilen bu R-tahmincisi, parametrik olmayan (non-parametric) sıralama testleri teorisine (Wilcoxon Signed-Rank Test) dayanır. Enlem ve Boylam boyutları tamamen birbirinden bağımsız (1D) iki zaman serisi olarak işlenir. Örneklem kümesindeki tüm olası ikili eleman kombinasyonlarının aritmetik ortalamalarını (jeodezide "Walsh averages" olarak adlandırılır) hesaplar ve bu yeni türetilmiş alt kümenin medyan değerini gürbüz konum kestirimi olarak kabul eder. Dağılım simetrisi veya yapısı hakkında hiçbir ön varsayıma ihtiyaç duymadığı için son derece kararlıdır. Asimptotik kırılma noktası yaklaşık %29.3 olup, Gaussian dağılım altındaki göreceli etkinliği klasik aritmetik ortalamaya göre %95.5 gibi yüksek bir seviyededir:</p>
     
-    <div class="formula">
-      Let M = n(n + 1) / 2  (representing the total number of Walsh average pairs)<br/><br/>
-      W_Lat<sub>i,j</sub> = ( Lat<sub>i</sub> + Lat<sub>j</sub> ) / 2  ( &forall; 1 &le; i &le; j &le; n )<br/><br/>
-      W_Lng<sub>i,j</sub> = ( Lng<sub>i</sub> + Lng<sub>j</sub> ) / 2  ( &forall; 1 &le; i &le; j &le; n )<br/><br/>
-      Lat<sub>HL</sub> = Median( { W_Lat<sub>i,j</sub> }  for  1 &le; i &le; j &le; n )<br/><br/>
-      Lng<sub>HL</sub> = Median( { W_Lng<sub>i,j</sub> }  for  1 &le; i &le; j &le; n )
-    </div>
+    <div class="formula" style="line-height: 1.3; margin: 10pt 0; padding: 8pt;">Let M = n(n + 1) / 2 &nbsp; (total Walsh average pairs)<br/>W_Lat<sub>i,j</sub> = ( Lat<sub>i</sub> + Lat<sub>j</sub> ) / 2 &nbsp; ( &forall; 1 &le; i &le; j &le; n )<br/>W_Lng<sub>i,j</sub> = ( Lng<sub>i</sub> + Lng<sub>j</sub> ) / 2 &nbsp; ( &forall; 1 &le; i &le; j &le; n )<br/>Lat<sub>HL</sub> = Median( { W_Lat<sub>i,j</sub> } for 1 &le; i &le; j &le; n )<br/>Lng<sub>HL</sub> = Median( { W_Lng<sub>i,j</sub> } for 1 &le; i &le; j &le; n )</div>
     
     <ul class="symbols">
-      <li><b>Lat<sub>HL</sub></b>: The final robust Hodges-Lehmann Latitude estimate.</li>
-      <li><b>Lng<sub>HL</sub></b>: The final robust Hodges-Lehmann Longitude estimate.</li>
-      <li><b>W_Lat<sub>i,j</sub></b>: The Walsh coordinate average computed for Latitude using the <i>i</i>-th and <i>j</i>-th epochs.</li>
-      <li><b>W_Lng<sub>i,j</sub></b>: The Walsh coordinate average computed for Longitude using the <i>i</i>-th and <i>j</i>-th epochs.</li>
+      <li><b>Lat<sub>HL</sub>, Lng<sub>HL</sub></b>: The final robust Hodges-Lehmann Latitude and Longitude coordinate estimates.</li>
+      <li><b>W_Lat<sub>i,j</sub>, W_Lng<sub>i,j</sub></b>: The Walsh coordinate averages computed for Latitude and Longitude using the <i>i</i>-th and <i>j</i>-th epochs.</li>
       <li><b>i, j</b>: Loop indices representing pair combinations of geodetic epochs. By restricting j &ge; i, we include the self-averages of the individual points.</li>
       <li><b>M</b>: The cardinality of the symmetric combination matrix of size n &times; n, which mathematically equals n(n+1)/2.</li>
       <li><b>Median</b>: The statistical operator that extracts the central value of a sorted numeric array. For an even number of elements, it computes the average of the two central values.</li>
     </ul>
 
-    <h2>5. Tukey'in Üçlü Ortalaması (Tukey's Trimean)</h2>
+    <h2>5. Tukey's Trimean</h2>
     <p>Tukey'in Üçlü Ortalaması (Tukey, 1977), sıralı istatistiklerin doğrusal kombinasyonu olan L-tahmincileri sınıfından son derece hızlı, kararlı ve etkin bir gürbüz merkezi eğilim kestiricisidir. Enlem ve Boylam koordinat dizilerini bağımsız sıralı diziler (order statistics) olarak işler. Birinci çeyreklik (Q1, %25. kartil), medyan (Q2, %50. kartil) ve üçüncü çeyreklik (Q3, %75. kartil) değerlerinin ağırlıklı kombinasyonunu alır. Bu sayede verinin hem merkezini hem de iki yöndeki kuyruk asimetrisini (asymmetric distribution skewness) başarıyla modeller ve asimetrik çoklu yol saçılımlarına karşı yüksek direnç gösterir:</p>
     
-    <div class="formula">
-      Sort Latitude and Longitude observations to construct order statistics:<br/>
-      Lat<sub>(1)</sub> &le; Lat<sub>(2)</sub> &le; ... &le; Lat<sub>(n)</sub>  and  Lng<sub>(1)</sub> &le; Lng<sub>(2)</sub> &le; ... &le; Lng<sub>(n)</sub><br/><br/>
-      Q1<sub>Lat</sub> = Percentile(Lat, 0.25)  ,  Q1<sub>Lng</sub> = Percentile(Lng, 0.25)<br/>
-      Q2<sub>Lat</sub> = Percentile(Lat, 0.50)  ,  Q2<sub>Lng</sub> = Percentile(Lng, 0.50)  (which is the sample Median)<br/>
-      Q3<sub>Lat</sub> = Percentile(Lat, 0.75)  ,  Q3<sub>Lng</sub> = Percentile(Lng, 0.75)<br/><br/>
-      Lat<sub>Trimean</sub> = ( Q1<sub>Lat</sub> + 2 &middot; Q2<sub>Lat</sub> + Q3<sub>Lat</sub> ) / 4<br/><br/>
-      Lng<sub>Trimean</sub> = ( Q1<sub>Lng</sub> + 2 &middot; Q2<sub>Lng</sub> + Q3<sub>Lng</sub> ) / 4
-    </div>
+    <div class="formula" style="line-height: 1.3; margin: 10pt 0; padding: 8pt;">Sort Latitude and Longitude observations to construct order statistics:<br/>Lat<sub>(1)</sub> &le; Lat<sub>(2)</sub> &le; ... &le; Lat<sub>(n)</sub> &nbsp; and &nbsp; Lng<sub>(1)</sub> &le; Lng<sub>(2)</sub> &le; ... &le; Lng<sub>(n)</sub><br/>Q1<sub>Lat</sub> = Percentile(Lat, 0.25) &nbsp; , &nbsp; Q1<sub>Lng</sub> = Percentile(Lng, 0.25)<br/>Q2<sub>Lat</sub> = Percentile(Lat, 0.50) &nbsp; , &nbsp; Q2<sub>Lng</sub> = Percentile(Lng, 0.50) &nbsp; (Sample Median)<br/>Q3<sub>Lat</sub> = Percentile(Lat, 0.75) &nbsp; , &nbsp; Q3<sub>Lng</sub> = Percentile(Lng, 0.75)<br/>Lat<sub>Trimean</sub> = ( Q1<sub>Lat</sub> + 2 · Q2<sub>Lat</sub> + Q3<sub>Lat</sub> ) / 4<br/>Lng<sub>Trimean</sub> = ( Q1<sub>Lng</sub> + 2 · Q2<sub>Lng</sub> + Q3<sub>Lng</sub> ) / 4</div>
     
     <ul class="symbols">
       <li><b>Lat<sub>Trimean</sub>, Lng<sub>Trimean</sub></b>: The robust coordinates calculated using Tukey's Trimean formula.</li>
@@ -173,21 +119,10 @@ export const generateTechnicalReport = () => {
       <li><b>Percentile(X, p)</b>: The linear interpolation percentile operator that calculates the value below which a percentage <i>p &times; 100</i> of the observations fall.</li>
     </ul>
 
-    <h2>6. Optimal S-Kestiricisi (Optimal S-Estimation)</h2>
+    <h2>6. Optimal S-Estimator (Optimal S-Estimation)</h2>
     <p>S-tahmincileri (Rousseeuw ve Yohai, 1984), gürbüz istatistikte çok yüksek kırılma noktasına (%50) sahip ve asimptotik olarak son derece etkin kestirim modelleridir. Bu algoritmada, Tukey'in İki-Ağırlıklı (Biweight / bisquare) sönümleme fonksiyonu tercih edilmiştir. İki boyutlu uzayda IRLS mantığıyla çalışan yöntem, merkeze çok uzak gözlemleri tamamen sıfırlayarak dışlarken, orta mesafedeki gözlemleri ise yumuşak bir şekilde sönümleyerek sisteme dahil eder. Bu yönüyle hem Huber'in yumuşaklığını hem de Hampel'in katı kaba hata eleme gücünü birleştiren modern bir yaklaşımdır. Başlangıç merkezi olarak Weiszfeld algoritmasıyla türetilen <b>Spatial L1 Median (Geometric Median)</b> koordinatları kullanılır, böylece rota ve eksen bağımsızlığı (rotation-invariance) korunur. İki boyutlu uzayda çalışıldığından gürbüz ölçek parametresi Rayleigh dağılım katsayısı olan <b>0.8493</b> ile çarpılarak ölçeklenir. Standardize edilmiş artıklar (u) üzerinden ağırlıklar atanır:</p>
     
-    <div class="formula">
-      <b>Iterative Formulation and Optimal S Sequence:</b><br/>
-      1. Initialize coordinates using Weiszfeld's Spatial L1 Median: Lat<sup>(0)</sup> = Lat<sub>Weiszfeld</sub> , Lng<sup>(0)</sup> = Lng<sub>Weiszfeld</sub><br/><br/>
-      2. Residuals: v<sub>i</sub><sup>(k)</sup> = calculateDistanceMeter(Lat<sub>i</sub>, Lng<sub>i</sub>, Lat<sup>(k)</sup>, Lng<sup>(k)</sup>)<br/><br/>
-      3. Scale (2D Rayleigh Consistency): &sigma;<sub>MAD</sub><sup>(k)</sup> = 0.8493 &middot; Median( v<sub>i</sub><sup>(k)</sup> )  (stable guard: &sigma;<sub>MAD</sub><sup>(k)</sup> &ge; 10<sup>-7</sup>)<br/><br/>
-      4. Compute dynamic cutoff bound: S<sup>(k)</sup> = c &middot; &sigma;<sub>MAD</sub><sup>(k)</sup>  (where c = 3.0 represents Tukey's biweight tuning constant)<br/><br/>
-      5. Calculate standardized spatial deviation: u<sub>i</sub><sup>(k)</sup> = v<sub>i</sub><sup>(k)</sup> / S<sup>(k)</sup><br/><br/>
-      6. Robust Tukey's Biweight weight factor calculation:<br/>
-      w<sub>Biweight</sub>(u<sub>i</sub><sup>(k)</sup>) = { ( 1 - (u<sub>i</sub><sup>(k)</sup>)<sup>2</sup> )<sup>2</sup>  if |u<sub>i</sub><sup>(k)</sup>| &le; 1.0 ;  0.0  if |u<sub>i</sub><sup>(k)</sup>| &gt; 1.0 }<br/><br/>
-      7. Combine weights: w<sub>total,i</sub><sup>(k)</sup> = w<sub>i</sub> &middot; w<sub>Biweight</sub>(u<sub>i</sub><sup>(k)</sup>)<br/><br/>
-      8. Update coordinates: Iterate until spatial convergence threshold (0.001 m) is met or k = 20.
-    </div>
+    <div class="formula" style="line-height: 1.3; margin: 10pt 0; padding: 8pt;"><b>Iterative Formulation and Optimal S Sequence:</b><br/>1. Initialize Coordinates (Weiszfeld's Spatial L1 Median): Lat<sup>(0)</sup> = Lat<sub>Weiszfeld</sub> , Lng<sup>(0)</sup> = Lng<sub>Weiszfeld</sub><br/>2. Compute Spatial Residual: v<sub>i</sub><sup>(k)</sup> = calculateDistanceMeter(Lat<sub>i</sub>, Lng<sub>i</sub>, Lat<sup>(k)</sup>, Lng<sup>(k)</sup>)<br/>3. Compute Robust Scale (2D Rayleigh Consistency): &sigma;<sub>MAD</sub><sup>(k)</sup> = 0.8493 · Median( v<sub>i</sub><sup>(k)</sup> ) &nbsp; (&sigma;<sub>MAD</sub><sup>(k)</sup> &ge; 10<sup>-7</sup> m)<br/>4. Compute Dynamic Cutoff Bound: S<sup>(k)</sup> = c · &sigma;<sub>MAD</sub><sup>(k)</sup> &nbsp; (Tukey's biweight location tuning constant c = 3.0)<br/>5. Calculate Standardized Spatial Deviation: u<sub>i</sub><sup>(k)</sup> = v<sub>i</sub><sup>(k)</sup> / S<sup>(k)</sup><br/>6. Robust Tukey's Biweight Weight Factor Calculation:<br/>w<sub>Biweight</sub>(u<sub>i</sub><sup>(k)</sup>) = { ( 1 - (u<sub>i</sub><sup>(k)</sup>)<sup>2</sup> )<sup>2</sup> if |u<sub>i</sub><sup>(k)</sup>| &le; 1.0 ; &nbsp; 0.0 if |u<sub>i</sub><sup>(k)</sup>| &gt; 1.0 }<br/>7. Combine Weights: w<sub>total,i</sub><sup>(k)</sup> = w<sub>i</sub> · w<sub>Biweight</sub>(u<sub>i</sub><sup>(k)</sup>)<br/>8. Update Coordinates: Iterate until spatial convergence threshold (0.001 m) is met or k = 20.</div>
     
     <ul class="symbols">
       <li><b>u<sub>i</sub><sup>(k)</sup></b>: The dimensionless standardized spatial residual for the <i>i</i>-th observation. It represents the ratio of the physical metric residual to the dynamic outlier boundary (S<sup>(k)</sup>).</li>
