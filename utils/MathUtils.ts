@@ -426,55 +426,32 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
   const finalPseudoSigma = finalMAD * 0.8493;
   // Pure 1.345-sigma Huber outlier threshold boundary (95% asymptotic efficiency academic gate)
   const stableFinalPseudoSigma = finalPseudoSigma > 1e-7 ? finalPseudoSigma : 1e-7;
-  const outlierThreshold = 1.345 * stableFinalPseudoSigma;
+  const huberLimit = 1.345 * stableFinalPseudoSigma;
 
   const usedIndices: number[] = [];
-  const cleanSamples: Coordinate[] = [];
 
   for (let i = 0; i < samples.length; i++) {
     const p = samples[i];
     const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
 
-    if (dist <= outlierThreshold) {
+    if (dist <= huberLimit) {
       usedIndices.push(i);
-      cleanSamples.push(p);
     }
   }
 
-  if (cleanSamples.length === 0) {
-    return { 
-      result: { lat: currentLat, lng: currentLng, accuracy: 3.0, altitude: null, altitudeAccuracy: null, timestamp: Date.now() }, 
-      usedIndices: samples.map((_, i) => i) 
-    };
+  if (usedIndices.length === 0) {
+    for (let i = 0; i < samples.length; i++) {
+      usedIndices.push(i);
+    }
   }
 
-  const subMAD = calculateMADHuber(cleanSamples, currentLat, currentLng);
-  const subPseudoSigma = subMAD * 0.8493;
-  const stableSubPseudoSigma = subPseudoSigma > 1e-7 ? subPseudoSigma : 1e-7;
-  const finalHuberLimit = 1.345 * stableSubPseudoSigma;
-
-  let finalSumW = 0;
-  let finalLatW = 0;
-  let finalLngW = 0;
-  let totalAccuracy = 0;
-
-  for (const p of cleanSamples) {
-    const dist = calculateDistanceMeter(p.lat, p.lng, currentLat, currentLng, currentLat);
-    const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
-    const huberWeight = dist <= finalHuberLimit ? 1.0 : finalHuberLimit / Math.max(0.001, dist);
-    const combinedWeight = hardwareWeight * huberWeight;
-
-    finalSumW += combinedWeight;
-    finalLatW += p.lat * combinedWeight;
-    finalLngW += p.lng * combinedWeight;
-    totalAccuracy += p.accuracy;
-  }
+  const avgSensorAccuracy = samples.reduce((sum, p) => sum + p.accuracy, 0) / samples.length;
 
   return {
     result: {
-      lat: finalLatW / finalSumW,
-      lng: finalLngW / finalSumW,
-      accuracy: totalAccuracy / cleanSamples.length,
+      lat: currentLat,
+      lng: currentLng,
+      accuracy: avgSensorAccuracy,
       altitude: null,
       altitudeAccuracy: null,
       timestamp: Date.now()
