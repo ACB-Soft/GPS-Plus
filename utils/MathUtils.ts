@@ -182,8 +182,90 @@ export function calculateMAD(samples: Coordinate[], center: { lat: number; lng: 
     return calculateDistanceMeter(s.lat, s.lng, center.lat, center.lng, center.lat);
   });
   const medianDist = calculateMedian(distances);
-  // 1.4826 is the scaling factor for consistency with standard deviation
-  return 1.4826 * medianDist;
+  // 0.8493 is the robust scaling factor derived from the Rayleigh distribution for 2D spatial distances
+  return 0.8493 * medianDist;
+}
+
+/**
+ * Calculates the Spatial L1 Median (Geometric Median) using Weiszfeld's Algorithm.
+ * This is rotation-invariant, which provides excellent geodetic consistency.
+ * It is optimized for performance, limiting the iterations to 10 for mobile/browser execution.
+ */
+export function calculateSpatialL1Median(samples: Coordinate[]): { lat: number; lng: number } {
+  if (samples.length === 0) return { lat: 0, lng: 0 };
+  if (samples.length === 1) return { lat: samples[0].lat, lng: samples[0].lng };
+  if (samples.length === 2) {
+    return {
+      lat: (samples[0].lat + samples[1].lat) / 2,
+      lng: (samples[0].lng + samples[1].lng) / 2
+    };
+  }
+
+  // Use marginal median as reference and starting point
+  const refLat = calculateMedian(samples.map(s => s.lat));
+  const refLng = calculateMedian(samples.map(s => s.lng));
+
+  const { latCoeff, lngCoeff } = getWGS84Coefficients(refLat);
+
+  // Convert all points to 2D local meter coordinates relative to (refLat, refLng)
+  const points = samples.map(s => ({
+    x: (s.lng - refLng) * lngCoeff,
+    y: (s.lat - refLat) * latCoeff
+  }));
+
+  // Initial guess (0, 0)
+  let currX = 0;
+  let currY = 0;
+
+  const maxIter = 10;
+  const tol = 0.001; // 1 mm
+
+  for (let iter = 0; iter < maxIter; iter++) {
+    let numX = 0;
+    let numY = 0;
+    let den = 0;
+    let hitsPoint = false;
+    let hitIdx = -1;
+
+    for (let i = 0; i < points.length; i++) {
+      const dx = currX - points[i].x;
+      const dy = currY - points[i].y;
+      const d = Math.sqrt(dx * dx + dy * dy);
+
+      if (d < 1e-6) {
+        hitsPoint = true;
+        hitIdx = i;
+        break;
+      }
+
+      const invD = 1.0 / d;
+      numX += points[i].x * invD;
+      numY += points[i].y * invD;
+      den += invD;
+    }
+
+    if (hitsPoint) {
+      currX = points[hitIdx].x + 1e-5;
+      currY = points[hitIdx].y + 1e-5;
+      continue;
+    }
+
+    if (den === 0) break;
+
+    const nextX = numX / den;
+    const nextY = numY / den;
+
+    const change = Math.sqrt((nextX - currX) * (nextX - currX) + (nextY - currY) * (nextY - currY));
+    currX = nextX;
+    currY = nextY;
+
+    if (change < tol) break;
+  }
+
+  return {
+    lat: refLat + currY / latCoeff,
+    lng: refLng + currX / lngCoeff
+  };
 }
 
 export function calculateAverage(samples: Coordinate[]): Coordinate {
@@ -295,15 +377,17 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
     };
   }
 
-  let currentLat = calculateMedian(samples.map(s => s.lat));
-  let currentLng = calculateMedian(samples.map(s => s.lng));
+  const spatialMedian = calculateSpatialL1Median(samples);
+  let currentLat = spatialMedian.lat;
+  let currentLng = spatialMedian.lng;
 
   const maxIterations = 15;
   const toleranceMeter = 0.001;
 
   for (let iter = 0; iter < maxIterations; iter++) {
     const currentMAD = calculateMADHuber(samples, currentLat, currentLng);
-    const pseudoSigma = currentMAD * 1.4826;
+    // 0.8493 is the robust scale factor based on 2D spatial Rayleigh distribution
+    const pseudoSigma = currentMAD * 0.8493;
     // Numerical stability guard (machine-epsilon) instead of arbitrary spatial minimum
     const stablePseudoSigma = pseudoSigma > 1e-7 ? pseudoSigma : 1e-7;
     const huberLimit = 1.345 * stablePseudoSigma;
@@ -339,7 +423,7 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
   }
 
   const finalMAD = calculateMADHuber(samples, currentLat, currentLng);
-  const finalPseudoSigma = finalMAD * 1.4826;
+  const finalPseudoSigma = finalMAD * 0.8493;
   // Pure 1.345-sigma Huber outlier threshold boundary (95% asymptotic efficiency academic gate)
   const stableFinalPseudoSigma = finalPseudoSigma > 1e-7 ? finalPseudoSigma : 1e-7;
   const outlierThreshold = 1.345 * stableFinalPseudoSigma;
@@ -365,7 +449,7 @@ export function calculateHuberPure(samples: Coordinate[]): { result: Coordinate;
   }
 
   const subMAD = calculateMADHuber(cleanSamples, currentLat, currentLng);
-  const subPseudoSigma = subMAD * 1.4826;
+  const subPseudoSigma = subMAD * 0.8493;
   const stableSubPseudoSigma = subPseudoSigma > 1e-7 ? subPseudoSigma : 1e-7;
   const finalHuberLimit = 1.345 * stableSubPseudoSigma;
 
@@ -410,15 +494,17 @@ export function calculateOptimalSPure(samples: Coordinate[]): { result: Coordina
     };
   }
 
-  let currentLat = calculateMedian(samples.map(s => s.lat));
-  let currentLng = calculateMedian(samples.map(s => s.lng));
+  const spatialMedian = calculateSpatialL1Median(samples);
+  let currentLat = spatialMedian.lat;
+  let currentLng = spatialMedian.lng;
 
   const maxIterations = 20;
   const toleranceMeter = 0.001;
 
   for (let iter = 0; iter < maxIterations; iter++) {
     const currentMAD = calculateMADHuber(samples, currentLat, currentLng);
-    const pseudoSigma = currentMAD * 1.4826;
+    // 0.8493 is the robust scale factor based on 2D spatial Rayleigh distribution
+    const pseudoSigma = currentMAD * 0.8493;
     const stablePseudoSigma = pseudoSigma > 1e-7 ? pseudoSigma : 1e-7;
     
     // Tukey's Biweight tuning constant c = 3.0 for highly robust location estimation.
@@ -471,7 +557,7 @@ export function calculateOptimalSPure(samples: Coordinate[]): { result: Coordina
   }
 
   const finalMAD = calculateMADHuber(samples, currentLat, currentLng);
-  const finalPseudoSigma = finalMAD * 1.4826;
+  const finalPseudoSigma = finalMAD * 0.8493;
   const stableFinalPseudoSigma = finalPseudoSigma > 1e-7 ? finalPseudoSigma : 1e-7;
   const outlierThreshold = 3.0 * stableFinalPseudoSigma;
 
@@ -588,7 +674,7 @@ export function calculateHodgesLehmannPure(samples: Coordinate[]): { result: Coo
   const medianDev = N % 2 !== 0 ? sortedDevs[midD] : (sortedDevs[midD - 1] + sortedDevs[midD]) / 2;
 
   const mad = medianDev;
-  const scaleSigma = 1.4826 * mad;
+  const scaleSigma = 0.8493 * mad;
 
   // Rejection threshold boundaries (consistency safeguard)
   const minSigmaBoundary = 1e-6; // 1 micrometer
@@ -713,7 +799,7 @@ export function calculateTukeysTrimeanPure(samples: Coordinate[]): { result: Coo
   const medianDev = N % 2 !== 0 ? sortedDevs[midD] : (sortedDevs[midD - 1] + sortedDevs[midD]) / 2;
 
   const mad = medianDev;
-  const scaleSigma = 1.4826 * mad;
+  const scaleSigma = 0.8493 * mad;
   const minSigmaBoundary = 1e-6; // 1 micrometer
 
   if (scaleSigma < minSigmaBoundary) {
@@ -792,12 +878,10 @@ export function calculateHampelAcademic(samples: Coordinate[]): { result: Coordi
   }
 
   const N = samples.length;
-  // Spatial median coordinates
-  const sortedLats = samples.map(s => s.lat).sort((a, b) => a - b);
-  const sortedLngs = samples.map(s => s.lng).sort((a, b) => a - b);
-  const mid = Math.floor(N / 2);
-  const medianLat = N % 2 !== 0 ? sortedLats[mid] : (sortedLats[mid - 1] + sortedLats[mid]) / 2;
-  const medianLng = N % 2 !== 0 ? sortedLngs[mid] : (sortedLngs[mid - 1] + sortedLngs[mid]) / 2;
+  // Spatial median coordinates computed using Weiszfeld's algorithm for true Spatial L1 Median
+  const spatialMedian = calculateSpatialL1Median(samples);
+  const medianLat = spatialMedian.lat;
+  const medianLng = spatialMedian.lng;
 
   const absDevs: number[] = [];
   for (let i = 0; i < N; i++) {
@@ -805,7 +889,7 @@ export function calculateHampelAcademic(samples: Coordinate[]): { result: Coordi
   }
   
   const mad = calculateMedian(absDevs);
-  const scaleSigma = 1.4826 * mad;
+  const scaleSigma = 0.8493 * mad;
   const inlierIndices: number[] = [];
 
   for (let i = 0; i < N; i++) {
