@@ -539,7 +539,6 @@ export function calculateOptimalSPure(samples: Coordinate[]): { result: Coordina
   const outlierThreshold = 3.0 * stableFinalPseudoSigma;
 
   const usedIndices: number[] = [];
-  const cleanSamples: Coordinate[] = [];
 
   for (let i = 0; i < samples.length; i++) {
     const p = samples[i];
@@ -547,35 +546,22 @@ export function calculateOptimalSPure(samples: Coordinate[]): { result: Coordina
 
     if (dist <= outlierThreshold) {
       usedIndices.push(i);
-      cleanSamples.push(p);
     }
   }
 
-  if (cleanSamples.length === 0) {
-    return {
-      result: { lat: currentLat, lng: currentLng, accuracy: 3.0, altitude: null, altitudeAccuracy: null, timestamp: Date.now() },
-      usedIndices: samples.map((_, i) => i)
-    };
+  if (usedIndices.length === 0) {
+    for (let i = 0; i < samples.length; i++) {
+      usedIndices.push(i);
+    }
   }
 
-  let finalSumW = 0;
-  let finalLatW = 0;
-  let finalLngW = 0;
-  let totalAccuracy = 0;
-
-  for (const p of cleanSamples) {
-    const hardwareWeight = 1.0 / Math.pow(Math.max(0.1, p.accuracy), 2);
-    finalSumW += hardwareWeight;
-    finalLatW += p.lat * hardwareWeight;
-    finalLngW += p.lng * hardwareWeight;
-    totalAccuracy += p.accuracy;
-  }
+  const avgSensorAccuracy = samples.reduce((sum, p) => sum + p.accuracy, 0) / samples.length;
 
   return {
     result: {
-      lat: finalLatW / finalSumW,
-      lng: finalLngW / finalSumW,
-      accuracy: totalAccuracy / cleanSamples.length,
+      lat: currentLat,
+      lng: currentLng,
+      accuracy: avgSensorAccuracy,
       altitude: null,
       altitudeAccuracy: null,
       timestamp: Date.now()
