@@ -342,7 +342,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
         });
 
         // localStorage'a geri eşitleyelim
-        localStorage.setItem('gps_locations_v1.0', 'gps_locations_v5.0', JSON.stringify(currentLocations));
+        localStorage.setItem('gps_locations_v5.0', JSON.stringify(currentLocations));
         if (onRestoreLocations) {
           onRestoreLocations(currentLocations);
         }
