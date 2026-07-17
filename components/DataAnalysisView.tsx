@@ -156,6 +156,32 @@ const CustomScatterLabel = (props: any) => {
   );
 };
 
+const ReferenceDiamondShape = (props: any) => {
+  const { cx, cy } = props;
+  if (cx === undefined || cy === undefined) return null;
+  const size = 11;
+  const d = `M 0 ${-size} L ${size} 0 L 0 ${size} L ${-size} 0 Z`;
+  return (
+    <g transform={`translate(${cx},${cy})`}>
+      <path
+        d={d}
+        fill="#10b981"
+        stroke="#059669"
+        strokeWidth={1.5}
+      />
+      <text
+        x={0}
+        y={2.5}
+        textAnchor="middle"
+        fill="white"
+        style={{ fontSize: '7px', fontWeight: '900', pointerEvents: 'none' }}
+      >
+        REF
+      </text>
+    </g>
+  );
+};
+
 const RawPointShape = (props: any) => {
   const { cx, cy, fill, fillOpacity, r } = props;
   const radius = r !== undefined ? r : 2.5;
@@ -1143,8 +1169,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       list.push({
         segmentIdx: i,
         label: language === 'EN' 
-          ? `Session ${i + 1} (${startSec}-${endSec}s)`
-          : `Oturum ${i + 1} (${startSec}-${endSec}sn)`,
+          ? `Session ${i + 1}`
+          : `Oturum ${i + 1}`,
         color: SESSION_COLORS[i % SESSION_COLORS.length],
         count
       });
@@ -1923,12 +1949,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           <Scatter 
                             name={language === 'EN' ? "GROUND TRUTH (REF)" : "KESİN KOORDİNAT (REF)"} 
                             data={[{ dE: 0, dN: 0 }]} 
-                            fill="#10b981" 
-                            shape="diamond" 
+                            shape={<ReferenceDiamondShape />} 
                             line={false}
-                          >
-                            <Cell fill="#10b981" stroke="#059669" strokeWidth={1.5} />
-                          </Scatter>
+                          />
                         )}
 
                         {/* Layer 1: Raw Points Cloud */}
@@ -2017,30 +2040,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                           </div>
                         );
                       })}
-                      {analysisType === 'precise' && (
-                        <div className="flex items-center gap-1.5 text-left leading-none min-w-0 font-sans">
-                          <div 
-                            className="flex items-center justify-center bg-[#10b981] border border-[#059669] text-white font-black shrink-0 shadow-xs rotate-45" 
-                            style={{ 
-                              width: `${parseFloat(customScatterFontSize) + 2.5}px`, 
-                              height: `${parseFloat(customScatterFontSize) + 2.5}px`,
-                              borderRadius: '3px',
-                              marginLeft: '2px',
-                              marginRight: '2px'
-                            }}
-                          >
-                            <span className="text-[6px] font-black -rotate-45 block transform">REF</span>
-                          </div>
-                          <div className="min-w-0 font-sans">
-                            <p className="font-extrabold text-slate-800 uppercase tracking-wider truncate leading-none" style={{ fontSize: `${parseFloat(customScatterFontSize) - 0.5}px` }}>
-                              PRECISE
-                            </p>
-                            <p className="font-bold text-emerald-600 tracking-wider leading-none mt-0.5 truncate" style={{ fontSize: `${parseFloat(customScatterFontSize) - 1.5}px` }}>
-                              COORDINATE
-                            </p>
-                          </div>
-                        </div>
-                      )}
+                      {/* Removed Precise Coordinate legend item as requested */}
                     </div>
                   </div>
                 </div>
@@ -2184,12 +2184,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 <Scatter 
                                   name={language === 'EN' ? "GROUND TRUTH (REF)" : "KESİN KOORDİNAT (REF)"} 
                                   data={[{ dx: 0, dy: 0 }]} 
-                                  fill="#10b981" 
-                                  shape="diamond" 
+                                  shape={<ReferenceDiamondShape />} 
                                   line={false}
-                                >
-                                  <Cell fill="#10b981" stroke="#059669" strokeWidth={1.5} />
-                                </Scatter>
+                                />
                               )}
 
                               {/* Approved Points Series */}
