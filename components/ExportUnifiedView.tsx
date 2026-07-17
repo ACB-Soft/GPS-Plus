@@ -13,7 +13,7 @@ interface Props {
 }
 
 const ExportUnifiedView: React.FC<Props> = ({ locations, settings, onOpenACBLabs }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const uniqueFolders: string[] = Array.from(new Set(locations.map(l => l.folderName)));
   const [selectedFolder, setSelectedFolder] = useState<string>(uniqueFolders.length > 0 ? uniqueFolders[0] : '');
   
@@ -103,7 +103,7 @@ const ExportUnifiedView: React.FC<Props> = ({ locations, settings, onOpenACBLabs
         </button>
 
         <button 
-          onClick={() => downloadSHP(getFiltered(), settings)} 
+          onClick={() => downloadSHP(getFiltered(), settings, language)} 
           disabled={!hasSelection} 
           className={`w-full py-2.5 md:py-3.5 px-6 text-white rounded-xl md:rounded-2xl font-black text-sm md:text-base uppercase flex items-center gap-5 transition-all duration-300 shadow-xl ${
             hasSelection ? 'bg-slate-700 shadow-slate-300 active:scale-[0.98]' : 'bg-slate-300 opacity-40 grayscale cursor-not-allowed shadow-none'

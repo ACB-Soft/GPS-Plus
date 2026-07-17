@@ -3,14 +3,14 @@ import { convertCoordinate } from '../utils/CoordinateUtils';
 import { getGeoidInfo } from './GeoidUtils';
 import shpwrite from '@mapbox/shp-write';
 
-export const downloadSHP = (locations: SavedLocation[], settings: AppSettings) => {
+export const downloadSHP = (locations: SavedLocation[], settings: AppSettings, language: 'TR' | 'EN' = 'TR') => {
   if (locations.length === 0) {
-    alert("Kayıt bulunamadı.");
+    alert(language === 'EN' ? "No records found." : "Kayıt bulunamadı.");
     return;
   }
 
   const uniqueFolders = Array.from(new Set(locations.map(l => l.folderName)));
-  const projectName = uniqueFolders.length === 1 ? uniqueFolders[0] : "Coklu_Proje";
+  const projectName = uniqueFolders.length === 1 ? uniqueFolders[0] : (language === 'EN' ? "Multi_Project" : "Coklu_Proje");
 
   const isWGS84 = locations[0].coordinateSystem === 'WGS84' || !locations[0].coordinateSystem;
 
@@ -33,22 +33,33 @@ export const downloadSHP = (locations: SavedLocation[], settings: AppSettings) =
     const outLng = loc.lng;
     const outLat = loc.lat;
     
+    const properties = language === 'EN' ? {
+      Point_Name: loc.name,
+      Y_Easting: isWGS84 ? "0.000" : x.toFixed(3),
+      X_Northing: isWGS84 ? "0.000" : y.toFixed(3),
+      Latitude: loc.lat.toFixed(7),
+      Longitude: loc.lng.toFixed(7),
+      "H-Orthometric": orthometricH !== null ? orthometricH.toFixed(3) : "0.000",
+      "h-Ellipsoid": ellipsoidalH !== null ? ellipsoidalH.toFixed(3) : "0.000",
+      Coord_Sys: loc.coordinateSystem || 'WGS84'
+    } : {
+      Nokta_Adi: loc.name,
+      Y_Saga: isWGS84 ? "0.000" : x.toFixed(3),
+      X_Yukari: isWGS84 ? "0.000" : y.toFixed(3),
+      Enlem: loc.lat.toFixed(7),
+      Boylam: loc.lng.toFixed(7),
+      "H-Ortometrik": orthometricH !== null ? orthometricH.toFixed(3) : "0.000",
+      "h-Elipsoid": ellipsoidalH !== null ? ellipsoidalH.toFixed(3) : "0.000",
+      Koor_Sis: loc.coordinateSystem || 'WGS84'
+    };
+
     return {
       type: "Feature" as const,
       geometry: {
         type: "Point" as const,
         coordinates: [outLng, outLat] 
       },
-      properties: {
-        Nokta_Adi: loc.name,
-        Y_Saga: isWGS84 ? 0 : parseFloat(x.toFixed(3)),
-        X_Yukari: isWGS84 ? 0 : parseFloat(y.toFixed(3)),
-        Enlem: isWGS84 ? parseFloat(x.toFixed(7)) : 0,
-        Boylam: isWGS84 ? parseFloat(y.toFixed(7)) : 0,
-        Ortometrik: orthometricH !== null ? parseFloat(orthometricH.toFixed(3)) : 0,
-        Elipsoid_H: ellipsoidalH !== null ? parseFloat(ellipsoidalH.toFixed(3)) : 0,
-        Koor_Sis: loc.coordinateSystem || 'WGS84'
-      }
+      properties
     };
   });
 
@@ -60,9 +71,9 @@ export const downloadSHP = (locations: SavedLocation[], settings: AppSettings) =
   const options = {
     folder: projectName,
     types: {
-      point: 'Noktalar',
-      polygon: 'Alanlar',
-      line: 'Cizgiler'
+      point: language === 'EN' ? 'Points' : 'Noktalar',
+      polygon: language === 'EN' ? 'Polygons' : 'Alanlar',
+      line: language === 'EN' ? 'Lines' : 'Cizgiler'
     },
     outputType: 'blob',
     compression: 'DEFLATE'
