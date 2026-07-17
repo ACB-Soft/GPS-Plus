@@ -2503,7 +2503,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         const subFontSize = `${fs - 1.5}px`;
                         return (
                           <div key={sIdx} className="flex items-center gap-1.5 text-left leading-none min-w-0">
-                            <div className="w-3 h-3 rounded-full shrink-0 shadow-xs" style={{ backgroundColor: color }} />
+                            <div className="rounded shrink-0 shadow-xs" style={{ backgroundColor: color, width: `${parseFloat(customTimeSeriesFontSize) + 6.5}px`, height: `${parseFloat(customTimeSeriesFontSize) + 6.5}px` }} />
                             <div className="min-w-0 font-sans">
                               <p className="font-extrabold text-slate-800 uppercase tracking-tight truncate leading-none font-sans" style={{ fontSize: titleFontSize }}>
                                 {label}
