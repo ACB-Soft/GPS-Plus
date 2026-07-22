@@ -5,7 +5,6 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>GPS Plus</title>
-    <link rel="manifest" href="manifest.json" />
     <meta name="theme-color" content="#e2e8f0" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -19,14 +18,5 @@
   <body class="selection:bg-blue-500 selection:text-white">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js', { scope: './' })
-            .then(reg => console.log('SW Registered:', reg.scope))
-            .catch(err => console.log('SW Registration failed:', err));
-        });
-      }
-    </script>
   </body>
 </html>
