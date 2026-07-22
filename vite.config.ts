@@ -54,6 +54,25 @@ export default defineConfig(({ mode }) => {
                 type: 'image/png',
                 purpose: 'maskable'
               }
+            ],
+            file_handlers: [
+              {
+                action: './',
+                name: 'KML / KMZ Dosyaları',
+                accept: {
+                  'application/vnd.google-earth.kml+xml': ['.kml'],
+                  'application/vnd.google-earth.kmz': ['.kmz'],
+                  'application/xml': ['.kml'],
+                  'text/xml': ['.kml']
+                }
+              },
+              {
+                action: './',
+                name: 'GPX / Harita Dosyaları',
+                accept: {
+                  'application/gpx+xml': ['.gpx']
+                }
+              }
             ]
           }
         })
