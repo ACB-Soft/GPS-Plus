@@ -16,13 +16,13 @@ export default defineConfig(({ mode }) => {
         react(),
         tailwindcss(),
         VitePWA({
-          registerType: 'autoUpdate',
+          registerType: 'prompt',
           includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
           workbox: {
             maximumFileSizeToCacheInBytes: 5000000
           },
           manifest: {
-            name: 'GPS Plus Tool',
+            name: 'GPS Plus',
             short_name: 'GPS Plus',
             description: 'Geographic positioning and surveying tool',
             theme_color: '#e2e8f0',

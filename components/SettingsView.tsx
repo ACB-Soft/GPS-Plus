@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useRegisterSW } from "virtual:pwa-register/react";
 import { CalculationMethod } from '../types';
 import { APP_VERSION, FULL_BRAND } from '../version';
 import GlobalFooter from './GlobalFooter';
@@ -12,6 +13,7 @@ interface Props {
 }
 
 const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
+  const { needRefresh: [needRefresh, setNeedRefresh], updateServiceWorker } = useRegisterSW();
   const { t } = useLanguage();
   const [coordinateSystem, setCoordinateSystem] = useState(localStorage.getItem('default_coord_system') || 'WGS84');
   const [accuracyLimit, setAccuracyLimit] = useState(localStorage.getItem('default_accuracy_limit') || '5');
@@ -107,19 +109,45 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
     }
   };
 
+  useEffect(() => {
+    if (needRefresh) {
+      setModal({
+        isOpen: true,
+        title: t('Güncelleme Var'),
+        type: 'confirm',
+        message: t('Uygulamanın yeni bir sürümü hazır. Yüklemek için uygulamayı şimdi yeniden başlatmak ister misiniz?'),
+        confirmLabel: t('Yeniden Başlat'),
+        onConfirm: () => {
+          updateServiceWorker(true);
+        }
+      });
+    }
+  }, [needRefresh, t, updateServiceWorker]);
+
   const handleUpdateCheck = async () => {
     if (isCheckingUpdate) return;
     
     setIsCheckingUpdate(true);
     try {
-      // Offline-resilient and deterministic update simulator
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setModal({
-        isOpen: true,
-        title: t('Güncelleştirme Denetimi'),
-        type: 'info',
-        message: `${t('Uygulama Güncel')}\n\n${FULL_BRAND}`
-      });
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.ready;
+        await registration.update();
+      } else {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+      
+      if (!needRefresh) {
+        // We wait a tiny bit to see if updatefound triggers needRefresh
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        if (!needRefresh) {
+          setModal({
+            isOpen: true,
+            title: t('Güncelleştirme Denetimi'),
+            type: 'info',
+            message: `${t('Uygulama Güncel')}\n\n${FULL_BRAND}`
+          });
+        }
+      }
     } catch {
       setModal({
         isOpen: true,
@@ -134,6 +162,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
 
   const handleCreateBackup = () => {
     try {
+
       const backupKeys = [
         'gps_locations_v1.0', 'gps_locations_v5.0',
         'stakeout_points_v1',
@@ -205,6 +234,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
+
         const resultStr = event.target?.result as string;
         const payload = JSON.parse(resultStr);
 
@@ -254,6 +284,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
     const activePayload = customPayload || restorePayload;
     if (!activePayload) return;
     try {
+
       const dataToRestore = activePayload.data;
 
       // 1. Ölçümler (gps_locations_v1.0) kurgusu
@@ -271,6 +302,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
       if (backupLocsValue) {
         if (typeof backupLocsValue === 'string') {
           try {
+
             backupLocations = JSON.parse(backupLocsValue);
           } catch (e) {
             console.error("Yedek lokasyonlar ayrıştırılamadı:", e);
@@ -358,6 +390,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
       if (backupStPtsValue) {
         if (typeof backupStPtsValue === 'string') {
           try {
+
             backupStakeoutPoints = JSON.parse(backupStPtsValue);
           } catch (e) {}
         } else if (Array.isArray(backupStPtsValue)) {
@@ -398,6 +431,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
       if (backupGeomsValue) {
         if (typeof backupGeomsValue === 'string') {
           try {
+
             backupGeometries = JSON.parse(backupGeomsValue);
           } catch (e) {}
         } else if (Array.isArray(backupGeomsValue)) {
