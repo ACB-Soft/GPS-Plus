@@ -1,12 +1,12 @@
 const CACHE_NAME = 'gps-plus-v1';
 const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/favicon.svg',
-  '/apple-touch-icon.png',
-  '/pwa-192x192.png',
-  '/pwa-512x512.png'
+  './',
+  './index.html',
+  './manifest.json',
+  './favicon.svg',
+  './apple-touch-icon.png',
+  './pwa-192x192.png',
+  './pwa-512x512.png'
 ];
 
 self.addEventListener('install', (event) => {

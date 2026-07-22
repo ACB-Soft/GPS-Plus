@@ -40,38 +40,38 @@ const Onboarding: React.FC<Props> = ({ onFinish }) => {
         </div>
       </div>
 
-      <div className="flex flex-col items-center w-full max-w-sm mx-auto space-y-2.5 md:space-y-3 mb-6">
-        <div className="w-full flex gap-3 md:gap-4 text-left items-center p-3 md:p-4 bg-slate-50 rounded-[1.4rem] border border-slate-100 shadow-sm">
-          <div className="w-9 h-9 md:w-10 md:h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 shrink-0">
-            <i className="fas fa-location-crosshairs text-base md:text-lg"></i>
+      <div className="flex flex-col items-center w-full max-w-sm mx-auto space-y-2 md:space-y-2.5 mb-6">
+        <div className="w-full flex gap-3 text-left items-center py-2 px-3.5 md:py-2.5 md:px-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-sm">
+          <div className="w-8 h-8 md:w-9 md:h-9 bg-blue-50 rounded-lg md:rounded-xl flex items-center justify-center text-blue-600 shrink-0">
+            <i className="fas fa-location-crosshairs text-sm md:text-base"></i>
           </div>
           <div className="space-y-0.5">
             <h4 className="text-[10px] md:text-[11px] font-black text-slate-900 uppercase tracking-widest">{t("Konum Erişimi")}</h4>
-            <p className="text-[11px] md:text-[12px] text-slate-500 font-bold leading-tight">
+            <p className="text-[10px] md:text-[11px] text-slate-500 font-bold leading-tight">
               {t("GPS verilerini kullanarak konum bilgisi üretmek için gereklidir.")}
             </p>
           </div>
         </div>
 
-        <div className="w-full flex gap-3 md:gap-4 text-left items-center p-3 md:p-4 bg-slate-50 rounded-[1.4rem] border border-slate-100 shadow-sm">
-          <div className="w-9 h-9 md:w-10 md:h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 shrink-0">
-            <i className="fas fa-database text-base md:text-lg"></i>
+        <div className="w-full flex gap-3 text-left items-center py-2 px-3.5 md:py-2.5 md:px-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-sm">
+          <div className="w-8 h-8 md:w-9 md:h-9 bg-emerald-50 rounded-lg md:rounded-xl flex items-center justify-center text-emerald-600 shrink-0">
+            <i className="fas fa-database text-sm md:text-base"></i>
           </div>
           <div className="space-y-0.5">
             <h4 className="text-[10px] md:text-[11px] font-black text-slate-900 uppercase tracking-widest">{t("Dosya Erişimi")}</h4>
-            <p className="text-[11px] md:text-[12px] text-slate-500 font-bold leading-tight">
+            <p className="text-[10px] md:text-[11px] text-slate-500 font-bold leading-tight">
               {t("Uygulama verilerini aktarmak için gereklidir. Verileriniz sadece yerel cihazınızda depolanır.")}
             </p>
           </div>
         </div>
 
-        <div className="w-full flex gap-3 md:gap-4 text-left items-center p-3 md:p-4 bg-slate-50 rounded-[1.4rem] border border-slate-100 shadow-sm">
-          <div className="w-9 h-9 md:w-10 md:h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600 shrink-0">
-            <i className="fas fa-earth-americas text-base md:text-lg"></i>
+        <div className="w-full flex gap-3 text-left items-center py-2 px-3.5 md:py-2.5 md:px-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-sm">
+          <div className="w-8 h-8 md:w-9 md:h-9 bg-amber-50 rounded-lg md:rounded-xl flex items-center justify-center text-amber-600 shrink-0">
+            <i className="fas fa-earth-americas text-sm md:text-base"></i>
           </div>
           <div className="space-y-0.5">
             <h4 className="text-[10px] md:text-[11px] font-black text-slate-900 uppercase tracking-widest">{t("İnternet Erişimi")}</h4>
-            <p className="text-[11px] md:text-[12px] text-slate-500 font-bold leading-tight">
+            <p className="text-[10px] md:text-[11px] text-slate-500 font-bold leading-tight">
               {t("Uydu görüntüsü altlıklarının yüklenebilmesi için gereklidir.")}
             </p>
           </div>
