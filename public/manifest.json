@@ -1,17 +1,26 @@
 {
+  "id": "/gps-plus/",
   "short_name": "GPS Plus",
-  "name": "GPS Plus",
+  "name": "GPS Plus Tool",
+  "description": "Geographic positioning and surveying tool",
   "icons": [
     {
       "src": "pwa-192x192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any"
     },
     {
       "src": "pwa-512x512.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purpose": "any maskable"
+      "purpose": "maskable"
+    },
+    {
+      "src": "pwa-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
     },
     {
       "src": "apple-touch-icon.png",
@@ -19,7 +28,7 @@
       "sizes": "180x180"
     }
   ],
-  "start_url": "./",
+  "start_url": "index.html",
   "background_color": "#e2e8f0",
   "theme_color": "#e2e8f0",
   "display": "standalone",
