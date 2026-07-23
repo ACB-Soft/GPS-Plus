@@ -19,7 +19,18 @@ import { useLanguage } from './utils/LanguageContext';
 const App = () => {
   const { t } = useLanguage();
   type ViewType = 'onboarding' | 'dashboard' | 'capture' | 'list' | 'export' | 'result' | 'stakeout' | 'help' | 'settings' | 'acblabs';
-  const [view, setView] = useState<ViewType>('onboarding');
+
+  const getInitialView = (): ViewType => {
+    try {
+      const showOnboardingEveryTime = localStorage.getItem('show_onboarding_every_time') !== 'false';
+      const onboardingDone = localStorage.getItem('onboarding_v1.0_done') === 'true';
+      return (!onboardingDone || showOnboardingEveryTime) ? 'onboarding' : 'dashboard';
+    } catch (e) {
+      return 'onboarding';
+    }
+  };
+
+  const [view, setView] = useState<ViewType>(getInitialView);
   const [subView, setSubView] = useState<string | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
@@ -112,23 +123,15 @@ const App = () => {
   useEffect(() => {
     geoidService.initialize();
 
-    const showOnboardingEveryTime = localStorage.getItem('show_onboarding_every_time') !== 'false';
-    const onboardingDone = localStorage.getItem('onboarding_v1.0_done') === 'true';
-    
-    // Start with onboarding if not done or if requested to show every time
-    const initialView = (!onboardingDone || showOnboardingEveryTime) ? 'onboarding' : 'dashboard';
-    
-    setView(initialView);
-    setSubView(null);
+    const initialView = getInitialView();
     window.history.replaceState({ view: initialView, subView: null, index: 0 }, '');
 
     const handlePopState = (event: PopStateEvent) => {
       if (event.state && event.state.view) {
         setView(event.state.view);
         setSubView(event.state.subView || null);
-      } else if (viewRef.current !== 'onboarding') {
-        // Only go back to onboarding if we're not already there
-        setView('onboarding');
+      } else if (viewRef.current !== initialView) {
+        setView(initialView);
         setSubView(null);
       }
     };
