@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BRAND_NAME } from '../version';
 import { useLanguage } from '../utils/LanguageContext';
+import PWAInstallModal from './PWAInstallModal';
 
 interface Props {
   onStartCapture: () => void;
@@ -17,6 +18,38 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
   const { language, changeLanguage, t } = useLanguage();
   const [showLangMenu, setShowLangMenu] = useState(false);
   const [tempLanguage, setTempLanguage] = useState(language);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+
+  useEffect(() => {
+    const checkStandalone = () => {
+      const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
+      setIsStandalone(isStandaloneMode);
+    };
+    checkStandalone();
+
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleTriggerInstallPrompt = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const choice = await deferredPrompt.userChoice;
+      if (choice.outcome === 'accepted') {
+        setDeferredPrompt(null);
+        setShowInstallModal(false);
+      }
+    }
+  };
 
   const handleApplyLanguage = (newLang: any) => {
     setShowLangMenu(false);
@@ -105,8 +138,20 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
         )}
       </div>
 
-      {/* Ayarlar ve Yardım Butonları - Sağ Üst Köşe */}
+      {/* Uygulamayı Yükle, Ayarlar ve Yardım Butonları - Sağ Üst Köşe */}
       <div className="absolute top-6 right-8 z-20 flex gap-3">
+        {/* Uygulamayı Yükle Butonu */}
+        <button 
+          onClick={() => setShowInstallModal(true)}
+          className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center shadow-xl border border-blue-200 text-slate-600 active:scale-90 transition-all hover:bg-blue-100 group cursor-pointer relative"
+          title={t("Uygulamayı Yükle")}
+        >
+          <i className="fas fa-download text-xl group-hover:text-blue-600 transition-colors"></i>
+          {deferredPrompt && (
+            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white animate-pulse"></span>
+          )}
+        </button>
+
         {/* Ayarlar Butonu */}
         <button 
           onClick={onShowSettings}
@@ -206,6 +251,15 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
           <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-6 -mt-6 blur-xl"></div>
         </button>
       </main>
+
+      {/* PWA Yükleme Rehberi Modalı */}
+      <PWAInstallModal
+        isOpen={showInstallModal}
+        onClose={() => setShowInstallModal(false)}
+        deferredPrompt={deferredPrompt}
+        onInstall={handleTriggerInstallPrompt}
+        isStandalone={isStandalone}
+      />
     </div>
   );
 };
