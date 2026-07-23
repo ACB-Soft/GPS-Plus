@@ -1,5 +1,11 @@
 // Turkish-to-English translation dictionary (Combined for performance and cleaner codebase)
 export const trToEnMap: Record<string, string> = {
+  "== PWA INSTALL ==": "",
+  "Uygulamayı Yükle": "Install App",
+  "Yükle": "Install",
+  "Bu uygulamayı cihazınıza yükleyerek daha hızlı erişim sağlayabilir ve tam ekran deneyimi yaşayabilirsiniz.": "By installing this application on your device, you can get faster access and enjoy a full-screen experience.",
+  "Kurulumu başlatmak için Yükle butonuna tıklayın.": "Click the Install button to start the installation.",
+  
   "== COMMON & NAVIGATION ==": "",
   "DOWNLOAD": "DOWNLOAD",
   "Ölçüm Yap": "Survey",

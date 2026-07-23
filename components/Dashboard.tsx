@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BRAND_NAME } from '../version';
 import { useLanguage } from '../utils/LanguageContext';
+import Modal from './Modal';
 
 interface Props {
   onStartCapture: () => void;
@@ -17,6 +18,42 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
   const { language, changeLanguage, t } = useLanguage();
   const [showLangMenu, setShowLangMenu] = useState(false);
   const [tempLanguage, setTempLanguage] = useState(language);
+
+  // PWA Install State
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [isInstallable, setIsInstallable] = useState(false);
+
+  useEffect(() => {
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
+      setIsInstallable(false);
+    }
+
+    const handleBeforeInstallPrompt = (e: Event) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      setDeferredPrompt(e);
+      // Update UI notify the user they can install the PWA
+      setIsInstallable(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    const handleAppInstalled = () => {
+      // Clear the deferredPrompt so it can be garbage collected
+      setDeferredPrompt(null);
+      setIsInstallable(false);
+    };
+
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
 
   const handleApplyLanguage = (newLang: any) => {
     setShowLangMenu(false);
@@ -107,6 +144,17 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
 
       {/* Ayarlar ve Yardım Butonları - Sağ Üst Köşe */}
       <div className="absolute top-6 right-8 z-20 flex gap-3">
+        {/* Uygulamayı Yükle Butonu */}
+        {isInstallable && (
+          <button 
+            onClick={() => setShowInstallModal(true)}
+            className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center shadow-xl border border-blue-200 text-slate-600 active:scale-90 transition-all hover:bg-blue-100 group cursor-pointer animate-in fade-in duration-300"
+            title={t("Uygulamayı Yükle")}
+          >
+            <i className="fas fa-download text-xl group-hover:text-blue-600 transition-colors"></i>
+          </button>
+        )}
+
         {/* Ayarlar Butonu */}
         <button 
           onClick={onShowSettings}
@@ -206,6 +254,32 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
           <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-6 -mt-6 blur-xl"></div>
         </button>
       </main>
+
+      {/* Uygulamayı Yükle Modalı */}
+      <Modal
+        isOpen={showInstallModal}
+        onClose={() => setShowInstallModal(false)}
+        title={t("Uygulamayı Yükle")}
+        type="info"
+        confirmLabel={t("Yükle")}
+        onConfirm={() => {
+          if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult: any) => {
+              if (choiceResult.outcome === 'accepted') {
+                console.log('User accepted the install prompt');
+              } else {
+                console.log('User dismissed the install prompt');
+              }
+              setDeferredPrompt(null);
+              setIsInstallable(false);
+            });
+          }
+        }}
+      >
+        <p className="mb-2">{t("Bu uygulamayı cihazınıza yükleyerek daha hızlı erişim sağlayabilir ve tam ekran deneyimi yaşayabilirsiniz.")}</p>
+        <p>{t("Kurulumu başlatmak için Yükle butonuna tıklayın.")}</p>
+      </Modal>
     </div>
   );
 };
