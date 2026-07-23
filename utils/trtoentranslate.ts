@@ -3,8 +3,10 @@ export const trToEnMap: Record<string, string> = {
   "== PWA INSTALL ==": "",
   "Uygulamayı Yükle": "Install App",
   "Yükle": "Install",
+  "Anladım": "Got it",
   "Bu uygulamayı cihazınıza yükleyerek daha hızlı erişim sağlayabilir ve tam ekran deneyimi yaşayabilirsiniz.": "By installing this application on your device, you can get faster access and enjoy a full-screen experience.",
   "Kurulumu başlatmak için Yükle butonuna tıklayın.": "Click the Install button to start the installation.",
+  "iOS cihazlarda uygulamayı yüklemek için Safari menüsünden 'Paylaş' simgesine dokunun ve listeden 'Ana Ekrana Ekle' seçeneğini seçin.": "To install the application on iOS devices, tap the 'Share' icon in the Safari menu and select 'Add to Home Screen' from the list.",
   
   "== COMMON & NAVIGATION ==": "",
   "DOWNLOAD": "DOWNLOAD",

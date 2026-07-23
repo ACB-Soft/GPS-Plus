@@ -23,11 +23,22 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [isInstallable, setIsInstallable] = useState(false);
+  const [isIosDevice, setIsIosDevice] = useState(false);
 
   useEffect(() => {
+    // Detect iOS
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const isIos = /iphone|ipad|ipod/.test(userAgent);
+    setIsIosDevice(isIos);
+
     // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
+    
+    if (isStandalone) {
       setIsInstallable(false);
+    } else if (isIos) {
+      // iOS doesn't support beforeinstallprompt, but we can show manual instructions
+      setIsInstallable(true);
     }
 
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -261,9 +272,11 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
         onClose={() => setShowInstallModal(false)}
         title={t("Uygulamayı Yükle")}
         type="info"
-        confirmLabel={t("Yükle")}
+        confirmLabel={isIosDevice ? t("Anladım") : t("Yükle")}
         onConfirm={() => {
-          if (deferredPrompt) {
+          if (isIosDevice) {
+            setShowInstallModal(false);
+          } else if (deferredPrompt) {
             deferredPrompt.prompt();
             deferredPrompt.userChoice.then((choiceResult: any) => {
               if (choiceResult.outcome === 'accepted') {
@@ -278,7 +291,11 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
         }}
       >
         <p className="mb-2">{t("Bu uygulamayı cihazınıza yükleyerek daha hızlı erişim sağlayabilir ve tam ekran deneyimi yaşayabilirsiniz.")}</p>
-        <p>{t("Kurulumu başlatmak için Yükle butonuna tıklayın.")}</p>
+        {isIosDevice ? (
+          <p>{t("iOS cihazlarda uygulamayı yüklemek için Safari menüsünden 'Paylaş' simgesine dokunun ve listeden 'Ana Ekrana Ekle' seçeneğini seçin.")}</p>
+        ) : (
+          <p>{t("Kurulumu başlatmak için Yükle butonuna tıklayın.")}</p>
+        )}
       </Modal>
     </div>
   );
