@@ -17,6 +17,7 @@ export default defineConfig(({ mode }) => {
         tailwindcss(),
         VitePWA({
           registerType: 'autoUpdate',
+          injectRegister: 'script',
           devOptions: {
             enabled: true,
             type: 'module'
@@ -31,7 +32,8 @@ export default defineConfig(({ mode }) => {
           ],
           workbox: {
             maximumFileSizeToCacheInBytes: 5000000,
-            globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}']
+            globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+            navigateFallback: 'index.html'
           },
           manifest: {
             name: 'GPS Plus',
@@ -44,6 +46,7 @@ export default defineConfig(({ mode }) => {
             start_url: './',
             scope: './',
             id: './',
+            prefer_related_applications: false,
             icons: [
               {
                 src: 'pwa-192x192.png',
@@ -73,7 +76,6 @@ export default defineConfig(({ mode }) => {
             file_handlers: [
               {
                 action: './',
-                name: 'KML / KMZ Dosyaları',
                 accept: {
                   'application/vnd.google-earth.kml+xml': ['.kml'],
                   'application/vnd.google-earth.kmz': ['.kmz'],
@@ -83,7 +85,6 @@ export default defineConfig(({ mode }) => {
               },
               {
                 action: './',
-                name: 'GPX / Harita Dosyaları',
                 accept: {
                   'application/gpx+xml': ['.gpx']
                 }
