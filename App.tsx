@@ -20,7 +20,7 @@ const App = () => {
   const { t } = useLanguage();
   type ViewType = 'onboarding' | 'dashboard' | 'capture' | 'list' | 'export' | 'result' | 'stakeout' | 'help' | 'settings' | 'acblabs';
   const [view, setView] = useState<ViewType>(() => {
-    const showOnboardingEveryTime = localStorage.getItem('show_onboarding_every_time') !== 'false';
+    const showOnboardingEveryTime = localStorage.getItem('show_onboarding_every_time') === 'true';
     const onboardingDone = localStorage.getItem('onboarding_v1.0_done') === 'true';
     return (!onboardingDone || showOnboardingEveryTime) ? 'onboarding' : 'dashboard';
   });
@@ -86,7 +86,7 @@ const App = () => {
     heightType: (localStorage.getItem('default_height_type') as 'orthometric' | 'ellipsoidal') || 'orthometric',
     calculationMethod: (localStorage.getItem('default_calculation_method') || 'WEIGHTED_LSE') as any,
     gnssOnlyMode: localStorage.getItem('default_gnss_only_mode') === 'true',
-    showOnboarding: localStorage.getItem('show_onboarding_every_time') !== 'false',
+    showOnboarding: localStorage.getItem('show_onboarding_every_time') === 'true',
   }));
 
   // Navigation wrapper to sync with browser history
@@ -122,9 +122,11 @@ const App = () => {
       if (event.state && event.state.view) {
         setView(event.state.view);
         setSubView(event.state.subView || null);
-      } else if (viewRef.current !== 'onboarding') {
-        // Only go back to onboarding if we're not already there
-        setView('onboarding');
+      } else {
+        const showOnboardingEveryTime = localStorage.getItem('show_onboarding_every_time') === 'true';
+        const onboardingDone = localStorage.getItem('onboarding_v1.0_done') === 'true';
+        const defaultView = (!onboardingDone || showOnboardingEveryTime) ? 'onboarding' : 'dashboard';
+        setView(defaultView);
         setSubView(null);
       }
     };
