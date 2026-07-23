@@ -149,6 +149,10 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                   className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
                   dangerouslySetInnerHTML={{ __html: t("• <b>Metin (.txt):</b> Ham veri formatında (Ad, Y, X, Z) hızlı paylaşım.") }}
                 />
+                <p 
+                  className="text-slate-700 text-sm leading-relaxed font-medium text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("• <b>Shapefile (.zip / .shp):</b> CBS (GIS) yazılımları (ArcGIS, QGIS vb.) için vektör veri formatı.") }}
+                />
               </div>
             </div>
           </section>
@@ -196,57 +200,33 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
               <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Hassasiyet Hesabı")}</h3>
             </div>
             
-            <div className="soft-card p-6 space-y-6">
+            <div className="soft-card p-6 space-y-4">
               <div className="space-y-3">
-                <p className="text-sm text-slate-700 font-medium leading-relaxed">
-                  {t("Uygulama, ekranda gördüğünüz nihai Hassasiyet değerini şu formül ile hesaplar:")}
-                </p>
-                <div className="text-center py-1">
-                  <code className="text-sm font-black text-blue-900 tracking-wider">
-                    {t("= Max(Veri Saçılımı, Donanımsal Hassasiyet)")}
-                  </code>
-                </div>
-                <p className="text-sm text-slate-600 font-medium leading-tight italic">
-                  {t("* Örneğin; sensör 2m hata payı diyorsa ancak ham veriler 6m'ye yayılıyorsa, gerçek hata payınız 6m olarak kabul edilir.")}
-                </p>
-              </div>
-                
-              <div className="space-y-3 border-t border-slate-100 pt-4">
-                <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">{t("Sinyal Güvenilirlik Analizi")}</h4>
                 <p className="text-sm text-slate-700 font-medium leading-relaxed">
                   {t("Uygulama, ölçüm sırasında sadece uydudan gelen donanımsal hassasiyet değerine bakmaz; aynı zamanda toplanan koordinatların birbirine olan mesafesini (Veri Saçılımı) analiz ederek Multipath (Sinyal Yansıması) riskini değerlendirir:")}
                 </p>
                 
                 <div className="space-y-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full mt-1.5 shrink-0 shadow-sm shadow-emerald-200"></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-black text-emerald-700 uppercase tracking-tight">{t("Güvenilir Veri (Yeşil)")}</p>
-                      <p 
-                        className="text-sm text-slate-600 font-medium leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: t("Veriler yüksek tutarlılıktadır.<br/>Donanımsal Hassasiyet &le; 5m,<br/>Veri Saçılımı &le; 5m,<br/>Veri Saçılımı &le; Donanımsal Hassasiyet,<br/>Veri Sayısı &ge; 15") }}
-                      />
-                    </div>
+                  <div>
+                    <p className="text-sm font-black text-emerald-700 uppercase tracking-tight">{t("Güvenilir Veri (Yeşil)")}</p>
+                    <p 
+                      className="text-sm text-slate-600 font-medium leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: t("Veriler yüksek tutarlılıktadır.<br/>Donanımsal Hassasiyet &le; 5m,<br/>Veri Saçılımı &le; 5m,<br/>Veri Saçılımı &le; Donanımsal Hassasiyet,<br/>Veri Sayısı &ge; 15") }}
+                    />
                   </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-2.5 h-2.5 bg-amber-500 rounded-full mt-1.5 shrink-0 shadow-sm shadow-amber-200"></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-black text-amber-700 uppercase tracking-tight">{t("Orta Güvenli Veri / Veri Az (Turuncu)")}</p>
-                      <p 
-                        className="text-sm text-slate-600 font-medium leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: t("Veriler orta tutarlılıktadır.<br/>5m &lt; Donanımsal Hassasiyet &le; 20m,<br/>5m &lt; Veri Saçılımı &le; 20m,<br/>Veri Saçılımı &gt; Donanımsal Hassasiyet,<br/>Veri Sayısı &lt; 15") }}
-                      />
-                    </div>
+                  <div>
+                    <p className="text-sm font-black text-amber-700 uppercase tracking-tight">{t("Orta Güvenli Veri / Veri Az (Turuncu)")}</p>
+                    <p 
+                      className="text-sm text-slate-600 font-medium leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: t("Veriler orta tutarlılıktadır.<br/>5m &lt; Donanımsal Hassasiyet &le; 20m,<br/>5m &lt; Veri Saçılımı &le; 20m,<br/>Veri Saçılımı &gt; Donanımsal Hassasiyet,<br/>Veri Sayısı &lt; 15") }}
+                    />
                   </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-2.5 h-2.5 bg-rose-500 rounded-full mt-1.5 shrink-0 shadow-sm shadow-rose-200"></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-black text-rose-700 uppercase tracking-tight">{t("Güvensiz Veri (Kırmızı)")}</p>
-                      <p 
-                        className="text-sm text-slate-600 font-medium leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: t("Veriler yüksek oranda sapmalı ve güvensizdir.<br/>Donanımsal Hassasiyet &gt; 20m,<br/>Veri Saçılımı &gt; 20m,<br/>Veri Saçılımı &gt; Donanımsal Hassasiyet x 3") }}
-                      />
-                    </div>
+                  <div>
+                    <p className="text-sm font-black text-rose-700 uppercase tracking-tight">{t("Güvensiz Veri (Kırmızı)")}</p>
+                    <p 
+                      className="text-sm text-slate-600 font-medium leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: t("Veriler yüksek oranda sapmalı ve güvensizdir.<br/>Donanımsal Hassasiyet &gt; 20m,<br/>Veri Saçılımı &gt; 20m,<br/>Veri Saçılımı &gt; Donanımsal Hassasiyet x 3") }}
+                    />
                   </div>
                 </div>
               </div>
@@ -268,33 +248,18 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 dangerouslySetInnerHTML={{ __html: t("Uzun süreli ölçümlerde (30sn, 60sn ve 90sn) multipath etkilerini tespit etmek ve en kaliteli uydu verisini yakalamak için geliştirilen akıllı ölçüm modudur:") }}
               />
               <div className="space-y-4">
-                <div className="flex gap-4">
-                  <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
-                    <i className="fas fa-sync-alt"></i>
-                  </div>
-                  <p 
-                    className="text-sm text-slate-700 font-medium leading-relaxed text-justify flex-1"
-                    dangerouslySetInnerHTML={{ __html: t("<b>Donanım Sıfırlama:</b> Her 15 saniyelik ölçüm periyodunun ardından ölçüm otomatik olarak duraklatılır ve cihazın GPS/GNSS alıcısı arka planda tamamen yeniden başlatılır.") }}
-                  />
-                </div>
-                <div className="flex gap-4">
-                  <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
-                    <i className="fas fa-satellite"></i>
-                  </div>
-                  <p 
-                    className="text-sm text-slate-700 font-medium leading-relaxed text-justify flex-1"
-                    dangerouslySetInnerHTML={{ __html: t("<b>Yeniden Kilitlenme:</b> Verilen bu arada cihazın uydulara daha temiz açılardan yeniden kilitlenmesi sağlanır; böylece multipath (sinyal yansıması) etkisi en aza indirilir.") }}
-                  />
-                </div>
-                <div className="flex gap-4">
-                  <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
-                    <i className="fas fa-bullseye"></i>
-                  </div>
-                  <p 
-                    className="text-sm text-slate-700 font-medium leading-relaxed text-justify flex-1"
-                    dangerouslySetInnerHTML={{ __html: t("<b>Yüksek Doğruluk:</b> Farklı zaman dilimlerinde sıfırlanıp tekrar alınan temiz örneklerin birleştirilmesiyle, tekil ve uzun bir ölçüme kıyasla çok daha kararlı ve hassas koordinatlar elde edilir.") }}
-                  />
-                </div>
+                <p 
+                  className="text-sm text-slate-700 font-medium leading-relaxed text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("<b>Donanım Sıfırlama:</b> Her 15 saniyelik ölçüm periyodunun ardından ölçüm otomatik olarak duraklatılır ve cihazın GPS/GNSS alıcısı arka planda tamamen yeniden başlatılır.") }}
+                />
+                <p 
+                  className="text-sm text-slate-700 font-medium leading-relaxed text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("<b>Yeniden Kilitlenme:</b> Verilen bu arada cihazın uydulara daha temiz açılardan yeniden kilitlenmesi sağlanır; böylece multipath (sinyal yansıması) etkisi en aza indirilir.") }}
+                />
+                <p 
+                  className="text-sm text-slate-700 font-medium leading-relaxed text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("<b>Yüksek Doğruluk:</b> Farklı zaman dilimlerinde sıfırlanıp tekrar alınan temiz örneklerin birleştirilmesiyle, tekil ve uzun bir ölçüme kıyasla çok daha kararlı ve hassas koordinatlar elde edilir.") }}
+                />
               </div>
             </div>
           </section>
@@ -311,7 +276,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             <div className="soft-card p-6 space-y-4">
               <p 
                 className="text-sm text-slate-700 font-medium leading-relaxed text-justify"
-                dangerouslySetInnerHTML={{ __html: t("Uygulama, toplanan ham GPS/GNSS verilerini nihai bir koordinata dönüştürmek için 7 farklı gelişmiş akademik model sunar.") }}
+                dangerouslySetInnerHTML={{ __html: t("Uygulama, toplanan ham GPS/GNSS verilerini nihai bir koordinata dönüştürmek için 6 farklı gelişmiş akademik model sunar.") }}
               />
               
               <div className="flex flex-col gap-3">
@@ -359,37 +324,37 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             
             <div className="soft-card p-6 space-y-4">
               <p 
-                className="text-sm text-slate-700 font-medium leading-relaxed text-justify mb-4"
+                className="text-sm text-slate-700 font-medium leading-relaxed text-justify mb-2"
                 dangerouslySetInnerHTML={{ __html: t("Uygulama, en yüksek hassasiyeti sağlamak için <b>Hibrit (Karma) Konumlama</b> teknolojisini kullanır. Bu teknoloji, aşağıdaki 3 kaynağı birleştirerek çalışır:") }}
               />
               
               <div className="flex flex-col gap-4">
-                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                  <div className="flex items-center gap-2 mb-2">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
                     <i className="fas fa-satellite text-indigo-600"></i>
-                    <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">{t("1. GNSS (Uydu)")}</h4>
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("1. GNSS (Uydu)")}</h4>
                   </div>
-                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                  <p className="text-sm text-slate-600 font-medium leading-relaxed text-justify">
                     {t("GPS, GLONASS, Galileo ve BeiDou uydularından gelen sinyalleri kullanır. İnternet destekli A-GPS ile uydu yörünge verilerini saniyeler içinde indirerek çok hızlı (Fix) kilitlenme sağlar. Açık alanda hassas (±2m) konum verisi sunar.")}
                   </p>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                  <div className="flex items-center gap-2 mb-2">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
                     <i className="fas fa-broadcast-tower text-indigo-600"></i>
-                    <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">{t("2. Baz İstasyonları")}</h4>
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("2. Baz İstasyonları")}</h4>
                   </div>
-                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                  <p className="text-sm text-slate-600 font-medium leading-relaxed text-justify">
                     {t("Uyduların görülemediği kapalı alanlarda veya tünellerde, telefonunuzun bağlı olduğu hücresel ağ baz istasyonlarına (Cell ID / Trilateration) göre yaklaşık konum belirler. Hassiyeti düşüktür.")}
                   </p>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
-                  <div className="flex items-center gap-2 mb-2">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
                     <i className="fas fa-wifi text-indigo-600"></i>
-                    <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">{t("3. Wi-Fi Ağları")}</h4>
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("3. Wi-Fi Ağları")}</h4>
                   </div>
-                  <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                  <p className="text-sm text-slate-600 font-medium leading-relaxed text-justify">
                     {t("Şehir içinde bina aralarında veya iç mekanlarda, çevredeki Wi-Fi erişim noktalarının MAC adresleri ve sinyal güçlerini (WPS) kullanarak konumu keskinleştirir. Hassiyeti oldukça düşüktür.")}
                   </p>
                 </div>
@@ -411,7 +376,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <div>
                   <h4 className="text-base font-black text-indigo-700 uppercase tracking-tight mb-1">{t("ED50 Dönüşümü")}</h4>
                   <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
-                    {t("WGS84 ile ED50 arasındaki dönüşümler, 3 ötemele parametresi kullanan (HGM/EPSG Standartları) Helmert Dönüşümü kullanılarak yapılmaktadır.")}
+                    {t("WGS84 ile ED50 arasındaki dönüşümler, 3 ötemele parametresi kullanan Helmert Dönüşümü kullanılarak yapılmaktadır.")}
                   </p>
                 </div>
 
@@ -519,7 +484,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             </div>
             <div className="soft-card p-6 space-y-4">
               <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
-                {t("Bu uygulama, saha çalışmalarında hızlı ve pratik koordinat ölçümü, aplikasyon ve veri yönetimi sağlamak ve basit CBS verisi toplamak amacıyla geliştirilmiştir.")}
+                {t("Bu uygulama, saha çalışmalarında pratik veri yönetimi sağlamak ve basit CBS verisi toplamak amacıyla geliştirilmiştir.")}
               </p>
               <div className="flex flex-col">
                 <span className="text-sm font-black text-slate-400 uppercase tracking-widest">{t("İletişim")}</span>
