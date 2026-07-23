@@ -17,18 +17,16 @@ export default defineConfig(({ mode }) => {
         tailwindcss(),
         VitePWA({
           registerType: 'autoUpdate',
-          injectRegister: 'script',
           devOptions: {
             enabled: true,
             type: 'module'
           },
           includeAssets: [
             'favicon.svg',
-            'apple-touch-icon.png',
-            'pwa-192x192.png',
-            'pwa-512x512.png',
-            'pwa-192x192-maskable.png',
-            'pwa-512x512-maskable.png'
+            'pwa-192x192.svg',
+            'pwa-512x512.svg',
+            'pwa-192x192-maskable.svg',
+            'pwa-512x512-maskable.svg'
           ],
           workbox: {
             maximumFileSizeToCacheInBytes: 5000000,
@@ -47,27 +45,27 @@ export default defineConfig(({ mode }) => {
             id: '/',
             icons: [
               {
-                src: '/pwa-192x192.png',
+                src: '/pwa-192x192.svg',
                 sizes: '192x192',
-                type: 'image/png',
+                type: 'image/svg+xml',
                 purpose: 'any'
               },
               {
-                src: '/pwa-512x512.png',
+                src: '/pwa-512x512.svg',
                 sizes: '512x512',
-                type: 'image/png',
+                type: 'image/svg+xml',
                 purpose: 'any'
               },
               {
-                src: '/pwa-192x192-maskable.png',
+                src: '/pwa-192x192-maskable.svg',
                 sizes: '192x192',
-                type: 'image/png',
+                type: 'image/svg+xml',
                 purpose: 'maskable'
               },
               {
-                src: '/pwa-512x512-maskable.png',
+                src: '/pwa-512x512-maskable.svg',
                 sizes: '512x512',
-                type: 'image/png',
+                type: 'image/svg+xml',
                 purpose: 'maskable'
               }
             ],
