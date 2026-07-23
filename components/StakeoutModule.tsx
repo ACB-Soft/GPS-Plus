@@ -447,7 +447,10 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
     };
   }, []);
 
-  const handleFile = async (file: File) => {
+  const handleKmlUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
     const fileName = file.name.toLowerCase();
     const isKmz = fileName.endsWith('.kmz') || file.type === 'application/vnd.google-earth.kmz' || file.type === 'application/zip' || file.type === 'application/x-zip-compressed';
     
@@ -495,25 +498,6 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
       };
       reader.readAsText(file);
     }
-  };
-
-  useEffect(() => {
-    const handlePwaFile = (e: any) => {
-      const file = e.detail?.file;
-      if (file) {
-        handleFile(file);
-      }
-    };
-    
-    window.addEventListener('pwa-file-opened', handlePwaFile);
-    return () => window.removeEventListener('pwa-file-opened', handlePwaFile);
-  }, []);
-
-  const handleKmlUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    await handleFile(file);
-    e.target.value = '';
   };
 
   const handleAddManual = () => {
