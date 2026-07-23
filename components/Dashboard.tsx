@@ -56,12 +56,28 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
 
   const handleTriggerInstallPrompt = async () => {
     if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const choice = await deferredPrompt.userChoice;
-      if (choice.outcome === 'accepted') {
-        setDeferredPrompt(null);
-        setShowInstallModal(false);
+      try {
+        await deferredPrompt.prompt();
+        const choice = await deferredPrompt.userChoice;
+        if (choice && choice.outcome === 'accepted') {
+          setDeferredPrompt(null);
+          (window as any).__deferredPwaPrompt = null;
+          setShowInstallModal(false);
+        }
+      } catch (err) {
+        console.error('Install prompt error:', err);
+        setShowInstallModal(true);
       }
+    } else {
+      setShowInstallModal(true);
+    }
+  };
+
+  const handleInstallButtonClick = () => {
+    if (deferredPrompt) {
+      handleTriggerInstallPrompt();
+    } else {
+      setShowInstallModal(true);
     }
   };
 
@@ -156,7 +172,7 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
       <div className="absolute top-6 right-8 z-20 flex gap-3">
         {/* Uygulamayı Yükle Butonu */}
         <button 
-          onClick={() => setShowInstallModal(true)}
+          onClick={handleInstallButtonClick}
           className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center shadow-xl border border-blue-200 text-slate-600 active:scale-90 transition-all hover:bg-blue-100 group cursor-pointer relative"
           title={t("Uygulamayı Yükle")}
         >
