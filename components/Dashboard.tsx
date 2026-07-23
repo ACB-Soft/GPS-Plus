@@ -18,7 +18,7 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
   const { language, changeLanguage, t } = useLanguage();
   const [showLangMenu, setShowLangMenu] = useState(false);
   const [tempLanguage, setTempLanguage] = useState(language);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(() => (window as any).__deferredPwaPrompt || null);
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
 
@@ -29,14 +29,28 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
     };
     checkStandalone();
 
+    if ((window as any).__deferredPwaPrompt) {
+      setDeferredPrompt((window as any).__deferredPwaPrompt);
+    }
+
+    const handleCaptured = () => {
+      if ((window as any).__deferredPwaPrompt) {
+        setDeferredPrompt((window as any).__deferredPwaPrompt);
+      }
+    };
+
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
+      (window as any).__deferredPwaPrompt = e;
       setDeferredPrompt(e);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('pwa-prompt-captured', handleCaptured);
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('pwa-prompt-captured', handleCaptured);
     };
   }, []);
 

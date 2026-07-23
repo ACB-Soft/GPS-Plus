@@ -17,10 +17,22 @@ export default defineConfig(({ mode }) => {
         tailwindcss(),
         VitePWA({
           registerType: 'autoUpdate',
-          injectRegister: 'auto',
-          includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'pwa-192x192-maskable.png', 'pwa-512x512-maskable.png'],
+          injectRegister: 'script',
+          devOptions: {
+            enabled: true,
+            type: 'module'
+          },
+          includeAssets: [
+            'favicon.svg',
+            'apple-touch-icon.png',
+            'pwa-192x192.png',
+            'pwa-512x512.png',
+            'pwa-192x192-maskable.png',
+            'pwa-512x512-maskable.png'
+          ],
           workbox: {
-            maximumFileSizeToCacheInBytes: 5000000
+            maximumFileSizeToCacheInBytes: 5000000,
+            globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}']
           },
           manifest: {
             name: 'GPS Plus',
@@ -29,28 +41,31 @@ export default defineConfig(({ mode }) => {
             theme_color: '#e2e8f0',
             background_color: '#e2e8f0',
             display: 'standalone',
-            start_url: '.',
+            orientation: 'portrait',
+            start_url: '/',
+            scope: '/',
+            id: '/',
             icons: [
               {
-                src: 'pwa-192x192.png',
+                src: '/pwa-192x192.png',
                 sizes: '192x192',
                 type: 'image/png',
                 purpose: 'any'
               },
               {
-                src: 'pwa-512x512.png',
+                src: '/pwa-512x512.png',
                 sizes: '512x512',
                 type: 'image/png',
                 purpose: 'any'
               },
               {
-                src: 'pwa-192x192-maskable.png',
+                src: '/pwa-192x192-maskable.png',
                 sizes: '192x192',
                 type: 'image/png',
                 purpose: 'maskable'
               },
               {
-                src: 'pwa-512x512-maskable.png',
+                src: '/pwa-512x512-maskable.png',
                 sizes: '512x512',
                 type: 'image/png',
                 purpose: 'maskable'
@@ -58,7 +73,7 @@ export default defineConfig(({ mode }) => {
             ],
             file_handlers: [
               {
-                action: './',
+                action: '/',
                 name: 'KML / KMZ Dosyaları',
                 accept: {
                   'application/vnd.google-earth.kml+xml': ['.kml'],
@@ -68,7 +83,7 @@ export default defineConfig(({ mode }) => {
                 }
               },
               {
-                action: './',
+                action: '/',
                 name: 'GPX / Harita Dosyaları',
                 accept: {
                   'application/gpx+xml': ['.gpx']
