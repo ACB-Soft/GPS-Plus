@@ -16,7 +16,8 @@ export default defineConfig(({ mode }) => {
         react(),
         tailwindcss(),
         VitePWA({
-          registerType: 'prompt',
+          registerType: 'autoUpdate',
+          injectRegister: 'auto',
           includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'pwa-192x192-maskable.png', 'pwa-512x512-maskable.png'],
           workbox: {
             maximumFileSizeToCacheInBytes: 5000000
