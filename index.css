@@ -25,11 +25,6 @@
 }
 
 @layer base {
-  html {
-    background-color: #e2e8f0;
-    color-scheme: light;
-  }
-
   * {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
@@ -37,7 +32,6 @@
 
   body { 
     @apply bg-slate-200 m-0 p-0 overflow-hidden h-[100dvh] w-screen text-slate-900 antialiased fixed flex items-center justify-center font-sans;
-    background-color: #e2e8f0;
     color-scheme: light !important;
   }
 

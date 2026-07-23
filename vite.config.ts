@@ -7,7 +7,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
-      base: './',
+      base: '',
       server: {
         port: 3000,
         host: '0.0.0.0',
@@ -16,24 +16,10 @@ export default defineConfig(({ mode }) => {
         react(),
         tailwindcss(),
         VitePWA({
-          registerType: 'autoUpdate',
-          injectRegister: 'script',
-          devOptions: {
-            enabled: true,
-            type: 'module'
-          },
-          includeAssets: [
-            'favicon.svg',
-            'apple-touch-icon.png',
-            'pwa-192x192.png',
-            'pwa-512x512.png',
-            'pwa-192x192-maskable.png',
-            'pwa-512x512-maskable.png'
-          ],
+          registerType: 'prompt',
+          includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
           workbox: {
-            maximumFileSizeToCacheInBytes: 5000000,
-            globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-            navigateFallback: 'index.html'
+            maximumFileSizeToCacheInBytes: 5000000
           },
           manifest: {
             name: 'GPS Plus',
@@ -42,11 +28,7 @@ export default defineConfig(({ mode }) => {
             theme_color: '#e2e8f0',
             background_color: '#e2e8f0',
             display: 'standalone',
-            orientation: 'portrait',
-            start_url: './',
-            scope: './',
-            id: './',
-            prefer_related_applications: false,
+            start_url: '.',
             icons: [
               {
                 src: 'pwa-192x192.png',
@@ -59,35 +41,6 @@ export default defineConfig(({ mode }) => {
                 sizes: '512x512',
                 type: 'image/png',
                 purpose: 'any'
-              },
-              {
-                src: 'pwa-192x192-maskable.png',
-                sizes: '192x192',
-                type: 'image/png',
-                purpose: 'maskable'
-              },
-              {
-                src: 'pwa-512x512-maskable.png',
-                sizes: '512x512',
-                type: 'image/png',
-                purpose: 'maskable'
-              }
-            ],
-            file_handlers: [
-              {
-                action: './',
-                accept: {
-                  'application/vnd.google-earth.kml+xml': ['.kml'],
-                  'application/vnd.google-earth.kmz': ['.kmz'],
-                  'application/xml': ['.kml'],
-                  'text/xml': ['.kml']
-                }
-              },
-              {
-                action: './',
-                accept: {
-                  'application/gpx+xml': ['.gpx']
-                }
               }
             ]
           }

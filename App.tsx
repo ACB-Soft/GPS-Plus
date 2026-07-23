@@ -19,11 +19,7 @@ import { useLanguage } from './utils/LanguageContext';
 const App = () => {
   const { t } = useLanguage();
   type ViewType = 'onboarding' | 'dashboard' | 'capture' | 'list' | 'export' | 'result' | 'stakeout' | 'help' | 'settings' | 'acblabs';
-  const [view, setView] = useState<ViewType>(() => {
-    const showOnboardingEveryTime = localStorage.getItem('show_onboarding_every_time') === 'true';
-    const onboardingDone = localStorage.getItem('onboarding_v1.0_done') === 'true';
-    return (!onboardingDone || showOnboardingEveryTime) ? 'onboarding' : 'dashboard';
-  });
+  const [view, setView] = useState<ViewType>('onboarding');
   const [subView, setSubView] = useState<string | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
@@ -86,7 +82,7 @@ const App = () => {
     heightType: (localStorage.getItem('default_height_type') as 'orthometric' | 'ellipsoidal') || 'orthometric',
     calculationMethod: (localStorage.getItem('default_calculation_method') || 'WEIGHTED_LSE') as any,
     gnssOnlyMode: localStorage.getItem('default_gnss_only_mode') === 'true',
-    showOnboarding: localStorage.getItem('show_onboarding_every_time') === 'true',
+    showOnboarding: localStorage.getItem('show_onboarding_every_time') !== 'false',
   }));
 
   // Navigation wrapper to sync with browser history
@@ -116,42 +112,29 @@ const App = () => {
   useEffect(() => {
     geoidService.initialize();
 
-    window.history.replaceState({ view, subView: null, index: 0 }, '');
+    const showOnboardingEveryTime = localStorage.getItem('show_onboarding_every_time') !== 'false';
+    const onboardingDone = localStorage.getItem('onboarding_v1.0_done') === 'true';
+    
+    // Start with onboarding if not done or if requested to show every time
+    const initialView = (!onboardingDone || showOnboardingEveryTime) ? 'onboarding' : 'dashboard';
+    
+    setView(initialView);
+    setSubView(null);
+    window.history.replaceState({ view: initialView, subView: null, index: 0 }, '');
 
     const handlePopState = (event: PopStateEvent) => {
       if (event.state && event.state.view) {
         setView(event.state.view);
         setSubView(event.state.subView || null);
-      } else {
-        const showOnboardingEveryTime = localStorage.getItem('show_onboarding_every_time') === 'true';
-        const onboardingDone = localStorage.getItem('onboarding_v1.0_done') === 'true';
-        const defaultView = (!onboardingDone || showOnboardingEveryTime) ? 'onboarding' : 'dashboard';
-        setView(defaultView);
+      } else if (viewRef.current !== 'onboarding') {
+        // Only go back to onboarding if we're not already there
+        setView('onboarding');
         setSubView(null);
       }
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  // Web Launch Handler API listener for PWA File Association (.kml, .kmz, .gpx)
-  useEffect(() => {
-    if ('launchQueue' in window && 'LaunchParams' in window) {
-      (window as any).launchQueue.setConsumer(async (launchParams: any) => {
-        if (!launchParams.files || !launchParams.files.length) return;
-        try {
-          const fileHandle = launchParams.files[0];
-          const file = await fileHandle.getFile();
-          if (file) {
-            window.dispatchEvent(new CustomEvent('pwa-file-opened', { detail: { file } }));
-            setView('stakeout');
-          }
-        } catch (err) {
-          console.error("Error handling PWA launched file:", err);
-        }
-      });
-    }
   }, []);
 
   // Recalculate locations when calculation method changes
