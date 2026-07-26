@@ -19,7 +19,8 @@ export default defineConfig(({ mode }) => {
           registerType: 'prompt',
           includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
           workbox: {
-            maximumFileSizeToCacheInBytes: 5000000
+            maximumFileSizeToCacheInBytes: 5000000,
+            globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,ttf,eot}']
           },
           manifest: {
             name: 'GPS Plus',
