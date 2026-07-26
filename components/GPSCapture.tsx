@@ -939,7 +939,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                 {isWaiting ? (
                   <div className="animate-pulse space-y-1">
                     <p className="font-black text-amber-600 text-[11px] md:text-[12px] uppercase tracking-[0.05em] leading-snug px-6">
-                      {t("Çoklu Oturum (Multi-Session) devam ediyor, lütfen bekleyiniz...")}
+                      {t("Çoklu Oturum devam ediyor, lütfen bekleyiniz...")}
                     </p>
                     <p className="text-slate-400 text-[10px] md:text-[11px] font-bold leading-none uppercase tracking-widest mt-1">
                       {waitSeconds <= 3 ? t("GPS Isınıyor...") : t("GPS Yeniden Başlatılıyor")} ({waitSeconds}sn)

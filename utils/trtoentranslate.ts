@@ -132,7 +132,7 @@ export const trToEnMap: Record<string, string> = {
   "<b>Donanım Sıfırlama:</b> Her 15 saniyelik ölçüm periyodunun ardından ölçüm otomatik olarak duraklatılır ve cihazın GPS/GNSS alıcısı arka planda tamamen yeniden başlatılır.": "<b>Hardware Reset:</b> At the end of each completed 15-second epoch window, observation is micro-paused to programmatically force-restart the hardware GPS/GNSS receiver subsystem, resolving carrier phase state biases.",
   "<b>Yeniden Kilitlenme:</b> Verilen bu arada cihazın uydulara daha temiz açılardan yeniden kilitlenmesi sağlanır; böylece multipath (sinyal yansıması) etkisi en aza indirilir.": "<b>Re-locking:</b> During this interval, the device is allowed to lock onto satellites cleanly, minimizing multipath (signal reflection) effects.",
   "<b>Yüksek Doğruluk:</b> Farklı zaman dilimlerinde sıfırlanıp tekrar alınan temiz örneklerin birleştirilmesiyle, tekil ve uzun bir ölçüme kıyasla çok daha kararlı ve hassas koordinatlar elde edilir.": "<b>High Accuracy:</b> By combining clean samples taken at different intervals, significantly more stable and precise coordinates are obtained compared to a single long measurement.",
-  "Çoklu Oturum (Multi-Session) devam ediyor, lütfen bekleyiniz...": "Multi-Session is active, please wait...",
+  "Çoklu Oturum devam ediyor, lütfen bekleyiniz...": "Multi-Session is active, please wait...",
   "GPS Yeniden Başlatılıyor": "Restarting GPS",
   "Safari Ayarlarından \"Konum\" İznini Kontrol Edin": "Check \"Location\" Permission under Safari Settings",
   "Uygula": "Apply",
