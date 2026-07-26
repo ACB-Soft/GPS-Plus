@@ -298,7 +298,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [xOffset, setXOffset] = useState<number>(0);
   const [yOffset, setYOffset] = useState<number>(0);
   const [customTimeSeriesRange, setCustomTimeSeriesRange] = useState<string>('auto'); // 'auto', '1.0', '2.0', '3.0', '4.0', '5.0', '10.0', '15.0', '20.0', '50.0'
-  const [timeSeriesDurationLimit, setTimeSeriesDurationLimit] = useState<string>('90'); // '15', '30', '60', '90'
+  const [timeSeriesDurationLimit, setTimeSeriesDurationLimit] = useState<string>('60'); // '15', '30', '60'
   const [customTimeSeriesStep, setCustomTimeSeriesStep] = useState<string>('1.0'); // 'auto', '0.1', '0.2', '0.5', '1.0', '2.0'
   const [customTimeSeriesFontSize, setCustomTimeSeriesFontSize] = useState<string>('10'); // '6', '7', '8', '9', '10', '12'
   const [customTimeSeriesDotSize, setCustomTimeSeriesDotSize] = useState<string>('2.0'); // '1.0', '1.5', '2.0', '2.5', '3.0', '4.0', '5.0', '6.0'
@@ -2332,7 +2332,6 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                         <option value="15">15s</option>
                         <option value="30">30s</option>
                         <option value="60">60s</option>
-                        <option value="90">90s</option>
                       </select>
                     </div>
                     <div className="flex items-center gap-1.5">
