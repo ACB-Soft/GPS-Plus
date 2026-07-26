@@ -211,14 +211,14 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                     <p className="text-sm font-black text-emerald-700 uppercase tracking-tight">{t("Güvenilir Veri (Yeşil)")}</p>
                     <p 
                       className="text-sm text-slate-600 font-medium leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: t("Veriler yüksek tutarlılıktadır.<br/>Donanımsal Hassasiyet &le; 5m,<br/>Veri Saçılımı &le; 5m,<br/>Veri Saçılımı &le; Donanımsal Hassasiyet,<br/>Veri Sayısı &ge; 15") }}
+                      dangerouslySetInnerHTML={{ __html: t("Veriler yüksek tutarlılıktadır.<br/>Donanımsal Hassasiyet &le; 10m,<br/>Veri Saçılımı &le; 5m,<br/>Veri Saçılımı &le; Donanımsal Hassasiyet,<br/>Veri Sayısı &ge; 15") }}
                     />
                   </div>
                   <div>
                     <p className="text-sm font-black text-amber-700 uppercase tracking-tight">{t("Orta Güvenli Veri / Veri Az (Turuncu)")}</p>
                     <p 
                       className="text-sm text-slate-600 font-medium leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: t("Veriler orta tutarlılıktadır.<br/>5m &lt; Donanımsal Hassasiyet &le; 20m,<br/>5m &lt; Veri Saçılımı &le; 20m,<br/>Veri Saçılımı &gt; Donanımsal Hassasiyet,<br/>Veri Sayısı &lt; 15") }}
+                      dangerouslySetInnerHTML={{ __html: t("Veriler orta tutarlılıktadır.<br/>10m &lt; Donanımsal Hassasiyet &le; 20m,<br/>5m &lt; Veri Saçılımı &le; 20m,<br/>Veri Saçılımı &gt; Donanımsal Hassasiyet,<br/>Veri Sayısı &lt; 15") }}
                     />
                   </div>
                   <div>

@@ -74,8 +74,8 @@ const SavedLocationItem: React.FC<{
       return 'LOW';
     }
 
-    // 2. GÜVENİLİR VERİ (YEŞİL): Donanımsal Hassasiyet <= 5m VE Veri Saçılımı <= 5m VE Veri Sayısı >= 15 VE Veri Saçılımı <= Donanımsal Hassasiyet
-    if (avgSensorAcc <= 5 && maxSpread <= 5 && samplesCount >= 15 && maxSpread <= avgSensorAcc) {
+    // 2. GÜVENİLİR VERİ (YEŞİL): Donanımsal Hassasiyet <= 10m VE Veri Saçılımı <= 5m VE Veri Sayısı >= 15 VE Veri Saçılımı <= Donanımsal Hassasiyet
+    if (avgSensorAcc <= 10 && maxSpread <= 5 && samplesCount >= 15 && maxSpread <= avgSensorAcc) {
       return 'HIGH';
     }
     

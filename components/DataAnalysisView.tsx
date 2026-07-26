@@ -487,8 +487,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     // 1. GÜVENSİZ VERİ (KIRMIZI): Donanımsal Hassasiyet > 20m VEYA Veri Saçılımı > 20m VEYA Veri Saçılımı > Donanımsal Hassasiyet * 3
     const isRed = avgSensorAcc > 20 || maxSpread > 20 || maxSpread > avgSensorAcc * 3;
 
-    // 2. GÜVENİLİR VERİ (YEŞİL): Donanımsal Hassasiyet <= 5m VE Veri Saçılımı <= 5m VE Veri Sayısı >= 15 VE Veri Saçılımı <= Donanımsal Hassasiyet
-    const isGreen = !isRed && avgSensorAcc <= 5 && maxSpread <= 5 && samplesCount >= 15 && maxSpread <= avgSensorAcc;
+    // 2. GÜVENİLİR VERİ (YEŞİL): Donanımsal Hassasiyet <= 10m VE Veri Saçılımı <= 5m VE Veri Sayısı >= 15 VE Veri Saçılımı <= Donanımsal Hassasiyet
+    const isGreen = !isRed && avgSensorAcc <= 10 && maxSpread <= 5 && samplesCount >= 15 && maxSpread <= avgSensorAcc;
 
     // 3. ORTA GÜVENLİ VERİ / VERİ AZ (TURUNCU)
     const signalQuality: 'safe' | 'medium' | 'low' = isRed ? 'low' : isGreen ? 'safe' : 'medium';
@@ -499,10 +499,10 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     // Failed criteria calculation
     const failedCriteria: { tr: string; en: string }[] = [];
     if (signalQuality !== 'safe') {
-      if (avgSensorAcc > 5) {
+      if (avgSensorAcc > 10) {
         failedCriteria.push({
-          tr: `Donanımsal hassasiyet yeterli seviyede değil (Mevcut: ±${avgSensorAcc.toFixed(2)}m, Güvenli sınır: ≤ 5.0m)`,
-          en: `Hardware accuracy is insufficient (Current: ±${avgSensorAcc.toFixed(2)}m, Reliable limit: ≤ 5.0m)`
+          tr: `Donanımsal hassasiyet yeterli seviyede değil (Mevcut: ±${avgSensorAcc.toFixed(2)}m, Güvenli sınır: ≤ 10.0m)`,
+          en: `Hardware accuracy is insufficient (Current: ±${avgSensorAcc.toFixed(2)}m, Reliable limit: ≤ 10.0m)`
         });
       }
       if (maxSpread > 5) {

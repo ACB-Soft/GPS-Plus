@@ -75,8 +75,8 @@ export const downloadExcel = (locations: SavedLocation[], settings?: AppSettings
     if (avgSensorAcc > 20 || maxSpread > 20 || maxSpread > avgSensorAcc * 3) {
       reliabilityLabel = "GÜVENSİZ";
     }
-    // 2. GÜVENİLİR VERİ (HIGH / GREEN): Donanımsal Hassasiyet <= 5m VE Veri Saçılımı <= 5m VE Veri Sayısı >= 15 VE Veri Saçılımı <= Donanımsal Hassasiyet
-    else if (avgSensorAcc <= 5 && maxSpread <= 5 && samplesCount >= 15 && maxSpread <= avgSensorAcc) {
+    // 2. GÜVENİLİR VERİ (HIGH / GREEN): Donanımsal Hassasiyet <= 10m VE Veri Saçılımı <= 5m VE Veri Sayısı >= 15 VE Veri Saçılımı <= Donanımsal Hassasiyet
+    else if (avgSensorAcc <= 10 && maxSpread <= 5 && samplesCount >= 15 && maxSpread <= avgSensorAcc) {
       reliabilityLabel = "GÜVENLİ";
     }
     // 3. ORTA GÜVENLİ VERİ / VERİ AZ (MEDIUM / ORANGE)
@@ -257,8 +257,8 @@ export const getTechnicalReportWorksheet = (location: SavedLocation, settings?: 
   // 1. GÜVENSİZ VERİ (KIRMIZI): Donanımsal Hassasiyet > 20m VEYA Veri Saçılımı > 20m VEYA Veri Saçılımı > Donanımsal Hassasiyet * 3
   const isRed = avgAccAll > 20 || maxSpreadAll > 20 || maxSpreadAll > avgAccAll * 3;
 
-  // 2. GÜVENİLİR VERİ (YEŞİL): Donanımsal Hassasiyet <= 5m VE Veri Saçılımı <= 5m VE Veri Sayısı >= 15 VE Veri Saçılımı <= Donanımsal Hassasiyet
-  const isGreen = !isRed && avgAccAll <= 5 && maxSpreadAll <= 5 && samplesCount >= 15 && maxSpreadAll <= avgAccAll;
+  // 2. GÜVENİLİR VERİ (YEŞİL): Donanımsal Hassasiyet <= 10m VE Veri Saçılımı <= 5m VE Veri Sayısı >= 15 VE Veri Saçılımı <= Donanımsal Hassasiyet
+  const isGreen = !isRed && avgAccAll <= 10 && maxSpreadAll <= 5 && samplesCount >= 15 && maxSpreadAll <= avgAccAll;
 
   let relLevel = "";
 
@@ -400,8 +400,8 @@ export const downloadCombinedAnalysisReport = (
     // 1. GÜVENSİZ VERİ (KIRMIZI): Donanımsal Hassasiyet > 20m VEYA Veri Saçılımı > 20m VEYA Veri Saçılımı > Donanımsal Hassasiyet * 3
     const isRed = avgAccAll > 20 || maxSpreadAll > 20 || maxSpreadAll > avgAccAll * 3;
 
-    // 2. GÜVENİLİR VERİ (YEŞİL): Donanımsal Hassasiyet <= 5m VE Veri Saçılımı <= 5m VE Veri Sayısı >= 15 VE Veri Saçılımı <= Donanımsal Hassasiyet
-    const isGreen = !isRed && avgAccAll <= 5 && maxSpreadAll <= 5 && samplesCount >= 15 && maxSpreadAll <= avgAccAll;
+    // 2. GÜVENİLİR VERİ (YEŞİL): Donanımsal Hassasiyet <= 10m VE Veri Saçılımı <= 5m VE Veri Sayısı >= 15 VE Veri Saçılımı <= Donanımsal Hassasiyet
+    const isGreen = !isRed && avgAccAll <= 10 && maxSpreadAll <= 5 && samplesCount >= 15 && maxSpreadAll <= avgAccAll;
 
     if (isRed) {
       signalQualityLabel = txt("Güvensiz Veri (Kırmızı Sinyal)", "Low-Integrity Data (Red Signal)");
@@ -420,8 +420,8 @@ export const downloadCombinedAnalysisReport = (
         ? txt("Veri Az / Orta Güvenli Veri (Turuncu Sinyal)", "Sparse Data / Medium-Integrity Data (Orange Signal)") 
         : txt("Orta Güvenli Veri (Turuncu Sinyal)", "Medium-Integrity Data (Orange Signal)");
       interpretation = txt(
-        "Veriler orta tutarlılıktadır. Kriterler: 5m < Donanımsal Hassasiyet <= 20m veya 5m < Veri Saçılımı <= 20m veya Veri Saçılımı > Donanımsal Hassasiyet veya Veri Sayısı < 15",
-        "GNSS observations exhibit moderate spatial consistency. Classification Criteria: 5m < Hardware accuracy <= 20m, 5m < 2D spatial dispersion <= 20m, 2D spatial dispersion > hardware accuracy, or observed epochs < 15."
+        "Veriler orta tutarlılıktadır. Kriterler: 10m < Donanımsal Hassasiyet <= 20m veya 5m < Veri Saçılımı <= 20m veya Veri Saçılımı > Donanımsal Hassasiyet veya Veri Sayısı < 15",
+        "GNSS observations exhibit moderate spatial consistency. Classification Criteria: 10m < Hardware accuracy <= 20m, 5m < 2D spatial dispersion <= 20m, 2D spatial dispersion > hardware accuracy, or observed epochs < 15."
       );
     }
   }
