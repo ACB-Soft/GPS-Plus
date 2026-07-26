@@ -19,7 +19,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
   const [accuracyLimit, setAccuracyLimit] = useState(localStorage.getItem('default_accuracy_limit') || '5');
   const [measurementDuration, setMeasurementDuration] = useState(() => {
     const saved = localStorage.getItem('default_duration') || '15';
-    return saved === '120' ? '90' : saved;
+    return (saved === '120' || saved === '90' || saved === '91') ? '61' : saved;
   });
   const [mapProvider, setMapProvider] = useState(localStorage.getItem('default_map_provider') || 'Google Hybrid');
   const [audioEnabled, setAudioEnabled] = useState(localStorage.getItem('default_audio_feedback_enabled') !== 'false');
@@ -591,15 +591,14 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
                   onChange={(e) => setMeasurementDuration(e.target.value)}
                   className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                 >
-                  {[5, 10, 15, 30, 60, 90, 91].map(v => {
+                  {[5, 10, 15, 30, 60, 61].map(v => {
                     let label = `${v} ${t("saniye")}`;
                     if (v === 5) label = t("5sn (Hızlı)");
                     else if (v === 10) label = t("10sn (Hızlı)");
                     else if (v === 15) label = t("15sn (Hızlı)");
                     else if (v === 30) label = t("15s x 2oturum");
                     else if (v === 60) label = t("15s x 4oturum");
-                    else if (v === 90) label = t("15s x 6oturum");
-                    else if (v === 91) label = t("90sn (Oturumsuz)");
+                    else if (v === 61) label = t("60sn (Oturumsuz)");
                     return <option key={v} value={v.toString()}>{label}</option>;
                   })}
                 </select>

@@ -245,7 +245,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
             <div className="soft-card p-6 space-y-4">
               <p 
                 className="text-sm text-slate-700 font-medium leading-relaxed text-justify"
-                dangerouslySetInnerHTML={{ __html: t("Uzun süreli ölçümlerde (30sn, 60sn ve 90sn) multipath etkilerini tespit etmek ve en kaliteli uydu verisini yakalamak için geliştirilen akıllı ölçüm modudur:") }}
+                dangerouslySetInnerHTML={{ __html: t("Uzun süreli ölçümlerde (30sn ve 60sn) multipath etkilerini tespit etmek ve en kaliteli uydu verisini yakalamak için geliştirilen akıllı ölçüm modudur.") }}
               />
               <div className="space-y-4">
                 <p 
