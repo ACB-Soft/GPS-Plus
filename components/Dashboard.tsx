@@ -196,8 +196,14 @@ const Dashboard: React.FC<Props> = ({ onStartCapture, onStakeout, onShowList, on
           <p className="text-slate-900 font-black text-[12px] md:text-[14px] uppercase tracking-[0.18em] leading-tight max-w-[260px] md:max-w-xs mx-auto opacity-80 whitespace-pre-line">
             {t("Mobil Cihazlarınız için\nKonum Belirleme Uygulaması")}
           </p>
-          <h1 className="text-5xl md:text-6xl font-black text-blue-600 tracking-tighter leading-none">
-            {BRAND_NAME}
+          <h1 className="text-5xl md:text-6xl font-black text-blue-600 tracking-tighter leading-none flex items-center justify-center gap-2.5 md:gap-3.5">
+            <img 
+              src="favicon.svg" 
+              alt="Logo" 
+              className="h-11 md:h-14 w-auto object-contain shrink-0" 
+              referrerPolicy="no-referrer" 
+            />
+            <span>{BRAND_NAME}</span>
           </h1>
         </div>
       </header>
