@@ -1,5 +1,7 @@
 import { SavedLocation } from '../types';
 import { BRAND_NAME, FULL_BRAND } from '../version';
+import { convertCoordinate } from '../utils/CoordinateUtils';
+import { getGeoidInfo } from './GeoidUtils';
 
 /**
  * Generates circle coordinates in KML format (lng,lat,alt)
@@ -50,12 +52,45 @@ export const generateKML = (locations: SavedLocation[], projectName: string): st
 
   const pointPlacemarks = locations.map(loc => {
     const safeName = escapeXml(loc.name);
+    const { x, y } = convertCoordinate(loc.lat, loc.lng, loc.coordinateSystem || 'WGS84');
+    const gInfo = getGeoidInfo(loc.lat, loc.lng, loc.altitude, loc.deviceOS);
+    const isIOSDevice = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || ((navigator as any).platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1));
+    const isIOS = loc.deviceOS ? (loc.deviceOS === 'iOS') : isIOSDevice;
+
+    let ellipsoidalH = loc.altitude;
+    if (isIOS && loc.altitude !== null) {
+      ellipsoidalH = loc.altitude + gInfo.undulation;
+    }
+    const orthometricH = gInfo.orthometricHeight;
+    const isWGS84 = loc.coordinateSystem === 'WGS84' || !loc.coordinateSystem;
+    const radius = loc.accuracy || loc.accuracyLimit || 0;
+
+    const nameVal = loc.name;
+    const ySagaVal = isWGS84 ? "0.000" : x.toFixed(3);
+    const xYukariVal = isWGS84 ? "0.000" : y.toFixed(3);
+    const enlemVal = loc.lat.toFixed(7);
+    const boylamVal = loc.lng.toFixed(7);
+    const hOrtometrikVal = orthometricH !== null ? orthometricH.toFixed(3) : "0.000";
+    const hElipsoidVal = ellipsoidalH !== null ? ellipsoidalH.toFixed(3) : "0.000";
+    const hassasVal = radius.toFixed(2);
+    const koorSisVal = loc.coordinateSystem || 'WGS84';
 
     return `
     <Placemark>
       <name>${safeName}</name>
       <styleUrl>#pointStyle</styleUrl>
-      <description></description>
+      <description><![CDATA[<b>Nokta_Adi:</b> ${escapeXml(nameVal)}<br/><b>Y_Saga:</b> ${ySagaVal}<br/><b>X_Yukari:</b> ${xYukariVal}<br/><b>Enlem:</b> ${enlemVal}<br/><b>Boylam:</b> ${boylamVal}<br/><b>H-Ortometrik:</b> ${hOrtometrikVal}<br/><b>h-Elipsoid:</b> ${hElipsoidVal}<br/><b>Hassas_m:</b> ${hassasVal}<br/><b>Koor_Sis:</b> ${escapeXml(koorSisVal)}]]></description>
+      <ExtendedData>
+        <Data name="Nokta_Adi"><value>${escapeXml(nameVal)}</value></Data>
+        <Data name="Y_Saga"><value>${ySagaVal}</value></Data>
+        <Data name="X_Yukari"><value>${xYukariVal}</value></Data>
+        <Data name="Enlem"><value>${enlemVal}</value></Data>
+        <Data name="Boylam"><value>${boylamVal}</value></Data>
+        <Data name="H-Ortometrik"><value>${hOrtometrikVal}</value></Data>
+        <Data name="h-Elipsoid"><value>${hElipsoidVal}</value></Data>
+        <Data name="Hassas_m"><value>${hassasVal}</value></Data>
+        <Data name="Koor_Sis"><value>${escapeXml(koorSisVal)}</value></Data>
+      </ExtendedData>
       <Point>
         <altitudeMode>clampToGround</altitudeMode>
         <coordinates>${loc.lng},${loc.lat},0</coordinates>
