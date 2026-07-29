@@ -1,5 +1,5 @@
 import { SavedLocation, AppSettings } from '../types';
-import { convertCoordinate } from '../utils/CoordinateUtils';
+import { convertCoordinate, getPrjWKT } from '../utils/CoordinateUtils';
 import { getGeoidInfo } from './GeoidUtils';
 import shpwrite from '@mapbox/shp-write';
 
@@ -55,14 +55,19 @@ export const downloadSHP = (locations: SavedLocation[], settings: AppSettings, l
   const uniqueFolders = Array.from(new Set(locations.map(l => l.folderName)));
   const projectName = uniqueFolders.length === 1 ? uniqueFolders[0] : (language === 'EN' ? "Multi_Project" : "Coklu_Proje");
 
-  const isWGS84 = locations[0].coordinateSystem === 'WGS84' || !locations[0].coordinateSystem;
+  const firstLoc = locations[0];
+  const mainSystem = firstLoc?.coordinateSystem || 'WGS84';
+  const prjWKT = getPrjWKT(mainSystem, firstLoc?.lng || 33);
 
   const pointFeatures: any[] = [];
   const polygonFeatures: any[] = [];
 
   locations.forEach((loc) => {
-    // x is Easting/Lat, y is Northing/Lng
-    const { x, y } = convertCoordinate(loc.lat, loc.lng, loc.coordinateSystem || 'WGS84');
+    const locSystem = loc.coordinateSystem || 'WGS84';
+    const isWGS84 = locSystem === 'WGS84';
+
+    // x is Easting/Sağa, y is Northing/Yukarı
+    const { x, y } = convertCoordinate(loc.lat, loc.lng, locSystem);
 
     const gInfo = getGeoidInfo(loc.lat, loc.lng, loc.altitude, loc.deviceOS);
     const isIOSDevice = /iPad|iPhone|iPod/.test(typeof navigator !== 'undefined' ? navigator.userAgent : '') || (typeof navigator !== 'undefined' && (navigator as any).platform === 'MacIntel' && (navigator as any).maxTouchPoints > 1);
@@ -74,10 +79,10 @@ export const downloadSHP = (locations: SavedLocation[], settings: AppSettings, l
     }
     const orthometricH = gInfo.orthometricHeight;
 
-    // GeoJSON geometries MUST be in WGS84 [Longitude, Latitude] for standard compatibility,
-    // especially since we use the default WGS84 .prj file provided by shp-write.
-    const outLng = loc.lng;
-    const outLat = loc.lat;
+    // Export geometry coordinates in project coordinate system:
+    // If WGS84: [loc.lng, loc.lat]
+    // If Projected (ITRF96 / ED50): [x (Easting/Sağa), y (Northing/Yukarı)]
+    const outCoords: [number, number] = isWGS84 ? [loc.lng, loc.lat] : [x, y];
     const radius = loc.accuracy || loc.accuracyLimit || 0;
     
     const pointProperties = language === 'EN' ? {
@@ -89,7 +94,7 @@ export const downloadSHP = (locations: SavedLocation[], settings: AppSettings, l
       "H-Orthometric": orthometricH !== null ? orthometricH.toFixed(3) : "0.000",
       "h-Ellipsoid": ellipsoidalH !== null ? ellipsoidalH.toFixed(3) : "0.000",
       Accuracy_m: radius.toFixed(2),
-      Coord_Sys: loc.coordinateSystem || 'WGS84'
+      Coord_Sys: locSystem
     } : {
       Nokta_Adi: loc.name,
       Y_Saga: isWGS84 ? "0.000" : x.toFixed(3),
@@ -99,22 +104,29 @@ export const downloadSHP = (locations: SavedLocation[], settings: AppSettings, l
       "H-Ortometrik": orthometricH !== null ? orthometricH.toFixed(3) : "0.000",
       "h-Elipsoid": ellipsoidalH !== null ? ellipsoidalH.toFixed(3) : "0.000",
       Hassas_m: radius.toFixed(2),
-      Koor_Sis: loc.coordinateSystem || 'WGS84'
+      Koor_Sis: locSystem
     };
 
     pointFeatures.push({
       type: "Feature" as const,
       geometry: {
         type: "Point" as const,
-        coordinates: [outLng, outLat] 
+        coordinates: outCoords 
       },
       properties: pointProperties
     });
 
     // Create Accuracy Circle polygon feature if accuracy/radius > 0
     if (radius > 0) {
-      const ring = createCirclePolygonCoordinates(loc.lat, loc.lng, radius, 64);
-      if (ring.length > 0) {
+      const ringWGS84 = createCirclePolygonCoordinates(loc.lat, loc.lng, radius, 64);
+      if (ringWGS84.length > 0) {
+        const ring: [number, number][] = isWGS84
+          ? ringWGS84
+          : ringWGS84.map(([cLng, cLat]) => {
+              const { x: cx, y: cy } = convertCoordinate(cLat, cLng, locSystem);
+              return [cx, cy];
+            });
+
         const polyProperties = language === 'EN' ? {
           Point_Name: loc.name,
           Accuracy_m: radius.toFixed(2)
@@ -147,6 +159,7 @@ export const downloadSHP = (locations: SavedLocation[], settings: AppSettings, l
       polygon: language === 'EN' ? 'Hassasiyet_Cemberleri' : 'Hassasiyet_Cemberleri',
       line: language === 'EN' ? 'Lines' : 'Cizgiler'
     },
+    prj: prjWKT,
     outputType: 'blob',
     compression: 'DEFLATE'
   };

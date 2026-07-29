@@ -35,6 +35,36 @@ export const getSystemDisplayLabel = (system: string | undefined): string => {
   }
 };
 
+export const getPrjWKT = (system: string | undefined, lon: number): string => {
+  if (!system || system === 'WGS84') {
+    return 'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]]';
+  }
+
+  if (system === 'ITRF96_3') {
+    const dom = getDom3(lon);
+    return `PROJCS["ITRF96_3deg_DOM${dom}",GEOGCS["GCS_ITRF_1996",DATUM["D_ITRF_1996",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",${dom}.0],PARAMETER["Scale_Factor",1.0],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]`;
+  }
+
+  if (system === 'ED50_3') {
+    const dom = getDom3(lon);
+    return `PROJCS["ED50_3deg_DOM${dom}",GEOGCS["GCS_European_1950",DATUM["D_European_1950",SPHEROID["International_1924",6378388.0,297.0]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",${dom}.0],PARAMETER["Scale_Factor",1.0],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]`;
+  }
+
+  if (system === 'ITRF96_6') {
+    const zone = getUTMZone(lon);
+    const dom = zone * 6 - 183;
+    return `PROJCS["ITRF96_UTM_Zone_${zone}N",GEOGCS["GCS_ITRF_1996",DATUM["D_ITRF_1996",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",${dom}.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]`;
+  }
+
+  if (system === 'ED50_6') {
+    const zone = getUTMZone(lon);
+    const dom = zone * 6 - 183;
+    return `PROJCS["ED50_UTM_Zone_${zone}N",GEOGCS["GCS_European_1950",DATUM["D_European_1950",SPHEROID["International_1924",6378388.0,297.0]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",500000.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",${dom}.0],PARAMETER["Scale_Factor",0.9996],PARAMETER["Latitude_Of_Origin",0.0],UNIT["Meter",1.0]]`;
+  }
+
+  return 'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]]';
+};
+
 export const convertCoordinate = (lat: number, lng: number, system: string) => {
   if (!system || system === 'WGS84') {
     return { x: lat, y: lng, labelX: 'Enlem', labelY: 'Boylam', zone: '' };
