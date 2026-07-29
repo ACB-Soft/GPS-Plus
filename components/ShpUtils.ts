@@ -3,6 +3,49 @@ import { convertCoordinate } from '../utils/CoordinateUtils';
 import { getGeoidInfo } from './GeoidUtils';
 import shpwrite from '@mapbox/shp-write';
 
+/**
+ * Generates circle polygon coordinates as [lng, lat] array in WGS84
+ * around a center point (lat, lng) with radius in meters.
+ */
+export const createCirclePolygonCoordinates = (
+  lat: number,
+  lng: number,
+  radiusMeters: number,
+  numPoints: number = 64
+): [number, number][] => {
+  if (!radiusMeters || radiusMeters <= 0 || isNaN(radiusMeters)) {
+    return [];
+  }
+
+  const R = 6378137; // Earth radius in meters (WGS84 equatorial)
+  const latRad = (lat * Math.PI) / 180;
+  const lngRad = (lng * Math.PI) / 180;
+  const d = radiusMeters / R;
+
+  const coords: [number, number][] = [];
+
+  for (let i = 0; i <= numPoints; i++) {
+    const bearing = (i * (360 / numPoints) * Math.PI) / 180;
+
+    const lat2Rad = Math.asin(
+      Math.sin(latRad) * Math.cos(d) +
+      Math.cos(latRad) * Math.sin(d) * Math.cos(bearing)
+    );
+
+    const lng2Rad = lngRad + Math.atan2(
+      Math.sin(bearing) * Math.sin(d) * Math.cos(latRad),
+      Math.cos(d) - Math.sin(latRad) * Math.sin(lat2Rad)
+    );
+
+    const lat2 = (lat2Rad * 180) / Math.PI;
+    const lng2 = (lng2Rad * 180) / Math.PI;
+
+    coords.push([parseFloat(lng2.toFixed(8)), parseFloat(lat2.toFixed(8))]);
+  }
+
+  return coords;
+};
+
 export const downloadSHP = (locations: SavedLocation[], settings: AppSettings, language: 'TR' | 'EN' = 'TR') => {
   if (locations.length === 0) {
     alert(language === 'EN' ? "No records found." : "Kayıt bulunamadı.");
@@ -14,7 +57,10 @@ export const downloadSHP = (locations: SavedLocation[], settings: AppSettings, l
 
   const isWGS84 = locations[0].coordinateSystem === 'WGS84' || !locations[0].coordinateSystem;
 
-  const features = locations.map((loc, index) => {
+  const pointFeatures: any[] = [];
+  const polygonFeatures: any[] = [];
+
+  locations.forEach((loc) => {
     // x is Easting/Lat, y is Northing/Lng
     const { x, y } = convertCoordinate(loc.lat, loc.lng, loc.coordinateSystem || 'WGS84');
 
@@ -32,8 +78,9 @@ export const downloadSHP = (locations: SavedLocation[], settings: AppSettings, l
     // especially since we use the default WGS84 .prj file provided by shp-write.
     const outLng = loc.lng;
     const outLat = loc.lat;
+    const radius = loc.accuracy || loc.accuracyLimit || 0;
     
-    const properties = language === 'EN' ? {
+    const pointProperties = language === 'EN' ? {
       Point_Name: loc.name,
       Y_Easting: isWGS84 ? "0.000" : x.toFixed(3),
       X_Northing: isWGS84 ? "0.000" : y.toFixed(3),
@@ -41,6 +88,7 @@ export const downloadSHP = (locations: SavedLocation[], settings: AppSettings, l
       Longitude: loc.lng.toFixed(7),
       "H-Orthometric": orthometricH !== null ? orthometricH.toFixed(3) : "0.000",
       "h-Ellipsoid": ellipsoidalH !== null ? ellipsoidalH.toFixed(3) : "0.000",
+      Accuracy_m: radius.toFixed(2),
       Coord_Sys: loc.coordinateSystem || 'WGS84'
     } : {
       Nokta_Adi: loc.name,
@@ -50,29 +98,55 @@ export const downloadSHP = (locations: SavedLocation[], settings: AppSettings, l
       Boylam: loc.lng.toFixed(7),
       "H-Ortometrik": orthometricH !== null ? orthometricH.toFixed(3) : "0.000",
       "h-Elipsoid": ellipsoidalH !== null ? ellipsoidalH.toFixed(3) : "0.000",
+      Hassas_m: radius.toFixed(2),
       Koor_Sis: loc.coordinateSystem || 'WGS84'
     };
 
-    return {
+    pointFeatures.push({
       type: "Feature" as const,
       geometry: {
         type: "Point" as const,
         coordinates: [outLng, outLat] 
       },
-      properties
-    };
+      properties: pointProperties
+    });
+
+    // Create Accuracy Circle polygon feature if accuracy/radius > 0
+    if (radius > 0) {
+      const ring = createCirclePolygonCoordinates(loc.lat, loc.lng, radius, 64);
+      if (ring.length > 0) {
+        const polyProperties = language === 'EN' ? {
+          Point_Name: loc.name,
+          Accuracy_m: radius.toFixed(2),
+          Radius_m: radius.toFixed(2)
+        } : {
+          Nokta_Adi: loc.name,
+          Hassas_m: radius.toFixed(2),
+          Yaricap_m: radius.toFixed(2)
+        };
+
+        polygonFeatures.push({
+          type: "Feature" as const,
+          geometry: {
+            type: "Polygon" as const,
+            coordinates: [ring]
+          },
+          properties: polyProperties
+        });
+      }
+    }
   });
 
   const geojson = {
     type: "FeatureCollection" as const,
-    features: features
+    features: [...pointFeatures, ...polygonFeatures]
   };
 
   const options = {
     folder: projectName,
     types: {
       point: language === 'EN' ? 'Points' : 'Noktalar',
-      polygon: language === 'EN' ? 'Polygons' : 'Alanlar',
+      polygon: language === 'EN' ? 'Hassasiyet_Cemberleri' : 'Hassasiyet_Cemberleri',
       line: language === 'EN' ? 'Lines' : 'Cizgiler'
     },
     outputType: 'blob',
@@ -85,7 +159,6 @@ export const downloadSHP = (locations: SavedLocation[], settings: AppSettings, l
     shpwrite.zip(geojson as any, options as any).then((content: any) => {
       // content is typically an ArrayBuffer or Blob depending on shpwrite version, 
       // @mapbox/shp-write's zip returns a Promise that resolves to an ArrayBuffer or Blob
-      // Wait, let's see what zip() returns: we can just wrap it in a Blob.
       const blob = content instanceof Blob ? content : new Blob([content], { type: 'application/zip' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
