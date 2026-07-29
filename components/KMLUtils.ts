@@ -175,7 +175,7 @@ export const generateKML = (locations: SavedLocation[], projectName: string): st
         <width>2</width>
       </LineStyle>
       <PolyStyle>
-        <color>33f6823b</color>
+        <color>80f6823b</color>
         <fill>1</fill>
         <outline>1</outline>
       </PolyStyle>

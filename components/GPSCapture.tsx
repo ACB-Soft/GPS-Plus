@@ -1095,7 +1095,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                     pathOptions={{
                       color: '#3b82f6',
                       fillColor: '#3b82f6',
-                      fillOpacity: 0.15,
+                      fillOpacity: 0.5,
                       weight: 1.5,
                       dashArray: '3, 4'
                     }}

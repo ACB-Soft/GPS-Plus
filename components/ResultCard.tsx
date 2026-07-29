@@ -339,7 +339,7 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
             <Circle 
               center={[location.lat, location.lng]} 
               radius={dynamicAccuracy} 
-              pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.2 }} 
+              pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.5 }} 
             />
             <MapResizer lat={location.lat} lng={location.lng} />
           </MapContainer>

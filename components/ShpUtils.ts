@@ -117,12 +117,10 @@ export const downloadSHP = (locations: SavedLocation[], settings: AppSettings, l
       if (ring.length > 0) {
         const polyProperties = language === 'EN' ? {
           Point_Name: loc.name,
-          Accuracy_m: radius.toFixed(2),
-          Radius_m: radius.toFixed(2)
+          Accuracy_m: radius.toFixed(2)
         } : {
           Nokta_Adi: loc.name,
-          Hassas_m: radius.toFixed(2),
-          Yaricap_m: radius.toFixed(2)
+          Hassas_m: radius.toFixed(2)
         };
 
         polygonFeatures.push({

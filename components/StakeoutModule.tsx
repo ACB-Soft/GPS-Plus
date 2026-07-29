@@ -983,7 +983,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     <Circle 
                       center={[userPos.lat, userPos.lng]} 
                       radius={userPos.accuracy} 
-                      pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.2 }} 
+                      pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.5 }} 
                     />
                     <Marker 
                       position={[userPos.lat, userPos.lng]} 
@@ -1137,7 +1137,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     <Circle 
                       center={[userPos.lat, userPos.lng]} 
                       radius={userPos.accuracy} 
-                      pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.2 }} 
+                      pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.5 }} 
                     />
                     <Marker 
                       position={[userPos.lat, userPos.lng]} 
