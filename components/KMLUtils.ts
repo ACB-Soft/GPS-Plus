@@ -57,62 +57,10 @@ export const generateKML = (locations: SavedLocation[], projectName: string): st
     <Placemark>
       <name>${safeName}</name>
       <styleUrl>#pointStyle</styleUrl>
-      <description><![CDATA[
-        <div style="font-family: sans-serif; font-size: 13px; color: #1e293b; min-width: 240px;">
-          <div style="background: #2563eb; color: #ffffff; padding: 8px 12px; font-weight: bold; font-size: 14px; border-radius: 6px 6px 0 0;">
-            📍 ${safeName}
-          </div>
-          <div style="padding: 10px; border: 1px solid #e2e8f0; border-top: none; background: #ffffff; border-radius: 0 0 6px 6px;">
-            <table style="width: 100%; border-collapse: collapse; font-size: 12px; line-height: 1.6;">
-              <tr>
-                <td style="color: #64748b; font-weight: bold; width: 45%;">Enlem (Lat):</td>
-                <td style="color: #0f172a; font-family: monospace;">${loc.lat.toFixed(8)}°</td>
-              </tr>
-              <tr>
-                <td style="color: #64748b; font-weight: bold;">Boylam (Lng):</td>
-                <td style="color: #0f172a; font-family: monospace;">${loc.lng.toFixed(8)}°</td>
-              </tr>
-              ${loc.altitude !== null && loc.altitude !== undefined ? `
-              <tr>
-                <td style="color: #64748b; font-weight: bold;">Yükseklik (H):</td>
-                <td style="color: #0f172a; font-family: monospace;">${loc.altitude.toFixed(3)} m</td>
-              </tr>
-              ` : ''}
-              <tr>
-                <td style="color: #2563eb; font-weight: bold;">Hassasiyet:</td>
-                <td style="color: #2563eb; font-weight: bold; font-family: monospace;">±${acc.toFixed(2)} m</td>
-              </tr>
-              ${loc.folderName ? `
-              <tr>
-                <td style="color: #64748b; font-weight: bold;">Klasör:</td>
-                <td style="color: #0f172a;">${escapeXml(loc.folderName)}</td>
-              </tr>
-              ` : ''}
-              ${loc.measurementDuration ? `
-              <tr>
-                <td style="color: #64748b; font-weight: bold;">Ölçüm Süresi:</td>
-                <td style="color: #0f172a;">${loc.measurementDuration} sn</td>
-              </tr>
-              ` : ''}
-              ${loc.calculationMethod ? `
-              <tr>
-                <td style="color: #64748b; font-weight: bold;">Yöntem:</td>
-                <td style="color: #0f172a;">${escapeXml(loc.calculationMethod)}</td>
-              </tr>
-              ` : ''}
-              ${loc.description ? `
-              <tr>
-                <td style="color: #64748b; font-weight: bold;">Açıklama:</td>
-                <td style="color: #0f172a;">${escapeXml(loc.description)}</td>
-              </tr>
-              ` : ''}
-            </table>
-          </div>
-        </div>
-      ]]></description>
+      <description>Enlem: ${loc.lat.toFixed(8)}, Boylam: ${loc.lng.toFixed(8)}, Hassasiyet: ±${acc.toFixed(2)}m${loc.altitude !== null ? `, Yükseklik: ${loc.altitude.toFixed(3)}m` : ''}</description>
       <Point>
         <altitudeMode>clampToGround</altitudeMode>
-        <coordinates>${loc.lng},${loc.lat},${alt}</coordinates>
+        <coordinates>${loc.lng},${loc.lat},0</coordinates>
       </Point>
     </Placemark>`;
   }).join('');
@@ -130,12 +78,7 @@ export const generateKML = (locations: SavedLocation[], projectName: string): st
     <Placemark>
       <name>${safeName} - Hassasiyet Çemberi (±${radius.toFixed(2)}m)</name>
       <styleUrl>#accuracyCircleStyle</styleUrl>
-      <description><![CDATA[
-        <div style="font-family: sans-serif; font-size: 12px; color: #1e293b; padding: 6px;">
-          <b>Ölçüm Noktası:</b> ${safeName}<br/>
-          <b>Donanımsal Konumsal Hassasiyet:</b> ±${radius.toFixed(2)} m
-        </div>
-      ]]></description>
+      <description>Hassasiyet Çemberi (±${radius.toFixed(2)}m)</description>
       <Polygon>
         <altitudeMode>clampToGround</altitudeMode>
         <outerBoundaryIs>
@@ -157,16 +100,13 @@ export const generateKML = (locations: SavedLocation[], projectName: string): st
       <IconStyle>
         <scale>1.1</scale>
         <Icon>
-          <href>http://maps.google.com/mapfiles/kml/pushpin/blue-pushpin.png</href>
+          <href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>
         </Icon>
         <hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
       </IconStyle>
       <LabelStyle>
         <scale>0.9</scale>
       </LabelStyle>
-      <BalloonStyle>
-        <text>$[description]</text>
-      </BalloonStyle>
     </Style>
 
     <Style id="accuracyCircleStyle">
