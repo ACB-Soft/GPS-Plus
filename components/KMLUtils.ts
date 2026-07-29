@@ -9,7 +9,7 @@ export const createCircleKmlCoordinates = (
   lat: number,
   lng: number,
   radiusMeters: number,
-  numPoints: number = 64
+  numPoints: number = 120
 ): string => {
   if (!radiusMeters || radiusMeters <= 0 || isNaN(radiusMeters)) {
     return '';
@@ -49,15 +49,13 @@ export const generateKML = (locations: SavedLocation[], projectName: string): st
   const folderName = `${projectName}_${dateStr}`;
 
   const pointPlacemarks = locations.map(loc => {
-    const acc = loc.accuracy || loc.accuracyLimit || 0;
-    const alt = loc.altitude !== null && loc.altitude !== undefined ? loc.altitude : 0;
     const safeName = escapeXml(loc.name);
 
     return `
     <Placemark>
       <name>${safeName}</name>
       <styleUrl>#pointStyle</styleUrl>
-      <description>Enlem: ${loc.lat.toFixed(8)}, Boylam: ${loc.lng.toFixed(8)}, Hassasiyet: ±${acc.toFixed(2)}m${loc.altitude !== null ? `, Yükseklik: ${loc.altitude.toFixed(3)}m` : ''}</description>
+      <description></description>
       <Point>
         <altitudeMode>clampToGround</altitudeMode>
         <coordinates>${loc.lng},${loc.lat},0</coordinates>
@@ -69,17 +67,18 @@ export const generateKML = (locations: SavedLocation[], projectName: string): st
     const radius = loc.accuracy || loc.accuracyLimit || 0;
     if (!radius || radius <= 0) return '';
 
-    const circleCoords = createCircleKmlCoordinates(loc.lat, loc.lng, radius, 64);
+    const circleCoords = createCircleKmlCoordinates(loc.lat, loc.lng, radius, 120);
     if (!circleCoords) return '';
 
     const safeName = escapeXml(loc.name);
 
     return `
     <Placemark>
-      <name>${safeName} - Hassasiyet Çemberi (±${radius.toFixed(2)}m)</name>
+      <name>${safeName} - Hassasiyet</name>
       <styleUrl>#accuracyCircleStyle</styleUrl>
-      <description>Hassasiyet Çemberi (±${radius.toFixed(2)}m)</description>
+      <description></description>
       <Polygon>
+        <tessellate>1</tessellate>
         <altitudeMode>clampToGround</altitudeMode>
         <outerBoundaryIs>
           <LinearRing>
