@@ -1651,10 +1651,11 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   <table className="w-full text-left border-collapse table-fixed">
                     <thead>
                       <tr className="bg-slate-900 text-white text-[8px] sm:text-[9.5px] uppercase tracking-wider">
-                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 rounded-tl-3xl w-[28%] whitespace-nowrap">{language === 'EN' ? "Method" : "Yöntem"}</th>
-                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 w-[22%] whitespace-nowrap">{language === 'EN' ? "Epochs" : "Epok"}</th>
-                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 w-[28%] whitespace-nowrap">{language === 'EN' ? "Δ2D Dev. (m)" : "Yatay Hata (m)"}</th>
-                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 rounded-tr-3xl w-[22%] whitespace-nowrap">{language === 'EN' ? "STATUS" : "DURUM"}</th>
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 rounded-tl-3xl w-[22%] whitespace-nowrap">{language === 'EN' ? "Method" : "Yöntem"}</th>
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 w-[15%] whitespace-nowrap">{language === 'EN' ? "Epochs" : "Epok"}</th>
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 w-[20%] whitespace-nowrap">{language === 'EN' ? "Δ2D (m)" : "Yatay H. (m)"}</th>
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 w-[20%] whitespace-nowrap">{language === 'EN' ? <>{'Δ'}<span className="lowercase">h</span> (m)</> : <>Düşey <span className="lowercase">h</span>. (m)</>}</th>
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 rounded-tr-3xl w-[23%] whitespace-nowrap">{language === 'EN' ? "STATUS" : "DURUM"}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1667,6 +1668,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             <td className="px-2 py-2 sm:px-3.5 sm:py-3.5 font-black text-[9.5px] sm:text-[11px] text-slate-800 whitespace-nowrap truncate">{getMethodLabel(res.method)}</td>
                             <td className="px-2 py-2 sm:px-3.5 sm:py-3.5 font-mono text-[9.5px] sm:text-xs text-slate-600 font-medium whitespace-nowrap">{(res.usedCount ?? baseCount)}/{baseCount}</td>
                             <td className="px-2 py-2 sm:px-3.5 sm:py-3.5 font-bold text-[9.5px] sm:text-xs text-blue-600 whitespace-nowrap">{res.errors.dhz.toFixed(3)}</td>
+                            <td className="px-2 py-2 sm:px-3.5 sm:py-3.5 font-bold text-[9.5px] sm:text-xs text-amber-600 whitespace-nowrap">{Math.abs(res.errors.dz).toFixed(3)}</td>
                             <td className="px-2 py-2 sm:px-3.5 sm:py-3.5 whitespace-nowrap">
                               {isBest && (
                                 <span className="bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full text-[7px] sm:text-[8px] font-black uppercase tracking-tighter whitespace-nowrap">{language === 'EN' ? "BEST" : "EN İYİ"}</span>
@@ -1683,17 +1685,20 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                    <table className="w-full text-left border-collapse table-fixed">
                     <thead>
                       <tr className="bg-slate-900 text-white text-[8px] sm:text-[9.5px] uppercase tracking-wider">
-                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 rounded-tl-3xl w-[28%] whitespace-nowrap">{language === 'EN' ? "Method" : "Yöntem"}</th>
-                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 w-[22%] whitespace-nowrap">{language === 'EN' ? "Epochs" : "Epok"}</th>
-                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 w-[25%] truncate">
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 rounded-tl-3xl w-[22%] whitespace-nowrap">{language === 'EN' ? "Method" : "Yöntem"}</th>
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 w-[15%] whitespace-nowrap">{language === 'EN' ? "Epochs" : "Epok"}</th>
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 w-[21%] truncate">
                           {useLocal 
                             ? (language === 'EN' ? "Y / East (m)" : "Y / Sağa (m)") 
                             : (language === 'EN' ? "Latitude" : "Enlem")}
                         </th>
-                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 rounded-tr-3xl w-[25%] truncate">
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 w-[21%] truncate">
                           {useLocal 
                             ? (language === 'EN' ? "X / North (m)" : "X / Yukarı (m)") 
                             : (language === 'EN' ? "Longitude" : "Boylam")}
+                        </th>
+                        <th className="px-2 py-2 sm:px-3.5 sm:py-3.5 rounded-tr-3xl w-[21%] truncate">
+                          <span className="lowercase">h</span>-Elipsoid
                         </th>
                       </tr>
                     </thead>
@@ -1707,6 +1712,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                             <td className="px-2 py-2 sm:px-3.5 sm:py-3.5 font-mono text-[9.5px] sm:text-xs text-slate-600 font-medium whitespace-nowrap">{(res.usedCount ?? baseCount)}/{baseCount}</td>
                             <td className="px-2 py-2 sm:px-3.5 sm:py-3.5 font-bold text-[9.5px] sm:text-xs text-blue-600 whitespace-nowrap">{res.calculated.x.toFixed(useLocal ? 3 : 8)}</td>
                             <td className="px-2 py-2 sm:px-3.5 sm:py-3.5 font-bold text-[9.5px] sm:text-xs text-indigo-600 whitespace-nowrap">{res.calculated.y.toFixed(useLocal ? 3 : 8)}</td>
+                            <td className="px-2 py-2 sm:px-3.5 sm:py-3.5 font-bold text-[9.5px] sm:text-xs text-emerald-600 whitespace-nowrap">{(res.calculated.z || 0).toFixed(3)}</td>
                           </tr>
                         );
                       })}
