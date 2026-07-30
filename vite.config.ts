@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => {
           manifest: {
             name: 'GPS Plus',
             short_name: 'GPS Plus',
-            description: 'Geographic positioning and surveying tool',
+            description: 'Location Positioning App',
             theme_color: '#e2e8f0',
             background_color: '#e2e8f0',
             display: 'standalone',
