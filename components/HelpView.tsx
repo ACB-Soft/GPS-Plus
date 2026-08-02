@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import GlobalFooter from './GlobalFooter';
 import Header from './Header';
 import { generateTechnicalReport } from '../utils/ReportUtils';
 import { useLanguage } from '../utils/LanguageContext';
+import { APP_VERSION } from '../version';
 
 interface Props {
   onBack: () => void;
@@ -34,6 +35,66 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
       setPasswordError(t("Hatalı şifre!"));
     }
   };
+
+  const getDeviceInfo = () => {
+    const ua = navigator.userAgent;
+    
+    // İşletim Sistemi
+    let os = 'Bilinmiyor';
+    if (/android/i.test(ua)) {
+      const match = ua.match(/Android\s([0-9\.]*)/i);
+      os = match ? `Android ${match[1]}` : 'Android';
+    } else if (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
+      const match = ua.match(/OS (\d+)_?(\d+)?_?(\d+)?/i);
+      os = match ? `iOS ${match[1]}.${match[2] || '0'}` : 'iOS';
+    } else if (/Win/i.test(ua)) {
+      const match = ua.match(/Windows NT ([0-9\.]*)/i);
+      os = match ? `Windows NT ${match[1]}` : 'Windows';
+    } else if (/Mac/i.test(ua)) {
+      const match = ua.match(/Mac OS X ([0-9_]*)/i);
+      os = match ? `macOS ${match[1].replace(/_/g, '.')}` : 'macOS';
+    } else if (/Linux/i.test(ua)) {
+      os = 'Linux';
+    }
+
+    // Tarayıcı
+    let browser = 'Bilinmiyor';
+    if (/CriOS/i.test(ua)) {
+      const match = ua.match(/CriOS\/([0-9\.]*)/i);
+      browser = match ? `Chrome (iOS) ${match[1]}` : 'Chrome (iOS)';
+    } else if (/FxiOS/i.test(ua)) {
+      const match = ua.match(/FxiOS\/([0-9\.]*)/i);
+      browser = match ? `Firefox (iOS) ${match[1]}` : 'Firefox (iOS)';
+    } else if (/Chrome/i.test(ua)) {
+      const match = ua.match(/Chrome\/([0-9\.]*)/i);
+      browser = match ? `Chrome ${match[1]}` : 'Chrome';
+      if (/Edg/i.test(ua)) {
+        const edgeMatch = ua.match(/Edg\/([0-9\.]*)/i);
+        browser = edgeMatch ? `Edge ${edgeMatch[1]}` : 'Edge';
+      } else if (/OPR/i.test(ua)) {
+        const operaMatch = ua.match(/OPR\/([0-9\.]*)/i);
+        browser = operaMatch ? `Opera ${operaMatch[1]}` : 'Opera';
+      }
+    } else if (/Safari/i.test(ua)) {
+      const match = ua.match(/Version\/([0-9\.]*)/i);
+      browser = match ? `Safari ${match[1]}` : 'Safari';
+    } else if (/Firefox/i.test(ua)) {
+      const match = ua.match(/Firefox\/([0-9\.]*)/i);
+      browser = match ? `Firefox ${match[1]}` : 'Firefox';
+    }
+
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone ? 'Evet' : 'Hayır';
+    
+    return {
+      os,
+      browser,
+      pwa: isPWA,
+      resolution: `${window.screen.width}x${window.screen.height}`,
+      language: navigator.language || (navigator.languages && navigator.languages[0]) || 'Bilinmiyor'
+    };
+  };
+
+  const deviceInfo = getDeviceInfo();
 
   return (
     <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-slate-200">
@@ -475,7 +536,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
           </section>
 
           {/* Hakkında */}
-          <section className="space-y-4 pb-10">
+          <section className="space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center text-white shadow-lg shadow-slate-400">
                 <i className="fas fa-info-circle"></i>
@@ -498,6 +559,48 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                   <i className="fas fa-file-word text-[11px]"></i>
                   {t("Akademik Teknik Rapor")}
                 </button>
+              </div>
+            </div>
+          </section>
+
+          {/* Cihaz Bilgisi */}
+          <section className="space-y-4 pb-10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-slate-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-slate-300">
+                <i className="fas fa-mobile-alt"></i>
+              </div>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Cihaz Bilgisi")}</h3>
+            </div>
+            <div className="soft-card p-6 space-y-4">
+              <p className="text-sm text-slate-700 font-medium leading-relaxed text-justify">
+                {t("Karşılaştığınız hataları bildirirken aşağıdaki bilgileri de eklemeniz sorunun daha hızlı incelenmesini sağlayacaktır.")}
+              </p>
+              
+              <div className="grid grid-cols-1 gap-3 mt-2">
+                <div className="flex flex-col bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t("İşletim Sistemi")}</span>
+                  <span className="text-sm font-bold text-slate-900 truncate">{deviceInfo.os}</span>
+                </div>
+                <div className="flex flex-col bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t("Tarayıcı")}</span>
+                  <span className="text-sm font-bold text-slate-900 truncate">{deviceInfo.browser}</span>
+                </div>
+                <div className="flex flex-col bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t("PWA Mod")}</span>
+                  <span className="text-sm font-bold text-slate-900 truncate">{deviceInfo.pwa}</span>
+                </div>
+                <div className="flex flex-col bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t("Ekran Çözünürlüğü")}</span>
+                  <span className="text-sm font-bold text-slate-900 truncate">{deviceInfo.resolution}</span>
+                </div>
+                <div className="flex flex-col bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t("Sistem Dili")}</span>
+                  <span className="text-sm font-bold text-slate-900 truncate">{deviceInfo.language}</span>
+                </div>
+                <div className="flex flex-col bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t("Uygulama Sürümü")}</span>
+                  <span className="text-sm font-bold text-slate-900 truncate">{APP_VERSION}</span>
+                </div>
               </div>
             </div>
           </section>
