@@ -30,7 +30,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
   const [heightType, setHeightType] = useState(localStorage.getItem('default_height_type') || 'orthometric');
   const [calculationMethod, setCalculationMethod] = useState(localStorage.getItem('default_calculation_method') || 'WEIGHTED_LSE');
   const [gnssOnlyMode, setGnssOnlyMode] = useState(localStorage.getItem('default_gnss_only_mode') === 'true');
-  const [showOnboarding, setShowOnboarding] = useState(localStorage.getItem('show_onboarding_every_time') === 'true');
+  const [showOnboarding, setShowOnboarding] = useState(localStorage.getItem('always_show_onboarding') === 'true');
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [restorePayload, setRestorePayload] = useState<any | null>(null);
@@ -65,7 +65,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
     localStorage.setItem('default_height_type', heightType);
     localStorage.setItem('default_calculation_method', calculationMethod);
     localStorage.setItem('default_gnss_only_mode', gnssOnlyMode.toString());
-    localStorage.setItem('show_onboarding_every_time', showOnboarding.toString());
+    localStorage.setItem('always_show_onboarding', showOnboarding.toString());
   }, [coordinateSystem, accuracyLimit, measurementDuration, mapProvider, audioEnabled, vibrationEnabled, screenAlwaysOn, locationPrecision, heightPrecision, heightType, calculationMethod, gnssOnlyMode, showOnboarding]);
 
   const handleResetSettings = () => {
@@ -83,7 +83,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
       localStorage.removeItem('default_height_type');
       localStorage.removeItem('default_calculation_method');
       localStorage.removeItem('default_gnss_only_mode');
-      localStorage.removeItem('show_onboarding_every_time');
+      localStorage.removeItem('always_show_onboarding');
 
       // Reset state to synchronized defaults
       setCoordinateSystem('WGS84');
@@ -185,7 +185,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
         'last_folder_name',
         'onboarding_v1.0_done',
         'language_preference',
-        'show_onboarding_every_time',
+        'always_show_onboarding',
         'default_coord_system',
         'default_accuracy_limit',
         'default_duration',

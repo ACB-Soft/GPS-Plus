@@ -22,7 +22,7 @@ const App = () => {
 
   const getInitialView = (): ViewType => {
     try {
-      const showOnboardingEveryTime = localStorage.getItem('show_onboarding_every_time') === 'true';
+      const showOnboardingEveryTime = localStorage.getItem('always_show_onboarding') === 'true';
       const onboardingDone = localStorage.getItem('onboarding_v1.0_done') === 'true';
       return (!onboardingDone || showOnboardingEveryTime) ? 'onboarding' : 'dashboard';
     } catch (e) {
@@ -93,7 +93,7 @@ const App = () => {
     heightType: (localStorage.getItem('default_height_type') as 'orthometric' | 'ellipsoidal') || 'orthometric',
     calculationMethod: (localStorage.getItem('default_calculation_method') || 'WEIGHTED_LSE') as any,
     gnssOnlyMode: localStorage.getItem('default_gnss_only_mode') === 'true',
-    showOnboarding: localStorage.getItem('show_onboarding_every_time') === 'true',
+    showOnboarding: localStorage.getItem('always_show_onboarding') === 'true',
   }));
 
   // Navigation wrapper to sync with browser history
@@ -423,7 +423,7 @@ const App = () => {
                 heightType: (localStorage.getItem('default_height_type') as 'orthometric' | 'ellipsoidal') || 'orthometric',
                 calculationMethod: (localStorage.getItem('default_calculation_method') || 'WEIGHTED_LSE') as any,
                 gnssOnlyMode: localStorage.getItem('default_gnss_only_mode') === 'true',
-                showOnboarding: localStorage.getItem('show_onboarding_every_time') === 'true',
+                showOnboarding: localStorage.getItem('always_show_onboarding') === 'true',
               });
               window.history.back();
             }} 
