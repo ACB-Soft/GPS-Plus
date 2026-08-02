@@ -30,7 +30,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
   const [heightType, setHeightType] = useState(localStorage.getItem('default_height_type') || 'orthometric');
   const [calculationMethod, setCalculationMethod] = useState(localStorage.getItem('default_calculation_method') || 'WEIGHTED_LSE');
   const [gnssOnlyMode, setGnssOnlyMode] = useState(localStorage.getItem('default_gnss_only_mode') === 'true');
-  const [showOnboarding, setShowOnboarding] = useState(localStorage.getItem('show_onboarding_every_time') !== 'false');
+  const [showOnboarding, setShowOnboarding] = useState(localStorage.getItem('show_onboarding_every_time') === 'true');
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [restorePayload, setRestorePayload] = useState<any | null>(null);
