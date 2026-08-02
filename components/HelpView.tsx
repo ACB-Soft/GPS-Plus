@@ -85,16 +85,72 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
 
     const isPWA = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone ? 'Evet' : 'Hayır';
     
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = window.screen.width;
+    const cssH = window.screen.height;
+    const physW = Math.round(cssW * dpr);
+    const physH = Math.round(cssH * dpr);
+
+    const resolution = dpr > 1 
+      ? `${physW}x${physH} px (Mantıksal: ${cssW}x${cssH} px)` 
+      : `${cssW}x${cssH} px`;
+
     return {
       os,
       browser,
       pwa: isPWA,
-      resolution: `${window.screen.width}x${window.screen.height}`,
+      resolution,
       language: navigator.language || (navigator.languages && navigator.languages[0]) || 'Bilinmiyor'
     };
   };
 
-  const deviceInfo = getDeviceInfo();
+  const [deviceInfo, setDeviceInfo] = useState(() => getDeviceInfo());
+
+  useEffect(() => {
+    const uaData = (navigator as any).userAgentData;
+    if (uaData && typeof uaData.getHighEntropyValues === 'function') {
+      uaData.getHighEntropyValues(['architecture', 'model', 'platform', 'platformVersion', 'fullVersionList', 'uaFullVersion'])
+        .then((highEntropy: any) => {
+          setDeviceInfo(prev => {
+            let updatedOS = prev.os;
+            let updatedBrowser = prev.browser;
+
+            // Android Sürümü & Model Tespiti
+            if (highEntropy.platform === 'Android' && highEntropy.platformVersion) {
+              const mainVer = highEntropy.platformVersion.split('.')[0];
+              const modelStr = highEntropy.model ? ` (${highEntropy.model})` : '';
+              if (mainVer && mainVer !== '0') {
+                updatedOS = `Android ${mainVer}${modelStr}`;
+              }
+            } else if (highEntropy.model && !updatedOS.includes(highEntropy.model)) {
+              updatedOS = `${updatedOS} (${highEntropy.model})`;
+            }
+
+            // Tam Chrome / Tarayıcı Sürümü
+            if (highEntropy.fullVersionList && Array.isArray(highEntropy.fullVersionList)) {
+              const chromeBrand = highEntropy.fullVersionList.find((b: any) => 
+                b.brand === 'Google Chrome' || b.brand === 'Chrome' || b.brand === 'Microsoft Edge' || b.brand === 'Opera'
+              );
+              if (chromeBrand && chromeBrand.version && chromeBrand.version !== '0.0.0.0') {
+                const brandName = chromeBrand.brand === 'Google Chrome' ? 'Chrome' : chromeBrand.brand;
+                updatedBrowser = `${brandName} ${chromeBrand.version}`;
+              } else if (highEntropy.uaFullVersion) {
+                updatedBrowser = prev.browser.replace(/[0-9\.]+(\.0\.0\.0)?$/, highEntropy.uaFullVersion);
+              }
+            } else if (highEntropy.uaFullVersion) {
+              updatedBrowser = prev.browser.replace(/[0-9\.]+(\.0\.0\.0)?$/, highEntropy.uaFullVersion);
+            }
+
+            return {
+              ...prev,
+              os: updatedOS,
+              browser: updatedBrowser
+            };
+          });
+        })
+        .catch(() => {});
+    }
+  }, []);
 
   return (
     <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-slate-200">
