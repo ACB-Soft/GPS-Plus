@@ -124,29 +124,44 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
     }
   }, [needRefresh, t, updateServiceWorker]);
 
+  const needRefreshRef = useRef(needRefresh);
+  useEffect(() => {
+    needRefreshRef.current = needRefresh;
+  }, [needRefresh]);
+
   const handleUpdateCheck = async () => {
     if (isCheckingUpdate) return;
     
     setIsCheckingUpdate(true);
     try {
+      let hasUpdate = false;
       if ('serviceWorker' in navigator) {
         const registration = await navigator.serviceWorker.ready;
+        
+        // Listen for updatefound during the check
+        const onUpdateFound = () => { hasUpdate = true; };
+        registration.addEventListener('updatefound', onUpdateFound);
+        
         await registration.update();
+        
+        // Wait a tiny bit to allow updatefound event to fire
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        registration.removeEventListener('updatefound', onUpdateFound);
+        
+        if (registration.installing || registration.waiting) {
+          hasUpdate = true;
+        }
       } else {
         await new Promise(resolve => setTimeout(resolve, 1500));
       }
       
-      if (!needRefresh) {
-        // We wait a tiny bit to see if updatefound triggers needRefresh
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        if (!needRefresh) {
-          setModal({
-            isOpen: true,
-            title: t('Güncelleştirme Denetimi'),
-            type: 'info',
-            message: `${t('Uygulama Güncel')}\n\n${FULL_BRAND}`
-          });
-        }
+      if (!hasUpdate && !needRefreshRef.current) {
+        setModal({
+          isOpen: true,
+          title: t('Güncelleştirme Denetimi'),
+          type: 'info',
+          message: `${t('Uygulama Güncel')}\n\n${FULL_BRAND}`
+        });
       }
     } catch {
       setModal({
