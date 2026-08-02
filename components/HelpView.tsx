@@ -45,8 +45,19 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
       const match = ua.match(/Android\s([0-9\.]*)/i);
       os = match ? `Android ${match[1]}` : 'Android';
     } else if (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
-      const match = ua.match(/OS (\d+)_?(\d+)?_?(\d+)?/i);
-      os = match ? `iOS ${match[1]}.${match[2] || '0'}` : 'iOS';
+      const osMatch = ua.match(/OS (\d+)_?(\d+)?_?(\d+)?/i);
+      const verMatch = ua.match(/Version\/([0-9\.]*)/i);
+      
+      let iosVer = osMatch ? `${osMatch[1]}.${osMatch[2] || '0'}${osMatch[3] ? '.' + osMatch[3] : ''}` : '';
+      if (verMatch && verMatch[1]) {
+        const verParts = verMatch[1].split('.').map(Number);
+        const osParts = iosVer.split('.').map(Number);
+        if (verParts[0] > (osParts[0] || 0)) {
+          iosVer = verMatch[1];
+        }
+      }
+      
+      os = iosVer ? `iOS ${iosVer}` : 'iOS';
     } else if (/Win/i.test(ua)) {
       const match = ua.match(/Windows NT ([0-9\.]*)/i);
       os = match ? `Windows NT ${match[1]}` : 'Windows';
