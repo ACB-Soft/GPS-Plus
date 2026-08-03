@@ -94,7 +94,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
       browser = match ? `Firefox ${match[1]}` : 'Firefox';
     }
 
-    const isPWA = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone ? 'Evet' : 'Hayır';
+    const isPWA = !!(window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone);
     
     const dpr = window.devicePixelRatio || 1;
     const cssW = window.screen.width;
@@ -102,16 +102,16 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
     const physW = Math.round(cssW * dpr);
     const physH = Math.round(cssH * dpr);
 
-    const resolution = dpr > 1 
-      ? `${physW}x${physH} px (Mantıksal: ${cssW}x${cssH} px)` 
-      : `${cssW}x${cssH} px`;
-
     return {
       os,
       browser,
-      pwa: isPWA,
-      resolution,
-      language: navigator.language || (navigator.languages && navigator.languages[0]) || 'Bilinmiyor'
+      isPWA,
+      dpr,
+      physW,
+      physH,
+      cssW,
+      cssH,
+      language: navigator.language || (navigator.languages && navigator.languages[0]) || ''
     };
   };
 
@@ -646,23 +646,25 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
               <div className="grid grid-cols-1 gap-3 mt-2">
                 <div className="flex flex-col bg-slate-50 p-3 rounded-xl border border-slate-100">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t("İşletim Sistemi")}</span>
-                  <span className="text-sm font-bold text-slate-900 truncate">{deviceInfo.os}</span>
+                  <span className="text-sm font-bold text-slate-900 truncate">{t(deviceInfo.os || "Bilinmiyor")}</span>
                 </div>
                 <div className="flex flex-col bg-slate-50 p-3 rounded-xl border border-slate-100">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t("Tarayıcı")}</span>
-                  <span className="text-sm font-bold text-slate-900 truncate">{deviceInfo.browser}</span>
+                  <span className="text-sm font-bold text-slate-900 truncate">{t(deviceInfo.browser || "Bilinmiyor")}</span>
                 </div>
                 <div className="flex flex-col bg-slate-50 p-3 rounded-xl border border-slate-100">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t("PWA Mod")}</span>
-                  <span className="text-sm font-bold text-slate-900 truncate">{deviceInfo.pwa}</span>
+                  <span className="text-sm font-bold text-slate-900 truncate">{deviceInfo.isPWA ? t("Evet") : t("Hayır")}</span>
                 </div>
                 <div className="flex flex-col bg-slate-50 p-3 rounded-xl border border-slate-100">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t("Ekran Çözünürlüğü")}</span>
-                  <span className="text-sm font-bold text-slate-900 truncate">{deviceInfo.resolution}</span>
+                  <span className="text-sm font-bold text-slate-900 truncate">
+                    {`${deviceInfo.physW}x${deviceInfo.physH} px`}
+                  </span>
                 </div>
                 <div className="flex flex-col bg-slate-50 p-3 rounded-xl border border-slate-100">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t("Sistem Dili")}</span>
-                  <span className="text-sm font-bold text-slate-900 truncate">{deviceInfo.language}</span>
+                  <span className="text-sm font-bold text-slate-900 truncate">{deviceInfo.language || t("Bilinmiyor")}</span>
                 </div>
                 <div className="flex flex-col bg-slate-50 p-3 rounded-xl border border-slate-100">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t("Uygulama Sürümü")}</span>
