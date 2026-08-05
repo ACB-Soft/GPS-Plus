@@ -21,6 +21,13 @@ interface Props {
 }
 
 // Optimized helper components
+const normalizeAngle = (deg: number): number => {
+  let a = deg % 360;
+  if (a > 180) a -= 360;
+  if (a <= -180) a += 360;
+  return a;
+};
+
 const MapPopupContent = React.memo(({ name, subtitle, onGo, color }: { name: string, subtitle?: string, onGo: () => void, color?: string }) => {
   const { t } = useLanguage();
   return (
@@ -190,14 +197,14 @@ const getTileLayer = (provider: string) => {
   switch (provider) {
     case 'Google Hybrid':
       return {
-        url: "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+        url: "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&scale=2",
         attribution: '&copy; Google',
         maxNativeZoom: 20,
         tms: false
       };
     case 'Google Satellite':
       return {
-        url: "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+        url: "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}&scale=2",
         attribution: '&copy; Google',
         maxNativeZoom: 20,
         tms: false
@@ -226,7 +233,7 @@ const getTileLayer = (provider: string) => {
     case 'Google Roadmap':
     default:
       return {
-        url: "https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
+        url: "https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&scale=2",
         attribution: '&copy; Google',
         maxNativeZoom: 20,
         tms: false
@@ -266,6 +273,197 @@ const BoundsUpdater = ({ points, geometries }: { points: StakeoutPoint[], geomet
   return null;
 };
 
+const MapRotationHandler = ({ mapRotation }: { mapRotation: number }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    (map as any)._customRotation = mapRotation;
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [map, mapRotation]);
+
+  useEffect(() => {
+    if (!map) return;
+
+    // 1. Wrap map.panBy
+    const originalPanBy = map.panBy;
+    map.panBy = function (offset: L.PointExpression, options?: L.PanOptions) {
+      const rotation = (map as any)._customRotation || 0;
+      if (rotation % 360 === 0) {
+        return originalPanBy.call(this, offset, options);
+      }
+      const p = L.point(offset);
+      const rad = (rotation * Math.PI) / 180;
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+
+      const localX = p.x * cos + p.y * sin;
+      const localY = -p.x * sin + p.y * cos;
+
+      return originalPanBy.call(this, [localX, localY], options);
+    };
+
+    // 2. Patch map.dragging._draggable._onMove
+    const dragging = (map as any).dragging;
+    if (dragging && dragging._draggable) {
+      const draggable = dragging._draggable;
+
+      if (!draggable._originalOnMove) {
+        draggable._originalOnMove = draggable._onMove;
+      }
+
+      draggable._onMove = function (e: any) {
+        if (e.touches && e.touches.length > 1) { return; }
+
+        const rotation = (map as any)._customRotation || 0;
+
+        if (rotation % 360 === 0) {
+          draggable._originalOnMove.call(this, e);
+          return;
+        }
+
+        const first = (e.touches && e.touches.length === 1 ? e.touches[0] : e);
+        const point = L.DomEvent.getMousePosition(first, this._container);
+        const screenOffset = point.subtract(this._startPoint);
+
+        if (!screenOffset.x && !screenOffset.y) { return; }
+
+        L.DomEvent.stop(e);
+
+        const rad = (rotation * Math.PI) / 180;
+        const cos = Math.cos(rad);
+        const sin = Math.sin(rad);
+
+        const localX = screenOffset.x * cos + screenOffset.y * sin;
+        const localY = -screenOffset.x * sin + screenOffset.y * cos;
+
+        const localOffset = new L.Point(localX, localY);
+
+        this._newPos = this._startPos.add(localOffset);
+        this._moving = true;
+
+        L.Util.cancelAnimFrame(this._animRequest);
+
+        this._lastPoint = point;
+        this._animRequest = L.Util.requestAnimFrame(this._updatePosition, this, true);
+      };
+    }
+
+    return () => {
+      map.panBy = originalPanBy;
+      if (dragging && dragging._draggable && dragging._draggable._originalOnMove) {
+        dragging._draggable._onMove = dragging._draggable._originalOnMove;
+      }
+    };
+  }, [map]);
+
+  return null;
+};
+
+const MapTouchWrapper = ({
+  children,
+  mapRotation,
+  setMapRotation,
+  isRotationLocked = true,
+  className = "w-full h-full relative overflow-hidden"
+}: {
+  children: React.ReactNode;
+  mapRotation: number;
+  setMapRotation: React.Dispatch<React.SetStateAction<number>>;
+  isRotationLocked?: boolean;
+  className?: string;
+}) => {
+  const { t } = useLanguage();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const touchStartRef = useRef<{ initialAngle: number; startRotation: number } | null>(null);
+  const mapRotationRef = useRef(mapRotation);
+  const isRotationLockedRef = useRef(isRotationLocked);
+  const [isGesturing, setIsGesturing] = useState(false);
+
+  useEffect(() => {
+    mapRotationRef.current = mapRotation;
+  }, [mapRotation]);
+
+  useEffect(() => {
+    isRotationLockedRef.current = isRotationLocked;
+  }, [isRotationLocked]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (isRotationLockedRef.current) return;
+      if (e.touches.length === 2) {
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const angle = Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX) * (180 / Math.PI);
+        touchStartRef.current = {
+          initialAngle: angle,
+          startRotation: mapRotationRef.current
+        };
+        setIsGesturing(true);
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (isRotationLockedRef.current) return;
+      if (e.touches.length === 2 && touchStartRef.current) {
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const currentAngle = Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX) * (180 / Math.PI);
+        let diff = currentAngle - touchStartRef.current.initialAngle;
+        if (diff > 180) diff -= 360;
+        if (diff < -180) diff += 360;
+
+        const newRotation = touchStartRef.current.startRotation + diff;
+        touchStartRef.current = {
+          initialAngle: currentAngle,
+          startRotation: newRotation
+        };
+
+        setMapRotation(Math.round(newRotation));
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) {
+        touchStartRef.current = null;
+        setIsGesturing(false);
+      }
+    };
+
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchmove', onTouchMove, { passive: true });
+    el.addEventListener('touchend', onTouchEnd, { passive: true });
+    el.addEventListener('touchcancel', onTouchEnd, { passive: true });
+
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
+      el.removeEventListener('touchend', onTouchEnd);
+      el.removeEventListener('touchcancel', onTouchEnd);
+    };
+  }, [setMapRotation]);
+
+  return (
+    <div ref={containerRef} className={className}>
+      <div 
+        className="absolute top-1/2 left-1/2 w-[200%] h-[200%] overflow-hidden"
+        style={{
+          transform: `translate(-50%, -50%) rotate(${mapRotation}deg)`,
+          transformOrigin: 'center center',
+          transition: isGesturing ? 'none' : 'transform 300ms ease-out'
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
+
 const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, currentStep, onNavigate }) => {
   const { t } = useLanguage();
   const [view, setView] = useState<'MENU' | 'LIST' | 'MANUAL' | 'MAP' | 'ALL_MAP'>((currentStep as any) || (initialPoint ? 'MAP' : 'MENU'));
@@ -273,6 +471,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
   const [allMapCenterTrigger, setAllMapCenterTrigger] = useState<{ pos: [number, number], time: number } | null>(null);
   const [currentMapProvider, setCurrentMapProvider] = useState(() => localStorage.getItem('default_map_provider') || 'Google Hybrid');
   const [showLayerMenu, setShowLayerMenu] = useState(false);
+  const [mapRotation, setMapRotation] = useState<number>(0);
+  const [isRotationLocked, setIsRotationLocked] = useState<boolean>(true);
 
   useEffect(() => {
     if (currentStep && currentStep !== view) {
@@ -869,15 +1069,57 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                 </button>
               </div>
 
-              {/* Symmetrical Layer Selector on the top-right */}
+              {/* Symmetrical Controls on the top-right */}
               <div className="absolute top-6 right-6 z-[10000] flex flex-col items-end gap-2">
-                <button 
-                  onClick={() => setShowLayerMenu(!showLayerMenu)}
-                  className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all cursor-pointer border border-slate-100"
-                  title={t("Harita Kaynağı")}
-                >
-                  <i className="fas fa-layer-group text-lg"></i>
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* Compass / Rotation Lock Button */}
+                  <button 
+                    onClick={() => {
+                      setShowLayerMenu(false);
+                      if (isRotationLocked) {
+                        setIsRotationLocked(false);
+                      } else {
+                        setIsRotationLocked(true);
+                        setMapRotation(0);
+                      }
+                    }}
+                    className={`w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center shadow-2xl active:scale-90 transition-all cursor-pointer border relative ${
+                      !isRotationLocked 
+                        ? 'border-blue-500 text-blue-600 bg-blue-50/90 ring-2 ring-blue-500/20' 
+                        : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                    }`}
+                    title={isRotationLocked ? t("Harita Döndürme Kilitli") : t("Harita Döndürme Serbest")}
+                  >
+                    <div 
+                      className="transition-transform duration-300 ease-out flex items-center justify-center relative w-6 h-6"
+                      style={{ transform: `rotate(${-mapRotation}deg)` }}
+                    >
+                      <svg className="w-6 h-6 drop-shadow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L15.5 12H8.5L12 2Z" fill="#EF4444" />
+                        <path d="M12 22L8.5 12H15.5L12 22Z" fill="#94A3B8" />
+                        <circle cx="12" cy="12" r="1.5" fill="#0F172A" />
+                      </svg>
+                      <span className="absolute -top-1.5 text-[7px] font-black text-red-600 select-none">K</span>
+                    </div>
+                    <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] shadow border ${
+                      isRotationLocked ? 'bg-red-500 text-white border-white' : 'bg-emerald-500 text-white border-white'
+                    }`}>
+                      <i className={`fas ${isRotationLocked ? 'fa-lock' : 'fa-lock-open'}`}></i>
+                    </div>
+                  </button>
+
+                  {/* Layer Selector Button */}
+                  <button 
+                    onClick={() => {
+                      setShowLayerMenu(!showLayerMenu);
+                    }}
+                    className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all cursor-pointer border border-slate-100"
+                    title={t("Harita Kaynağı")}
+                  >
+                    <i className="fas fa-layer-group text-lg"></i>
+                  </button>
+                </div>
+
                 {showLayerMenu && (
                   <div className="bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xl flex flex-col gap-1 w-52 text-slate-900 select-none animate-in fade-in slide-in-from-top-2 duration-150 animate-out fade-out">
                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-3 py-1.5 border-b border-slate-100 mb-1 leading-none">{t("Harita Kaynağı")}</p>
@@ -909,15 +1151,20 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                 )}
               </div>
 
-              <MapContainer 
-                center={[userPos?.lat || 39, userPos?.lng || 35]} 
-                zoom={19} 
-                maxZoom={22}
-                style={{ height: '100%', width: '100%' }}
-                zoomControl={false}
-                attributionControl={false}
-                preferCanvas={true}
+              <MapTouchWrapper
+                mapRotation={mapRotation}
+                setMapRotation={setMapRotation}
+                isRotationLocked={isRotationLocked}
               >
+                <MapContainer 
+                  center={[userPos?.lat || 39, userPos?.lng || 35]} 
+                  zoom={19} 
+                  maxZoom={22}
+                  style={{ height: '100%', width: '100%' }}
+                  zoomControl={false}
+                  attributionControl={false}
+                  preferCanvas={true}
+                >
                 {currentMapProvider === 'Bing Satellite' ? (
                   <BingTileLayer />
                 ) : (
@@ -998,10 +1245,12 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     />
                   </>
                 )}
+                <MapRotationHandler mapRotation={mapRotation} />
                 <BoundsUpdater points={points} geometries={geometries} />
                 <ZoomTracker onZoomChange={setAllMapZoom} />
                 <MapCenterer trigger={allMapCenterTrigger} />
               </MapContainer>
+            </MapTouchWrapper>
             </div>
             <div className="absolute bottom-0 left-0 right-0 z-20 px-8 py-4 bg-slate-200/95 backdrop-blur-md shadow-[0_-10px_30px_rgba(0,0,0,0.1)] border-t border-slate-100 flex items-center justify-between">
                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -1046,15 +1295,57 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                 </button>
               </div>
 
-              {/* Symmetrical Layer Selector on the top-right */}
+              {/* Symmetrical Controls on the top-right */}
               <div className="absolute top-6 right-6 z-[10000] flex flex-col items-end gap-2">
-                <button 
-                  onClick={() => setShowLayerMenu(!showLayerMenu)}
-                  className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all cursor-pointer border border-slate-100"
-                  title={t("Harita Kaynağı")}
-                >
-                  <i className="fas fa-layer-group text-lg"></i>
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* Compass / Rotation Lock Button */}
+                  <button 
+                    onClick={() => {
+                      setShowLayerMenu(false);
+                      if (isRotationLocked) {
+                        setIsRotationLocked(false);
+                      } else {
+                        setIsRotationLocked(true);
+                        setMapRotation(0);
+                      }
+                    }}
+                    className={`w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center shadow-2xl active:scale-90 transition-all cursor-pointer border relative ${
+                      !isRotationLocked 
+                        ? 'border-blue-500 text-blue-600 bg-blue-50/90 ring-2 ring-blue-500/20' 
+                        : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                    }`}
+                    title={isRotationLocked ? t("Harita Döndürme Kilitli") : t("Harita Döndürme Serbest")}
+                  >
+                    <div 
+                      className="transition-transform duration-300 ease-out flex items-center justify-center relative w-6 h-6"
+                      style={{ transform: `rotate(${-mapRotation}deg)` }}
+                    >
+                      <svg className="w-6 h-6 drop-shadow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L15.5 12H8.5L12 2Z" fill="#EF4444" />
+                        <path d="M12 22L8.5 12H15.5L12 22Z" fill="#94A3B8" />
+                        <circle cx="12" cy="12" r="1.5" fill="#0F172A" />
+                      </svg>
+                      <span className="absolute -top-1.5 text-[7px] font-black text-red-600 select-none">K</span>
+                    </div>
+                    <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] shadow border ${
+                      isRotationLocked ? 'bg-red-500 text-white border-white' : 'bg-emerald-500 text-white border-white'
+                    }`}>
+                      <i className={`fas ${isRotationLocked ? 'fa-lock' : 'fa-lock-open'}`}></i>
+                    </div>
+                  </button>
+
+                  {/* Layer Selector Button */}
+                  <button 
+                    onClick={() => {
+                      setShowLayerMenu(!showLayerMenu);
+                    }}
+                    className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all cursor-pointer border border-slate-100"
+                    title={t("Harita Kaynağı")}
+                  >
+                    <i className="fas fa-layer-group text-lg"></i>
+                  </button>
+                </div>
+
                 {showLayerMenu && (
                   <div className="bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xl flex flex-col gap-1 w-52 text-slate-900 select-none animate-in fade-in slide-in-from-top-2 duration-150 animate-out fade-out font-sans">
                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 px-3 py-1.5 border-b border-slate-100 mb-1 leading-none">{t("Harita Kaynağı")}</p>
@@ -1086,15 +1377,20 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                 )}
               </div>
 
-              <MapContainer 
-                center={[activePoint.lat, activePoint.lng]} 
-                zoom={getTileLayer(currentMapProvider).maxNativeZoom} 
-                maxZoom={22}
-                style={{ height: '100%', width: '100%' }}
-                zoomControl={false}
-                attributionControl={false}
-                preferCanvas={true}
+              <MapTouchWrapper
+                mapRotation={mapRotation}
+                setMapRotation={setMapRotation}
+                isRotationLocked={isRotationLocked}
               >
+                <MapContainer 
+                  center={[activePoint.lat, activePoint.lng]} 
+                  zoom={getTileLayer(currentMapProvider).maxNativeZoom} 
+                  maxZoom={22}
+                  style={{ height: '100%', width: '100%' }}
+                  zoomControl={false}
+                  attributionControl={false}
+                  preferCanvas={true}
+                >
                 {currentMapProvider === 'Bing Satellite' ? (
                   <BingTileLayer />
                 ) : (
@@ -1152,73 +1448,12 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     />
                   </>
                 )}
+                <MapRotationHandler mapRotation={mapRotation} />
                 <MapUpdater center={[activePoint.lat, activePoint.lng]} />
               </MapContainer>
+            </MapTouchWrapper>
 
-              {/* Visual Guidance Compass Overlay */}
-              {guidance && (
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
-                  <div className="w-48 h-48 md:w-64 md:h-64 rounded-full border-2 border-white/30 bg-slate-900/10 backdrop-blur-[2px] relative flex items-center justify-center">
-                    {/* Crosshair lines */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-full h-[1px] bg-white/20"></div>
-                      <div className="h-full w-[1px] bg-white/20"></div>
-                    </div>
 
-                    {/* Target Indicator Dot */}
-                    {(() => {
-                      const maxVisualDist = guidance.totalDist < 5 ? 5 : Math.max(15, guidance.totalDist);
-                      const scale = (guidance.totalDist < 5 ? 80 : 40) / maxVisualDist;
-                      const topOffset = -guidance.forward * scale;
-                      const leftOffset = guidance.right * scale;
-                      
-                      // Clamp to circle boundary
-                      const distFromCenter = Math.sqrt(topOffset * topOffset + leftOffset * leftOffset);
-                      const maxRadius = guidance.totalDist < 5 ? 90 : 80;
-                      let finalTop = topOffset;
-                      let finalLeft = leftOffset;
-                      
-                      if (distFromCenter > maxRadius) {
-                        finalTop = (topOffset / distFromCenter) * maxRadius;
-                        finalLeft = (leftOffset / distFromCenter) * maxRadius;
-                      }
-
-                      return (
-                        <div 
-                          className={`absolute w-6 h-6 rounded-full border-2 border-white shadow-lg transition-all duration-300 flex items-center justify-center ${guidance.totalDist < 2.0 ? 'bg-emerald-500 animate-ping' : 'bg-blue-600'}`}
-                          style={{ 
-                            transform: `translate(${finalLeft}px, ${finalTop}px)`,
-                          }}
-                        >
-                          <div className="w-2 h-2 bg-white rounded-full"></div>
-                        </div>
-                      );
-                    })()}
-
-                    {/* Center Point (User) */}
-                    <div className="w-4 h-4 bg-white rounded-full border-2 border-blue-600 shadow-md z-10"></div>
-                    
-                    {/* Distance Label */}
-                    <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md px-4 py-1.5 rounded-full border border-slate-100 shadow-xl">
-                       <span className="text-[11px] font-black text-slate-900 mono-font">{guidance.totalDist.toFixed(1)}m</span>
-                    </div>
-
-                    {/* Close-up Mode Indicator */}
-                    {guidance.totalDist < 5 && (
-                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1">
-                        <div className="bg-emerald-500 text-white px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest animate-pulse">
-                          {t("YAKIN ÇEKİM MODU")}
-                        </div>
-                        {guidance.totalDist < 2.0 && (
-                          <div className="bg-emerald-600 text-white px-4 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-widest shadow-lg shadow-emerald-200 animate-bounce">
-                            {t("HEDEFE ULAŞILDI")}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
 
             <div className="bg-slate-200 p-3 pb-4 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-20 rounded-t-[2rem] -mt-6">
