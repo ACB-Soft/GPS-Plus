@@ -255,21 +255,26 @@ const ZoomTracker = ({ onZoomChange }: { onZoomChange: (zoom: number) => void })
   return null;
 };
 
-const BoundsUpdater = ({ points, geometries }: { points: StakeoutPoint[], geometries: StakeoutGeometry[] }) => {
+const BoundsUpdater = ({ points, geometries, trigger }: { points: StakeoutPoint[], geometries: StakeoutGeometry[], trigger?: number }) => {
   const map = useMap();
-  const hasFittedRef = useRef<boolean>(false);
 
   useEffect(() => {
     const allCoords: [number, number][] = [];
     points.forEach(p => allCoords.push([p.lat, p.lng]));
     geometries.forEach(g => g.coordinates.forEach(c => allCoords.push([c.lat, c.lng])));
 
-    if (allCoords.length > 0 && !hasFittedRef.current) {
+    if (allCoords.length > 0) {
       const bounds = L.latLngBounds(allCoords);
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
-      hasFittedRef.current = true;
+      const timer = setTimeout(() => {
+        map.invalidateSize();
+        const tightZoom = map.getBoundsZoom(bounds, false, L.point(60, 60));
+        const upperLimitZoom = Math.max(1, Math.min(18, tightZoom - 1));
+        map.setView(bounds.getCenter(), upperLimitZoom);
+      }, 150);
+      return () => clearTimeout(timer);
     }
-  }, [points, geometries, map]);
+  }, [points, geometries, map, trigger]);
+
   return null;
 };
 
@@ -473,6 +478,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
   const [showLayerMenu, setShowLayerMenu] = useState(false);
   const [mapRotation, setMapRotation] = useState<number>(0);
   const [isRotationLocked, setIsRotationLocked] = useState<boolean>(true);
+  const [fitBoundsTrigger, setFitBoundsTrigger] = useState<number>(0);
 
   useEffect(() => {
     if (currentStep && currentStep !== view) {
@@ -1108,6 +1114,18 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     </div>
                   </button>
 
+                  {/* Fit to Project Bounds Button */}
+                  <button 
+                    onClick={() => {
+                      setShowLayerMenu(false);
+                      setFitBoundsTrigger(prev => prev + 1);
+                    }}
+                    className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all cursor-pointer border border-slate-100"
+                    title={t("Proje Sınırlarına Odaklan")}
+                  >
+                    <i className="fas fa-expand text-lg"></i>
+                  </button>
+
                   {/* Layer Selector Button */}
                   <button 
                     onClick={() => {
@@ -1246,7 +1264,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   </>
                 )}
                 <MapRotationHandler mapRotation={mapRotation} />
-                <BoundsUpdater points={points} geometries={geometries} />
+                <BoundsUpdater points={points} geometries={geometries} trigger={fitBoundsTrigger} />
                 <ZoomTracker onZoomChange={setAllMapZoom} />
                 <MapCenterer trigger={allMapCenterTrigger} />
               </MapContainer>

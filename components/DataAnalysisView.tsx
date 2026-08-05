@@ -34,7 +34,13 @@ const MapSetBounds = ({ points }: { points: [number, number][] }) => {
   React.useEffect(() => {
     if (points.length > 0) {
       const bounds = L.latLngBounds(points);
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 19 });
+      const timer = setTimeout(() => {
+        map.invalidateSize();
+        const tightZoom = map.getBoundsZoom(bounds, false, L.point(60, 60));
+        const upperLimitZoom = Math.max(1, Math.min(19, tightZoom - 1));
+        map.setView(bounds.getCenter(), upperLimitZoom);
+      }, 150);
+      return () => clearTimeout(timer);
     }
   }, [points, map]);
   return null;
