@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, Circle, Polyline, Polygon, Tooltip, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Circle, CircleMarker, Polyline, Polygon, Tooltip, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { StakeoutPoint, Coordinate, StakeoutGeometry, AppSettings } from '../types';
 import { getAccuracyColor, getAccuracyBg } from '../utils/StyleUtils';
@@ -68,11 +68,11 @@ const LazyVertexLayer = React.memo(({ geometries, zoom, onVertexSelect }: { geom
           if (c.lat < sw.lat || c.lat > ne.lat || c.lng < sw.lng || c.lng > ne.lng) return null;
 
           return (
-            <Circle
+            <CircleMarker
               key={`${g.id}-v-${idx}`}
               center={[c.lat, c.lng]}
-              radius={1.5}
-              pathOptions={{ color: 'white', fillColor: g.color || '#3b82f6', fillOpacity: 1, weight: 1 }}
+              radius={6}
+              pathOptions={{ color: 'white', fillColor: g.color || '#3b82f6', fillOpacity: 1, weight: 2 }}
             >
               <Popup closeButton={false} className="custom-leaflet-popup">
                 <MapPopupContent 
@@ -82,7 +82,7 @@ const LazyVertexLayer = React.memo(({ geometries, zoom, onVertexSelect }: { geom
                   onGo={() => onVertexSelect(g, c, idx)}
                 />
               </Popup>
-            </Circle>
+            </CircleMarker>
           );
         });
       })}
