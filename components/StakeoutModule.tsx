@@ -595,6 +595,13 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
   }, [geometries]);
   const [userPos, setUserPos] = useState<Coordinate | null>(null);
   const [heading, setHeading] = useState<number | null>(null);
+  const [isInvertedDirections, setIsInvertedDirections] = useState<boolean>(() => {
+    return localStorage.getItem('stakeout_invert_directions') === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('stakeout_invert_directions', String(isInvertedDirections));
+  }, [isInvertedDirections]);
 
   // Manual Entry State
   const [manualName, setManualName] = useState('');
@@ -638,17 +645,47 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
 
     const handleOrientation = (e: DeviceOrientationEvent) => {
       const webkitHeading = (e as any).webkitCompassHeading;
-      if (webkitHeading !== undefined) {
+      if (webkitHeading !== undefined && webkitHeading !== null) {
         setHeading(webkitHeading);
-      } else if (e.alpha !== null) {
-        setHeading(360 - e.alpha);
+      } else if (e.alpha !== null && e.alpha !== undefined) {
+        let compassHeading = (360 - e.alpha) % 360;
+
+        if (e.beta !== null && e.beta !== undefined && e.gamma !== null && e.gamma !== undefined) {
+          const _x = (e.beta || 0) * Math.PI / 180;
+          const _y = (e.gamma || 0) * Math.PI / 180;
+          const _z = (e.alpha || 0) * Math.PI / 180;
+
+          const cX = Math.cos(_x);
+          const cY = Math.cos(_y);
+          const cZ = Math.cos(_z);
+          const sX = Math.sin(_x);
+          const sY = Math.sin(_y);
+          const sZ = Math.sin(_z);
+
+          const Vx = -cZ * sY - sZ * sX * cY;
+          const Vy = -sZ * sY + cZ * sX * cY;
+
+          let tiltHeading = Math.atan2(Vx, Vy) * (180 / Math.PI);
+          if (tiltHeading < 0) tiltHeading += 360;
+          if (!isNaN(tiltHeading) && isFinite(tiltHeading)) {
+            compassHeading = tiltHeading;
+          }
+        }
+
+        setHeading(compassHeading);
       }
     };
 
+    if ('ondeviceorientationabsolute' in window) {
+      window.addEventListener('deviceorientationabsolute', handleOrientation as any, true);
+    }
     window.addEventListener('deviceorientation', handleOrientation, true);
 
     return () => {
       navigator.geolocation.clearWatch(watchId);
+      if ('ondeviceorientationabsolute' in window) {
+        window.removeEventListener('deviceorientationabsolute', handleOrientation as any, true);
+      }
       window.removeEventListener('deviceorientation', handleOrientation);
     };
   }, []);
@@ -761,14 +798,17 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
     let forward = distNS;
     let right = distEW;
 
-    if (heading !== null) {
-      const rad = heading * Math.PI / 180;
+    let effectiveHeading = heading;
+    if (effectiveHeading !== null && isInvertedDirections) {
+      effectiveHeading = (effectiveHeading + 180) % 360;
+    }
+
+    if (effectiveHeading !== null) {
+      const rad = effectiveHeading * Math.PI / 180;
       const cos = Math.cos(rad);
       const sin = Math.sin(rad);
       
-      // Rotate coordinates based on heading
-      // Standard rotation: x' = x cos θ + y sin θ, y' = -x sin θ + y cos θ
-      // Here y is North, x is East. Heading is clockwise from North.
+      // Rotate coordinates based on effective heading (clockwise from North)
       forward = distNS * cos + distEW * sin;
       right = distEW * cos - distNS * sin;
     }
@@ -1124,6 +1164,44 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     title={t("Proje Sınırlarına Odaklan")}
                   >
                     <i className="fas fa-expand text-lg"></i>
+                  </button>
+
+                  {/* Zoom to Current User Location Button */}
+                  <button 
+                    onClick={() => {
+                      setShowLayerMenu(false);
+                      if (userPos && userPos.lat && userPos.lng) {
+                        setAllMapCenterTrigger({ pos: [userPos.lat, userPos.lng], time: Date.now() });
+                      } else {
+                        if (navigator.geolocation) {
+                          showToast(t("Konum alınıyor..."), "info");
+                          navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                              const newPos = {
+                                lat: pos.coords.latitude,
+                                lng: pos.coords.longitude,
+                                accuracy: pos.coords.accuracy,
+                                altitude: pos.coords.altitude,
+                                timestamp: pos.timestamp
+                              };
+                              setUserPos(newPos);
+                              setAllMapCenterTrigger({ pos: [newPos.lat, newPos.lng], time: Date.now() });
+                            },
+                            (err) => {
+                              console.error(err);
+                              showToast(t("Konum verisi alınamadı"), "error");
+                            },
+                            { enableHighAccuracy: true, timeout: 5000 }
+                          );
+                        } else {
+                          showToast(t("Cihazınızda konum desteği bulunmuyor"), "error");
+                        }
+                      }
+                    }}
+                    className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-blue-600 hover:text-blue-700 active:scale-90 transition-all cursor-pointer border border-slate-100"
+                    title={t("Konuma Git")}
+                  >
+                    <i className="fas fa-crosshairs text-lg"></i>
                   </button>
 
                   {/* Layer Selector Button */}
@@ -1519,7 +1597,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   <div className={`text-base font-black mono-font ${guidance && (heading !== null ? guidance.forward : guidance.north) > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                     {guidance ? Math.abs(heading !== null ? guidance.forward : guidance.north).toFixed(1) : '0.0'}
                     <span className="text-[10px] ml-1">m</span>
-                    <span className="text-[9px] ml-2 opacity-60">
+                    <span className="text-[9px] ml-2 font-bold">
                       {guidance ? ((heading !== null ? guidance.forward : guidance.north) > 0 ? (heading !== null ? t('İLERİ') : t('KUZEY')) : (heading !== null ? t('GERİ') : t('GÜNEY'))) : ''}
                     </span>
                   </div>
@@ -1531,15 +1609,33 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   <div className={`text-base font-black mono-font ${guidance && (heading !== null ? guidance.right : guidance.east) > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                     {guidance ? Math.abs(heading !== null ? guidance.right : guidance.east).toFixed(1) : '0.0'}
                     <span className="text-[10px] ml-1">m</span>
-                    <span className="text-[9px] ml-2 opacity-60">
+                    <span className="text-[9px] ml-2 font-bold">
                       {guidance ? ((heading !== null ? guidance.right : guidance.east) > 0 ? (heading !== null ? t('SAĞ') : t('DOĞU')) : (heading !== null ? t('SOL') : t('BATI'))) : ''}
                     </span>
                   </div>
                 </div>
               </div>
+
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200/80">
+                <span className="text-[9px] font-bold text-slate-400 uppercase">
+                  {heading !== null ? t("Pusula Yönü Etkin") : t("K/G/D/B Konum Modu")}
+                </span>
+                <button
+                  onClick={() => setIsInvertedDirections(prev => !prev)}
+                  className={`px-2 py-1 rounded-xl font-black flex items-center gap-1.5 transition-all cursor-pointer text-[9px] uppercase tracking-wider ${
+                    isInvertedDirections
+                      ? 'bg-amber-500 text-white shadow-xs'
+                      : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                  }`}
+                  title={t("Pusula veya Cihaz Yönünü 180 Derece Çevir")}
+                >
+                  <i className="fas fa-sync-alt text-[8px]"></i>
+                  {isInvertedDirections ? t("180° Çevrildi") : t("180° Yön Çevir")}
+                </button>
+              </div>
               
               {!heading && (
-                <p className="mt-1.5 text-[8px] text-center text-slate-400 font-bold uppercase tracking-widest animate-pulse">
+                <p className="mt-1 text-[8px] text-center text-slate-400 font-bold uppercase tracking-widest animate-pulse">
                   {t("Pusula verisi bekleniyor... (K/G/D/B modu)")}
                 </p>
               )}
