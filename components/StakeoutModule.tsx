@@ -147,6 +147,23 @@ const MapCenterer = ({ trigger }: { trigger: { pos: [number, number], time: numb
   return null;
 };
 
+const MapMeasurementHandler = ({
+  isMeasuring,
+  onMapClick,
+}: {
+  isMeasuring: boolean;
+  onMapClick: (lat: number, lng: number) => void;
+}) => {
+  useMapEvents({
+    click(e) {
+      if (isMeasuring) {
+        onMapClick(e.latlng.lat, e.latlng.lng);
+      }
+    },
+  });
+  return null;
+};
+
 const BingTileLayer = () => {
   const map = useMap();
   useEffect(() => {
@@ -598,6 +615,21 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
   const [isInvertedDirections, setIsInvertedDirections] = useState<boolean>(() => {
     return localStorage.getItem('stakeout_invert_directions') === 'true';
   });
+
+  // Distance Measurement State on ALL_MAP
+  const [isMeasuring, setIsMeasuring] = useState(false);
+  const [measurePoints, setMeasurePoints] = useState<[number, number][]>([]);
+
+  const totalMeasureDistance = React.useMemo(() => {
+    if (measurePoints.length < 2) return 0;
+    let total = 0;
+    for (let i = 0; i < measurePoints.length - 1; i++) {
+      total += L.latLng(measurePoints[i][0], measurePoints[i][1]).distanceTo(
+        L.latLng(measurePoints[i + 1][0], measurePoints[i + 1][1])
+      );
+    }
+    return total;
+  }, [measurePoints]);
 
   useEffect(() => {
     localStorage.setItem('stakeout_invert_directions', String(isInvertedDirections));
@@ -1118,6 +1150,27 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
               {/* Symmetrical Controls on the top-right */}
               <div className="absolute top-6 right-6 z-[10000] flex flex-col items-end gap-2">
                 <div className="flex items-center gap-2">
+                  {/* Distance Measurement Button (Kuzey oku kilitleme butonunun solunda) */}
+                  <button 
+                    onClick={() => {
+                      setShowLayerMenu(false);
+                      setIsMeasuring(prev => !prev);
+                    }}
+                    className={`w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center shadow-2xl active:scale-90 transition-all cursor-pointer border relative ${
+                      isMeasuring 
+                        ? 'border-amber-500 text-amber-600 bg-amber-50/90 ring-2 ring-amber-500/30' 
+                        : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                    }`}
+                    title={isMeasuring ? t("Mesafe Ölçümünü Kapat") : t("Mesafe Ölçümü")}
+                  >
+                    <i className="fas fa-ruler-combined text-lg"></i>
+                    {measurePoints.length > 0 && (
+                      <div className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-amber-500 text-white text-[8px] font-black flex items-center justify-center shadow border border-white">
+                        {measurePoints.length}
+                      </div>
+                    )}
+                  </button>
+
                   {/* Compass / Rotation Lock Button */}
                   <button 
                     onClick={() => {
@@ -1247,6 +1300,58 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                 )}
               </div>
 
+              {/* Floating Compact Distance Measurement Pill */}
+              {isMeasuring && (
+                <div className="absolute top-20 right-6 z-[10000] bg-white/95 backdrop-blur-md rounded-2xl p-2 shadow-xl border border-amber-200/80 flex items-center gap-2.5 max-w-[calc(100vw-3rem)] animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+                    <i className="fas fa-ruler-combined text-xs"></i>
+                  </div>
+
+                  <div className="flex flex-col min-w-[70px] shrink-0">
+                    <div className="text-sm font-black text-amber-900 mono-font tracking-tight leading-none">
+                      {totalMeasureDistance >= 1000
+                        ? `${(totalMeasureDistance / 1000).toFixed(2)} km`
+                        : `${totalMeasureDistance.toFixed(1)} m`}
+                    </div>
+                    <span className="text-[8px] font-bold text-slate-400 mt-0.5 leading-none">
+                      {measurePoints.length === 0
+                        ? t("Nokta seçin")
+                        : `${measurePoints.length} ${t("nokta")}`}
+                    </span>
+                  </div>
+
+                  <div className="h-6 w-px bg-slate-200 shrink-0"></div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      disabled={measurePoints.length === 0}
+                      onClick={() => setMeasurePoints(prev => prev.slice(0, -1))}
+                      className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:pointer-events-none text-slate-700 flex items-center justify-center transition-all active:scale-95 cursor-pointer"
+                      title={t("Geri Al")}
+                    >
+                      <i className="fas fa-undo text-[10px]"></i>
+                    </button>
+
+                    <button
+                      disabled={measurePoints.length === 0}
+                      onClick={() => setMeasurePoints([])}
+                      className="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 disabled:opacity-30 disabled:pointer-events-none text-red-600 flex items-center justify-center transition-all active:scale-95 cursor-pointer"
+                      title={t("Ölçümü Sıfırla")}
+                    >
+                      <i className="fas fa-trash-alt text-[10px]"></i>
+                    </button>
+
+                    <button
+                      onClick={() => setIsMeasuring(false)}
+                      className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-all active:scale-95 cursor-pointer"
+                      title={t("Kapat")}
+                    >
+                      <i className="fas fa-times text-[10px]"></i>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <MapTouchWrapper
                 mapRotation={mapRotation}
                 setMapRotation={setMapRotation}
@@ -1293,6 +1398,10 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   geometries={geometries} 
                   zoom={allMapZoom} 
                   onVertexSelect={(g, c, idx) => {
+                    if (isMeasuring) {
+                      setMeasurePoints(prev => [...prev, [c.lat, c.lng]]);
+                      return;
+                    }
                     const newPt: StakeoutPoint = {
                       id: `snap-${Date.now()}`,
                       name: `${g.name} - ${t("Köşe")} ${idx + 1}`,
@@ -1314,12 +1423,89 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     p={p} 
                     zoom={allMapZoom} 
                     onGo={(pt) => {
+                      if (isMeasuring) {
+                        setMeasurePoints(prev => [...prev, [pt.lat, pt.lng]]);
+                        return;
+                      }
                       setSourceView('ALL_MAP');
                       setActivePoint(pt); 
                       onNavigate('MAP'); 
                     }}
                   />
                 ))}
+
+                {/* Measurement Path Polyline */}
+                {measurePoints.length > 1 && (
+                  <Polyline 
+                    positions={measurePoints} 
+                    pathOptions={{ color: '#f59e0b', weight: 4, dashArray: '6, 8', opacity: 0.95 }} 
+                  />
+                )}
+
+                {/* Measurement Point Markers */}
+                {measurePoints.map((pt, idx) => (
+                  <Marker 
+                    key={`measure-pt-${idx}`} 
+                    position={pt}
+                    icon={L.divIcon({
+                      className: 'measure-vertex-marker',
+                      html: `<div style="
+                        width: 22px;
+                        height: 22px;
+                        background: ${idx === 0 ? '#10b981' : idx === measurePoints.length - 1 ? '#ef4444' : '#f59e0b'};
+                        border: 2px solid white;
+                        border-radius: 50%;
+                        box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-weight: 900;
+                        font-size: 10px;
+                        color: white;
+                        font-family: monospace;
+                      ">${idx + 1}</div>`,
+                      iconSize: [22, 22],
+                      iconAnchor: [11, 11]
+                    })}
+                  />
+                ))}
+
+                {/* Segment Distance Badges */}
+                {measurePoints.length > 1 && measurePoints.slice(0, -1).map((p1, idx) => {
+                  const p2 = measurePoints[idx + 1];
+                  const segDist = L.latLng(p1[0], p1[1]).distanceTo(L.latLng(p2[0], p2[1]));
+                  const midLat = (p1[0] + p2[0]) / 2;
+                  const midLng = (p1[1] + p2[1]) / 2;
+                  return (
+                    <Marker
+                      key={`measure-seg-${idx}`}
+                      position={[midLat, midLng]}
+                      icon={L.divIcon({
+                        className: 'measure-seg-label',
+                        html: `<div style="
+                          background: rgba(15, 23, 42, 0.9);
+                          color: #fde047;
+                          font-size: 9px;
+                          font-weight: 800;
+                          padding: 1px 5px;
+                          border-radius: 9999px;
+                          border: 1px solid rgba(255,255,255,0.3);
+                          white-space: nowrap;
+                          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+                          transform: translate(-50%, -50%);
+                          font-family: monospace;
+                        ">${segDist >= 1000 ? `${(segDist / 1000).toFixed(2)} km` : `${segDist.toFixed(1)} m`}</div>`,
+                        iconSize: [0, 0],
+                        iconAnchor: [0, 0]
+                      })}
+                    />
+                  );
+                })}
+
+                <MapMeasurementHandler 
+                  isMeasuring={isMeasuring} 
+                  onMapClick={(lat, lng) => setMeasurePoints(prev => [...prev, [lat, lng]])} 
+                />
 
                 {userPos && (
                   <>
