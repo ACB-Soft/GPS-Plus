@@ -295,6 +295,25 @@ const BoundsUpdater = ({ points, geometries, trigger }: { points: StakeoutPoint[
   return null;
 };
 
+const ProjectBoundsFitter = ({ target }: { target: { coords: [number, number][], time: number } | null }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (target && target.coords.length > 0) {
+      const bounds = L.latLngBounds(target.coords);
+      const timer = setTimeout(() => {
+        map.invalidateSize();
+        const tightZoom = map.getBoundsZoom(bounds, false, L.point(60, 60));
+        const upperLimitZoom = Math.max(1, Math.min(18, tightZoom - 1));
+        map.setView(bounds.getCenter(), upperLimitZoom);
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [target, map]);
+
+  return null;
+};
+
 const MapRotationHandler = ({ mapRotation }: { mapRotation: number }) => {
   const map = useMap();
 
@@ -516,6 +535,73 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [showProjectLayersMenu, setShowProjectLayersMenu] = useState(false);
+  const [hiddenProjects, setHiddenProjects] = useState<string[]>(() => {
+    const saved = localStorage.getItem('stakeout_hidden_projects');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [projectBoundsTrigger, setProjectBoundsTrigger] = useState<{ coords: [number, number][], time: number } | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('stakeout_hidden_projects', JSON.stringify(hiddenProjects));
+  }, [hiddenProjects]);
+
+  const manualGroupName = t("Manuel Noktalar");
+
+  const projectLayers = React.useMemo(() => {
+    const map = new Map<string, { points: StakeoutPoint[], geometries: StakeoutGeometry[] }>();
+
+    points.forEach(p => {
+      const pName = p.projectName || manualGroupName;
+      if (!map.has(pName)) map.set(pName, { points: [], geometries: [] });
+      map.get(pName)!.points.push(p);
+    });
+
+    geometries.forEach(g => {
+      const pName = g.projectName || manualGroupName;
+      if (!map.has(pName)) map.set(pName, { points: [], geometries: [] });
+      map.get(pName)!.geometries.push(g);
+    });
+
+    const list: {
+      name: string;
+      isManual: boolean;
+      pointCount: number;
+      geometryCount: number;
+      visible: boolean;
+      boundsCoords: [number, number][];
+    }[] = [];
+
+    map.forEach((data, name) => {
+      const coords: [number, number][] = [];
+      data.points.forEach(p => coords.push([p.lat, p.lng]));
+      data.geometries.forEach(g => g.coordinates.forEach(c => coords.push([c.lat, c.lng])));
+
+      list.push({
+        name,
+        isManual: name === manualGroupName,
+        pointCount: data.points.length,
+        geometryCount: data.geometries.length,
+        visible: !hiddenProjects.includes(name),
+        boundsCoords: coords
+      });
+    });
+
+    return list.sort((a, b) => {
+      if (a.isManual) return 1;
+      if (b.isManual) return -1;
+      return a.name.localeCompare(b.name);
+    });
+  }, [points, geometries, hiddenProjects, manualGroupName]);
+
+  const visiblePoints = React.useMemo(() => {
+    return points.filter(p => !hiddenProjects.includes(p.projectName || manualGroupName));
+  }, [points, hiddenProjects, manualGroupName]);
+
+  const visibleGeometriesRaw = React.useMemo(() => {
+    return geometries.filter(g => !hiddenProjects.includes(g.projectName || manualGroupName));
+  }, [geometries, hiddenProjects, manualGroupName]);
+
   // Pre-processed coordinates for Leaflet components
   const processedGeometries = React.useMemo(() => {
     return geometries.map(g => ({
@@ -523,6 +609,10 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
       leafletCoords: g.coordinates.map(c => [c.lat, c.lng] as [number, number])
     }));
   }, [geometries]);
+
+  const visibleGeometries = React.useMemo(() => {
+    return processedGeometries.filter(g => !hiddenProjects.includes(g.projectName || manualGroupName));
+  }, [processedGeometries, hiddenProjects, manualGroupName]);
   const [activePoint, setActivePoint] = useState<StakeoutPoint | null>(initialPoint || null);
   const [confirmClear, setConfirmClear] = useState<'NONE' | 'LIST' | 'MAP'>('NONE');
   const [keepScreenOn, setKeepScreenOn] = useState(settings.screenAlwaysOn);
@@ -743,7 +833,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
           
           for (const kmlFileName of kmlFiles) {
             const kmlText = await contents.files[kmlFileName].async('string');
-            const result = parseKML(kmlText);
+            const projectName = kmlFiles.length === 1 ? file.name : `${file.name} (${kmlFileName})`;
+            const result = parseKML(kmlText, projectName);
             totalPoints = [...totalPoints, ...result.points];
             totalGeometries = [...totalGeometries, ...result.geometries];
           }
@@ -766,7 +857,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
       const reader = new FileReader();
       reader.onload = (event) => {
         const text = event.target?.result as string;
-        const result = parseKML(text);
+        const result = parseKML(text, file.name);
         setPoints(prev => [...prev, ...result.points]);
         setGeometries(prev => [...prev, ...result.geometries]);
         showToast(t("KML/KMZ dosya yüklendi"), "success");
@@ -801,7 +892,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
       lng,
       coordinateSystem: manualSystem,
       originalX: parseFloat(manualX),
-      originalY: parseFloat(manualY)
+      originalY: parseFloat(manualY),
+      projectName: t("Manuel Noktalar")
     };
 
     setPoints(prev => [...prev, newPoint]);
@@ -989,7 +1081,14 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     <div key={p.id} className="soft-card py-3 md:py-4 px-5 flex items-center justify-between group">
                       <div className="flex items-center gap-4 flex-1">
                         <div>
-                          <h4 className="font-black text-slate-800">{p.name}</h4>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-black text-slate-800">{p.name}</h4>
+                            {p.projectName && (
+                              <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-600 border border-indigo-100 max-w-[120px] truncate">
+                                {p.projectName}
+                              </span>
+                            )}
+                          </div>
                           <div className="flex flex-col">
                             {(() => {
                               const { x, y, labelX, labelY } = convertCoordinate(p.lat, p.lng, p.coordinateSystem || 'WGS84');
@@ -1134,8 +1233,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
         {view === 'ALL_MAP' && (
           <div className="flex flex-col h-full relative">
             <div className="flex-1 relative z-10">
-              {/* Back Button on top-left */}
-              <div className="absolute top-6 left-6 z-[10000]">
+              {/* Back Button on top-left - aligned with standard Header position (top-4 left-4 sm:left-8) */}
+              <div className="absolute top-4 left-4 sm:left-8 z-[10000] flex items-center">
                 <button 
                   onClick={() => {
                     window.history.back();
@@ -1143,29 +1242,29 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all cursor-pointer border border-slate-100"
                   title={t("Çıkış")}
                 >
-                  <i className="fas fa-arrow-left"></i>
+                  <i className="fas fa-chevron-left text-sm"></i>
                 </button>
               </div>
 
-              {/* Symmetrical Controls on the top-right */}
-              <div className="absolute top-6 right-6 z-[10000] flex flex-col items-end gap-2">
-                <div className="flex items-center gap-2">
+              {/* Symmetrical Controls on the top-right - aligned and vertically centered with the back button */}
+              <div className="absolute top-4 right-3 sm:right-8 z-[10000] flex flex-col items-end gap-1 sm:gap-2">
+                <div className="h-12 flex items-center gap-1 sm:gap-1.5 md:gap-2">
                   {/* Distance Measurement Button (Kuzey oku kilitleme butonunun solunda) */}
                   <button 
                     onClick={() => {
                       setShowLayerMenu(false);
                       setIsMeasuring(prev => !prev);
                     }}
-                    className={`w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center shadow-2xl active:scale-90 transition-all cursor-pointer border relative ${
+                    className={`w-8.5 h-8.5 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex flex-col items-center justify-center shadow-xl active:scale-90 transition-all cursor-pointer border relative ${
                       isMeasuring 
                         ? 'border-amber-500 text-amber-600 bg-amber-50/90 ring-2 ring-amber-500/30' 
                         : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                     }`}
                     title={isMeasuring ? t("Mesafe Ölçümünü Kapat") : t("Mesafe Ölçümü")}
                   >
-                    <i className="fas fa-ruler-combined text-lg"></i>
+                    <i className="fas fa-ruler-combined text-xs sm:text-base md:text-lg"></i>
                     {measurePoints.length > 0 && (
-                      <div className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-amber-500 text-white text-[8px] font-black flex items-center justify-center shadow border border-white">
+                      <div className="absolute -top-1 -right-1 min-w-3.5 h-3.5 sm:min-w-4 sm:h-4 px-0.5 sm:px-1 rounded-full bg-amber-500 text-white text-[7px] sm:text-[8px] font-black flex items-center justify-center shadow border border-white">
                         {measurePoints.length}
                       </div>
                     )}
@@ -1182,7 +1281,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                         setMapRotation(0);
                       }
                     }}
-                    className={`w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center shadow-2xl active:scale-90 transition-all cursor-pointer border relative ${
+                    className={`w-8.5 h-8.5 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex flex-col items-center justify-center shadow-xl active:scale-90 transition-all cursor-pointer border relative ${
                       !isRotationLocked 
                         ? 'border-blue-500 text-blue-600 bg-blue-50/90 ring-2 ring-blue-500/20' 
                         : 'border-slate-200 text-slate-700 hover:bg-slate-50'
@@ -1190,17 +1289,17 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     title={isRotationLocked ? t("Harita Döndürme Kilitli") : t("Harita Döndürme Serbest")}
                   >
                     <div 
-                      className="transition-transform duration-300 ease-out flex items-center justify-center relative w-6 h-6"
+                      className="transition-transform duration-300 ease-out flex items-center justify-center relative w-4.5 h-4.5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6"
                       style={{ transform: `rotate(${-mapRotation}deg)` }}
                     >
-                      <svg className="w-6 h-6 drop-shadow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <svg className="w-4.5 h-4.5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6 drop-shadow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 2L15.5 12H8.5L12 2Z" fill="#EF4444" />
                         <path d="M12 22L8.5 12H15.5L12 22Z" fill="#94A3B8" />
                         <circle cx="12" cy="12" r="1.5" fill="#0F172A" />
                       </svg>
-                      <span className="absolute -top-1.5 text-[7px] font-black text-red-600 select-none">K</span>
+                      <span className="absolute -top-1 sm:-top-1.5 text-[6px] sm:text-[7px] font-black text-red-600 select-none">K</span>
                     </div>
-                    <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] shadow border ${
+                    <div className={`absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-3 h-3 sm:w-4 sm:h-4 rounded-full flex items-center justify-center text-[6px] sm:text-[8px] shadow border ${
                       isRotationLocked ? 'bg-red-500 text-white border-white' : 'bg-emerald-500 text-white border-white'
                     }`}>
                       <i className={`fas ${isRotationLocked ? 'fa-lock' : 'fa-lock-open'}`}></i>
@@ -1213,10 +1312,10 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                       setShowLayerMenu(false);
                       setFitBoundsTrigger(prev => prev + 1);
                     }}
-                    className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all cursor-pointer border border-slate-100"
+                    className="w-8.5 h-8.5 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex items-center justify-center shadow-xl text-slate-900 active:scale-90 transition-all cursor-pointer border border-slate-200/80"
                     title={t("Proje Sınırlarına Odaklan")}
                   >
-                    <i className="fas fa-expand text-lg"></i>
+                    <i className="fas fa-expand text-xs sm:text-base md:text-lg"></i>
                   </button>
 
                   {/* Zoom to Current User Location Button */}
@@ -1251,23 +1350,174 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                         }
                       }
                     }}
-                    className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-blue-600 hover:text-blue-700 active:scale-90 transition-all cursor-pointer border border-slate-100"
+                    className="w-8.5 h-8.5 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex items-center justify-center shadow-xl text-blue-600 hover:text-blue-700 active:scale-90 transition-all cursor-pointer border border-slate-200/80"
                     title={t("Konuma Git")}
                   >
-                    <i className="fas fa-crosshairs text-lg"></i>
+                    <i className="fas fa-crosshairs text-xs sm:text-base md:text-lg"></i>
+                  </button>
+
+                  {/* Project Layers Button */}
+                  <button 
+                    onClick={() => {
+                      setShowLayerMenu(false);
+                      setShowProjectLayersMenu(prev => !prev);
+                    }}
+                    className={`w-8.5 h-8.5 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex flex-col items-center justify-center shadow-xl active:scale-90 transition-all cursor-pointer border relative ${
+                      showProjectLayersMenu
+                        ? 'border-indigo-500 text-indigo-600 bg-indigo-50/90 ring-2 ring-indigo-500/20'
+                        : projectLayers.length > 0 && hiddenProjects.length > 0
+                        ? 'border-indigo-300 text-indigo-600'
+                        : 'border-slate-200 text-slate-800 hover:bg-slate-50'
+                    }`}
+                    title={t("Proje Katmanları")}
+                  >
+                    <i className="fas fa-folder-tree text-xs sm:text-base md:text-lg"></i>
+                    {projectLayers.length > 0 && (
+                      <div className={`absolute -top-1 -right-1 min-w-3.5 h-3.5 sm:min-w-4 sm:h-4 px-0.5 sm:px-1 rounded-full text-white text-[7px] sm:text-[8px] font-black flex items-center justify-center shadow border border-white ${
+                        hiddenProjects.length > 0 ? 'bg-amber-500' : 'bg-indigo-600'
+                      }`}>
+                        {projectLayers.filter(l => l.visible).length}/{projectLayers.length}
+                      </div>
+                    )}
                   </button>
 
                   {/* Layer Selector Button */}
                   <button 
                     onClick={() => {
+                      setShowProjectLayersMenu(false);
                       setShowLayerMenu(!showLayerMenu);
                     }}
-                    className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all cursor-pointer border border-slate-100"
+                    className={`w-8.5 h-8.5 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex items-center justify-center shadow-xl active:scale-90 transition-all cursor-pointer border ${
+                      showLayerMenu
+                        ? 'border-blue-500 text-blue-600 bg-blue-50/90 ring-2 ring-blue-500/20'
+                        : 'border-slate-200 text-slate-900 hover:bg-slate-50'
+                    }`}
                     title={t("Harita Kaynağı")}
                   >
-                    <i className="fas fa-layer-group text-lg"></i>
+                    <i className="fas fa-layer-group text-xs sm:text-base md:text-lg"></i>
                   </button>
                 </div>
+
+                {/* Project Layers Dropdown Menu */}
+                {showProjectLayersMenu && (
+                  <div className="bg-white border border-slate-200/90 p-3 rounded-2xl shadow-2xl flex flex-col gap-2 w-72 max-w-[calc(100vw-3rem)] text-slate-900 select-none animate-in fade-in slide-in-from-top-2 duration-150 max-h-[70vh]">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs">
+                          <i className="fas fa-folder-tree"></i>
+                        </div>
+                        <div>
+                          <p className="text-[11px] font-black uppercase tracking-wider text-slate-800 leading-none">
+                            {t("Proje Katmanları")}
+                          </p>
+                          <span className="text-[9px] font-bold text-slate-400">
+                            {projectLayers.filter(l => l.visible).length}/{projectLayers.length} {t("aktif")}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setShowProjectLayersMenu(false)}
+                        className="w-6 h-6 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center cursor-pointer transition-colors"
+                      >
+                        <i className="fas fa-times text-xs"></i>
+                      </button>
+                    </div>
+
+                    {/* Quick Visibility Controls */}
+                    {projectLayers.length > 1 && (
+                      <div className="flex items-center gap-1.5 pb-1">
+                        <button
+                          onClick={() => setHiddenProjects([])}
+                          className="flex-1 py-1.5 px-2 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl text-[10px] font-bold text-slate-600 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <i className="fas fa-eye text-[9px]"></i>
+                          {t("Tümünü Göster")}
+                        </button>
+                        <button
+                          onClick={() => setHiddenProjects(projectLayers.map(l => l.name))}
+                          className="flex-1 py-1.5 px-2 bg-slate-100 hover:bg-red-50 hover:text-red-600 rounded-xl text-[10px] font-bold text-slate-600 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <i className="fas fa-eye-slash text-[9px]"></i>
+                          {t("Tümünü Gizle")}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Project List */}
+                    <div className="flex flex-col gap-1.5 overflow-y-auto max-h-[50vh] pr-0.5 custom-scrollbar">
+                      {projectLayers.length === 0 ? (
+                        <div className="py-6 text-center text-slate-400">
+                          <i className="fas fa-folder-open text-2xl mb-2 opacity-40"></i>
+                          <p className="text-xs font-semibold">{t("Henüz yüklenmiş proje veya nokta yok.")}</p>
+                        </div>
+                      ) : (
+                        projectLayers.map((layer) => (
+                          <div
+                            key={layer.name}
+                            className={`p-2 rounded-xl border transition-all flex items-center justify-between gap-2 ${
+                              layer.visible 
+                                ? 'bg-slate-50/70 border-slate-200/80 hover:bg-slate-100/80' 
+                                : 'bg-slate-50/30 border-slate-100 opacity-60'
+                            }`}
+                          >
+                            <button
+                              onClick={() => {
+                                setHiddenProjects(prev => 
+                                  layer.visible ? [...prev, layer.name] : prev.filter(n => n !== layer.name)
+                                );
+                              }}
+                              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                                layer.visible 
+                                  ? layer.isManual ? 'bg-emerald-500 text-white shadow-sm' : 'bg-indigo-600 text-white shadow-sm'
+                                  : 'bg-slate-200 text-slate-400'
+                              }`}
+                              title={layer.visible ? t("Katmanı Gizle") : t("Katmanı Göster")}
+                            >
+                              <i className={`fas ${layer.visible ? 'fa-eye' : 'fa-eye-slash'} text-xs`}></i>
+                            </button>
+
+                            <div 
+                              className="flex-1 min-w-0 cursor-pointer"
+                              onClick={() => {
+                                setHiddenProjects(prev => 
+                                  layer.visible ? [...prev, layer.name] : prev.filter(n => n !== layer.name)
+                                );
+                              }}
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${layer.isManual ? 'bg-emerald-500' : 'bg-indigo-500'}`}></span>
+                                <p className="text-xs font-bold text-slate-800 truncate" title={layer.name}>
+                                  {layer.name}
+                                </p>
+                              </div>
+                              <p className="text-[10px] text-slate-400 font-medium ml-3.5">
+                                {layer.pointCount > 0 && `${layer.pointCount} ${t("nokta")}`}
+                                {layer.pointCount > 0 && layer.geometryCount > 0 && ' · '}
+                                {layer.geometryCount > 0 && `${layer.geometryCount} ${t("geometri")}`}
+                              </p>
+                            </div>
+
+                            {layer.boundsCoords.length > 0 && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (!layer.visible) {
+                                    setHiddenProjects(prev => prev.filter(n => n !== layer.name));
+                                  }
+                                  setProjectBoundsTrigger({ coords: layer.boundsCoords, time: Date.now() });
+                                }}
+                                className="w-7 h-7 rounded-lg hover:bg-white text-slate-500 hover:text-indigo-600 border border-transparent hover:border-slate-200 flex items-center justify-center shrink-0 transition-all active:scale-95 cursor-pointer"
+                                title={t("Projeye Odaklan")}
+                              >
+                                <i className="fas fa-crosshairs text-[10px]"></i>
+                              </button>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {showLayerMenu && (
                   <div className="bg-white border border-slate-200/80 p-2.5 rounded-2xl shadow-2xl flex flex-col gap-1 w-52 text-slate-900 select-none animate-in fade-in slide-in-from-top-2 duration-150 animate-out fade-out">
@@ -1302,7 +1552,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
 
               {/* Floating Compact Distance Measurement Pill */}
               {isMeasuring && (
-                <div className="absolute top-20 right-6 z-[10000] bg-white/95 backdrop-blur-md rounded-2xl p-2 shadow-xl border border-amber-200/80 flex items-center gap-2.5 max-w-[calc(100vw-3rem)] animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="absolute top-16 right-4 sm:top-20 sm:right-6 z-[10000] bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl p-1.5 sm:p-2 shadow-xl border border-amber-200/80 flex items-center gap-2 sm:gap-2.5 max-w-[calc(100vw-2rem)] animate-in fade-in slide-in-from-top-2 duration-150">
                   <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
                     <i className="fas fa-ruler-combined text-xs"></i>
                   </div>
@@ -1378,7 +1628,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   />
                 )}
                 
-                {processedGeometries.map(g => (
+                {visibleGeometries.map(g => (
                   <React.Fragment key={g.id}>
                     {g.type === 'LineString' ? (
                       <Polyline 
@@ -1395,7 +1645,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                 ))}
 
                 <LazyVertexLayer 
-                  geometries={geometries} 
+                  geometries={visibleGeometriesRaw} 
                   zoom={allMapZoom} 
                   onVertexSelect={(g, c, idx) => {
                     if (isMeasuring) {
@@ -1409,7 +1659,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                       lng: c.lng,
                       coordinateSystem: 'WGS84',
                       originalX: c.lat,
-                      originalY: c.lng
+                      originalY: c.lng,
+                      projectName: g.projectName || manualGroupName
                     };
                     setSourceView('ALL_MAP');
                     setActivePoint(newPt);
@@ -1417,7 +1668,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   }}
                 />
 
-                {points.map(p => (
+                {visiblePoints.map(p => (
                   <StakeoutMarker 
                     key={p.id} 
                     p={p} 
@@ -1528,7 +1779,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   </>
                 )}
                 <MapRotationHandler mapRotation={mapRotation} />
-                <BoundsUpdater points={points} geometries={geometries} trigger={fitBoundsTrigger} />
+                <BoundsUpdater points={visiblePoints} geometries={visibleGeometriesRaw} trigger={fitBoundsTrigger} />
+                <ProjectBoundsFitter target={projectBoundsTrigger} />
                 <ZoomTracker onZoomChange={setAllMapZoom} />
                 <MapCenterer trigger={allMapCenterTrigger} />
               </MapContainer>
@@ -1536,7 +1788,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
             </div>
             <div className="absolute bottom-0 left-0 right-0 z-20 px-8 py-4 bg-slate-200/95 backdrop-blur-md shadow-[0_-10px_30px_rgba(0,0,0,0.1)] border-t border-slate-100 flex items-center justify-between">
                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                 {points.length} {t("Nokta")}, {geometries.length} {t("Geometri")}
+                 {visiblePoints.length} {t("Nokta")}, {visibleGeometries.length} {t("Geometri")}
+                 {projectLayers.length > 1 && ` · ${projectLayers.filter(l => l.visible).length}/${projectLayers.length} ${t("Proje")}`}
                </p>
                <div className="flex items-center gap-2">
                  <button 
@@ -1564,8 +1817,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
         {view === 'MAP' && activePoint && (
           <div className="flex flex-col h-full relative">
             <div className="flex-1 relative z-10">
-              {/* Back Button on top-left */}
-              <div className="absolute top-6 left-6 z-[10000]">
+              {/* Back Button on top-left - aligned with standard Header position (top-4 left-4 sm:left-8) */}
+              <div className="absolute top-4 left-4 sm:left-8 z-[10000] flex items-center">
                 <button 
                   onClick={() => {
                     window.history.back();
@@ -1573,13 +1826,13 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all cursor-pointer border border-slate-100"
                   title={t("Çıkış")}
                 >
-                  <i className="fas fa-arrow-left"></i>
+                  <i className="fas fa-chevron-left text-sm"></i>
                 </button>
               </div>
 
-              {/* Symmetrical Controls on the top-right */}
-              <div className="absolute top-6 right-6 z-[10000] flex flex-col items-end gap-2">
-                <div className="flex items-center gap-2">
+              {/* Symmetrical Controls on the top-right - aligned and vertically centered with the back button */}
+              <div className="absolute top-4 right-4 sm:right-8 z-[10000] flex flex-col items-end gap-1 sm:gap-2">
+                <div className="h-12 flex items-center gap-1.5 sm:gap-2">
                   {/* Compass / Rotation Lock Button */}
                   <button 
                     onClick={() => {
@@ -1591,7 +1844,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                         setMapRotation(0);
                       }
                     }}
-                    className={`w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center shadow-2xl active:scale-90 transition-all cursor-pointer border relative ${
+                    className={`w-10.5 h-10.5 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex flex-col items-center justify-center shadow-xl active:scale-90 transition-all cursor-pointer border relative ${
                       !isRotationLocked 
                         ? 'border-blue-500 text-blue-600 bg-blue-50/90 ring-2 ring-blue-500/20' 
                         : 'border-slate-200 text-slate-700 hover:bg-slate-50'
@@ -1599,17 +1852,17 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     title={isRotationLocked ? t("Harita Döndürme Kilitli") : t("Harita Döndürme Serbest")}
                   >
                     <div 
-                      className="transition-transform duration-300 ease-out flex items-center justify-center relative w-6 h-6"
+                      className="transition-transform duration-300 ease-out flex items-center justify-center relative w-5 h-5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6"
                       style={{ transform: `rotate(${-mapRotation}deg)` }}
                     >
-                      <svg className="w-6 h-6 drop-shadow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <svg className="w-5 h-5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6 drop-shadow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 2L15.5 12H8.5L12 2Z" fill="#EF4444" />
                         <path d="M12 22L8.5 12H15.5L12 22Z" fill="#94A3B8" />
                         <circle cx="12" cy="12" r="1.5" fill="#0F172A" />
                       </svg>
-                      <span className="absolute -top-1.5 text-[7px] font-black text-red-600 select-none">K</span>
+                      <span className="absolute -top-1 sm:-top-1.5 text-[6px] sm:text-[7px] font-black text-red-600 select-none">K</span>
                     </div>
-                    <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] shadow border ${
+                    <div className={`absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center text-[7px] sm:text-[8px] shadow border ${
                       isRotationLocked ? 'bg-red-500 text-white border-white' : 'bg-emerald-500 text-white border-white'
                     }`}>
                       <i className={`fas ${isRotationLocked ? 'fa-lock' : 'fa-lock-open'}`}></i>
@@ -1621,10 +1874,10 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     onClick={() => {
                       setShowLayerMenu(!showLayerMenu);
                     }}
-                    className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all cursor-pointer border border-slate-100"
+                    className="w-10.5 h-10.5 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex items-center justify-center shadow-xl text-slate-900 active:scale-90 transition-all cursor-pointer border border-slate-200/80"
                     title={t("Harita Kaynağı")}
                   >
-                    <i className="fas fa-layer-group text-lg"></i>
+                    <i className="fas fa-layer-group text-sm sm:text-base md:text-lg"></i>
                   </button>
                 </div>
 

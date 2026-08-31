@@ -54,6 +54,7 @@ export interface StakeoutPoint {
   originalY?: number;
   color?: string;
   iconUrl?: string;
+  projectName?: string;
 }
 
 export interface StakeoutGeometry {
@@ -62,6 +63,7 @@ export interface StakeoutGeometry {
   type: 'LineString' | 'Polygon';
   coordinates: { lat: number; lng: number; altitude?: number }[];
   color?: string;
+  projectName?: string;
 }
 
 export interface AppSettings {

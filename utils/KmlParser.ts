@@ -1,6 +1,6 @@
 import { StakeoutPoint, StakeoutGeometry } from '../types';
 
-export const parseKML = (text: string): { points: StakeoutPoint[], geometries: StakeoutGeometry[] } => {
+export const parseKML = (text: string, projectName?: string): { points: StakeoutPoint[], geometries: StakeoutGeometry[] } => {
   // Pre-process text to fix common XML namespace issues
   // Some KML files use xsi:schemaLocation without declaring the xsi namespace
   let processedText = text;
@@ -192,7 +192,8 @@ export const parseKML = (text: string): { points: StakeoutPoint[], geometries: S
             originalX: coords[0].lat,
             originalY: coords[0].lng,
             color,
-            iconUrl
+            iconUrl,
+            projectName
           });
         }
       }
@@ -210,7 +211,8 @@ export const parseKML = (text: string): { points: StakeoutPoint[], geometries: S
             name: lineElements.length > 1 ? `${name} (Çizgi ${j + 1})` : name,
             type: 'LineString',
             coordinates: coords,
-            color
+            color,
+            projectName
           });
         }
       }
@@ -228,7 +230,8 @@ export const parseKML = (text: string): { points: StakeoutPoint[], geometries: S
             name: polyElements.length > 1 ? `${name} (Alan ${j + 1})` : name,
             type: 'Polygon',
             coordinates: coords,
-            color
+            color,
+            projectName
           });
         }
       }

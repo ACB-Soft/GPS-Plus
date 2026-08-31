@@ -991,18 +991,18 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
 
       {showLiveMap && (
         <div className="fixed inset-0 z-[9999] bg-black flex flex-col animate-in fade-in">
-          {/* Back Button on top-left */}
-          <div className="absolute top-6 left-6 z-[10000]">
+          {/* Back Button on top-left - aligned with standard Header position (top-4 left-8) */}
+          <div className="absolute top-4 left-8 z-[10000]">
             <button 
               onClick={() => setShowLiveMap(false)}
-              className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all cursor-pointer"
+              className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-slate-900 active:scale-90 transition-all cursor-pointer border border-slate-100"
             >
-              <i className="fas fa-arrow-left"></i>
+              <i className="fas fa-chevron-left text-sm"></i>
             </button>
           </div>
 
           {/* Symmetrical Layer Selector on the top-right */}
-          <div className="absolute top-6 right-6 z-[10000] flex flex-col items-end gap-2">
+          <div className="absolute top-4 right-8 z-[10000] flex flex-col items-end gap-2">
             <button 
               onClick={() => {
                 setShowLayerMenu(!showLayerMenu);
