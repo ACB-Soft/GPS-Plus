@@ -1247,24 +1247,24 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
               </div>
 
               {/* Symmetrical Controls on the top-right - aligned and vertically centered with the back button */}
-              <div className="absolute top-4 right-3 sm:right-8 z-[10000] flex flex-col items-end gap-1 sm:gap-2">
-                <div className="h-12 flex items-center gap-1 sm:gap-1.5 md:gap-2">
+              <div className="absolute top-4 right-2 min-[360px]:right-3 min-[400px]:right-4 sm:right-8 z-[10000] flex flex-col items-end gap-1 sm:gap-2">
+                <div className="h-12 flex items-center gap-1 min-[360px]:gap-1.5 sm:gap-2">
                   {/* Distance Measurement Button (Kuzey oku kilitleme butonunun solunda) */}
                   <button 
                     onClick={() => {
                       setShowLayerMenu(false);
                       setIsMeasuring(prev => !prev);
                     }}
-                    className={`w-8.5 h-8.5 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex flex-col items-center justify-center shadow-xl active:scale-90 transition-all cursor-pointer border relative ${
+                    className={`w-8.5 h-8.5 min-[360px]:w-9.5 min-[360px]:h-9.5 min-[390px]:w-10 min-[390px]:h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex flex-col items-center justify-center shadow-xl active:scale-90 transition-all cursor-pointer border relative ${
                       isMeasuring 
                         ? 'border-amber-500 text-amber-600 bg-amber-50/90 ring-2 ring-amber-500/30' 
                         : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                     }`}
                     title={isMeasuring ? t("Mesafe Ölçümünü Kapat") : t("Mesafe Ölçümü")}
                   >
-                    <i className="fas fa-ruler-combined text-xs sm:text-base md:text-lg"></i>
+                    <i className="fas fa-ruler-combined text-xs min-[360px]:text-sm sm:text-base md:text-lg"></i>
                     {measurePoints.length > 0 && (
-                      <div className="absolute -top-1 -right-1 min-w-3.5 h-3.5 sm:min-w-4 sm:h-4 px-0.5 sm:px-1 rounded-full bg-amber-500 text-white text-[7px] sm:text-[8px] font-black flex items-center justify-center shadow border border-white">
+                      <div className="absolute -top-1 -right-1 min-w-3 h-3 min-[360px]:min-w-3.5 min-[360px]:h-3.5 sm:min-w-4 sm:h-4 px-0.5 sm:px-1 rounded-full bg-amber-500 text-white text-[6.5px] min-[360px]:text-[7px] sm:text-[8px] font-black flex items-center justify-center shadow border border-white">
                         {measurePoints.length}
                       </div>
                     )}
@@ -1281,7 +1281,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                         setMapRotation(0);
                       }
                     }}
-                    className={`w-8.5 h-8.5 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex flex-col items-center justify-center shadow-xl active:scale-90 transition-all cursor-pointer border relative ${
+                    className={`w-8.5 h-8.5 min-[360px]:w-9.5 min-[360px]:h-9.5 min-[390px]:w-10 min-[390px]:h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex flex-col items-center justify-center shadow-xl active:scale-90 transition-all cursor-pointer border relative ${
                       !isRotationLocked 
                         ? 'border-blue-500 text-blue-600 bg-blue-50/90 ring-2 ring-blue-500/20' 
                         : 'border-slate-200 text-slate-700 hover:bg-slate-50'
@@ -1289,17 +1289,17 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     title={isRotationLocked ? t("Harita Döndürme Kilitli") : t("Harita Döndürme Serbest")}
                   >
                     <div 
-                      className="transition-transform duration-300 ease-out flex items-center justify-center relative w-4.5 h-4.5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6"
+                      className="transition-transform duration-300 ease-out flex items-center justify-center relative w-4.5 h-4.5 min-[360px]:w-5 min-[360px]:h-5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6"
                       style={{ transform: `rotate(${-mapRotation}deg)` }}
                     >
-                      <svg className="w-4.5 h-4.5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6 drop-shadow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <svg className="w-4.5 h-4.5 min-[360px]:w-5 min-[360px]:h-5 sm:w-5.5 sm:h-5.5 md:w-6 md:h-6 drop-shadow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 2L15.5 12H8.5L12 2Z" fill="#EF4444" />
                         <path d="M12 22L8.5 12H15.5L12 22Z" fill="#94A3B8" />
                         <circle cx="12" cy="12" r="1.5" fill="#0F172A" />
                       </svg>
-                      <span className="absolute -top-1 sm:-top-1.5 text-[6px] sm:text-[7px] font-black text-red-600 select-none">K</span>
+                      <span className="absolute -top-1 sm:-top-1.5 text-[5.5px] min-[360px]:text-[6px] sm:text-[7px] font-black text-red-600 select-none">K</span>
                     </div>
-                    <div className={`absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-3 h-3 sm:w-4 sm:h-4 rounded-full flex items-center justify-center text-[6px] sm:text-[8px] shadow border ${
+                    <div className={`absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-3 h-3 min-[360px]:w-3.5 min-[360px]:h-3.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center text-[6px] min-[360px]:text-[7px] sm:text-[8px] shadow border ${
                       isRotationLocked ? 'bg-red-500 text-white border-white' : 'bg-emerald-500 text-white border-white'
                     }`}>
                       <i className={`fas ${isRotationLocked ? 'fa-lock' : 'fa-lock-open'}`}></i>
@@ -1312,10 +1312,10 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                       setShowLayerMenu(false);
                       setFitBoundsTrigger(prev => prev + 1);
                     }}
-                    className="w-8.5 h-8.5 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex items-center justify-center shadow-xl text-slate-900 active:scale-90 transition-all cursor-pointer border border-slate-200/80"
+                    className="w-8.5 h-8.5 min-[360px]:w-9.5 min-[360px]:h-9.5 min-[390px]:w-10 min-[390px]:h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex items-center justify-center shadow-xl text-slate-900 active:scale-90 transition-all cursor-pointer border border-slate-200/80"
                     title={t("Proje Sınırlarına Odaklan")}
                   >
-                    <i className="fas fa-expand text-xs sm:text-base md:text-lg"></i>
+                    <i className="fas fa-expand text-xs min-[360px]:text-sm sm:text-base md:text-lg"></i>
                   </button>
 
                   {/* Zoom to Current User Location Button */}
@@ -1350,10 +1350,10 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                         }
                       }
                     }}
-                    className="w-8.5 h-8.5 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex items-center justify-center shadow-xl text-blue-600 hover:text-blue-700 active:scale-90 transition-all cursor-pointer border border-slate-200/80"
+                    className="w-8.5 h-8.5 min-[360px]:w-9.5 min-[360px]:h-9.5 min-[390px]:w-10 min-[390px]:h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex items-center justify-center shadow-xl text-blue-600 hover:text-blue-700 active:scale-90 transition-all cursor-pointer border border-slate-200/80"
                     title={t("Konuma Git")}
                   >
-                    <i className="fas fa-crosshairs text-xs sm:text-base md:text-lg"></i>
+                    <i className="fas fa-crosshairs text-xs min-[360px]:text-sm sm:text-base md:text-lg"></i>
                   </button>
 
                   {/* Project Layers Button */}
@@ -1362,7 +1362,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                       setShowLayerMenu(false);
                       setShowProjectLayersMenu(prev => !prev);
                     }}
-                    className={`w-8.5 h-8.5 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex flex-col items-center justify-center shadow-xl active:scale-90 transition-all cursor-pointer border relative ${
+                    className={`w-8.5 h-8.5 min-[360px]:w-9.5 min-[360px]:h-9.5 min-[390px]:w-10 min-[390px]:h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex flex-col items-center justify-center shadow-xl active:scale-90 transition-all cursor-pointer border relative ${
                       showProjectLayersMenu
                         ? 'border-indigo-500 text-indigo-600 bg-indigo-50/90 ring-2 ring-indigo-500/20'
                         : projectLayers.length > 0 && hiddenProjects.length > 0
@@ -1371,9 +1371,9 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     }`}
                     title={t("Proje Katmanları")}
                   >
-                    <i className="fas fa-folder-tree text-xs sm:text-base md:text-lg"></i>
+                    <i className="fas fa-folder-tree text-xs min-[360px]:text-sm sm:text-base md:text-lg"></i>
                     {projectLayers.length > 0 && (
-                      <div className={`absolute -top-1 -right-1 min-w-3.5 h-3.5 sm:min-w-4 sm:h-4 px-0.5 sm:px-1 rounded-full text-white text-[7px] sm:text-[8px] font-black flex items-center justify-center shadow border border-white ${
+                      <div className={`absolute -top-1 -right-1 min-w-3 h-3 min-[360px]:min-w-3.5 min-[360px]:h-3.5 sm:min-w-4 sm:h-4 px-0.5 sm:px-1 rounded-full text-white text-[6.5px] min-[360px]:text-[7px] sm:text-[8px] font-black flex items-center justify-center shadow border border-white ${
                         hiddenProjects.length > 0 ? 'bg-amber-500' : 'bg-indigo-600'
                       }`}>
                         {projectLayers.filter(l => l.visible).length}/{projectLayers.length}
@@ -1387,14 +1387,14 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                       setShowProjectLayersMenu(false);
                       setShowLayerMenu(!showLayerMenu);
                     }}
-                    className={`w-8.5 h-8.5 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex items-center justify-center shadow-xl active:scale-90 transition-all cursor-pointer border ${
+                    className={`w-8.5 h-8.5 min-[360px]:w-9.5 min-[360px]:h-9.5 min-[390px]:w-10 min-[390px]:h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex items-center justify-center shadow-xl active:scale-90 transition-all cursor-pointer border ${
                       showLayerMenu
                         ? 'border-blue-500 text-blue-600 bg-blue-50/90 ring-2 ring-blue-500/20'
                         : 'border-slate-200 text-slate-900 hover:bg-slate-50'
                     }`}
                     title={t("Harita Kaynağı")}
                   >
-                    <i className="fas fa-layer-group text-xs sm:text-base md:text-lg"></i>
+                    <i className="fas fa-layer-group text-xs min-[360px]:text-sm sm:text-base md:text-lg"></i>
                   </button>
                 </div>
 
@@ -1831,7 +1831,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
               </div>
 
               {/* Symmetrical Controls on the top-right - aligned and vertically centered with the back button */}
-              <div className="absolute top-4 right-4 sm:right-8 z-[10000] flex flex-col items-end gap-1 sm:gap-2">
+              <div className="absolute top-4 right-3 min-[400px]:right-4 sm:right-8 z-[10000] flex flex-col items-end gap-1 sm:gap-2">
                 <div className="h-12 flex items-center gap-1.5 sm:gap-2">
                   {/* Compass / Rotation Lock Button */}
                   <button 
@@ -1844,7 +1844,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                         setMapRotation(0);
                       }
                     }}
-                    className={`w-10.5 h-10.5 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex flex-col items-center justify-center shadow-xl active:scale-90 transition-all cursor-pointer border relative ${
+                    className={`w-9.5 h-9.5 min-[390px]:w-10 min-[390px]:h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex flex-col items-center justify-center shadow-xl active:scale-90 transition-all cursor-pointer border relative ${
                       !isRotationLocked 
                         ? 'border-blue-500 text-blue-600 bg-blue-50/90 ring-2 ring-blue-500/20' 
                         : 'border-slate-200 text-slate-700 hover:bg-slate-50'
@@ -1860,7 +1860,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                         <path d="M12 22L8.5 12H15.5L12 22Z" fill="#94A3B8" />
                         <circle cx="12" cy="12" r="1.5" fill="#0F172A" />
                       </svg>
-                      <span className="absolute -top-1 sm:-top-1.5 text-[6px] sm:text-[7px] font-black text-red-600 select-none">K</span>
+                      <span className="absolute -top-1 sm:-top-1.5 text-[5.5px] min-[360px]:text-[6px] sm:text-[7px] font-black text-red-600 select-none">K</span>
                     </div>
                     <div className={`absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center text-[7px] sm:text-[8px] shadow border ${
                       isRotationLocked ? 'bg-red-500 text-white border-white' : 'bg-emerald-500 text-white border-white'
@@ -1874,7 +1874,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     onClick={() => {
                       setShowLayerMenu(!showLayerMenu);
                     }}
-                    className="w-10.5 h-10.5 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex items-center justify-center shadow-xl text-slate-900 active:scale-90 transition-all cursor-pointer border border-slate-200/80"
+                    className="w-9.5 h-9.5 min-[390px]:w-10 min-[390px]:h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex items-center justify-center shadow-xl text-slate-900 active:scale-90 transition-all cursor-pointer border border-slate-200/80"
                     title={t("Harita Kaynağı")}
                   >
                     <i className="fas fa-layer-group text-sm sm:text-base md:text-lg"></i>
