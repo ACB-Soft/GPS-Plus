@@ -1427,6 +1427,21 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                       </button>
                     </div>
 
+                    {/* Add New Project (KML/KMZ) Button */}
+                    <label className="flex items-center justify-center gap-1.5 py-1.5 px-2.5 bg-indigo-50 hover:bg-indigo-100/90 text-indigo-700 border border-indigo-200/80 rounded-xl text-[10px] font-bold transition-all active:scale-[0.98] cursor-pointer shadow-2xs">
+                      <i className="fas fa-plus-circle text-[10px]"></i>
+                      <span>{t("Yeni Proje Ekle (KML/KMZ)")}</span>
+                      <input 
+                        type="file" 
+                        accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz,application/zip,application/x-zip-compressed,application/octet-stream" 
+                        onChange={(e) => {
+                          handleKmlUpload(e);
+                          e.target.value = '';
+                        }} 
+                        className="hidden" 
+                      />
+                    </label>
+
                     {/* Quick Visibility Controls */}
                     {projectLayers.length > 1 && (
                       <div className="flex items-center gap-1 px-0.5">
