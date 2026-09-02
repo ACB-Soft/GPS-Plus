@@ -622,7 +622,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
     return processedGeometries.filter(g => !hiddenProjects.includes(g.projectName || manualGroupName));
   }, [processedGeometries, hiddenProjects, manualGroupName]);
   const [activePoint, setActivePoint] = useState<StakeoutPoint | null>(initialPoint || null);
-  const [confirmClear, setConfirmClear] = useState<'NONE' | 'LIST' | 'MAP'>('NONE');
+  const [confirmClear, setConfirmClear] = useState<'NONE' | 'LIST'>('NONE');
   const [keepScreenOn, setKeepScreenOn] = useState(settings.screenAlwaysOn);
   const [targetReached, setTargetReached] = useState(false);
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' | 'info' } | null>(null);
@@ -1885,31 +1885,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
               </MapContainer>
             </MapTouchWrapper>
             </div>
-            <div className="absolute bottom-0 left-0 right-0 z-20 px-8 py-4 bg-slate-200/95 backdrop-blur-md shadow-[0_-10px_30px_rgba(0,0,0,0.1)] border-t border-slate-100 flex items-center justify-between">
-               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                 {visiblePoints.length} {t("Nokta")}, {visibleGeometries.length} {t("Geometri")}
-                 {projectLayers.length > 1 && ` · ${projectLayers.filter(l => l.visible).length}/${projectLayers.length} ${t("Proje")}`}
-               </p>
-               <div className="flex items-center gap-2">
-                 <button 
-                   onClick={() => {
-                     if (confirmClear === 'MAP') {
-                       localStorage.removeItem('stakeout_points_v1');
-                       localStorage.removeItem('stakeout_geometries_v1');
-                       setPoints([]);
-                       setGeometries([]);
-                       setConfirmClear('NONE');
-                       window.history.back();
-                     } else {
-                       setConfirmClear('MAP');
-                     }
-                   }}
-                   className={`px-3 py-1.5 text-[9px] font-black rounded-lg uppercase tracking-wider border transition-all active:scale-95 ${confirmClear === 'MAP' ? 'bg-red-600 text-white border-red-600' : 'bg-red-50 text-red-600 border-red-100'}`}
-                 >
-                   {confirmClear === 'MAP' ? t('EMİN MİSİNİZ?') : t('EKRANI TEMİZLE')}
-                 </button>
-               </div>
-            </div>
+            <GlobalFooter noPadding={true} />
           </div>
         )}
 
