@@ -5,11 +5,13 @@ import { StakeoutPoint, Coordinate, StakeoutGeometry, AppSettings } from '../typ
 import { getAccuracyColor, getAccuracyBg } from '../utils/StyleUtils';
 import { parseKML } from '../utils/KmlParser';
 import { convertCoordinate, convertToWGS84 } from '../utils/CoordinateUtils';
+import { calculatePolylineLength, calculatePolygonArea, calculatePolygonPerimeter } from '../utils/GeometryUtils';
 import { isIOS } from '../utils/browser';
 import JSZip from 'jszip';
 import GlobalFooter from './GlobalFooter';
 import Header from './Header';
 import { useLanguage } from '../utils/LanguageContext';
+import CompactBottomInfoCard, { SelectedMapFeature } from './CompactBottomInfoCard';
 
 
 interface Props {
@@ -51,8 +53,18 @@ const MapPopupContent = React.memo(({ name, subtitle, onGo, color }: { name: str
   );
 });
 
-// Optimized Vertex Layer with Spatial Filtering
-const LazyVertexLayer = React.memo(({ geometries, zoom, onVertexSelect }: { geometries: StakeoutGeometry[], zoom: number, onVertexSelect: (g: StakeoutGeometry, c: {lat: number, lng: number}, idx: number) => void }) => {
+// Optimized Vertex Layer with Spatial Filtering and interactive selection
+const LazyVertexLayer = React.memo(({ 
+  geometries, 
+  zoom, 
+  selectedVertexPointId,
+  onVertexSelect 
+}: { 
+  geometries: StakeoutGeometry[], 
+  zoom: number, 
+  selectedVertexPointId?: string,
+  onVertexSelect: (g: StakeoutGeometry, c: {lat: number, lng: number, altitude?: number}, idx: number) => void 
+}) => {
   const { t } = useLanguage();
   const map = useMap();
   const [bounds, setBounds] = useState(map.getBounds());
@@ -74,22 +86,27 @@ const LazyVertexLayer = React.memo(({ geometries, zoom, onVertexSelect }: { geom
           // Simple numerical bounds check is much faster than object creation (L.latLng)
           if (c.lat < sw.lat || c.lat > ne.lat || c.lng < sw.lng || c.lng > ne.lng) return null;
 
+          const vertexId = `snap-${g.id}-${idx}`;
+          const isSelected = selectedVertexPointId === vertexId;
+
           return (
             <CircleMarker
-              key={`${g.id}-v-${idx}`}
+              key={vertexId}
               center={[c.lat, c.lng]}
-              radius={6}
-              pathOptions={{ color: 'white', fillColor: g.color || '#3b82f6', fillOpacity: 1, weight: 2 }}
-            >
-              <Popup closeButton={false} className="custom-leaflet-popup">
-                <MapPopupContent 
-                  name={g.name}
-                  subtitle={`${t("Köşe")} ${idx + 1}`}
-                  color={g.color}
-                  onGo={() => onVertexSelect(g, c, idx)}
-                />
-              </Popup>
-            </CircleMarker>
+              radius={isSelected ? 8 : 5}
+              pathOptions={{ 
+                color: isSelected ? '#1d4ed8' : 'white', 
+                fillColor: isSelected ? '#3b82f6' : (g.color || '#3b82f6'), 
+                fillOpacity: 1, 
+                weight: isSelected ? 3 : 2 
+              }}
+              eventHandlers={{
+                click: (e) => {
+                  L.DomEvent.stopPropagation(e);
+                  onVertexSelect(g, c, idx);
+                }
+              }}
+            />
           );
         });
       })}
@@ -97,34 +114,48 @@ const LazyVertexLayer = React.memo(({ geometries, zoom, onVertexSelect }: { geom
   );
 });
 
-// Memoized Marker component
-const StakeoutMarker = React.memo(({ p, zoom, onGo }: { p: StakeoutPoint, zoom: number, onGo: (p: StakeoutPoint) => void }) => {
+// Memoized Marker component with interactive selection
+const StakeoutMarker = React.memo(({ 
+  p, 
+  zoom, 
+  isSelected,
+  onSelect,
+  onGo 
+}: { 
+  p: StakeoutPoint, 
+  zoom: number, 
+  isSelected?: boolean,
+  onSelect?: (p: StakeoutPoint) => void,
+  onGo: (p: StakeoutPoint) => void 
+}) => {
   const icon = React.useMemo(() => L.divIcon({
     className: 'custom-marker',
-    html: `<div style="width: 12px; height: 12px; background: ${p.color || '#3b82f6'}; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.3);"></div>`,
-    iconSize: [12, 12],
-    iconAnchor: [6, 6]
-  }), [p.color]);
+    html: `<div style="width: ${isSelected ? 16 : 12}px; height: ${isSelected ? 16 : 12}px; background: ${p.color || '#3b82f6'}; border: ${isSelected ? '3px solid #1e293b' : '2px solid white'}; border-radius: 50%; box-shadow: ${isSelected ? '0 0 10px rgba(59,130,246,0.8)' : '0 0 5px rgba(0,0,0,0.3)'}; transform: translate(${isSelected ? '-2px' : '0'}, ${isSelected ? '-2px' : '0'});"></div>`,
+    iconSize: [isSelected ? 16 : 12, isSelected ? 16 : 12],
+    iconAnchor: [isSelected ? 8 : 6, isSelected ? 8 : 6]
+  }), [p.color, isSelected]);
 
   return (
-    <Marker position={[p.lat, p.lng]} icon={icon}>
+    <Marker 
+      position={[p.lat, p.lng]} 
+      icon={icon}
+      eventHandlers={{
+        click: (e) => {
+          L.DomEvent.stopPropagation(e);
+          if (onSelect) onSelect(p);
+        }
+      }}
+    >
       {zoom >= 14 && (
-        <Tooltip permanent direction="top" offset={[0, -10]} className="custom-tooltip">
+        <Tooltip permanent direction="top" offset={[0, isSelected ? -12 : -10]} className="custom-tooltip">
           <span 
-            className="font-black uppercase tracking-tighter"
-            style={{ fontSize: `${Math.min(10, zoom - 8)}px` }}
+            className={`font-black uppercase tracking-tighter ${isSelected ? 'text-blue-700 font-extrabold' : ''}`}
+            style={{ fontSize: `${Math.min(11, zoom - 8)}px` }}
           >
             {p.name}
           </span>
         </Tooltip>
       )}
-      <Popup closeButton={false} className="custom-leaflet-popup">
-        <MapPopupContent 
-          name={p.name}
-          color={p.color}
-          onGo={() => onGo(p)}
-        />
-      </Popup>
     </Marker>
   );
 });
@@ -150,14 +181,18 @@ const MapCenterer = ({ trigger }: { trigger: { pos: [number, number], time: numb
 const MapMeasurementHandler = ({
   isMeasuring,
   onMapClick,
+  onDeselect,
 }: {
   isMeasuring: boolean;
   onMapClick: (lat: number, lng: number) => void;
+  onDeselect?: () => void;
 }) => {
   useMapEvents({
     click(e) {
       if (isMeasuring) {
         onMapClick(e.latlng.lat, e.latlng.lng);
+      } else if (onDeselect) {
+        onDeselect();
       }
     },
   });
@@ -621,6 +656,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
   const visibleGeometries = React.useMemo(() => {
     return processedGeometries.filter(g => !hiddenProjects.includes(g.projectName || manualGroupName));
   }, [processedGeometries, hiddenProjects, manualGroupName]);
+  const [selectedFeature, setSelectedFeature] = useState<SelectedMapFeature | null>(null);
   const [activePoint, setActivePoint] = useState<StakeoutPoint | null>(initialPoint || null);
   const [confirmClear, setConfirmClear] = useState<'NONE' | 'LIST'>('NONE');
   const [keepScreenOn, setKeepScreenOn] = useState(settings.screenAlwaysOn);
@@ -1727,43 +1763,94 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   />
                 )}
                 
-                {visibleGeometries.map(g => (
-                  <React.Fragment key={g.id}>
-                    {g.type === 'LineString' ? (
-                      <Polyline 
-                        positions={g.leafletCoords} 
-                        pathOptions={{ color: g.color || '#3b82f6', weight: 3 }} 
-                      />
-                    ) : (
-                      <Polygon 
-                        positions={g.leafletCoords} 
-                        pathOptions={{ color: g.color || '#3b82f6', fillColor: g.color || '#3b82f6', fillOpacity: 0.1, weight: 2 }} 
-                      />
-                    )}
-                  </React.Fragment>
-                ))}
+                {visibleGeometries.map(g => {
+                  const isSelectedLine = selectedFeature?.type === 'LINE' && selectedFeature.geometry.id === g.id;
+                  const isSelectedPolygon = selectedFeature?.type === 'POLYGON' && selectedFeature.geometry.id === g.id;
+
+                  return (
+                    <React.Fragment key={g.id}>
+                      {g.type === 'LineString' ? (
+                        <Polyline 
+                          positions={g.leafletCoords} 
+                          pathOptions={{ 
+                            color: isSelectedLine ? '#06b6d4' : (g.color || '#3b82f6'), 
+                            weight: isSelectedLine ? 6 : 3,
+                            opacity: isSelectedLine ? 1 : 0.85
+                          }} 
+                          eventHandlers={{
+                            click: (e) => {
+                              if (isMeasuring) return;
+                              L.DomEvent.stopPropagation(e);
+                              const length = calculatePolylineLength(g.coordinates);
+                              setSelectedFeature({
+                                type: 'LINE',
+                                geometry: g,
+                                length
+                              });
+                            }
+                          }}
+                        />
+                      ) : (
+                        <Polygon 
+                          positions={g.leafletCoords} 
+                          pathOptions={{ 
+                            color: isSelectedPolygon ? '#059669' : (g.color || '#3b82f6'), 
+                            fillColor: isSelectedPolygon ? '#10b981' : (g.color || '#3b82f6'), 
+                            fillOpacity: isSelectedPolygon ? 0.4 : 0.12, 
+                            weight: isSelectedPolygon ? 3.5 : 2 
+                          }} 
+                          eventHandlers={{
+                            click: (e) => {
+                              if (isMeasuring) return;
+                              L.DomEvent.stopPropagation(e);
+                              const area = calculatePolygonArea(g.coordinates);
+                              const perimeter = calculatePolygonPerimeter(g.coordinates);
+                              setSelectedFeature({
+                                type: 'POLYGON',
+                                geometry: g,
+                                area,
+                                perimeter
+                              });
+                            }
+                          }}
+                        />
+                      )}
+                    </React.Fragment>
+                  );
+                })}
 
                 <LazyVertexLayer 
                   geometries={visibleGeometriesRaw} 
                   zoom={allMapZoom} 
+                  selectedVertexPointId={
+                    selectedFeature?.type === 'POINT' && selectedFeature.isVertex
+                      ? selectedFeature.point.id
+                      : undefined
+                  }
                   onVertexSelect={(g, c, idx) => {
                     if (isMeasuring) {
                       setMeasurePoints(prev => [...prev, [c.lat, c.lng]]);
                       return;
                     }
                     const newPt: StakeoutPoint = {
-                      id: `snap-${Date.now()}`,
-                      name: `${g.name} - ${t("Köşe")} ${idx + 1}`,
+                      id: `snap-${g.id}-${idx}`,
+                      name: `${g.name || t("Geometri")} - ${t("Köşe")} ${idx + 1}`,
                       lat: c.lat,
                       lng: c.lng,
                       coordinateSystem: 'WGS84',
                       originalX: c.lat,
                       originalY: c.lng,
-                      projectName: g.projectName || manualGroupName
+                      altitude: c.altitude,
+                      projectName: g.projectName || manualGroupName,
+                      color: g.color
                     };
-                    setSourceView('ALL_MAP');
-                    setActivePoint(newPt);
-                    onNavigate('MAP');
+                    setSelectedFeature({
+                      type: 'POINT',
+                      point: newPt,
+                      isVertex: true,
+                      vertexIndex: idx,
+                      parentGeometryName: g.name
+                    });
                   }}
                 />
 
@@ -1772,6 +1859,17 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     key={p.id} 
                     p={p} 
                     zoom={allMapZoom} 
+                    isSelected={selectedFeature?.type === 'POINT' && selectedFeature.point.id === p.id}
+                    onSelect={(pt) => {
+                      if (isMeasuring) {
+                        setMeasurePoints(prev => [...prev, [pt.lat, pt.lng]]);
+                        return;
+                      }
+                      setSelectedFeature({
+                        type: 'POINT',
+                        point: pt
+                      });
+                    }}
                     onGo={(pt) => {
                       if (isMeasuring) {
                         setMeasurePoints(prev => [...prev, [pt.lat, pt.lng]]);
@@ -1783,6 +1881,21 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     }}
                   />
                 ))}
+
+                {/* Selected Point Highlight Halo */}
+                {selectedFeature?.type === 'POINT' && (
+                  <CircleMarker
+                    center={[selectedFeature.point.lat, selectedFeature.point.lng]}
+                    radius={13}
+                    pathOptions={{
+                      color: '#2563eb',
+                      fillColor: '#60a5fa',
+                      fillOpacity: 0.4,
+                      weight: 3,
+                      dashArray: '3, 4'
+                    }}
+                  />
+                )}
 
                 {/* Measurement Path Polyline */}
                 {measurePoints.length > 1 && (
@@ -1855,6 +1968,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                 <MapMeasurementHandler 
                   isMeasuring={isMeasuring} 
                   onMapClick={(lat, lng) => setMeasurePoints(prev => [...prev, [lat, lng]])} 
+                  onDeselect={() => setSelectedFeature(null)}
                 />
 
                 {userPos && (
@@ -1884,6 +1998,22 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                 <MapCenterer trigger={allMapCenterTrigger} />
               </MapContainer>
             </MapTouchWrapper>
+
+            {/* Floating Compact Info Card */}
+            {selectedFeature && (
+              <div className="absolute bottom-3 left-3 right-3 sm:left-4 sm:right-auto sm:w-[380px] z-[10000] pointer-events-auto">
+                <CompactBottomInfoCard
+                  feature={selectedFeature}
+                  settings={settings}
+                  onClose={() => setSelectedFeature(null)}
+                  onStakeout={(pt) => {
+                    setSourceView('ALL_MAP');
+                    setActivePoint(pt);
+                    onNavigate('MAP');
+                  }}
+                />
+              </div>
+            )}
             </div>
             <GlobalFooter noPadding={true} />
           </div>
