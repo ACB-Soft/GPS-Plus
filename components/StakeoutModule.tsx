@@ -541,6 +541,14 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
     return saved ? JSON.parse(saved) : [];
   });
   const [projectBoundsTrigger, setProjectBoundsTrigger] = useState<{ coords: [number, number][], time: number } | null>(null);
+  const [deletingLayer, setDeletingLayer] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (deletingLayer) {
+      const timer = setTimeout(() => setDeletingLayer(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [deletingLayer]);
 
   useEffect(() => {
     localStorage.setItem('stakeout_hidden_projects', JSON.stringify(hiddenProjects));
@@ -864,6 +872,17 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
       };
       reader.readAsText(file);
     }
+  };
+
+  const handleDeleteProjectLayer = (layerName: string) => {
+    setPoints(prev => prev.filter(p => (p.projectName || manualGroupName) !== layerName));
+    setGeometries(prev => prev.filter(g => (g.projectName || manualGroupName) !== layerName));
+    setHiddenProjects(prev => prev.filter(n => n !== layerName));
+    if (activePoint && (activePoint.projectName || manualGroupName) === layerName) {
+      setActivePoint(null);
+    }
+    setDeletingLayer(null);
+    showToast(`"${layerName}" ${t("katmanı silindi.")}`, "success");
   };
 
   const handleAddManual = () => {
@@ -1516,20 +1535,58 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                               </p>
                             </div>
 
-                            {layer.boundsCoords.length > 0 && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (!layer.visible) {
-                                    setHiddenProjects(prev => prev.filter(n => n !== layer.name));
-                                  }
-                                  setProjectBoundsTrigger({ coords: layer.boundsCoords, time: Date.now() });
-                                }}
-                                className="w-6 h-6 rounded-lg hover:bg-white text-slate-500 hover:text-indigo-600 border border-transparent hover:border-slate-200 flex items-center justify-center shrink-0 transition-all active:scale-95 cursor-pointer"
-                                title={t("Projeye Odaklan")}
-                              >
-                                <i className="fas fa-crosshairs text-[9px]"></i>
-                              </button>
+                            {deletingLayer === layer.name ? (
+                              <div className="flex items-center gap-1 shrink-0 animate-in fade-in duration-150">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteProjectLayer(layer.name);
+                                  }}
+                                  className="px-1.5 py-0.5 bg-red-600 hover:bg-red-700 text-white rounded-md text-[9px] font-bold shadow-xs transition-all active:scale-95 cursor-pointer flex items-center gap-0.5"
+                                  title={t("Silmeyi Onayla")}
+                                >
+                                  <i className="fas fa-trash-alt text-[7.5px]"></i>
+                                  <span>{t("Sil")}</span>
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeletingLayer(null);
+                                  }}
+                                  className="px-1 py-0.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-md text-[9px] font-bold transition-all active:scale-95 cursor-pointer"
+                                  title={t("İptal")}
+                                >
+                                  <i className="fas fa-times text-[7.5px]"></i>
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-0.5 shrink-0">
+                                {layer.boundsCoords.length > 0 && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (!layer.visible) {
+                                        setHiddenProjects(prev => prev.filter(n => n !== layer.name));
+                                      }
+                                      setProjectBoundsTrigger({ coords: layer.boundsCoords, time: Date.now() });
+                                    }}
+                                    className="w-6 h-6 rounded-lg hover:bg-white text-slate-500 hover:text-indigo-600 border border-transparent hover:border-slate-200 flex items-center justify-center shrink-0 transition-all active:scale-95 cursor-pointer"
+                                    title={t("Projeye Odaklan")}
+                                  >
+                                    <i className="fas fa-crosshairs text-[9px]"></i>
+                                  </button>
+                                )}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeletingLayer(layer.name);
+                                  }}
+                                  className="w-6 h-6 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 border border-transparent hover:border-red-200 flex items-center justify-center shrink-0 transition-all active:scale-95 cursor-pointer"
+                                  title={t("Katmanı Sil")}
+                                >
+                                  <i className="fas fa-trash-alt text-[9px]"></i>
+                                </button>
+                              </div>
                             )}
                           </div>
                         ))
