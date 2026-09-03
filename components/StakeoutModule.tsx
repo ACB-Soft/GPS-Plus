@@ -1305,8 +1305,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
         {view === 'ALL_MAP' && (
           <div className="flex flex-col h-full relative">
             <div className="flex-1 relative z-10">
-              {/* Back and Navigation Controls on top-left - aligned with standard Header position */}
-              <div className="absolute top-4 left-4 sm:left-8 z-[10000] flex flex-col items-center gap-2">
+              {/* Back Button on top-left - aligned with standard Header position (top-4 left-4 sm:left-8) */}
+              <div className="absolute top-4 left-4 sm:left-8 z-[10000] flex items-center">
                 <button 
                   onClick={() => {
                     window.history.back();
@@ -1315,46 +1315,6 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   title={t("Çıkış")}
                 >
                   <i className="fas fa-chevron-left text-sm"></i>
-                </button>
-
-                {/* Zoom to Current User Location Button (Konuma Git) */}
-                <button 
-                  onClick={() => {
-                    setShowLayerMenu(false);
-                    setShowProjectLayersMenu(false);
-                    if (userPos && userPos.lat && userPos.lng) {
-                      setAllMapCenterTrigger({ pos: [userPos.lat, userPos.lng], time: Date.now() });
-                    } else {
-                      if (navigator.geolocation) {
-                        showToast(t("Konum alınıyor..."), "info");
-                        navigator.geolocation.getCurrentPosition(
-                          (pos) => {
-                            const newPos = {
-                              lat: pos.coords.latitude,
-                              lng: pos.coords.longitude,
-                              accuracy: pos.coords.accuracy,
-                              altitude: pos.coords.altitude,
-                              altitudeAccuracy: pos.coords.altitudeAccuracy,
-                              timestamp: pos.timestamp
-                            };
-                            setUserPos(newPos);
-                            setAllMapCenterTrigger({ pos: [newPos.lat, newPos.lng], time: Date.now() });
-                          },
-                          (err) => {
-                            console.error(err);
-                            showToast(t("Konum verisi alınamadı"), "error");
-                          },
-                          { enableHighAccuracy: true, timeout: 5000 }
-                        );
-                      } else {
-                        showToast(t("Cihazınızda konum desteği bulunmuyor"), "error");
-                      }
-                    }
-                  }}
-                  className="w-12 h-12 bg-white/95 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-blue-600 hover:text-blue-700 active:scale-90 transition-all cursor-pointer border border-slate-100"
-                  title={t("Konuma Git")}
-                >
-                  <i className="fas fa-crosshairs text-base"></i>
                 </button>
               </div>
 
@@ -1431,6 +1391,46 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     title={t("Proje Sınırlarına Odaklan")}
                   >
                     <i className="fas fa-expand text-xs min-[360px]:text-sm sm:text-base md:text-lg"></i>
+                  </button>
+
+                  {/* Zoom to Current User Location Button */}
+                  <button 
+                    onClick={() => {
+                      setShowLayerMenu(false);
+                      setShowProjectLayersMenu(false);
+                      if (userPos && userPos.lat && userPos.lng) {
+                        setAllMapCenterTrigger({ pos: [userPos.lat, userPos.lng], time: Date.now() });
+                      } else {
+                        if (navigator.geolocation) {
+                          showToast(t("Konum alınıyor..."), "info");
+                          navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                              const newPos = {
+                                lat: pos.coords.latitude,
+                                lng: pos.coords.longitude,
+                                accuracy: pos.coords.accuracy,
+                                altitude: pos.coords.altitude,
+                                altitudeAccuracy: pos.coords.altitudeAccuracy,
+                                timestamp: pos.timestamp
+                              };
+                              setUserPos(newPos);
+                              setAllMapCenterTrigger({ pos: [newPos.lat, newPos.lng], time: Date.now() });
+                            },
+                            (err) => {
+                              console.error(err);
+                              showToast(t("Konum verisi alınamadı"), "error");
+                            },
+                            { enableHighAccuracy: true, timeout: 5000 }
+                          );
+                        } else {
+                          showToast(t("Cihazınızda konum desteği bulunmuyor"), "error");
+                        }
+                      }
+                    }}
+                    className="w-8.5 h-8.5 min-[360px]:w-9.5 min-[360px]:h-9.5 min-[390px]:w-10 min-[390px]:h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex items-center justify-center shadow-xl text-blue-600 hover:text-blue-700 active:scale-90 transition-all cursor-pointer border border-slate-200/80"
+                    title={t("Konuma Git")}
+                  >
+                    <i className="fas fa-crosshairs text-xs min-[360px]:text-sm sm:text-base md:text-lg"></i>
                   </button>
 
                   {/* Project Layers Button */}
