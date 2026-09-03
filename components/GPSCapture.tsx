@@ -8,6 +8,7 @@ import { getAccuracyColor, getAccuracyBg } from '../utils/StyleUtils';
 import GlobalFooter from './GlobalFooter';
 import Header from './Header';
 import { useLanguage } from '../utils/LanguageContext';
+import safeStorage from '../utils/safeStorage';
 
 // Map rendering helper to invalidate size on dynamic render
 const MapResizer = () => {
@@ -99,27 +100,27 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       setStep(currentStep);
     }
   }, [currentStep]);
-  const [folderName, setFolderName] = useState(localStorage.getItem('last_folder_name') || '');
+  const [folderName, setFolderName] = useState(safeStorage.getItem('last_folder_name') || '');
   const [pointName, setPointName] = useState('');
   
   const getInitialSystem = () => {
-     const savedFolder = localStorage.getItem('last_folder_name');
+     const savedFolder = safeStorage.getItem('last_folder_name');
      if (savedFolder) {
         const proj = existingLocations.find(l => l.folderName === savedFolder);
         if (proj && proj.coordinateSystem) return proj.coordinateSystem;
      }
-     return localStorage.getItem('default_coord_system') || 'WGS84';
+     return safeStorage.getItem('default_coord_system') || 'WGS84';
   };
 
   const [coordinateSystem, setCoordinateSystem] = useState(getInitialSystem());
-  const [accuracyLimit, setAccuracyLimit] = useState(parseFloat(localStorage.getItem('default_accuracy_limit') || '5'));
+  const [accuracyLimit, setAccuracyLimit] = useState(parseFloat(safeStorage.getItem('default_accuracy_limit') || '5'));
   const [measurementDuration, setMeasurementDuration] = useState(() => {
-    const saved = parseInt(localStorage.getItem('default_duration') || '15');
+    const saved = parseInt(safeStorage.getItem('default_duration') || '15');
     if (saved === 120 || saved === 90 || saved === 91) return 61;
     return saved;
   });
   const [seconds, setSeconds] = useState(() => {
-    const saved = parseInt(localStorage.getItem('default_duration') || '15');
+    const saved = parseInt(safeStorage.getItem('default_duration') || '15');
     if (saved === 120 || saved === 90 || saved === 91 || saved === 61) return 60;
     return saved;
   });
@@ -129,7 +130,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
   const [waitingForSignal, setWaitingForSignal] = useState(true);
   const [captureError, setCaptureError] = useState<string | null>(null);
   const [showLiveMap, setShowLiveMap] = useState(false);
-  const [currentMapProvider, setCurrentMapProvider] = useState(() => localStorage.getItem('default_map_provider') || 'Google Hybrid');
+  const [currentMapProvider, setCurrentMapProvider] = useState(() => safeStorage.getItem('default_map_provider') || 'Google Hybrid');
   const [showLayerMenu, setShowLayerMenu] = useState(false);
   const [isWaiting, setIsWaiting] = useState(false);
   const [waitSeconds, setWaitSeconds] = useState(10);
@@ -752,7 +753,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
 
           <button 
             disabled={!folderName.trim()}
-            onClick={() => { localStorage.setItem('last_folder_name', folderName); onNavigate('READY'); }} 
+            onClick={() => { safeStorage.setItem('last_folder_name', folderName); onNavigate('READY'); }} 
             className="w-full py-3 md:py-4 px-5 bg-blue-600 text-white rounded-2xl font-black text-[13px] uppercase tracking-[0.2em] active:scale-95 disabled:opacity-30 transition-all shadow-xl shadow-blue-100"
           >
             {t("ÖLÇÜME HAZIRLAN")}
@@ -1026,7 +1027,7 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
                     key={opt.value}
                     onClick={() => {
                       setCurrentMapProvider(opt.value);
-                      localStorage.setItem('default_map_provider', opt.value);
+                      safeStorage.setItem('default_map_provider', opt.value);
                       setShowLayerMenu(false);
                     }}
                     className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider text-left transition-all active:scale-95 cursor-pointer ${

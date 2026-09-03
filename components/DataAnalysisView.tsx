@@ -619,8 +619,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       
       if (rawTs === null || rawTs === undefined) {
         ts = baseTime + chartIdx * 1000;
-      } else if (rawTs instanceof Date) {
-        ts = rawTs.getTime();
+      } else if ((rawTs as unknown) instanceof Date) {
+        ts = (rawTs as unknown as Date).getTime();
       } else if (typeof rawTs === 'object' && typeof (rawTs as any).getTime === 'function') {
         ts = (rawTs as any).getTime();
       } else if (typeof rawTs === 'number') {
@@ -2207,7 +2207,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 data={hybridClusterChartData.points.filter(p => p.passedOutlierTest)} 
                                 fill="#10b981"
                                 shape={<RawPointShape r={parseFloat(customDotSize)} />}
-                                onClick={(pt) => setActiveClusterPointId(pt.id)}
+                                onClick={(pt: any) => setActiveClusterPointId(pt?.id ?? pt?.payload?.id)}
                                 className="cursor-pointer"
                               />
                               
@@ -2217,7 +2217,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                                 data={hybridClusterChartData.points.filter(p => !p.passedOutlierTest)} 
                                 fill="#ef4444"
                                 shape={<RawPointShape r={parseFloat(customDotSize)} />}
-                                onClick={(pt) => setActiveClusterPointId(pt.id)}
+                                onClick={(pt: any) => setActiveClusterPointId(pt?.id ?? pt?.payload?.id)}
                                 className="cursor-pointer"
                               />
                             </ScatterChart>

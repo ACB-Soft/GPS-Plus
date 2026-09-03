@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, Circle, CircleMarker, P
 import L from 'leaflet';
 import { StakeoutPoint, Coordinate, StakeoutGeometry, AppSettings } from '../types';
 import { getAccuracyColor, getAccuracyBg } from '../utils/StyleUtils';
-import { parseKML } from '../utils/KmlParser';
+import { parseKML, cleanProjectName } from '../utils/KmlParser';
 import { convertCoordinate, convertToWGS84 } from '../utils/CoordinateUtils';
 import { calculatePolylineLength, calculatePolygonArea, calculatePolygonPerimeter } from '../utils/GeometryUtils';
 import { isIOS } from '../utils/browser';
@@ -12,6 +12,7 @@ import GlobalFooter from './GlobalFooter';
 import Header from './Header';
 import { useLanguage } from '../utils/LanguageContext';
 import CompactBottomInfoCard, { SelectedMapFeature } from './CompactBottomInfoCard';
+import safeStorage from '../utils/safeStorage';
 
 
 interface Props {
@@ -545,7 +546,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
   const [view, setView] = useState<'MENU' | 'LIST' | 'MANUAL' | 'MAP' | 'ALL_MAP'>((currentStep as any) || (initialPoint ? 'MAP' : 'MENU'));
   const [allMapZoom, setAllMapZoom] = useState(0);
   const [allMapCenterTrigger, setAllMapCenterTrigger] = useState<{ pos: [number, number], time: number } | null>(null);
-  const [currentMapProvider, setCurrentMapProvider] = useState(() => localStorage.getItem('default_map_provider') || 'Google Hybrid');
+  const [currentMapProvider, setCurrentMapProvider] = useState(() => safeStorage.getItem('default_map_provider') || 'Google Hybrid');
   const [showLayerMenu, setShowLayerMenu] = useState(false);
   const [mapRotation, setMapRotation] = useState<number>(0);
   const [isRotationLocked, setIsRotationLocked] = useState<boolean>(true);
@@ -558,22 +559,35 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
   }, [currentStep]);
   const [sourceView, setSourceView] = useState<'LIST' | 'ALL_MAP' | 'MENU'>(initialPoint ? 'LIST' : 'MENU');
   const [points, setPoints] = useState<StakeoutPoint[]>(() => {
-    const saved = localStorage.getItem('stakeout_points_v1');
-    const existingPoints = saved ? JSON.parse(saved) : [];
-    if (initialPoint && !existingPoints.find((p: StakeoutPoint) => p.id === initialPoint.id)) {
-      return [initialPoint, ...existingPoints];
+    const saved = safeStorage.getItem('stakeout_points_v1');
+    const existingPoints: StakeoutPoint[] = saved ? JSON.parse(saved) : [];
+    const normalized = existingPoints.map(p => ({
+      ...p,
+      projectName: p.projectName ? cleanProjectName(p.projectName) : p.projectName
+    }));
+    if (initialPoint && !normalized.find((p: StakeoutPoint) => p.id === initialPoint.id)) {
+      const normalizedInitial = {
+        ...initialPoint,
+        projectName: initialPoint.projectName ? cleanProjectName(initialPoint.projectName) : initialPoint.projectName
+      };
+      return [normalizedInitial, ...normalized];
     }
-    return existingPoints;
+    return normalized;
   });
   const [geometries, setGeometries] = useState<StakeoutGeometry[]>(() => {
-    const saved = localStorage.getItem('stakeout_geometries_v1');
-    return saved ? JSON.parse(saved) : [];
+    const saved = safeStorage.getItem('stakeout_geometries_v1');
+    const existing: StakeoutGeometry[] = saved ? JSON.parse(saved) : [];
+    return existing.map(g => ({
+      ...g,
+      projectName: g.projectName ? cleanProjectName(g.projectName) : g.projectName
+    }));
   });
 
   const [showProjectLayersMenu, setShowProjectLayersMenu] = useState(false);
   const [hiddenProjects, setHiddenProjects] = useState<string[]>(() => {
-    const saved = localStorage.getItem('stakeout_hidden_projects');
-    return saved ? JSON.parse(saved) : [];
+    const saved = safeStorage.getItem('stakeout_hidden_projects');
+    const parsed: string[] = saved ? JSON.parse(saved) : [];
+    return parsed.map(p => cleanProjectName(p));
   });
   const [projectBoundsTrigger, setProjectBoundsTrigger] = useState<{ coords: [number, number][], time: number } | null>(null);
   const [deletingLayer, setDeletingLayer] = useState<string | null>(null);
@@ -586,7 +600,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
   }, [deletingLayer]);
 
   useEffect(() => {
-    localStorage.setItem('stakeout_hidden_projects', JSON.stringify(hiddenProjects));
+    safeStorage.setItem('stakeout_hidden_projects', JSON.stringify(hiddenProjects));
   }, [hiddenProjects]);
 
   const manualGroupName = t("Manuel Noktalar");
@@ -595,13 +609,13 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
     const map = new Map<string, { points: StakeoutPoint[], geometries: StakeoutGeometry[] }>();
 
     points.forEach(p => {
-      const pName = p.projectName || manualGroupName;
+      const pName = cleanProjectName(p.projectName) || manualGroupName;
       if (!map.has(pName)) map.set(pName, { points: [], geometries: [] });
       map.get(pName)!.points.push(p);
     });
 
     geometries.forEach(g => {
-      const pName = g.projectName || manualGroupName;
+      const pName = cleanProjectName(g.projectName) || manualGroupName;
       if (!map.has(pName)) map.set(pName, { points: [], geometries: [] });
       map.get(pName)!.geometries.push(g);
     });
@@ -638,11 +652,11 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
   }, [points, geometries, hiddenProjects, manualGroupName]);
 
   const visiblePoints = React.useMemo(() => {
-    return points.filter(p => !hiddenProjects.includes(p.projectName || manualGroupName));
+    return points.filter(p => !hiddenProjects.includes(cleanProjectName(p.projectName) || manualGroupName));
   }, [points, hiddenProjects, manualGroupName]);
 
   const visibleGeometriesRaw = React.useMemo(() => {
-    return geometries.filter(g => !hiddenProjects.includes(g.projectName || manualGroupName));
+    return geometries.filter(g => !hiddenProjects.includes(cleanProjectName(g.projectName) || manualGroupName));
   }, [geometries, hiddenProjects, manualGroupName]);
 
   // Pre-processed coordinates for Leaflet components
@@ -738,16 +752,16 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
   }, [confirmClear]);
 
   useEffect(() => {
-    localStorage.setItem('stakeout_points_v1', JSON.stringify(points));
+    safeStorage.setItem('stakeout_points_v1', JSON.stringify(points));
   }, [points]);
 
   useEffect(() => {
-    localStorage.setItem('stakeout_geometries_v1', JSON.stringify(geometries));
+    safeStorage.setItem('stakeout_geometries_v1', JSON.stringify(geometries));
   }, [geometries]);
   const [userPos, setUserPos] = useState<Coordinate | null>(null);
   const [heading, setHeading] = useState<number | null>(null);
   const [isInvertedDirections, setIsInvertedDirections] = useState<boolean>(() => {
-    return localStorage.getItem('stakeout_invert_directions') === 'true';
+    return safeStorage.getItem('stakeout_invert_directions') === 'true';
   });
 
   // Distance Measurement State on ALL_MAP
@@ -766,7 +780,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
   }, [measurePoints]);
 
   useEffect(() => {
-    localStorage.setItem('stakeout_invert_directions', String(isInvertedDirections));
+    safeStorage.setItem('stakeout_invert_directions', String(isInvertedDirections));
   }, [isInvertedDirections]);
 
   // Manual Entry State
@@ -792,6 +806,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
           lng: pos.coords.longitude,
           accuracy: pos.coords.accuracy,
           altitude: pos.coords.altitude,
+          altitudeAccuracy: pos.coords.altitudeAccuracy,
           timestamp: pos.timestamp
         });
         if (pos.coords.heading !== null) {
@@ -877,7 +892,9 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
           
           for (const kmlFileName of kmlFiles) {
             const kmlText = await contents.files[kmlFileName].async('string');
-            const projectName = kmlFiles.length === 1 ? file.name : `${file.name} (${kmlFileName})`;
+            const cleanBase = cleanProjectName(file.name);
+            const cleanSub = cleanProjectName(kmlFileName);
+            const projectName = kmlFiles.length === 1 ? cleanBase : `${cleanBase} (${cleanSub})`;
             const result = parseKML(kmlText, projectName);
             totalPoints = [...totalPoints, ...result.points];
             totalGeometries = [...totalGeometries, ...result.geometries];
@@ -901,7 +918,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
       const reader = new FileReader();
       reader.onload = (event) => {
         const text = event.target?.result as string;
-        const result = parseKML(text, file.name);
+        const result = parseKML(text, cleanProjectName(file.name));
         setPoints(prev => [...prev, ...result.points]);
         setGeometries(prev => [...prev, ...result.geometries]);
         showToast(t("KML/KMZ dosya yüklendi"), "success");
@@ -911,10 +928,10 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
   };
 
   const handleDeleteProjectLayer = (layerName: string) => {
-    setPoints(prev => prev.filter(p => (p.projectName || manualGroupName) !== layerName));
-    setGeometries(prev => prev.filter(g => (g.projectName || manualGroupName) !== layerName));
+    setPoints(prev => prev.filter(p => (cleanProjectName(p.projectName) || manualGroupName) !== layerName));
+    setGeometries(prev => prev.filter(g => (cleanProjectName(g.projectName) || manualGroupName) !== layerName));
     setHiddenProjects(prev => prev.filter(n => n !== layerName));
-    if (activePoint && (activePoint.projectName || manualGroupName) === layerName) {
+    if (activePoint && (cleanProjectName(activePoint.projectName) || manualGroupName) === layerName) {
       setActivePoint(null);
     }
     setDeletingLayer(null);
@@ -1288,8 +1305,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
         {view === 'ALL_MAP' && (
           <div className="flex flex-col h-full relative">
             <div className="flex-1 relative z-10">
-              {/* Back Button on top-left - aligned with standard Header position (top-4 left-4 sm:left-8) */}
-              <div className="absolute top-4 left-4 sm:left-8 z-[10000] flex items-center">
+              {/* Back and Navigation Controls on top-left - aligned with standard Header position */}
+              <div className="absolute top-4 left-4 sm:left-8 z-[10000] flex flex-col items-center gap-2">
                 <button 
                   onClick={() => {
                     window.history.back();
@@ -1298,6 +1315,46 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   title={t("Çıkış")}
                 >
                   <i className="fas fa-chevron-left text-sm"></i>
+                </button>
+
+                {/* Zoom to Current User Location Button (Konuma Git) */}
+                <button 
+                  onClick={() => {
+                    setShowLayerMenu(false);
+                    setShowProjectLayersMenu(false);
+                    if (userPos && userPos.lat && userPos.lng) {
+                      setAllMapCenterTrigger({ pos: [userPos.lat, userPos.lng], time: Date.now() });
+                    } else {
+                      if (navigator.geolocation) {
+                        showToast(t("Konum alınıyor..."), "info");
+                        navigator.geolocation.getCurrentPosition(
+                          (pos) => {
+                            const newPos = {
+                              lat: pos.coords.latitude,
+                              lng: pos.coords.longitude,
+                              accuracy: pos.coords.accuracy,
+                              altitude: pos.coords.altitude,
+                              altitudeAccuracy: pos.coords.altitudeAccuracy,
+                              timestamp: pos.timestamp
+                            };
+                            setUserPos(newPos);
+                            setAllMapCenterTrigger({ pos: [newPos.lat, newPos.lng], time: Date.now() });
+                          },
+                          (err) => {
+                            console.error(err);
+                            showToast(t("Konum verisi alınamadı"), "error");
+                          },
+                          { enableHighAccuracy: true, timeout: 5000 }
+                        );
+                      } else {
+                        showToast(t("Cihazınızda konum desteği bulunmuyor"), "error");
+                      }
+                    }
+                  }}
+                  className="w-12 h-12 bg-white/95 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-2xl text-blue-600 hover:text-blue-700 active:scale-90 transition-all cursor-pointer border border-slate-100"
+                  title={t("Konuma Git")}
+                >
+                  <i className="fas fa-crosshairs text-base"></i>
                 </button>
               </div>
 
@@ -1376,45 +1433,6 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                     <i className="fas fa-expand text-xs min-[360px]:text-sm sm:text-base md:text-lg"></i>
                   </button>
 
-                  {/* Zoom to Current User Location Button */}
-                  <button 
-                    onClick={() => {
-                      setShowLayerMenu(false);
-                      setShowProjectLayersMenu(false);
-                      if (userPos && userPos.lat && userPos.lng) {
-                        setAllMapCenterTrigger({ pos: [userPos.lat, userPos.lng], time: Date.now() });
-                      } else {
-                        if (navigator.geolocation) {
-                          showToast(t("Konum alınıyor..."), "info");
-                          navigator.geolocation.getCurrentPosition(
-                            (pos) => {
-                              const newPos = {
-                                lat: pos.coords.latitude,
-                                lng: pos.coords.longitude,
-                                accuracy: pos.coords.accuracy,
-                                altitude: pos.coords.altitude,
-                                timestamp: pos.timestamp
-                              };
-                              setUserPos(newPos);
-                              setAllMapCenterTrigger({ pos: [newPos.lat, newPos.lng], time: Date.now() });
-                            },
-                            (err) => {
-                              console.error(err);
-                              showToast(t("Konum verisi alınamadı"), "error");
-                            },
-                            { enableHighAccuracy: true, timeout: 5000 }
-                          );
-                        } else {
-                          showToast(t("Cihazınızda konum desteği bulunmuyor"), "error");
-                        }
-                      }
-                    }}
-                    className="w-8.5 h-8.5 min-[360px]:w-9.5 min-[360px]:h-9.5 min-[390px]:w-10 min-[390px]:h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 bg-white/95 backdrop-blur-md rounded-xl sm:rounded-2xl flex items-center justify-center shadow-xl text-blue-600 hover:text-blue-700 active:scale-90 transition-all cursor-pointer border border-slate-200/80"
-                    title={t("Konuma Git")}
-                  >
-                    <i className="fas fa-crosshairs text-xs min-[360px]:text-sm sm:text-base md:text-lg"></i>
-                  </button>
-
                   {/* Project Layers Button */}
                   <button 
                     onClick={() => {
@@ -1461,7 +1479,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
 
                 {/* Project Layers Dropdown Menu */}
                 {showProjectLayersMenu && (
-                  <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 p-2.5 rounded-2xl shadow-2xl flex flex-col gap-2 w-64 max-w-[calc(100vw-2.5rem)] text-slate-900 select-none animate-in fade-in slide-in-from-top-2 duration-150 max-h-[65vh]">
+                  <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 p-2.5 rounded-2xl shadow-2xl flex flex-col gap-2 w-[275px] min-[390px]:w-[290px] sm:w-[310px] max-w-[calc(100vw-6rem)] sm:max-w-[calc(100vw-8rem)] text-slate-900 select-none animate-in fade-in slide-in-from-top-2 duration-150 max-h-[50vh]">
                     <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 px-1">
                       <div className="flex items-center gap-1.5">
                         <div className="w-5 h-5 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-[10px]">
@@ -1476,15 +1494,15 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                       </div>
                       <button
                         onClick={() => setShowProjectLayersMenu(false)}
-                        className="w-5 h-5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center cursor-pointer transition-colors"
+                        className="w-6 h-6 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center cursor-pointer transition-colors"
                       >
-                        <i className="fas fa-times text-[10px]"></i>
+                        <i className="fas fa-times text-xs"></i>
                       </button>
                     </div>
 
                     {/* Add New Project (KML/KMZ) Button */}
-                    <label className="flex items-center justify-center gap-1.5 py-1.5 px-2.5 bg-indigo-50 hover:bg-indigo-100/90 text-indigo-700 border border-indigo-200/80 rounded-xl text-[10px] font-bold transition-all active:scale-[0.98] cursor-pointer shadow-2xs">
-                      <i className="fas fa-plus-circle text-[10px]"></i>
+                    <label className="flex items-center justify-center gap-1.5 py-2 px-3 bg-indigo-50 hover:bg-indigo-100/90 text-indigo-700 border border-indigo-200/80 rounded-xl text-xs font-bold transition-all active:scale-[0.98] cursor-pointer shadow-2xs">
+                      <i className="fas fa-plus-circle text-xs"></i>
                       <span>{t("Yeni Proje Ekle (KML/KMZ)")}</span>
                       <input 
                         type="file" 
@@ -1499,26 +1517,26 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
 
                     {/* Quick Visibility Controls */}
                     {projectLayers.length > 1 && (
-                      <div className="flex items-center gap-1 px-0.5">
+                      <div className="flex items-center gap-1.5 px-0.5">
                         <button
                           onClick={() => setHiddenProjects([])}
-                          className="flex-1 py-1 px-1.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg text-[9.5px] font-bold text-slate-600 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                          className="flex-1 py-1.5 px-2 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl text-[10px] font-bold text-slate-600 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                         >
-                          <i className="fas fa-eye text-[8px]"></i>
+                          <i className="fas fa-eye text-[9px]"></i>
                           {t("Tümünü Göster")}
                         </button>
                         <button
                           onClick={() => setHiddenProjects(projectLayers.map(l => l.name))}
-                          className="flex-1 py-1 px-1.5 bg-slate-100 hover:bg-red-50 hover:text-red-600 rounded-lg text-[9.5px] font-bold text-slate-600 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                          className="flex-1 py-1.5 px-2 bg-slate-100 hover:bg-red-50 hover:text-red-600 rounded-xl text-[10px] font-bold text-slate-600 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                         >
-                          <i className="fas fa-eye-slash text-[8px]"></i>
+                          <i className="fas fa-eye-slash text-[9px]"></i>
                           {t("Tümünü Gizle")}
                         </button>
                       </div>
                     )}
 
                     {/* Project List */}
-                    <div className="flex flex-col gap-1 overflow-y-auto max-h-[45vh] pr-0.5 custom-scrollbar">
+                    <div className="flex flex-col gap-1.5 overflow-y-auto max-h-[28vh] pr-0.5 custom-scrollbar">
                       {projectLayers.length === 0 ? (
                         <div className="py-5 text-center text-slate-400">
                           <i className="fas fa-folder-open text-xl mb-1.5 opacity-40"></i>
@@ -1528,7 +1546,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                         projectLayers.map((layer) => (
                           <div
                             key={layer.name}
-                            className={`p-1.5 rounded-xl border transition-all flex items-center justify-between gap-1.5 ${
+                            className={`p-2 rounded-xl border transition-all flex items-center justify-between gap-2 ${
                               layer.visible 
                                 ? 'bg-slate-50/80 border-slate-200/80 hover:bg-slate-100/90' 
                                 : 'bg-slate-50/40 border-slate-100 opacity-60'
@@ -1540,31 +1558,31 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                                   layer.visible ? [...prev, layer.name] : prev.filter(n => n !== layer.name)
                                 );
                               }}
-                              className={`w-6.5 h-6.5 rounded-lg flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                              className={`w-7.5 h-7.5 min-[390px]:w-8 min-[390px]:h-8 rounded-lg flex items-center justify-center shrink-0 transition-transform active:scale-95 cursor-pointer ${
                                 layer.visible 
                                   ? layer.isManual ? 'bg-emerald-500 text-white shadow-xs' : 'bg-indigo-600 text-white shadow-xs'
                                   : 'bg-slate-200 text-slate-400'
                               }`}
                               title={layer.visible ? t("Katmanı Gizle") : t("Katmanı Göster")}
                             >
-                              <i className={`fas ${layer.visible ? 'fa-eye' : 'fa-eye-slash'} text-[10px]`}></i>
+                              <i className={`fas ${layer.visible ? 'fa-eye' : 'fa-eye-slash'} text-xs`}></i>
                             </button>
 
                             <div 
-                              className="flex-1 min-w-0 cursor-pointer"
+                              className="flex-1 min-w-0 cursor-pointer py-0.5"
                               onClick={() => {
                                 setHiddenProjects(prev => 
                                   layer.visible ? [...prev, layer.name] : prev.filter(n => n !== layer.name)
                                 );
                               }}
                             >
-                              <div className="flex items-center gap-1.5">
-                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${layer.isManual ? 'bg-emerald-500' : 'bg-indigo-500'}`}></span>
-                                <p className="text-[11px] font-bold text-slate-800 truncate" title={layer.name}>
+                              <div className="flex items-start gap-1.5">
+                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1 ${layer.isManual ? 'bg-emerald-500' : 'bg-indigo-500'}`}></span>
+                                <p className="text-[11px] font-bold text-slate-800 break-words [word-break:break-word] leading-snug" title={layer.name}>
                                   {layer.name}
                                 </p>
                               </div>
-                              <p className="text-[9px] text-slate-400 font-medium ml-3">
+                              <p className="text-[9.5px] text-slate-400 font-medium ml-3">
                                 {layer.pointCount > 0 && `${layer.pointCount} ${t("nokta")}`}
                                 {layer.pointCount > 0 && layer.geometryCount > 0 && ' · '}
                                 {layer.geometryCount > 0 && `${layer.geometryCount} ${t("geometri")}`}
@@ -1578,10 +1596,10 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                                     e.stopPropagation();
                                     handleDeleteProjectLayer(layer.name);
                                   }}
-                                  className="px-1.5 py-0.5 bg-red-600 hover:bg-red-700 text-white rounded-md text-[9px] font-bold shadow-xs transition-all active:scale-95 cursor-pointer flex items-center gap-0.5"
+                                  className="h-7.5 min-[390px]:h-8 px-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[10.5px] font-bold shadow-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1"
                                   title={t("Silmeyi Onayla")}
                                 >
-                                  <i className="fas fa-trash-alt text-[7.5px]"></i>
+                                  <i className="fas fa-trash-alt text-[9.5px]"></i>
                                   <span>{t("Sil")}</span>
                                 </button>
                                 <button
@@ -1589,14 +1607,14 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                                     e.stopPropagation();
                                     setDeletingLayer(null);
                                   }}
-                                  className="px-1 py-0.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-md text-[9px] font-bold transition-all active:scale-95 cursor-pointer"
+                                  className="w-7.5 h-7.5 min-[390px]:w-8 min-[390px]:h-8 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center justify-center"
                                   title={t("İptal")}
                                 >
-                                  <i className="fas fa-times text-[7.5px]"></i>
+                                  <i className="fas fa-times text-xs"></i>
                                 </button>
                               </div>
                             ) : (
-                              <div className="flex items-center gap-0.5 shrink-0">
+                              <div className="flex items-center gap-1 shrink-0">
                                 {layer.boundsCoords.length > 0 && (
                                   <button
                                     onClick={(e) => {
@@ -1606,10 +1624,10 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                                       }
                                       setProjectBoundsTrigger({ coords: layer.boundsCoords, time: Date.now() });
                                     }}
-                                    className="w-6 h-6 rounded-lg hover:bg-white text-slate-500 hover:text-indigo-600 border border-transparent hover:border-slate-200 flex items-center justify-center shrink-0 transition-all active:scale-95 cursor-pointer"
+                                    className="w-7.5 h-7.5 min-[390px]:w-8 min-[390px]:h-8 rounded-lg bg-white hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 border border-slate-200/90 hover:border-indigo-200 shadow-xs flex items-center justify-center shrink-0 transition-all active:scale-90 cursor-pointer"
                                     title={t("Projeye Odaklan")}
                                   >
-                                    <i className="fas fa-crosshairs text-[9px]"></i>
+                                    <i className="fas fa-crosshairs text-xs"></i>
                                   </button>
                                 )}
                                 <button
@@ -1617,10 +1635,10 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                                     e.stopPropagation();
                                     setDeletingLayer(layer.name);
                                   }}
-                                  className="w-6 h-6 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 border border-transparent hover:border-red-200 flex items-center justify-center shrink-0 transition-all active:scale-95 cursor-pointer"
+                                  className="w-7.5 h-7.5 min-[390px]:w-8 min-[390px]:h-8 rounded-lg bg-white hover:bg-red-50 text-slate-500 hover:text-red-600 border border-slate-200/90 hover:border-red-200 shadow-xs flex items-center justify-center shrink-0 transition-all active:scale-90 cursor-pointer"
                                   title={t("Katmanı Sil")}
                                 >
-                                  <i className="fas fa-trash-alt text-[9px]"></i>
+                                  <i className="fas fa-trash-alt text-xs"></i>
                                 </button>
                               </div>
                             )}
@@ -1633,7 +1651,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
 
                 {/* Layer Selector Dropdown Menu */}
                 {showLayerMenu && (
-                  <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 p-2.5 rounded-2xl shadow-2xl flex flex-col gap-1 w-52 max-w-[calc(100vw-2.5rem)] text-slate-900 select-none animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 p-2.5 rounded-2xl shadow-2xl flex flex-col gap-1 w-52 max-w-[calc(100vw-6rem)] sm:max-w-[calc(100vw-8rem)] text-slate-900 select-none animate-in fade-in slide-in-from-top-2 duration-150">
                     <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 px-1 mb-0.5">
                       <div className="flex items-center gap-1.5">
                         <div className="w-5 h-5 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-[10px]">
@@ -1661,7 +1679,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                         key={opt.value}
                         onClick={() => {
                           setCurrentMapProvider(opt.value);
-                          localStorage.setItem('default_map_provider', opt.value);
+                          safeStorage.setItem('default_map_provider', opt.value);
                           setShowLayerMenu(false);
                         }}
                         className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[11px] font-bold tracking-tight text-left transition-all active:scale-95 cursor-pointer ${
@@ -1682,7 +1700,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
 
               {/* Floating Compact Distance Measurement Pill */}
               {isMeasuring && (
-                <div className="absolute top-16 right-2 min-[360px]:right-3 min-[400px]:right-4 sm:right-8 z-[10000] bg-white/95 backdrop-blur-md rounded-2xl p-2 sm:p-2.5 shadow-2xl border border-slate-200/90 flex flex-col gap-1.5 w-60 max-w-[calc(100vw-2.5rem)] text-slate-900 select-none animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="absolute top-16 right-2 min-[360px]:right-3 min-[400px]:right-4 sm:right-8 z-[10000] bg-white/95 backdrop-blur-md rounded-2xl p-2 sm:p-2.5 shadow-2xl border border-slate-200/90 flex flex-col gap-1.5 w-60 max-w-[calc(100vw-6rem)] sm:max-w-[calc(100vw-8rem)] text-slate-900 select-none animate-in fade-in slide-in-from-top-2 duration-150">
                   <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 px-0.5">
                     <div className="flex items-center gap-1.5">
                       <div className="w-5 h-5 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-[10px]">
@@ -2088,7 +2106,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
 
                 {/* Layer Selector Dropdown Menu */}
                 {showLayerMenu && (
-                  <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 p-2.5 rounded-2xl shadow-2xl flex flex-col gap-1 w-52 max-w-[calc(100vw-2.5rem)] text-slate-900 select-none animate-in fade-in slide-in-from-top-2 duration-150 font-sans">
+                  <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 p-2.5 rounded-2xl shadow-2xl flex flex-col gap-1 w-52 max-w-[calc(100vw-6rem)] sm:max-w-[calc(100vw-8rem)] text-slate-900 select-none animate-in fade-in slide-in-from-top-2 duration-150 font-sans">
                     <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 px-1 mb-0.5">
                       <div className="flex items-center gap-1.5">
                         <div className="w-5 h-5 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-[10px]">
@@ -2116,7 +2134,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                         key={opt.value}
                         onClick={() => {
                           setCurrentMapProvider(opt.value);
-                          localStorage.setItem('default_map_provider', opt.value);
+                          safeStorage.setItem('default_map_provider', opt.value);
                           setShowLayerMenu(false);
                         }}
                         className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[11px] font-bold tracking-tight text-left transition-all active:scale-95 cursor-pointer ${

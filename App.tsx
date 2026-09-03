@@ -15,6 +15,7 @@ import { SavedLocation, Coordinate, StakeoutPoint, AppSettings, CalculationMetho
 import { geoidService } from './services/GeoidService';
 import { calculateResult } from './utils/MathUtils';
 import { useLanguage } from './utils/LanguageContext';
+import safeStorage from './utils/safeStorage';
 
 const App = () => {
   const { t } = useLanguage();
@@ -22,8 +23,8 @@ const App = () => {
 
   const getInitialView = (): ViewType => {
     try {
-      const showOnboardingEveryTime = localStorage.getItem('always_show_onboarding') === 'true';
-      const onboardingDone = localStorage.getItem('onboarding_v1.0_done') === 'true';
+      const showOnboardingEveryTime = safeStorage.getItem('always_show_onboarding') === 'true';
+      const onboardingDone = safeStorage.getItem('onboarding_v1.0_done') === 'true';
       return (!onboardingDone || showOnboardingEveryTime) ? 'onboarding' : 'dashboard';
     } catch (e) {
       return 'onboarding';
@@ -48,16 +49,16 @@ const App = () => {
     const CURRENT_KEY = 'gps_locations_v1.0';
     const PREV_KEY = 'gps_locations_v5.0';
     const OLD_KEY = 'gps_locations_v7.8.8';
-    let saved = localStorage.getItem(CURRENT_KEY);
+    let saved = safeStorage.getItem(CURRENT_KEY);
     if (!saved) {
-      const prevData = localStorage.getItem(PREV_KEY);
+      const prevData = safeStorage.getItem(PREV_KEY);
       if (prevData) {
-        localStorage.setItem(CURRENT_KEY, prevData);
+        safeStorage.setItem(CURRENT_KEY, prevData);
         saved = prevData;
       } else {
-        const oldData = localStorage.getItem(OLD_KEY);
+        const oldData = safeStorage.getItem(OLD_KEY);
         if (oldData) {
-          localStorage.setItem(CURRENT_KEY, oldData);
+          safeStorage.setItem(CURRENT_KEY, oldData);
           saved = oldData;
         }
       }
@@ -78,42 +79,48 @@ const App = () => {
   const [isContinuing, setIsContinuing] = useState(false);
   const [stakeoutInitialPoint, setStakeoutInitialPoint] = useState<StakeoutPoint | null>(null);
   const [settings, setSettings] = useState<AppSettings>(() => ({
-    defaultCoordinateSystem: localStorage.getItem('default_coord_system') || 'WGS84',
-    defaultAccuracyLimit: parseFloat(localStorage.getItem('default_accuracy_limit') || '5'),
+    defaultCoordinateSystem: safeStorage.getItem('default_coord_system') || 'WGS84',
+    defaultAccuracyLimit: parseFloat(safeStorage.getItem('default_accuracy_limit') || '5'),
     defaultMeasurementDuration: (() => {
-      const saved = parseInt(localStorage.getItem('default_duration') || '15');
+      const saved = parseInt(safeStorage.getItem('default_duration') || '15');
       return saved === 120 ? 90 : saved;
     })(),
-    alertsEnabled: localStorage.getItem('default_audio_feedback_enabled') !== 'false',
-    vibrationEnabled: localStorage.getItem('default_vibration_feedback_enabled') === 'true',
-    screenAlwaysOn: localStorage.getItem('default_screen_always_on') !== 'false',
-    mapProvider: localStorage.getItem('default_map_provider') || 'Google Hybrid',
-    locationPrecision: parseInt(localStorage.getItem('default_location_precision') || '2'),
-    heightPrecision: parseInt(localStorage.getItem('default_height_precision') || '1'),
-    heightType: (localStorage.getItem('default_height_type') as 'orthometric' | 'ellipsoidal') || 'orthometric',
-    calculationMethod: (localStorage.getItem('default_calculation_method') || 'WEIGHTED_LSE') as any,
-    gnssOnlyMode: localStorage.getItem('default_gnss_only_mode') === 'true',
-    showOnboarding: localStorage.getItem('always_show_onboarding') === 'true',
+    alertsEnabled: safeStorage.getItem('default_audio_feedback_enabled') !== 'false',
+    vibrationEnabled: safeStorage.getItem('default_vibration_feedback_enabled') === 'true',
+    screenAlwaysOn: safeStorage.getItem('default_screen_always_on') !== 'false',
+    mapProvider: safeStorage.getItem('default_map_provider') || 'Google Hybrid',
+    locationPrecision: parseInt(safeStorage.getItem('default_location_precision') || '2'),
+    heightPrecision: parseInt(safeStorage.getItem('default_height_precision') || '1'),
+    heightType: (safeStorage.getItem('default_height_type') as 'orthometric' | 'ellipsoidal') || 'orthometric',
+    calculationMethod: (safeStorage.getItem('default_calculation_method') || 'WEIGHTED_LSE') as any,
+    gnssOnlyMode: safeStorage.getItem('default_gnss_only_mode') === 'true',
+    showOnboarding: safeStorage.getItem('always_show_onboarding') === 'true',
   }));
 
   // Navigation wrapper to sync with browser history
   const navigateTo = (newView: ViewType, newSubView: string | null = null) => {
     if (newView !== view || newSubView !== subView) {
-      const currentState = window.history.state;
-      const currentIndex = (currentState && typeof currentState.index === 'number') ? currentState.index : 0;
+      try {
+        const currentState = window.history.state;
+        const currentIndex = (currentState && typeof currentState.index === 'number') ? currentState.index : 0;
 
-      if (newView === 'dashboard') {
-        // Reset to dashboard: jump back to the root entry
-        if (currentIndex > 0) {
-          window.history.go(-currentIndex);
+        if (newView === 'dashboard') {
+          // Reset to dashboard: jump back to the root entry
+          if (currentIndex > 0) {
+            window.history.go(-currentIndex);
+          } else {
+            window.history.replaceState({ view: 'dashboard', subView: null, index: 0 }, '');
+            setView('dashboard');
+            setSubView(null);
+          }
         } else {
-          window.history.replaceState({ view: 'dashboard', subView: null, index: 0 }, '');
-          setView('dashboard');
-          setSubView(null);
+          const nextIndex = currentIndex + 1;
+          window.history.pushState({ view: newView, subView: newSubView, index: nextIndex }, '');
+          setView(newView);
+          setSubView(newSubView);
         }
-      } else {
-        const nextIndex = currentIndex + 1;
-        window.history.pushState({ view: newView, subView: newSubView, index: nextIndex }, '');
+      } catch (err) {
+        console.warn("History API restricted in iframe:", err);
         setView(newView);
         setSubView(newSubView);
       }
@@ -124,7 +131,11 @@ const App = () => {
     geoidService.initialize();
 
     const initialView = getInitialView();
-    window.history.replaceState({ view: initialView, subView: null, index: 0 }, '');
+    try {
+      window.history.replaceState({ view: initialView, subView: null, index: 0 }, '');
+    } catch (e) {
+      console.warn("Initial history replaceState blocked in iframe:", e);
+    }
 
     const handlePopState = (event: PopStateEvent) => {
       if (event.state && event.state.view) {
@@ -297,11 +308,11 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('gps_locations_v1.0', JSON.stringify(locations));
+    safeStorage.setItem('gps_locations_v1.0', JSON.stringify(locations));
   }, [locations]);
 
   const handleFinishOnboarding = () => {
-    localStorage.setItem('onboarding_v1.0_done', 'true');
+    safeStorage.setItem('onboarding_v1.0_done', 'true');
     navigateTo('dashboard');
   };
 
@@ -352,7 +363,7 @@ const App = () => {
   };
 
    const handleOpenACBLabs = () => {
-    if (localStorage.getItem('acb_labs_authorized') === 'true') {
+    if (safeStorage.getItem('acb_labs_authorized') === 'true') {
       navigateTo('acblabs');
       return;
     }
@@ -364,7 +375,7 @@ const App = () => {
   const handlePasswordSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (passwordInput === "748123") {
-      localStorage.setItem('acb_labs_authorized', 'true');
+      safeStorage.setItem('acb_labs_authorized', 'true');
       setShowPasswordModal(false);
       navigateTo('acblabs');
     } else {
@@ -408,22 +419,22 @@ const App = () => {
             onBack={() => {
               // Refresh settings when coming back from settings
               setSettings({
-                defaultCoordinateSystem: localStorage.getItem('default_coord_system') || 'WGS84',
-                defaultAccuracyLimit: parseFloat(localStorage.getItem('default_accuracy_limit') || '5'),
+                defaultCoordinateSystem: safeStorage.getItem('default_coord_system') || 'WGS84',
+                defaultAccuracyLimit: parseFloat(safeStorage.getItem('default_accuracy_limit') || '5'),
                 defaultMeasurementDuration: (() => {
-                  const saved = parseInt(localStorage.getItem('default_duration') || '15');
+                  const saved = parseInt(safeStorage.getItem('default_duration') || '15');
                   return saved === 120 ? 90 : saved;
                 })(),
-                alertsEnabled: localStorage.getItem('default_audio_feedback_enabled') !== 'false',
-                vibrationEnabled: localStorage.getItem('default_vibration_feedback_enabled') === 'true',
-                screenAlwaysOn: localStorage.getItem('default_screen_always_on') !== 'false',
-                mapProvider: localStorage.getItem('default_map_provider') || 'Google Hybrid',
-                locationPrecision: parseInt(localStorage.getItem('default_location_precision') || '2'),
-                heightPrecision: parseInt(localStorage.getItem('default_height_precision') || '1'),
-                heightType: (localStorage.getItem('default_height_type') as 'orthometric' | 'ellipsoidal') || 'orthometric',
-                calculationMethod: (localStorage.getItem('default_calculation_method') || 'WEIGHTED_LSE') as any,
-                gnssOnlyMode: localStorage.getItem('default_gnss_only_mode') === 'true',
-                showOnboarding: localStorage.getItem('always_show_onboarding') === 'true',
+                alertsEnabled: safeStorage.getItem('default_audio_feedback_enabled') !== 'false',
+                vibrationEnabled: safeStorage.getItem('default_vibration_feedback_enabled') === 'true',
+                screenAlwaysOn: safeStorage.getItem('default_screen_always_on') !== 'false',
+                mapProvider: safeStorage.getItem('default_map_provider') || 'Google Hybrid',
+                locationPrecision: parseInt(safeStorage.getItem('default_location_precision') || '2'),
+                heightPrecision: parseInt(safeStorage.getItem('default_height_precision') || '1'),
+                heightType: (safeStorage.getItem('default_height_type') as 'orthometric' | 'ellipsoidal') || 'orthometric',
+                calculationMethod: (safeStorage.getItem('default_calculation_method') || 'WEIGHTED_LSE') as any,
+                gnssOnlyMode: safeStorage.getItem('default_gnss_only_mode') === 'true',
+                showOnboarding: safeStorage.getItem('always_show_onboarding') === 'true',
               });
               window.history.back();
             }} 

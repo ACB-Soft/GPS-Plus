@@ -7,6 +7,7 @@ import { useOrthometricHeight } from '../hooks/useGeoid';
 import { calculateMaxDistance } from '../utils/MathUtils';
 import { useLanguage } from '../utils/LanguageContext';
 import { getAccuracyColor } from '../utils/StyleUtils';
+import safeStorage from '../utils/safeStorage';
 
 
 // Map rendering fix for modals and dynamic recentering
@@ -80,7 +81,7 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
   const { t, language } = useLanguage();
   const [showMap, setShowMap] = useState(initialShowMap);
   const [showWarning, setShowWarning] = useState(false);
-  const [currentMapProvider, setCurrentMapProvider] = useState(() => localStorage.getItem('default_map_provider') || 'Google Hybrid');
+  const [currentMapProvider, setCurrentMapProvider] = useState(() => safeStorage.getItem('default_map_provider') || 'Google Hybrid');
   const [showLayerMenu, setShowLayerMenu] = useState(false);
   const { x, y, labelX, labelY, zone } = convertCoordinate(location.lat, location.lng, location.coordinateSystem || 'WGS84');
   const isUTM = location.coordinateSystem && location.coordinateSystem !== 'WGS84';
@@ -196,12 +197,11 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t("GPS Sinyali")}</span>
                   <p className={`text-[11px] md:text-[12px] font-black uppercase tracking-widest leading-tight ${
                     reliability === 'HIGH' ? 'text-emerald-500' :
-                    reliability === 'MEDIUM' || reliability === 'UNKNOWN' ? 'text-amber-500' : 
+                    reliability === 'MEDIUM' ? 'text-amber-500' : 
                     'text-rose-500'
                   }`}>
                     {reliability === 'HIGH' ? t('GÜVENLİ') : 
-                     reliability === 'MEDIUM' ? t('Orta') : 
-                     reliability === 'LOW' ? t('GÜVENSİZ') : t('VERİ AZ')}
+                     reliability === 'MEDIUM' ? t('Orta') : t('GÜVENSİZ')}
                   </p>
                 </div>
 
@@ -214,7 +214,7 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t("Saçılım")}</span>
                   <p className={`text-[15px] md:text-[16px] mono-font font-black leading-tight ${
                     reliability === 'HIGH' ? 'text-emerald-500' :
-                    reliability === 'MEDIUM' || reliability === 'UNKNOWN' ? 'text-amber-500' : 
+                    reliability === 'MEDIUM' ? 'text-amber-500' : 
                     'text-rose-500'
                   }`}>±{maxSpread.toFixed(1)}m</p>
                 </div>
@@ -290,7 +290,7 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
                     key={opt.value}
                     onClick={() => {
                       setCurrentMapProvider(opt.value);
-                      localStorage.setItem('default_map_provider', opt.value);
+                      safeStorage.setItem('default_map_provider', opt.value);
                       setShowLayerMenu(false);
                     }}
                     className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider text-left transition-all active:scale-95 cursor-pointer ${
@@ -350,7 +350,7 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{t("Hassasiyet")}</p>
                 <p className={`text-base font-black mono-font leading-none ${
                   reliability === 'HIGH' ? 'text-emerald-600' : 
-                  reliability === 'MEDIUM' || reliability === 'UNKNOWN' ? 'text-amber-600' : 
+                  reliability === 'MEDIUM' ? 'text-amber-600' : 
                   'text-rose-600'
                 }`}>
                   ±{dynamicAccuracy.toFixed(1)}m

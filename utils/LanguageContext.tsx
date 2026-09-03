@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { t } from './trtoentranslate';
+import safeStorage from './safeStorage';
 
 export type Language = 'TR' | 'EN';
 
@@ -13,7 +14,7 @@ const LanguageContext = createContext<LanguageContextProps | undefined>(undefine
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguage] = useState<Language>(() => {
-    const saved = localStorage.getItem('language_preference') as Language | null;
+    const saved = safeStorage.getItem('language_preference') as Language | null;
     if (saved === 'TR' || saved === 'EN') return saved;
 
     // Tarayıcı veya sistem dilini kontrol et
@@ -33,7 +34,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (showProgress && pendingLanguage) {
       const timer = setTimeout(() => {
         setLanguage(pendingLanguage);
-        localStorage.setItem('language_preference', pendingLanguage);
+        safeStorage.setItem('language_preference', pendingLanguage);
         setShowProgress(false);
         setPendingLanguage(null);
       }, 850); // Sleek transition speed

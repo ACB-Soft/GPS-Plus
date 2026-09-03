@@ -6,6 +6,7 @@ import GlobalFooter from './GlobalFooter';
 import Modal from './Modal';
 import Header from './Header';
 import { useLanguage } from '../utils/LanguageContext';
+import safeStorage from '../utils/safeStorage';
 
 interface Props {
   onBack: () => void;
@@ -15,22 +16,22 @@ interface Props {
 const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
   const { needRefresh: [needRefresh, setNeedRefresh], updateServiceWorker } = useRegisterSW();
   const { t } = useLanguage();
-  const [coordinateSystem, setCoordinateSystem] = useState(localStorage.getItem('default_coord_system') || 'WGS84');
-  const [accuracyLimit, setAccuracyLimit] = useState(localStorage.getItem('default_accuracy_limit') || '5');
+  const [coordinateSystem, setCoordinateSystem] = useState(safeStorage.getItem('default_coord_system') || 'WGS84');
+  const [accuracyLimit, setAccuracyLimit] = useState(safeStorage.getItem('default_accuracy_limit') || '5');
   const [measurementDuration, setMeasurementDuration] = useState(() => {
-    const saved = localStorage.getItem('default_duration') || '15';
+    const saved = safeStorage.getItem('default_duration') || '15';
     return (saved === '120' || saved === '90' || saved === '91') ? '61' : saved;
   });
-  const [mapProvider, setMapProvider] = useState(localStorage.getItem('default_map_provider') || 'Google Hybrid');
-  const [audioEnabled, setAudioEnabled] = useState(localStorage.getItem('default_audio_feedback_enabled') !== 'false');
-  const [vibrationEnabled, setVibrationEnabled] = useState(localStorage.getItem('default_vibration_feedback_enabled') === 'true');
-  const [screenAlwaysOn, setScreenAlwaysOn] = useState(localStorage.getItem('default_screen_always_on') !== 'false');
-  const [locationPrecision, setLocationPrecision] = useState(localStorage.getItem('default_location_precision') || '2');
-  const [heightPrecision, setHeightPrecision] = useState(localStorage.getItem('default_height_precision') || '1');
-  const [heightType, setHeightType] = useState(localStorage.getItem('default_height_type') || 'orthometric');
-  const [calculationMethod, setCalculationMethod] = useState(localStorage.getItem('default_calculation_method') || 'WEIGHTED_LSE');
-  const [gnssOnlyMode, setGnssOnlyMode] = useState(localStorage.getItem('default_gnss_only_mode') === 'true');
-  const [showOnboarding, setShowOnboarding] = useState(localStorage.getItem('always_show_onboarding') === 'true');
+  const [mapProvider, setMapProvider] = useState(safeStorage.getItem('default_map_provider') || 'Google Hybrid');
+  const [audioEnabled, setAudioEnabled] = useState(safeStorage.getItem('default_audio_feedback_enabled') !== 'false');
+  const [vibrationEnabled, setVibrationEnabled] = useState(safeStorage.getItem('default_vibration_feedback_enabled') === 'true');
+  const [screenAlwaysOn, setScreenAlwaysOn] = useState(safeStorage.getItem('default_screen_always_on') !== 'false');
+  const [locationPrecision, setLocationPrecision] = useState(safeStorage.getItem('default_location_precision') || '2');
+  const [heightPrecision, setHeightPrecision] = useState(safeStorage.getItem('default_height_precision') || '1');
+  const [heightType, setHeightType] = useState(safeStorage.getItem('default_height_type') || 'orthometric');
+  const [calculationMethod, setCalculationMethod] = useState(safeStorage.getItem('default_calculation_method') || 'WEIGHTED_LSE');
+  const [gnssOnlyMode, setGnssOnlyMode] = useState(safeStorage.getItem('default_gnss_only_mode') === 'true');
+  const [showOnboarding, setShowOnboarding] = useState(safeStorage.getItem('always_show_onboarding') === 'true');
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [restorePayload, setRestorePayload] = useState<any | null>(null);
@@ -53,37 +54,37 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
   });
 
   useEffect(() => {
-    localStorage.setItem('default_coord_system', coordinateSystem);
-    localStorage.setItem('default_accuracy_limit', accuracyLimit);
-    localStorage.setItem('default_duration', measurementDuration);
-    localStorage.setItem('default_map_provider', mapProvider);
-    localStorage.setItem('default_audio_feedback_enabled', audioEnabled.toString());
-    localStorage.setItem('default_vibration_feedback_enabled', vibrationEnabled.toString());
-    localStorage.setItem('default_screen_always_on', screenAlwaysOn.toString());
-    localStorage.setItem('default_location_precision', locationPrecision);
-    localStorage.setItem('default_height_precision', heightPrecision);
-    localStorage.setItem('default_height_type', heightType);
-    localStorage.setItem('default_calculation_method', calculationMethod);
-    localStorage.setItem('default_gnss_only_mode', gnssOnlyMode.toString());
-    localStorage.setItem('always_show_onboarding', showOnboarding.toString());
+    safeStorage.setItem('default_coord_system', coordinateSystem);
+    safeStorage.setItem('default_accuracy_limit', accuracyLimit);
+    safeStorage.setItem('default_duration', measurementDuration);
+    safeStorage.setItem('default_map_provider', mapProvider);
+    safeStorage.setItem('default_audio_feedback_enabled', audioEnabled.toString());
+    safeStorage.setItem('default_vibration_feedback_enabled', vibrationEnabled.toString());
+    safeStorage.setItem('default_screen_always_on', screenAlwaysOn.toString());
+    safeStorage.setItem('default_location_precision', locationPrecision);
+    safeStorage.setItem('default_height_precision', heightPrecision);
+    safeStorage.setItem('default_height_type', heightType);
+    safeStorage.setItem('default_calculation_method', calculationMethod);
+    safeStorage.setItem('default_gnss_only_mode', gnssOnlyMode.toString());
+    safeStorage.setItem('always_show_onboarding', showOnboarding.toString());
   }, [coordinateSystem, accuracyLimit, measurementDuration, mapProvider, audioEnabled, vibrationEnabled, screenAlwaysOn, locationPrecision, heightPrecision, heightType, calculationMethod, gnssOnlyMode, showOnboarding]);
 
   const handleResetSettings = () => {
     if (confirm(t('Tüm ayarlar fabrika ayarlarına sıfırlanacak. Emin misiniz?'))) {
       // Clear localStorage defaults
-      localStorage.removeItem('default_coord_system');
-      localStorage.removeItem('default_accuracy_limit');
-      localStorage.removeItem('default_duration');
-      localStorage.removeItem('default_map_provider');
-      localStorage.removeItem('default_audio_feedback_enabled');
-      localStorage.removeItem('default_vibration_feedback_enabled');
-      localStorage.removeItem('default_screen_always_on');
-      localStorage.removeItem('default_location_precision');
-      localStorage.removeItem('default_height_precision');
-      localStorage.removeItem('default_height_type');
-      localStorage.removeItem('default_calculation_method');
-      localStorage.removeItem('default_gnss_only_mode');
-      localStorage.removeItem('always_show_onboarding');
+      safeStorage.removeItem('default_coord_system');
+      safeStorage.removeItem('default_accuracy_limit');
+      safeStorage.removeItem('default_duration');
+      safeStorage.removeItem('default_map_provider');
+      safeStorage.removeItem('default_audio_feedback_enabled');
+      safeStorage.removeItem('default_vibration_feedback_enabled');
+      safeStorage.removeItem('default_screen_always_on');
+      safeStorage.removeItem('default_location_precision');
+      safeStorage.removeItem('default_height_precision');
+      safeStorage.removeItem('default_height_type');
+      safeStorage.removeItem('default_calculation_method');
+      safeStorage.removeItem('default_gnss_only_mode');
+      safeStorage.removeItem('always_show_onboarding');
 
       // Reset state to synchronized defaults
       setCoordinateSystem('WGS84');
@@ -389,14 +390,14 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
         });
 
         // localStorage'a geri eşitleyelim
-        localStorage.setItem('gps_locations_v5.0', JSON.stringify(currentLocations));
+        safeStorage.setItem('gps_locations_v5.0', JSON.stringify(currentLocations));
         if (onRestoreLocations) {
           onRestoreLocations(currentLocations);
         }
       }
 
       // 2. Aplikasyon Noktaları (stakeout_points_v1) kurgusu
-      const currentStPtsJson = localStorage.getItem('stakeout_points_v1');
+      const currentStPtsJson = safeStorage.getItem('stakeout_points_v1');
       let currentStakeoutPoints: any[] = currentStPtsJson ? JSON.parse(currentStPtsJson) : [];
       if (!Array.isArray(currentStakeoutPoints)) currentStakeoutPoints = [];
 
@@ -433,11 +434,11 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
             name: finalName
           });
         });
-        localStorage.setItem('stakeout_points_v1', JSON.stringify(currentStakeoutPoints));
+        safeStorage.setItem('stakeout_points_v1', JSON.stringify(currentStakeoutPoints));
       }
 
       // 3. Aplikasyon Geometrileri (stakeout_geometries_v1) kurgusu
-      const currentGeomsJson = localStorage.getItem('stakeout_geometries_v1');
+      const currentGeomsJson = safeStorage.getItem('stakeout_geometries_v1');
       let currentGeometries: any[] = currentGeomsJson ? JSON.parse(currentGeomsJson) : [];
       if (!Array.isArray(currentGeometries)) currentGeometries = [];
 
@@ -474,7 +475,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
             name: finalName
           });
         });
-        localStorage.setItem('stakeout_geometries_v1', JSON.stringify(currentGeometries));
+        safeStorage.setItem('stakeout_geometries_v1', JSON.stringify(currentGeometries));
       }
 
       // 4. Diğer konfigürasyon ayarlarını olduğu gibi üstüne yazabiliriz
@@ -492,7 +493,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
         if (!skippedKeys.includes(key)) {
           const val = dataToRestore[key];
           if (val !== null && val !== undefined) {
-            localStorage.setItem(key, val);
+            safeStorage.setItem(key, val);
           }
         }
       });

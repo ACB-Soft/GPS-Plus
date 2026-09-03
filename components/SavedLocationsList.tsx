@@ -223,7 +223,7 @@ const SavedLocationItem: React.FC<{
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t("Saçılım")}</span>
               <p className={`text-[13px] mono-font font-black leading-tight ${
                 reliability === 'HIGH' ? 'text-emerald-600' :
-                reliability === 'MEDIUM' || reliability === 'UNKNOWN' ? 'text-amber-600' : 
+                reliability === 'MEDIUM' ? 'text-amber-600' : 
                 'text-rose-600'
               }`}>±{maxSpread.toFixed(2)}m</p>
             </div>
@@ -231,12 +231,11 @@ const SavedLocationItem: React.FC<{
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5">{t("GPS Sinyali")}</span>
               <p className={`text-[11px] font-black uppercase tracking-widest leading-tight mt-0.5 ${
                 reliability === 'HIGH' ? 'text-emerald-600' :
-                reliability === 'MEDIUM' || reliability === 'UNKNOWN' ? 'text-amber-600' : 
+                reliability === 'MEDIUM' ? 'text-amber-600' : 
                 'text-rose-600'
               }`}>
                 {reliability === 'HIGH' ? t('GÜVENLİ') : 
-                 reliability === 'MEDIUM' ? t('Orta') : 
-                 reliability === 'LOW' ? t('GÜVENSİZ') : t('VERİ AZ')}
+                 reliability === 'MEDIUM' ? t('Orta') : t('GÜVENSİZ')}
               </p>
             </div>
           </div>

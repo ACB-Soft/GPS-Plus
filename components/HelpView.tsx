@@ -4,6 +4,7 @@ import Header from './Header';
 import { generateTechnicalReport } from '../utils/ReportUtils';
 import { useLanguage } from '../utils/LanguageContext';
 import { APP_VERSION } from '../version';
+import safeStorage from '../utils/safeStorage';
 
 interface Props {
   onBack: () => void;
@@ -16,7 +17,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
   const [passwordError, setPasswordError] = useState('');
 
   const handleDownloadClick = () => {
-    if (localStorage.getItem('acb_labs_authorized') === 'true') {
+    if (safeStorage.getItem('acb_labs_authorized') === 'true') {
       generateTechnicalReport();
     } else {
       setPasswordInput('');
@@ -28,7 +29,7 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
   const handlePasswordSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (passwordInput === "748123") {
-      localStorage.setItem('acb_labs_authorized', 'true');
+      safeStorage.setItem('acb_labs_authorized', 'true');
       setShowPasswordModal(false);
       generateTechnicalReport();
     } else {
