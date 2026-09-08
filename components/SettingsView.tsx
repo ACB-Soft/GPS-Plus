@@ -178,9 +178,9 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
 
   const handleCreateBackup = () => {
     try {
-
       const backupKeys = [
         'gps_locations_v1.0', 'gps_locations_v5.0',
+        'gps_folder_order_v1.0',
         'stakeout_points_v1',
         'stakeout_geometries_v1',
         'last_folder_name',
@@ -198,13 +198,60 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
         'default_height_precision',
         'default_height_type',
         'default_calculation_method',
-        'default_gnss_only_mode'
+        'default_gnss_only_mode',
+        'acb_labs_authorized'
       ];
 
       const backupData: Record<string, string | null> = {};
       backupKeys.forEach(key => {
-        backupData[key] = localStorage.getItem(key);
+        backupData[key] = safeStorage.getItem(key);
       });
+
+      // 1. ACBLabs'ta kaydedilmiş tüm kesin koordinatları topla (acb_labs_coords_*)
+      const acbLabsPreciseCoords: Record<string, any> = {};
+      const allStorageKeys = safeStorage.getAllKeys();
+      allStorageKeys.forEach(key => {
+        if (key.startsWith('acb_labs_coords_')) {
+          const val = safeStorage.getItem(key);
+          if (val) {
+            backupData[key] = val;
+            const ptId = key.replace('acb_labs_coords_', '');
+            try {
+              acbLabsPreciseCoords[ptId] = JSON.parse(val);
+            } catch {
+              acbLabsPreciseCoords[ptId] = val;
+            }
+          }
+        }
+      });
+
+      // 2. Ölçüm noktalarını tara ve acbPreciseCoords alanını lokasyon objelerine de entegre et
+      const locsJson = safeStorage.getItem('gps_locations_v1.0') || safeStorage.getItem('gps_locations_v5.0');
+      if (locsJson) {
+        try {
+          const locsArray = JSON.parse(locsJson);
+          if (Array.isArray(locsArray)) {
+            let updated = false;
+            const enrichedLocs = locsArray.map((l: any) => {
+              const exact = acbLabsPreciseCoords[l.id] || (l.acbPreciseCoords ? l.acbPreciseCoords : null);
+              if (exact) {
+                acbLabsPreciseCoords[l.id] = exact;
+                backupData[`acb_labs_coords_${l.id}`] = typeof exact === 'string' ? exact : JSON.stringify(exact);
+                updated = true;
+                return { ...l, acbPreciseCoords: exact };
+              }
+              return l;
+            });
+            if (updated) {
+              const enrichedJson = JSON.stringify(enrichedLocs);
+              backupData['gps_locations_v1.0'] = enrichedJson;
+              backupData['gps_locations_v5.0'] = enrichedJson;
+            }
+          }
+        } catch (err) {
+          console.error("Ölçüm noktaları yedeklenirken kontrol hatası:", err);
+        }
+      }
 
       const isIOSDevice = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
       const payload = {
@@ -212,6 +259,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
         backupVersion: '1.0',
         timestamp: Date.now(),
         deviceOS: isIOSDevice ? 'iOS' : 'Android',
+        acbLabsPreciseCoords, // ACBLabs kesin koordinat sözlüğü
         data: backupData
       };
 
@@ -366,6 +414,26 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
             finalId = loc.id + "_" + Math.random().toString(36).substr(2, 5);
           }
 
+          // ACBLabs kesin koordinatını tespit et ve aktar
+          let pointPreciseCoords = loc.acbPreciseCoords;
+          if (!pointPreciseCoords) {
+            const rawStored = dataToRestore[`acb_labs_coords_${loc.id}`] || 
+                              (activePayload.acbLabsPreciseCoords && activePayload.acbLabsPreciseCoords[loc.id]);
+            if (rawStored) {
+              try {
+                pointPreciseCoords = typeof rawStored === 'string' ? JSON.parse(rawStored) : rawStored;
+              } catch {
+                pointPreciseCoords = rawStored;
+              }
+            }
+          }
+
+          if (pointPreciseCoords) {
+            const serialized = typeof pointPreciseCoords === 'string' ? pointPreciseCoords : JSON.stringify(pointPreciseCoords);
+            safeStorage.setItem(`acb_labs_coords_${finalId}`, serialized);
+            safeStorage.setItem(`acb_labs_coords_${loc.id}`, serialized);
+          }
+
           // Örnekleri (samples) de cihaz OS'i ile etiketleyelim
           const mappedSamples = loc.samples ? loc.samples.map((s: any) => ({
             ...s,
@@ -385,11 +453,13 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
             folderName: mappedFolder === t('Klasör Yok') ? undefined : mappedFolder,
             deviceOS: loc.deviceOS || finalOS,
             samples: mappedSamples,
-            rawSamples: mappedRawSamples
+            rawSamples: mappedRawSamples,
+            acbPreciseCoords: pointPreciseCoords || loc.acbPreciseCoords
           });
         });
 
-        // localStorage'a geri eşitleyelim
+        // localStorage'a geri eşitleyelim (hem v1.0 hem v5.0 anahtarlarına)
+        safeStorage.setItem('gps_locations_v1.0', JSON.stringify(currentLocations));
         safeStorage.setItem('gps_locations_v5.0', JSON.stringify(currentLocations));
         if (onRestoreLocations) {
           onRestoreLocations(currentLocations);
@@ -478,7 +548,15 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
         safeStorage.setItem('stakeout_geometries_v1', JSON.stringify(currentGeometries));
       }
 
-      // 4. Diğer konfigürasyon ayarlarını olduğu gibi üstüne yazabiliriz
+      // 4. ACBLabs kesin koordinatları ve diğer konfigürasyon ayarlarını geri yükleyelim
+      if (activePayload.acbLabsPreciseCoords && typeof activePayload.acbLabsPreciseCoords === 'object') {
+        Object.entries(activePayload.acbLabsPreciseCoords).forEach(([ptId, coords]) => {
+          if (coords) {
+            safeStorage.setItem(`acb_labs_coords_${ptId}`, typeof coords === 'string' ? coords : JSON.stringify(coords));
+          }
+        });
+      }
+
       const skippedKeys = [
         'gps_locations_v1.0', 'gps_locations_v5.0', 
         'gps_locations_v7.8.8', 
@@ -493,7 +571,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
         if (!skippedKeys.includes(key)) {
           const val = dataToRestore[key];
           if (val !== null && val !== undefined) {
-            safeStorage.setItem(key, val);
+            safeStorage.setItem(key, typeof val === 'string' ? val : JSON.stringify(val));
           }
         }
       });

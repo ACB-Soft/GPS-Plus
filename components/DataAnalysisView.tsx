@@ -9,6 +9,7 @@ import { convertCoordinate, getSystemDisplayLabel, getWGS84Coefficients } from '
 import { calculateResult, calculateAverage, calculateMaxDistance } from '../utils/MathUtils';
 import { downloadCombinedAnalysisReport } from './ExcelUtils';
 import { generateTechnicalReport } from '../utils/ReportUtils';
+import safeStorage from '../utils/safeStorage';
 import Header from './Header';
 import GlobalFooter from './GlobalFooter';
 import { 
@@ -243,7 +244,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   const [selectedFolder, setSelectedFolder] = useState<string>('');
   const [selectedPointId, setSelectedPointId] = useState<string>(initialSelectedId || '');
   const [showMap, setShowMap] = useState(false);
-  const [currentMapProvider, setCurrentMapProvider] = useState(() => localStorage.getItem('default_map_provider') || 'Google Hybrid');
+  const [currentMapProvider, setCurrentMapProvider] = useState(() => safeStorage.getItem('default_map_provider') || 'Google Hybrid');
   const [showLayerMenu, setShowLayerMenu] = useState(false);
   const [reliabilityPlotMethod, setReliabilityPlotMethod] = useState<CalculationMethod>(settings.calculationMethod || 'WEIGHTED_LSE');
 
@@ -326,7 +327,8 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
   React.useEffect(() => {
     if (analysisType === 'precise' && selectedPointId) {
-      const saved = localStorage.getItem(`acb_labs_coords_${selectedPointId}`);
+      const saved = safeStorage.getItem(`acb_labs_coords_${selectedPointId}`) || 
+                    (location?.acbPreciseCoords ? JSON.stringify(location.acbPreciseCoords) : null);
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -351,7 +353,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       }
       setPreciseWgs(null);
     }
-  }, [selectedPointId, analysisType]);
+  }, [selectedPointId, analysisType, location]);
 
   const methods = useMemo<CalculationMethod[]>(() => [
     'WEIGHTED_LSE',
@@ -385,16 +387,30 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       return;
     }
 
-    // Save coordinates to localStorage for recollection
+    // Save coordinates to safeStorage for recollection
     try {
-      localStorage.setItem(`acb_labs_coords_${selectedPointId}`, JSON.stringify({
+      const coordsObj = {
         n: preciseN,
         e: preciseE,
         z: preciseZ
-      }));
+      };
+      safeStorage.setItem(`acb_labs_coords_${selectedPointId}`, JSON.stringify(coordsObj));
+      if (location) {
+        location.acbPreciseCoords = coordsObj;
+        try {
+          const stored = safeStorage.getItem('gps_locations_v1.0');
+          if (stored) {
+            const locs = JSON.parse(stored);
+            if (Array.isArray(locs)) {
+              const updated = locs.map((l: any) => l.id === selectedPointId ? { ...l, acbPreciseCoords: coordsObj } : l);
+              safeStorage.setItem('gps_locations_v1.0', JSON.stringify(updated));
+            }
+          }
+        } catch {}
+      }
       setIsMemoryLoaded(true);
     } catch (err) {
-      console.error("Error saving coords to localStorage", err);
+      console.error("Error saving coords to storage", err);
     }
 
     // Set applied values to trigger charts and metrics calculation
@@ -1482,7 +1498,27 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   </div>
                   <button
                     onClick={() => {
-                      localStorage.removeItem(`acb_labs_coords_${selectedPointId}`);
+                      safeStorage.removeItem(`acb_labs_coords_${selectedPointId}`);
+                      if (location) {
+                        delete location.acbPreciseCoords;
+                        try {
+                          const stored = safeStorage.getItem('gps_locations_v1.0');
+                          if (stored) {
+                            const locs = JSON.parse(stored);
+                            if (Array.isArray(locs)) {
+                              const updated = locs.map((l: any) => {
+                                if (l.id === selectedPointId) {
+                                  const copy = { ...l };
+                                  delete copy.acbPreciseCoords;
+                                  return copy;
+                                }
+                                return l;
+                              });
+                              safeStorage.setItem('gps_locations_v1.0', JSON.stringify(updated));
+                            }
+                          }
+                        } catch {}
+                      }
                       setPreciseN('');
                       setPreciseE('');
                       setPreciseZ('');
@@ -2600,7 +2636,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       key={opt.value}
                       onClick={() => {
                         setCurrentMapProvider(opt.value);
-                        localStorage.setItem('default_map_provider', opt.value);
+                        safeStorage.setItem('default_map_provider', opt.value);
                         setShowLayerMenu(false);
                       }}
                       className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider text-left transition-all active:scale-95 cursor-pointer ${

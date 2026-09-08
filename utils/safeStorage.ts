@@ -18,6 +18,10 @@ class MemoryStorage {
   clear(): void {
     this.store.clear();
   }
+
+  keys(): IterableIterator<string> {
+    return this.store.keys();
+  }
 }
 
 const memoryFallback = new MemoryStorage();
@@ -80,6 +84,24 @@ export const safeStorage = {
       console.warn(`[safeStorage] Clear localStorage is blocked (iframe sandbox).`, e);
     }
     memoryFallback.clear();
+  },
+
+  getAllKeys(): string[] {
+    const keys = new Set<string>();
+    try {
+      if (typeof window !== 'undefined' && 'localStorage' in window) {
+        for (let i = 0; i < window.localStorage.length; i++) {
+          const k = window.localStorage.key(i);
+          if (k) keys.add(k);
+        }
+      }
+    } catch (e) {
+      console.warn(`[safeStorage] Access to localStorage keys is blocked.`, e);
+    }
+    for (const k of memoryFallback.keys()) {
+      keys.add(k);
+    }
+    return Array.from(keys);
   }
 };
 

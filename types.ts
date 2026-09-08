@@ -42,6 +42,11 @@ export interface SavedLocation extends Coordinate {
   gnssOnlyMode?: boolean;
   fallbackApplied?: boolean;
   actualMethodUsed?: CalculationMethod;
+  acbPreciseCoords?: {
+    n: string;
+    e: string;
+    z: string;
+  };
 }
 
 export interface StakeoutPoint {
