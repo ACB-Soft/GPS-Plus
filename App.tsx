@@ -478,16 +478,59 @@ const App = () => {
                   locations={locations} 
                   settings={settings}
                   onDelete={(id) => setLocations(prev => prev.filter(l => l.id !== id))}
-                onDeleteFolder={(name) => setLocations(prev => prev.filter(l => l.folderName !== name))}
-                onRenameFolder={(oldName, newName) => setLocations(prev => prev.map(l => 
-                  l.folderName === oldName ? { ...l, folderName: newName } : l
-                ))}
-                onRenamePoint={(id, newName) => setLocations(prev => prev.map(l => 
-                  l.id === id ? { ...l, name: newName } : l
-                ))}
-                onBulkDelete={(ids) => setLocations(prev => prev.filter(l => !ids.includes(l.id)))}
-                onViewOnMap={handleViewOnMap}
-              />
+                  onDeleteFolder={(name) => {
+                    setLocations(prev => prev.filter(l => l.folderName !== name));
+                    try {
+                      const saved = safeStorage.getItem('gps_folder_order_v1.0');
+                      if (saved) {
+                        const parsed: string[] = JSON.parse(saved);
+                        safeStorage.setItem('gps_folder_order_v1.0', JSON.stringify(parsed.filter(f => f !== name)));
+                      }
+                    } catch {}
+                  }}
+                  onRenameFolder={(oldName, newName) => {
+                    setLocations(prev => prev.map(l => 
+                      l.folderName === oldName ? { ...l, folderName: newName } : l
+                    ));
+                    try {
+                      const saved = safeStorage.getItem('gps_folder_order_v1.0');
+                      if (saved) {
+                        const parsed: string[] = JSON.parse(saved);
+                        safeStorage.setItem('gps_folder_order_v1.0', JSON.stringify(parsed.map(f => f === oldName ? newName : f)));
+                      }
+                    } catch {}
+                  }}
+                  onRenamePoint={(id, newName) => setLocations(prev => prev.map(l => 
+                    l.id === id ? { ...l, name: newName } : l
+                  ))}
+                  onBulkDelete={(ids) => setLocations(prev => prev.filter(l => !ids.includes(l.id)))}
+                  onViewOnMap={handleViewOnMap}
+                  onReorderFolders={(newOrder) => {
+                    setLocations(prev => {
+                      const folderMap = new Map<string, SavedLocation[]>();
+                      prev.forEach(loc => {
+                        const list = folderMap.get(loc.folderName) || [];
+                        list.push(loc);
+                        folderMap.set(loc.folderName, list);
+                      });
+
+                      const reordered: SavedLocation[] = [];
+                      newOrder.forEach(fName => {
+                        const locs = folderMap.get(fName);
+                        if (locs) {
+                          reordered.push(...locs);
+                          folderMap.delete(fName);
+                        }
+                      });
+
+                      folderMap.forEach(locs => {
+                        reordered.push(...locs);
+                      });
+
+                      return reordered;
+                    });
+                  }}
+                />
             </div>
             </div>
             <GlobalFooter />

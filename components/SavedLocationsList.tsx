@@ -5,6 +5,7 @@ import { getAccuracyColor } from '../utils/StyleUtils';
 import { useOrthometricHeight } from '../hooks/useGeoid';
 import { calculateMaxDistance } from '../utils/MathUtils';
 import { useLanguage } from '../utils/LanguageContext';
+import safeStorage from '../utils/safeStorage';
 
 interface Props {
   locations: SavedLocation[];
@@ -15,6 +16,7 @@ interface Props {
   onRenamePoint: (id: string, newName: string) => void;
   onBulkDelete: (ids: string[]) => void;
   onViewOnMap: (l: SavedLocation) => void;
+  onReorderFolders?: (newOrder: string[]) => void;
 }
 
 const SavedLocationItem: React.FC<{ 
@@ -269,7 +271,17 @@ const SavedLocationItem: React.FC<{
   );
 };
 
-const SavedLocationsList: React.FC<Props> = ({ locations, settings, onDelete, onDeleteFolder, onRenameFolder, onRenamePoint, onBulkDelete, onViewOnMap }) => {
+const SavedLocationsList: React.FC<Props> = ({ 
+  locations, 
+  settings, 
+  onDelete, 
+  onDeleteFolder, 
+  onRenameFolder, 
+  onRenamePoint, 
+  onBulkDelete, 
+  onViewOnMap,
+  onReorderFolders 
+}) => {
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState<string[]>([]);
   const [expandedPoints, setExpandedPoints] = useState<string[]>([]);
@@ -277,12 +289,106 @@ const SavedLocationsList: React.FC<Props> = ({ locations, settings, onDelete, on
   const [deletingPoint, setDeletingPoint] = useState<string | null>(null);
   const [editingFolder, setEditingFolder] = useState<string | null>(null);
   const [newFolderName, setNewFolderName] = useState<string>("");
+  const [draggedFolder, setDraggedFolder] = useState<string | null>(null);
+  const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
   
   const folders: Record<string, SavedLocation[]> = {};
   locations.forEach(l => { 
-    if (!folders[l.folderName]) folders[l.folderName] = []; 
-    folders[l.folderName].push(l); 
+    const fName = l.folderName || '';
+    if (!folders[fName]) folders[fName] = []; 
+    folders[fName].push(l); 
   });
+
+  // Extract unique folders preserving current order in locations
+  const allFoldersInLocations = React.useMemo(() => {
+    const seen = new Set<string>();
+    const list: string[] = [];
+    locations.forEach(l => {
+      const fName = l.folderName || '';
+      if (!seen.has(fName)) {
+        seen.add(fName);
+        list.push(fName);
+      }
+    });
+    return list;
+  }, [locations]);
+
+  // Read saved custom folder order
+  const [folderOrder, setFolderOrder] = useState<string[]>(() => {
+    try {
+      const saved = safeStorage.getItem('gps_folder_order_v1.0');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {}
+    return [];
+  });
+
+  // Reconcile saved order with current existing folders
+  const orderedFolderNames = React.useMemo(() => {
+    const currentSet = new Set(allFoldersInLocations);
+    const validSaved = folderOrder.filter(f => currentSet.has(f));
+    const missing = allFoldersInLocations.filter(f => !validSaved.includes(f));
+    return [...validSaved, ...missing];
+  }, [allFoldersInLocations, folderOrder]);
+
+  const handleDragStart = (e: React.DragEvent, name: string) => {
+    e.dataTransfer.setData('text/plain', name);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedFolder(name);
+  };
+
+  const handleDragOver = (e: React.DragEvent, targetName: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverFolder !== targetName) {
+      setDragOverFolder(targetName);
+    }
+  };
+
+  const handleDragLeave = (name: string) => {
+    if (dragOverFolder === name) {
+      setDragOverFolder(null);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, targetName: string) => {
+    e.preventDefault();
+    const sourceName = draggedFolder || e.dataTransfer.getData('text/plain');
+    if (!sourceName || sourceName === targetName) {
+      setDraggedFolder(null);
+      setDragOverFolder(null);
+      return;
+    }
+
+    const fromIdx = orderedFolderNames.indexOf(sourceName);
+    const toIdx = orderedFolderNames.indexOf(targetName);
+    if (fromIdx === -1 || toIdx === -1) {
+      setDraggedFolder(null);
+      setDragOverFolder(null);
+      return;
+    }
+
+    const newOrder = [...orderedFolderNames];
+    const [moved] = newOrder.splice(fromIdx, 1);
+    newOrder.splice(toIdx, 0, moved);
+
+    setFolderOrder(newOrder);
+    try {
+      safeStorage.setItem('gps_folder_order_v1.0', JSON.stringify(newOrder));
+    } catch {}
+    if (onReorderFolders) {
+      onReorderFolders(newOrder);
+    }
+    setDraggedFolder(null);
+    setDragOverFolder(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedFolder(null);
+    setDragOverFolder(null);
+  };
 
   const toggleFolder = (name: string) => {
     setExpanded(prev => prev.includes(name) ? prev.filter(f => f !== name) : [...prev, name]);
@@ -298,10 +404,26 @@ const SavedLocationsList: React.FC<Props> = ({ locations, settings, onDelete, on
   };
 
   const handleSaveEdit = (oldName: string) => {
-    if (newFolderName.trim() && newFolderName !== oldName) {
-      onRenameFolder(oldName, newFolderName.trim());
+    const trimmed = newFolderName.trim();
+    if (trimmed && trimmed !== oldName) {
+      onRenameFolder(oldName, trimmed);
+      const newOrder = orderedFolderNames.map(f => f === oldName ? trimmed : f);
+      setFolderOrder(newOrder);
+      try {
+        safeStorage.setItem('gps_folder_order_v1.0', JSON.stringify(newOrder));
+      } catch {}
     }
     setEditingFolder(null);
+  };
+
+  const handleDeleteFolderConfirm = (name: string) => {
+    onDeleteFolder(name);
+    setDeletingFolder(null);
+    const newOrder = orderedFolderNames.filter(f => f !== name);
+    setFolderOrder(newOrder);
+    try {
+      safeStorage.setItem('gps_folder_order_v1.0', JSON.stringify(newOrder));
+    } catch {}
   };
 
   const getFolderCoordinateSystem = (locs: SavedLocation[]) => {
@@ -319,106 +441,141 @@ const SavedLocationsList: React.FC<Props> = ({ locations, settings, onDelete, on
 
   return (
     <div className="space-y-3 pb-10">
-      {Object.entries(folders).length > 0 ? (
-        Object.entries(folders).map(([name, locs]) => (
-          <div key={name} className="bg-slate-100 rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-          <div className="py-2 md:py-3 px-5 flex items-center justify-between transition-colors">
-            {editingFolder === name ? (
-              <div className="flex items-center gap-2 flex-1 animate-in w-full">
-                <input 
-                  type="text" 
-                  value={newFolderName}
-                  onChange={(e) => setNewFolderName(e.target.value)}
-                  className="w-full min-w-0 p-2 bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:border-blue-500"
-                  autoFocus
-                />
-                <button 
-                  onClick={() => handleSaveEdit(name)}
-                  className="w-8 h-8 bg-emerald-600 text-white rounded-lg flex items-center justify-center shadow-lg shadow-emerald-600/20 active:scale-90 transition-all shrink-0"
-                >
-                  <i className="fas fa-check text-xs"></i>
-                </button>
-                <button 
-                  onClick={() => setEditingFolder(null)}
-                  className="w-8 h-8 bg-slate-100 text-slate-500 rounded-lg flex items-center justify-center active:scale-90 transition-all shrink-0"
-                >
-                  <i className="fas fa-times text-xs"></i>
-                </button>
-              </div>
-            ) : (
-              <>
-                <div onClick={() => toggleFolder(name)} className="flex items-center gap-4 flex-1 cursor-pointer select-none min-w-0">
-                  <div className="w-10 h-10 bg-blue-100 text-blue-500 rounded-xl flex items-center justify-center shadow-inner shrink-0">
-                    <i className="fas fa-folder text-base"></i>
+      {orderedFolderNames.length > 0 ? (
+        orderedFolderNames.map((name, index) => {
+          const locs = folders[name] || [];
+          const isDragging = draggedFolder === name;
+          const isOver = dragOverFolder === name && !isDragging;
+
+          return (
+            <div 
+              key={name} 
+              draggable={editingFolder !== name && deletingFolder !== name}
+              onDragStart={(e) => handleDragStart(e, name)}
+              onDragOver={(e) => handleDragOver(e, name)}
+              onDragLeave={() => handleDragLeave(name)}
+              onDrop={(e) => handleDrop(e, name)}
+              onDragEnd={handleDragEnd}
+              className={`bg-slate-100 rounded-3xl shadow-sm border transition-all overflow-hidden ${
+                isDragging 
+                  ? 'opacity-40 scale-[0.98] border-dashed border-blue-400' 
+                  : isOver 
+                    ? 'ring-2 ring-blue-500 bg-blue-50/70 border-blue-400 shadow-md' 
+                    : 'border-slate-100'
+              }`}
+            >
+              <div className="py-2 md:py-3 px-4 flex items-center justify-between transition-colors">
+                {editingFolder === name ? (
+                  <div className="flex items-center gap-2 flex-1 animate-in w-full">
+                    <input 
+                      type="text" 
+                      value={newFolderName}
+                      onChange={(e) => setNewFolderName(e.target.value)}
+                      className="w-full min-w-0 p-2 bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-900 text-sm outline-none focus:border-blue-500"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveEdit(name);
+                        if (e.key === 'Escape') setEditingFolder(null);
+                      }}
+                    />
+                    <button 
+                      onClick={() => handleSaveEdit(name)}
+                      className="w-8 h-8 bg-emerald-600 text-white rounded-lg flex items-center justify-center shadow-lg shadow-emerald-600/20 active:scale-90 transition-all shrink-0 cursor-pointer"
+                    >
+                      <i className="fas fa-check text-xs"></i>
+                    </button>
+                    <button 
+                      onClick={() => setEditingFolder(null)}
+                      className="w-8 h-8 bg-slate-100 text-slate-500 rounded-lg flex items-center justify-center active:scale-90 transition-all shrink-0 cursor-pointer"
+                    >
+                      <i className="fas fa-times text-xs"></i>
+                    </button>
                   </div>
-                  <div className="min-w-0 flex flex-col">
-                    <h4 className="font-black text-sm text-slate-800 tracking-tight truncate mb-0.5">{name}</h4>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate mb-0.5">
-                      {getFolderCoordinateSystem(locs)} {getFolderZone(locs)}
-                    </p>
-                    <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest">{locs.length} {t("Nokta")}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 pl-2 border-l border-slate-100 ml-2 shrink-0">
-                  {deletingFolder === name ? (
-                    <div className="flex items-center gap-2 animate-in">
-                        <button 
-                          onClick={() => { onDeleteFolder(name); setDeletingFolder(null); }}
-                          className="px-3 py-2 bg-red-600 text-white text-[10px] font-black rounded-xl uppercase tracking-widest shadow-lg shadow-red-600/20"
+                ) : (
+                  <>
+                    <div onClick={() => toggleFolder(name)} className="flex items-center gap-2 flex-1 cursor-pointer select-none min-w-0 py-0.5">
+                      {orderedFolderNames.length > 1 && (
+                        <div 
+                          className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing shrink-0 flex items-center pr-1" 
+                          title={t("Sürükleyip Bırakın")}
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          {t("SİL")}
-                        </button>
-                        <button 
-                          onClick={() => setDeletingFolder(null)}
-                          className="px-3 py-2 bg-slate-100 text-slate-500 text-[10px] font-black rounded-xl uppercase tracking-widest"
-                        >
-                          {t("İPTAL")}
-                        </button>
+                          <i className="fas fa-grip-vertical text-xs"></i>
+                        </div>
+                      )}
+                      <div className="min-w-0 flex flex-col flex-1">
+                        <h4 className="font-black text-sm text-slate-800 tracking-tight truncate mb-0.5">{name}</h4>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate mb-0.5">
+                          {getFolderCoordinateSystem(locs)} {getFolderZone(locs)}
+                        </p>
+                        <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest">{locs.length} {t("Nokta")}</p>
                       </div>
-                    ) : (
-                      <>
-                        <button 
-                          onClick={() => handleStartEdit(name)}
-                          className="w-10 h-10 flex items-center justify-center bg-blue-100 text-blue-600 rounded-2xl transition-all active:scale-90 shadow-sm"
-                          title={t("Projeyi Düzenle")}
-                          type="button"
-                        >
-                          <i className="fas fa-pen text-sm"></i>
-                        </button>
-                        <button 
-                          onClick={() => setDeletingFolder(name)}
-                          className="w-10 h-10 flex items-center justify-center bg-red-100 text-red-600 rounded-2xl transition-all active:scale-90 shadow-sm"
-                          title={t("Projeyi Sil")}
-                          type="button"
-                        >
-                          <i className="fas fa-trash text-sm"></i>
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200 ml-2 shrink-0">
+                      {deletingFolder === name ? (
+                        <div className="flex items-center gap-2 animate-in">
+                          <button 
+                            onClick={() => handleDeleteFolderConfirm(name)}
+                            className="px-3 py-2 bg-red-600 text-white text-[10px] font-black rounded-xl uppercase tracking-widest shadow-lg shadow-red-600/20 cursor-pointer"
+                          >
+                            {t("SİL")}
+                          </button>
+                          <button 
+                            onClick={() => setDeletingFolder(null)}
+                            className="px-3 py-2 bg-slate-100 text-slate-500 text-[10px] font-black rounded-xl uppercase tracking-widest cursor-pointer"
+                          >
+                            {t("İPTAL")}
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Düzenle Butonu */}
+                          <button 
+                            onClick={() => handleStartEdit(name)}
+                            className="w-10 h-10 flex items-center justify-center bg-blue-100 text-blue-600 rounded-2xl transition-all active:scale-90 shadow-sm hover:bg-blue-200 cursor-pointer"
+                            title={t("Projeyi Düzenle")}
+                            type="button"
+                          >
+                            <i className="fas fa-pen text-sm"></i>
+                          </button>
+
+                          {/* Sil Butonu */}
+                          <button 
+                            onClick={() => setDeletingFolder(name)}
+                            className="w-10 h-10 flex items-center justify-center bg-red-100 text-red-600 rounded-2xl transition-all active:scale-90 shadow-sm hover:bg-red-200 cursor-pointer"
+                            title={t("Projeyi Sil")}
+                            type="button"
+                          >
+                            <i className="fas fa-trash text-sm"></i>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+              {expanded.includes(name) && (
+                <div className="p-3 bg-slate-200/50 space-y-2 border-t border-slate-50">
+                  {locs.map(l => (
+                    <SavedLocationItem 
+                      key={l.id} 
+                      l={l} 
+                      settings={settings}
+                      expanded={expandedPoints.includes(l.id)} 
+                      togglePoint={togglePoint} 
+                      deletingPoint={deletingPoint} 
+                      setDeletingPoint={setDeletingPoint} 
+                      onDelete={onDelete} 
+                      onRenamePoint={onRenamePoint}
+                      onViewOnMap={onViewOnMap}
+                    />
+                  ))}
+                </div>
               )}
             </div>
-            {expanded.includes(name) && (
-              <div className="p-3 bg-slate-200/50 space-y-2 border-t border-slate-50">
-                {locs.map(l => (
-                  <SavedLocationItem 
-                    key={l.id} 
-                    l={l} 
-                    settings={settings}
-                    expanded={expandedPoints.includes(l.id)} 
-                    togglePoint={togglePoint} 
-                    deletingPoint={deletingPoint} 
-                    setDeletingPoint={setDeletingPoint} 
-                    onDelete={onDelete} 
-                    onRenamePoint={onRenamePoint}
-                    onViewOnMap={onViewOnMap}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        ))
+          );
+        })
       ) : (
         <div className="p-12 text-center bg-slate-200/50 rounded-[2.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center gap-4">
           <div className="w-16 h-16 bg-slate-200 rounded-3xl flex items-center justify-center text-slate-300 shadow-sm">

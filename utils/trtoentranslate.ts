@@ -322,6 +322,13 @@ export const trToEnMap: Record<string, string> = {
   "Karışık": "Mixed",
   "Projeyi Düzenle": "Edit Project",
   "Projeyi Sil": "Delete Project",
+  "Projeyi Yukarı Taşı": "Move Project Up",
+  "Projeyi Aşağı Taşı": "Move Project Down",
+  "Yukarı Taşı": "Move Up",
+  "Aşağı Taşı": "Move Down",
+  "Proje Klasörü": "Project Folder",
+  "Yukarı/Aşağı Sıralanabilir": "Reorderable Up/Down",
+  "Sürükleyip Bırakın": "Drag and Drop",
   "Henüz Proje Yok": "No Projects Yet",
   "Yeni bir ölçüm yaparak başlayabilirsiniz.": "You can start by making a new measurement.",
 
