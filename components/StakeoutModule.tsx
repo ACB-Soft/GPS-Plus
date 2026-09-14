@@ -627,6 +627,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
       geometryCount: number;
       visible: boolean;
       boundsCoords: [number, number][];
+      points: StakeoutPoint[];
+      geometries: StakeoutGeometry[];
     }[] = [];
 
     map.forEach((data, name) => {
@@ -640,7 +642,9 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
         pointCount: data.points.length,
         geometryCount: data.geometries.length,
         visible: !hiddenProjects.includes(name),
-        boundsCoords: coords
+        boundsCoords: coords,
+        points: data.points,
+        geometries: data.geometries
       });
     });
 
@@ -650,6 +654,49 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
       return a.name.localeCompare(b.name);
     });
   }, [points, geometries, hiddenProjects, manualGroupName]);
+
+  const [pointSearchQuery, setPointSearchQuery] = useState('');
+  const [expandedProjects, setExpandedProjects] = useState<string[]>([]);
+  const [hasAutoExpanded, setHasAutoExpanded] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!hasAutoExpanded && projectLayers.length > 0) {
+      setExpandedProjects(projectLayers.map(l => l.name));
+      setHasAutoExpanded(true);
+    }
+  }, [projectLayers, hasAutoExpanded]);
+
+  const toggleProjectExpand = (projectName: string) => {
+    setExpandedProjects(prev => 
+      prev.includes(projectName) ? prev.filter(p => p !== projectName) : [...prev, projectName]
+    );
+  };
+
+  const filteredProjectLayers = React.useMemo(() => {
+    const q = pointSearchQuery.trim().toLowerCase();
+    if (!q) return projectLayers;
+
+    return projectLayers
+      .map(layer => {
+        const matchesLayerName = layer.name.toLowerCase().includes(q);
+        const matchedPoints = layer.points.filter(p => 
+          p.name.toLowerCase().includes(q) ||
+          (p.coordinateSystem && p.coordinateSystem.toLowerCase().includes(q))
+        );
+        if (matchesLayerName) {
+          return layer;
+        }
+        if (matchedPoints.length > 0) {
+          return {
+            ...layer,
+            points: matchedPoints,
+            pointCount: matchedPoints.length
+          };
+        }
+        return null;
+      })
+      .filter((layer): layer is NonNullable<typeof layer> => layer !== null);
+  }, [projectLayers, pointSearchQuery]);
 
   const visiblePoints = React.useMemo(() => {
     return points.filter(p => !hiddenProjects.includes(cleanProjectName(p.projectName) || manualGroupName));
@@ -1141,85 +1188,396 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
 
         {view === 'LIST' && (
           <div className="flex-1 flex flex-col h-full overflow-hidden">
-            <div className="flex-1 overflow-y-auto no-scrollbar px-8">
-              <div className="py-8 pt-4 space-y-4 max-w-sm mx-auto w-full">
-                {points.length === 0 ? (
-                  <div className="p-12 text-center bg-slate-100 rounded-[2.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center gap-4">
-                    <i className="fas fa-ghost text-3xl text-slate-200"></i>
-                    <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">{t("Liste Boş")}</p>
+            <div className="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-8">
+              <div className="py-6 pt-3 space-y-4 max-w-md mx-auto w-full">
+                
+                {/* Üst Bilgi ve Hızlı Eylem Çubuğu (Proje Katmanları Teması) */}
+                <div className="bg-slate-100 p-3 rounded-2xl border border-slate-200/80 flex items-center justify-between gap-2 shadow-xs">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs shrink-0">
+                      <i className="fas fa-folder-tree"></i>
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-xs font-black text-slate-800 block leading-tight truncate">
+                        {t("Proje Katmanları")}
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-400">
+                        {projectLayers.length} {t("Proje")} · {points.length} {t("Nokta")}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {/* KML / KMZ Yükle */}
+                    <label 
+                      className="h-8 px-2.5 bg-white hover:bg-indigo-50 text-indigo-700 border border-slate-200 hover:border-indigo-300 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-2xs transition-all active:scale-95" 
+                      title={t("KML / KMZ Yükle")}
+                    >
+                      <i className="fas fa-file-import text-[10px]"></i>
+                      <span className="hidden min-[400px]:inline">{t("KML")}</span>
+                      <input 
+                        type="file" 
+                        accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz,application/zip,application/x-zip-compressed,application/octet-stream" 
+                        onChange={(e) => {
+                          handleKmlUpload(e);
+                          e.target.value = '';
+                        }} 
+                        className="hidden" 
+                      />
+                    </label>
+
+                    {/* Manuel Ekle */}
+                    <button
+                      onClick={() => onNavigate('MANUAL')}
+                      className="h-8 px-2.5 bg-white hover:bg-emerald-50 text-emerald-700 border border-slate-200 hover:border-emerald-300 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-2xs transition-all active:scale-95"
+                      title={t("Manuel Koordinat Ekle")}
+                    >
+                      <i className="fas fa-keyboard text-[10px]"></i>
+                      <span className="hidden min-[400px]:inline">{t("Manuel")}</span>
+                    </button>
+
+                    {/* Haritada Gör */}
+                    <button
+                      onClick={() => {
+                        if (points.length === 0 && geometries.length === 0) {
+                          showToast(t("Haritada gösterilecek veri bulunamadı."), "info");
+                        } else {
+                          onNavigate('ALL_MAP');
+                        }
+                      }}
+                      className="h-8 px-2.5 bg-white hover:bg-orange-50 text-orange-700 border border-slate-200 hover:border-orange-300 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 cursor-pointer shadow-2xs transition-all active:scale-95"
+                      title={t("Harita Üzerinde Gör")}
+                    >
+                      <i className="fas fa-map-marked-alt text-[10px]"></i>
+                      <span className="hidden min-[400px]:inline">{t("Harita")}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Arama ve Tümünü Aç/Kapat Butonları */}
+                {projectLayers.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                      <input 
+                        type="text" 
+                        value={pointSearchQuery} 
+                        onChange={e => setPointSearchQuery(e.target.value)} 
+                        placeholder={t("Nokta veya Proje Ara...")} 
+                        className="w-full pl-8 pr-7 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 placeholder:text-slate-400 outline-none focus:bg-white focus:border-indigo-400 transition-all"
+                      />
+                      {pointSearchQuery && (
+                        <button 
+                          onClick={() => setPointSearchQuery('')}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
+                        >
+                          <i className="fas fa-times-circle"></i>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => setExpandedProjects(projectLayers.map(l => l.name))}
+                        className="h-8 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-[10px] font-bold transition-colors cursor-pointer flex items-center gap-1"
+                        title={t("Tümünü Aç")}
+                      >
+                        <i className="fas fa-angles-down text-[10px]"></i>
+                        <span className="hidden sm:inline text-[9px] uppercase">{t("Aç")}</span>
+                      </button>
+                      <button
+                        onClick={() => setExpandedProjects([])}
+                        className="h-8 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-[10px] font-bold transition-colors cursor-pointer flex items-center gap-1"
+                        title={t("Tümünü Kapat")}
+                      >
+                        <i className="fas fa-angles-up text-[10px]"></i>
+                        <span className="hidden sm:inline text-[9px] uppercase">{t("Kapat")}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Boş Durum (Proje veya Nokta Yok) */}
+                {projectLayers.length === 0 ? (
+                  <div className="p-10 text-center bg-slate-100 rounded-[2.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center gap-4">
+                    <div className="w-16 h-16 bg-white rounded-3xl flex items-center justify-center text-slate-300 shadow-sm">
+                      <i className="fas fa-folder-open text-2xl"></i>
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="font-black text-slate-600 uppercase tracking-widest text-xs">
+                        {t("Henüz Nokta veya Proje Yok")}
+                      </h4>
+                      <p className="text-[11px] text-slate-400 font-bold max-w-[260px] mx-auto">
+                        {t("KML/KMZ yükleyebilir veya manuel koordinat ekleyebilirsiniz.")}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 pt-2">
+                      <label className="py-2.5 px-4 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-sm active:scale-95 transition-all">
+                        <i className="fas fa-file-import"></i>
+                        <span>{t("KML Yükle")}</span>
+                        <input 
+                          type="file" 
+                          accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz,application/zip,application/x-zip-compressed,application/octet-stream" 
+                          onChange={(e) => {
+                            handleKmlUpload(e);
+                            e.target.value = '';
+                          }} 
+                          className="hidden" 
+                        />
+                      </label>
+                      <button
+                        onClick={() => onNavigate('MANUAL')}
+                        className="py-2.5 px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center gap-2 active:scale-95 transition-all"
+                      >
+                        <i className="fas fa-keyboard"></i>
+                        <span>{t("Manuel Ekle")}</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : filteredProjectLayers.length === 0 ? (
+                  <div className="p-8 text-center bg-slate-100 rounded-3xl border border-slate-200 flex flex-col items-center gap-2">
+                    <i className="fas fa-search text-2xl text-slate-300 mb-1"></i>
+                    <p className="text-xs font-bold text-slate-500">{t("Nokta veya Proje Bulunamadı")}</p>
+                    <button 
+                      onClick={() => setPointSearchQuery('')}
+                      className="text-[11px] font-bold text-indigo-600 hover:underline mt-1 cursor-pointer"
+                    >
+                      {t("Aramayı Temizle")}
+                    </button>
                   </div>
                 ) : (
-                  points.map(p => (
-                    <div key={p.id} className="soft-card py-3 md:py-4 px-5 flex items-center justify-between group">
-                      <div className="flex items-center gap-4 flex-1">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-black text-slate-800">{p.name}</h4>
-                            {p.projectName && (
-                              <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-600 border border-indigo-100 max-w-[120px] truncate">
-                                {p.projectName}
-                              </span>
-                            )}
+                  /* Klasörlü Proje Katmanları Listesi */
+                  <div className="space-y-3">
+                    {filteredProjectLayers.map((layer) => {
+                      const isExpanded = expandedProjects.includes(layer.name) || pointSearchQuery.trim().length > 0;
+
+                      return (
+                        <div
+                          key={layer.name}
+                          className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden transition-all hover:border-slate-300"
+                        >
+                          {/* Klasör Başlığı */}
+                          <div
+                            onClick={() => toggleProjectExpand(layer.name)}
+                            className="p-3 sm:p-3.5 flex items-center justify-between gap-2.5 cursor-pointer hover:bg-slate-50/70 transition-colors select-none"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                              {/* Accordion Aç/Kapa Oku */}
+                              <div className="w-5 h-5 flex items-center justify-center text-slate-400 shrink-0">
+                                <i className={`fas fa-chevron-right text-xs transition-transform duration-200 ${isExpanded ? 'rotate-90 text-indigo-600' : ''}`}></i>
+                              </div>
+
+                              {/* İkon / Rozet */}
+                              <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                                layer.isManual ? 'bg-emerald-50 text-emerald-600' : 'bg-indigo-50 text-indigo-600'
+                              }`}>
+                                <i className={`fas ${layer.isManual ? 'fa-keyboard' : 'fa-folder'} text-xs`}></i>
+                              </div>
+
+                              {/* Proje Adı ve Bilgisi */}
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5">
+                                  <h4 className="font-black text-slate-800 text-xs sm:text-sm tracking-tight truncate" title={layer.name}>
+                                    {layer.name}
+                                  </h4>
+                                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${layer.isManual ? 'bg-emerald-500' : 'bg-indigo-500'}`}></span>
+                                </div>
+                                <p className="text-[10px] font-bold text-slate-400 truncate mt-0.5">
+                                  {layer.pointCount > 0 && `${layer.pointCount} ${t("nokta")}`}
+                                  {layer.pointCount > 0 && layer.geometryCount > 0 && ' · '}
+                                  {layer.geometryCount > 0 && `${layer.geometryCount} ${t("geometri")}`}
+                                  {layer.pointCount === 0 && layer.geometryCount === 0 && t("Veri yok")}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Sağ Aksiyon Butonları */}
+                            <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                              {/* Haritada Odaklan */}
+                              {layer.boundsCoords.length > 0 && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!layer.visible) {
+                                      setHiddenProjects(prev => prev.filter(n => n !== layer.name));
+                                    }
+                                    setProjectBoundsTrigger({ coords: layer.boundsCoords, time: Date.now() });
+                                    onNavigate('ALL_MAP');
+                                  }}
+                                  className="w-7.5 h-7.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 border border-slate-200/80 hover:border-indigo-200 shadow-2xs flex items-center justify-center transition-all active:scale-90 cursor-pointer"
+                                  title={t("Projeye Odaklan")}
+                                >
+                                  <i className="fas fa-crosshairs text-xs"></i>
+                                </button>
+                              )}
+
+                              {/* Klasörü / Katmanı Sil Butonu */}
+                              {deletingLayer === layer.name ? (
+                                <div className="flex items-center gap-1 animate-in fade-in duration-150">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteProjectLayer(layer.name);
+                                    }}
+                                    className="h-7.5 px-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[10px] font-bold shadow-2xs transition-all active:scale-95 cursor-pointer flex items-center gap-1"
+                                    title={t("Silmeyi Onayla")}
+                                  >
+                                    <i className="fas fa-trash-alt text-[9px]"></i>
+                                    <span>{t("Sil")}</span>
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDeletingLayer(null);
+                                    }}
+                                    className="w-7.5 h-7.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center justify-center"
+                                    title={t("İptal")}
+                                  >
+                                    <i className="fas fa-times text-xs"></i>
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeletingLayer(layer.name);
+                                  }}
+                                  className="w-7.5 h-7.5 rounded-lg bg-slate-100 hover:bg-red-50 text-slate-500 hover:text-red-600 border border-slate-200/80 hover:border-red-200 shadow-2xs flex items-center justify-center transition-all active:scale-90 cursor-pointer"
+                                  title={t("Katmanı Sil")}
+                                >
+                                  <i className="fas fa-trash-alt text-xs"></i>
+                                </button>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex flex-col">
-                            {(() => {
-                              const { x, y, labelX, labelY } = convertCoordinate(p.lat, p.lng, p.coordinateSystem || 'WGS84');
-                              const isUTM = p.coordinateSystem && p.coordinateSystem !== 'WGS84';
-                              const precision = isUTM ? 3 : 8;
-                              return (
-                                <>
-                                  <p className="text-[10px] font-bold text-slate-400 mono-font">
-                                    {t(labelX)}: {x.toFixed(precision)}
-                                  </p>
-                                  <p className="text-[10px] font-bold text-slate-400 mono-font">
-                                    {t(labelY)}: {y.toFixed(precision)}
-                                  </p>
-                                </>
-                              );
-                            })()}
-                            <p className="text-[8px] font-black text-blue-500 uppercase tracking-tighter">
-                              {p.coordinateSystem?.replace('_', ' ')}
-                            </p>
-                          </div>
+
+                          {/* Klasör İçeriği (Açıldığında Noktalar) */}
+                          {isExpanded && (
+                            <div className="p-2.5 sm:p-3 bg-slate-50/70 border-t border-slate-100 space-y-2">
+                              {/* Noktalar */}
+                              {layer.points.length > 0 ? (
+                                layer.points.map((p) => (
+                                  <div
+                                    key={p.id}
+                                    className="bg-white py-2.5 px-3.5 rounded-xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-2.5 group hover:border-blue-300 transition-all"
+                                  >
+                                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                      <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                                        <i className="fas fa-location-dot text-[11px]"></i>
+                                      </div>
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-1.5">
+                                          <h5 className="font-black text-slate-800 text-xs sm:text-sm truncate">
+                                            {p.name}
+                                          </h5>
+                                          <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 uppercase tracking-tight shrink-0">
+                                            {p.coordinateSystem?.replace('_', ' ') || 'WGS84'}
+                                          </span>
+                                        </div>
+                                        <div className="flex flex-col mt-0.5">
+                                          {(() => {
+                                            const { x, y, labelX, labelY } = convertCoordinate(p.lat, p.lng, p.coordinateSystem || 'WGS84');
+                                            const isUTM = p.coordinateSystem && p.coordinateSystem !== 'WGS84';
+                                            const precision = isUTM ? 3 : 8;
+                                            return (
+                                              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[9.5px] font-bold text-slate-500 mono-font">
+                                                <span>{t(labelX)}: {x.toFixed(precision)}</span>
+                                                <span>{t(labelY)}: {y.toFixed(precision)}</span>
+                                                {typeof p.altitude === 'number' && !isNaN(p.altitude) && (
+                                                  <span className="text-slate-400 font-semibold">Kot: {p.altitude.toFixed(2)}m</span>
+                                                )}
+                                              </div>
+                                            );
+                                          })()}
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Nokta Aksiyon Butonları */}
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                      <button
+                                        onClick={() => {
+                                          setSourceView('LIST');
+                                          setActivePoint(p);
+                                          onNavigate('MAP');
+                                        }}
+                                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[9.5px] font-black rounded-lg uppercase tracking-wider active:scale-95 shadow-2xs transition-all flex items-center gap-1 cursor-pointer"
+                                        title={t("Aplikasyona Başla")}
+                                      >
+                                        <i className="fas fa-crosshairs text-[8.5px]"></i>
+                                        <span>{t("GİT")}</span>
+                                      </button>
+                                      <button
+                                        onClick={() => setPoints(prev => prev.filter(pt => pt.id !== p.id))}
+                                        className="w-7.5 h-7.5 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                                        title={t("Noktayı Sil")}
+                                      >
+                                        <i className="fas fa-trash-can text-xs"></i>
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="py-3 text-center text-slate-400 text-xs font-semibold">
+                                  {t("Bu projede sadece geometri verileri bulunmaktadır.")}
+                                </div>
+                              )}
+
+                              {/* Varsa Geometriler */}
+                              {layer.geometries.length > 0 && (
+                                <div className="p-2.5 bg-indigo-50/70 rounded-xl border border-indigo-100 flex items-center justify-between gap-2 text-[10.5px] font-bold text-indigo-900">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <i className="fas fa-draw-polygon text-indigo-600 shrink-0"></i>
+                                    <span className="truncate">
+                                      {layer.geometries.length} {t("Geometri (Çizgi/Alan)")}
+                                    </span>
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      if (!layer.visible) {
+                                        setHiddenProjects(prev => prev.filter(n => n !== layer.name));
+                                      }
+                                      setProjectBoundsTrigger({ coords: layer.boundsCoords, time: Date.now() });
+                                      onNavigate('ALL_MAP');
+                                    }}
+                                    className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[9px] font-black rounded-lg uppercase tracking-wider transition-all active:scale-95 cursor-pointer shrink-0"
+                                  >
+                                    {t("Haritada İncele")}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => { 
-                            setSourceView('LIST');
-                            setActivePoint(p); 
-                            onNavigate('MAP'); 
-                          }}
-                          className="px-4 py-2 bg-blue-600 text-white text-[10px] font-black rounded-xl uppercase tracking-widest active:scale-95 transition-all"
-                        >
-                          {t("GİT")}
-                        </button>
-                        <button 
-                          onClick={() => setPoints(prev => prev.filter(pt => pt.id !== p.id))}
-                          className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-red-500 transition-colors"
-                        >
-                          <i className="fas fa-trash-can text-xs"></i>
-                        </button>
-                      </div>
-                    </div>
-                  ))
+                      );
+                    })}
+                  </div>
                 )}
-                <button 
-                  onClick={() => { 
-                    if (confirmClear === 'LIST') {
-                      localStorage.removeItem('stakeout_points_v1');
-                      localStorage.removeItem('stakeout_geometries_v1');
-                      setPoints([]); 
-                      setGeometries([]); 
-                      setConfirmClear('NONE');
-                    } else {
-                      setConfirmClear('LIST');
-                    }
-                  }}
-                  className={`w-full py-3 text-[10px] font-black uppercase tracking-[0.3em] transition-all ${confirmClear === 'LIST' ? 'text-red-600 bg-red-100 rounded-2xl' : 'text-slate-400 hover:text-red-500'}`}
-                >
-                  {confirmClear === 'LIST' ? t('EMİN MİSİNİZ? (TEKRAR TIKLAYIN)') : t('LİSTEYİ TEMİZLE')}
-                </button>
+
+                {/* Listeyi Temizle Butonu */}
+                {projectLayers.length > 0 && (
+                  <button 
+                    onClick={() => { 
+                      if (confirmClear === 'LIST') {
+                        safeStorage.removeItem('stakeout_points_v1');
+                        safeStorage.removeItem('stakeout_geometries_v1');
+                        setPoints([]); 
+                        setGeometries([]); 
+                        setConfirmClear('NONE');
+                        showToast(t("Tüm liste temizlendi."), "info");
+                      } else {
+                        setConfirmClear('LIST');
+                      }
+                    }}
+                    className={`w-full py-3 text-[10px] font-black uppercase tracking-[0.3em] transition-all cursor-pointer ${
+                      confirmClear === 'LIST' 
+                        ? 'text-red-600 bg-red-100 rounded-2xl' 
+                        : 'text-slate-400 hover:text-red-500'
+                    }`}
+                  >
+                    {confirmClear === 'LIST' ? t('EMİN MİSİNİZ? (TEKRAR TIKLAYIN)') : t('LİSTEYİ TEMİZLE')}
+                  </button>
+                )}
               </div>
             </div>
             <GlobalFooter noPadding={true} />
