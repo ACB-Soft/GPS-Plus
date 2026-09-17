@@ -2139,58 +2139,76 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   />
                 )}
                 
-                {visibleGeometries.map(g => {
-                  const isSelectedLine = selectedFeature?.type === 'LINE' && selectedFeature.geometry.id === g.id;
+                {/* Önce Poligonları çizelim, ki çizgilerin altında kalsınlar */}
+                {visibleGeometries.filter(g => g.type === 'Polygon').map(g => {
                   const isSelectedPolygon = selectedFeature?.type === 'POLYGON' && selectedFeature.geometry.id === g.id;
+                  return (
+                    <Polygon 
+                      key={g.id}
+                      positions={g.leafletCoords} 
+                      pathOptions={{ 
+                        color: isSelectedPolygon ? '#059669' : (g.color || '#3b82f6'), 
+                        fillColor: isSelectedPolygon ? '#10b981' : (g.color || '#3b82f6'), 
+                        fillOpacity: isSelectedPolygon ? 0.4 : 0.12, 
+                        weight: isSelectedPolygon ? 3.5 : 2 
+                      }} 
+                      eventHandlers={{
+                        click: (e) => {
+                          if (isMeasuring) return;
+                          L.DomEvent.stopPropagation(e);
+                          const area = calculatePolygonArea(g.coordinates);
+                          const perimeter = calculatePolygonPerimeter(g.coordinates);
+                          setSelectedFeature({
+                            type: 'POLYGON',
+                            geometry: g,
+                            area,
+                            perimeter
+                          });
+                        }
+                      }}
+                    />
+                  );
+                })}
+
+                {/* Sonra Çizgileri çizelim ki poligonların üstünde kalsın ve tıklanması kolay olsun */}
+                {visibleGeometries.filter(g => g.type === 'LineString').map(g => {
+                  const isSelectedLine = selectedFeature?.type === 'LINE' && selectedFeature.geometry.id === g.id;
+                  
+                  const eventHandlers = {
+                    click: (e: any) => {
+                      if (isMeasuring) return;
+                      L.DomEvent.stopPropagation(e);
+                      const length = calculatePolylineLength(g.coordinates);
+                      setSelectedFeature({
+                        type: 'LINE',
+                        geometry: g,
+                        length
+                      });
+                    }
+                  };
 
                   return (
                     <React.Fragment key={g.id}>
-                      {g.type === 'LineString' ? (
-                        <Polyline 
-                          positions={g.leafletCoords} 
-                          pathOptions={{ 
-                            color: isSelectedLine ? '#06b6d4' : (g.color || '#3b82f6'), 
-                            weight: isSelectedLine ? 6 : 3,
-                            opacity: isSelectedLine ? 1 : 0.85
-                          }} 
-                          eventHandlers={{
-                            click: (e) => {
-                              if (isMeasuring) return;
-                              L.DomEvent.stopPropagation(e);
-                              const length = calculatePolylineLength(g.coordinates);
-                              setSelectedFeature({
-                                type: 'LINE',
-                                geometry: g,
-                                length
-                              });
-                            }
-                          }}
-                        />
-                      ) : (
-                        <Polygon 
-                          positions={g.leafletCoords} 
-                          pathOptions={{ 
-                            color: isSelectedPolygon ? '#059669' : (g.color || '#3b82f6'), 
-                            fillColor: isSelectedPolygon ? '#10b981' : (g.color || '#3b82f6'), 
-                            fillOpacity: isSelectedPolygon ? 0.4 : 0.12, 
-                            weight: isSelectedPolygon ? 3.5 : 2 
-                          }} 
-                          eventHandlers={{
-                            click: (e) => {
-                              if (isMeasuring) return;
-                              L.DomEvent.stopPropagation(e);
-                              const area = calculatePolygonArea(g.coordinates);
-                              const perimeter = calculatePolygonPerimeter(g.coordinates);
-                              setSelectedFeature({
-                                type: 'POLYGON',
-                                geometry: g,
-                                area,
-                                perimeter
-                              });
-                            }
-                          }}
-                        />
-                      )}
+                      {/* Tıklama hassasiyetini artırmak için kalın, şeffaf (ghost) çizgi */}
+                      <Polyline 
+                        positions={g.leafletCoords} 
+                        pathOptions={{ 
+                          color: 'transparent', 
+                          weight: 25, // Yaklaşık 25 piksellik bir tıklama alanı
+                          opacity: 0
+                        }} 
+                        eventHandlers={eventHandlers}
+                      />
+                      {/* Görünür çizgi */}
+                      <Polyline 
+                        positions={g.leafletCoords} 
+                        pathOptions={{ 
+                          color: isSelectedLine ? '#06b6d4' : (g.color || '#3b82f6'), 
+                          weight: isSelectedLine ? 6 : 3,
+                          opacity: isSelectedLine ? 1 : 0.85
+                        }} 
+                        eventHandlers={eventHandlers}
+                      />
                     </React.Fragment>
                   );
                 })}
