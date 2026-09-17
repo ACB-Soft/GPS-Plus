@@ -75,7 +75,7 @@ const LazyVertexLayer = React.memo(({
     zoomend: () => setBounds(map.getBounds()),
   });
 
-  if (zoom <= 16) return null;
+  if (zoom <= 19) return null;
 
   const sw = bounds.getSouthWest();
   const ne = bounds.getNorthEast();
