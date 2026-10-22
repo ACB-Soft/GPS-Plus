@@ -1,7 +1,7 @@
 {
   "name": "GPS Plus",
   "description": "Mobil Cihazlarınız için Konum Belirleme Uygulaması",
-  "developer": "ACB Maps",
+  "developer": "BSR Maps",
   "requestFramePermissions": [
     "geolocation"
   ],

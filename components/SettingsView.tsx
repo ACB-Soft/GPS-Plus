@@ -255,7 +255,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
 
       const isIOSDevice = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
       const payload = {
-        appName: 'ACB Maps',
+        appName: 'BSR Maps',
         backupVersion: '1.0',
         timestamp: Date.now(),
         deviceOS: isIOSDevice ? 'iOS' : 'Android',
@@ -269,7 +269,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
       const link = document.createElement('a');
       const dateStr = new Date().toISOString().slice(0, 10);
       link.href = url;
-      link.download = `acb_maps_backup_${dateStr}.json`;
+      link.download = `bsr_maps_backup_${dateStr}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
