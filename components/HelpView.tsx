@@ -164,6 +164,8 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
     }
   }, []);
 
+  const isDeveloperMode = safeStorage.getItem('developer_mode_enabled') === 'true';
+
   return (
     <div className="flex-1 flex flex-col animate-in h-full overflow-hidden bg-slate-200">
       <Header title={t("Yardım & Hakkında")} onBack={onBack} sticky={true} />
@@ -394,53 +396,55 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
           </section>
 
           {/* Konum Hesabı */}
-          <section className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
-                <i className="fas fa-calculator"></i>
+          {isDeveloperMode && (
+            <section className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                  <i className="fas fa-calculator"></i>
+                </div>
+                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Konum Hesabı")}</h3>
               </div>
-              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">{t("Konum Hesabı")}</h3>
-            </div>
-            
-            <div className="soft-card p-6 space-y-4">
-              <p 
-                className="text-sm text-slate-700 font-medium leading-relaxed text-justify"
-                dangerouslySetInnerHTML={{ __html: t("Uygulama, toplanan ham GPS/GNSS verilerini nihai bir koordinata dönüştürmek için 6 farklı gelişmiş akademik model sunar.") }}
-              />
               
-              <div className="flex flex-col gap-3">
-                <div className="bg-white p-3 px-4 rounded-xl border border-blue-100 shadow-sm ring-1 ring-blue-50 flex items-center justify-between">
-                  <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight">{t("1. Ağırlıklı En Küçük Kareler")}</h4>
-                  <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold">{t("VARSAYILAN")}</span>
-                </div>
+              <div className="soft-card p-6 space-y-4">
+                <p 
+                  className="text-sm text-slate-700 font-medium leading-relaxed text-justify"
+                  dangerouslySetInnerHTML={{ __html: t("Uygulama, toplanan ham GPS/GNSS verilerini nihai bir koordinata dönüştürmek için 6 farklı gelişmiş akademik model sunar.") }}
+                />
+                
+                <div className="flex flex-col gap-3">
+                  <div className="bg-white p-3 px-4 rounded-xl border border-blue-100 shadow-sm ring-1 ring-blue-50 flex items-center justify-between">
+                    <h4 className="text-sm font-black text-blue-700 uppercase tracking-tight">{t("1. Ağırlıklı En Küçük Kareler")}</h4>
+                    <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold">{t("VARSAYILAN")}</span>
+                  </div>
 
-                <div className="bg-white p-3 px-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
-                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("2. Huber M-Kestiricisi")}</h4>
-                  <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">{t("ROBUST")}</span>
-                </div>
+                  <div className="bg-white p-3 px-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("2. Huber M-Kestiricisi")}</h4>
+                    <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">{t("ROBUST")}</span>
+                  </div>
 
-                <div className="bg-white p-3 px-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
-                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("3. Hampel M-Kestiricisi")}</h4>
-                  <span className="text-[10px] bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full font-bold">{t("ROBUST")}</span>
-                </div>
+                  <div className="bg-white p-3 px-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("3. Hampel M-Kestiricisi")}</h4>
+                    <span className="text-[10px] bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full font-bold">{t("ROBUST")}</span>
+                  </div>
 
-                <div className="bg-white p-3 px-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
-                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("4. Hodges-Lehmann R-Kestiricisi")}</h4>
-                  <span className="text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full font-bold">{t("ROBUST")}</span>
-                </div>
+                  <div className="bg-white p-3 px-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("4. Hodges-Lehmann R-Kestiricisi")}</h4>
+                    <span className="text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full font-bold">{t("ROBUST")}</span>
+                  </div>
 
-                <div className="bg-white p-3 px-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
-                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("5. Tukey's Trimean L-Kestiricisi")}</h4>
-                  <span className="text-[10px] bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full font-bold">{t("ROBUST")}</span>
-                </div>
+                  <div className="bg-white p-3 px-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("5. Tukey's Trimean L-Kestiricisi")}</h4>
+                    <span className="text-[10px] bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full font-bold">{t("ROBUST")}</span>
+                  </div>
 
-                <div className="bg-white p-3 px-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
-                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("6. Optimal S-Kestiricisi")}</h4>
-                  <span className="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full font-bold">{t("ROBUST")}</span>
+                  <div className="bg-white p-3 px-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">{t("6. Optimal S-Kestiricisi")}</h4>
+                    <span className="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full font-bold">{t("ROBUST")}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </section>
+            </section>
+          )}
 
           {/* Konum Teknolojisi */}
           <section className="space-y-4">
@@ -619,15 +623,17 @@ const HelpView: React.FC<Props> = ({ onBack }) => {
                 <span className="text-sm font-black text-slate-400 uppercase tracking-widest">{t("İletişim")}</span>
                 <span className="text-sm font-medium text-slate-900"><span className="font-black">basara</span>maps@gmail.com</span>
               </div>
-              <div className="pt-2">
-                <button 
-                  onClick={handleDownloadClick}
-                  className="w-full sm:w-auto px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold text-xs uppercase tracking-wider active:scale-95 transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer text-center"
-                >
-                  <i className="fas fa-file-word text-[11px]"></i>
-                  {t("Akademik Teknik Rapor")}
-                </button>
-              </div>
+              {isDeveloperMode && (
+                <div className="pt-2">
+                  <button 
+                    onClick={handleDownloadClick}
+                    className="w-full sm:w-auto px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold text-xs uppercase tracking-wider active:scale-95 transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer text-center"
+                  >
+                    <i className="fas fa-file-word text-[11px]"></i>
+                    {t("Akademik Teknik Rapor")}
+                  </button>
+                </div>
+              )}
             </div>
           </section>
 

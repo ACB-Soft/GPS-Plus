@@ -5,6 +5,7 @@ import { downloadExcel } from './ExcelUtils';
 import { downloadTXT } from './TxtUtils';
 import { downloadSHP } from './ShpUtils';
 import { useLanguage } from '../utils/LanguageContext';
+import safeStorage from '../utils/safeStorage';
 
 interface Props {
   locations: SavedLocation[];
@@ -14,6 +15,7 @@ interface Props {
 
 const ExportUnifiedView: React.FC<Props> = ({ locations, settings, onOpenACBLabs }) => {
   const { t, language } = useLanguage();
+  const isDeveloperMode = safeStorage.getItem('developer_mode_enabled') === 'true';
   const uniqueFolders: string[] = Array.from(new Set(locations.map(l => l.folderName)));
   const [selectedFolder, setSelectedFolder] = useState<string>(uniqueFolders.length > 0 ? uniqueFolders[0] : '');
   
@@ -115,17 +117,19 @@ const ExportUnifiedView: React.FC<Props> = ({ locations, settings, onOpenACBLabs
           <span className="tracking-tight">SHAPE FILE (.SHP)</span>
         </button>
 
-        <div className="pt-6 mt-4 border-t border-slate-100 flex flex-col gap-4">
-          <div className="pt-4 mt-2 flex justify-center">
-            <button 
-              onClick={onOpenACBLabs} 
-              className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] hover:text-blue-400 transition-colors py-2 px-4 border border-slate-100 rounded-full cursor-pointer"
-            >
-              <i className="fas fa-flask mr-2 opacity-50"></i>
-              {t("ACB - LABS")}
-            </button>
+        {isDeveloperMode && (
+          <div className="pt-6 mt-4 border-t border-slate-100 flex flex-col gap-4">
+            <div className="pt-4 mt-2 flex justify-center">
+              <button 
+                onClick={onOpenACBLabs} 
+                className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] hover:text-blue-400 transition-colors py-2 px-4 border border-slate-100 rounded-full cursor-pointer"
+              >
+                <i className="fas fa-flask mr-2 opacity-50"></i>
+                {t("ACB - LABS")}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

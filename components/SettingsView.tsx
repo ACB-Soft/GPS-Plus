@@ -32,6 +32,12 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
   const [calculationMethod, setCalculationMethod] = useState(safeStorage.getItem('default_calculation_method') || 'WEIGHTED_LSE');
   const [gnssOnlyMode, setGnssOnlyMode] = useState(safeStorage.getItem('default_gnss_only_mode') === 'true');
   const [showOnboarding, setShowOnboarding] = useState(safeStorage.getItem('always_show_onboarding') === 'true');
+  const [isDeveloperMode, setIsDeveloperMode] = useState<boolean>(() => {
+    return safeStorage.getItem('developer_mode_enabled') === 'true';
+  });
+  const [showDevPasswordModal, setShowDevPasswordModal] = useState(false);
+  const [devPasswordInput, setDevPasswordInput] = useState('');
+  const [devPasswordError, setDevPasswordError] = useState('');
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [restorePayload, setRestorePayload] = useState<any | null>(null);
@@ -69,6 +75,34 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
     safeStorage.setItem('always_show_onboarding', showOnboarding.toString());
   }, [coordinateSystem, accuracyLimit, measurementDuration, mapProvider, audioEnabled, vibrationEnabled, screenAlwaysOn, locationPrecision, heightPrecision, heightType, calculationMethod, gnssOnlyMode, showOnboarding]);
 
+  const handleDeveloperModeToggle = () => {
+    if (isDeveloperMode) {
+      setIsDeveloperMode(false);
+      safeStorage.setItem('developer_mode_enabled', 'false');
+    } else {
+      setDevPasswordInput('');
+      setDevPasswordError('');
+      setShowDevPasswordModal(true);
+    }
+  };
+
+  const handleDevPasswordSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (devPasswordInput === "748123") {
+      setIsDeveloperMode(true);
+      safeStorage.setItem('developer_mode_enabled', 'true');
+      setShowDevPasswordModal(false);
+      setModal({
+        isOpen: true,
+        title: t('Geliştirici Modu'),
+        type: 'success',
+        message: t('Geliştirici modu başarıyla etkinleştirildi.')
+      });
+    } else {
+      setDevPasswordError(t("Hatalı şifre!"));
+    }
+  };
+
   const handleResetSettings = () => {
     if (confirm(t('Tüm ayarlar fabrika ayarlarına sıfırlanacak. Emin misiniz?'))) {
       // Clear localStorage defaults
@@ -85,6 +119,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
       safeStorage.removeItem('default_calculation_method');
       safeStorage.removeItem('default_gnss_only_mode');
       safeStorage.removeItem('always_show_onboarding');
+      safeStorage.removeItem('developer_mode_enabled');
 
       // Reset state to synchronized defaults
       setCoordinateSystem('WGS84');
@@ -100,6 +135,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
       setCalculationMethod('WEIGHTED_LSE');
       setGnssOnlyMode(false);
       setShowOnboarding(true);
+      setIsDeveloperMode(false);
 
       setModal({ 
         isOpen: true, 
@@ -199,7 +235,8 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
         'default_height_type',
         'default_calculation_method',
         'default_gnss_only_mode',
-        'acb_labs_authorized'
+        'acb_labs_authorized',
+        'developer_mode_enabled'
       ];
 
       const backupData: Record<string, string | null> = {};
@@ -699,21 +736,23 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
               </div>
 
               {/* Hesaplama Yöntemi */}
-               <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t("Hesaplama Yöntemi")}</label>
-                <select 
-                  value={calculationMethod}
-                  onChange={(e) => setCalculationMethod(e.target.value as CalculationMethod)}
-                  className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
-                >
-                  <option value="WEIGHTED_LSE">{t("1. Ağırlıklı En Küçük Kareler")}</option>
-                  <option value="HUBER">{t("2. Huber M-Kestiricisi")}</option>
-                  <option value="HAMPEL">{t("3. Hampel M-Kestiricisi")}</option>
-                  <option value="HODGES_LEHMANN">{t("4. Hodges-Lehmann R-Kestiricisi")}</option>
-                  <option value="TUKEYS_TRIMEAN">{t("5. Tukey's Trimean L-Kestiricisi")}</option>
-                  <option value="OPTIMAL_S">{t("6. Optimal S-Kestiricisi")}</option>
-                </select>
-              </div>
+              {isDeveloperMode && (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t("Hesaplama Yöntemi")}</label>
+                  <select 
+                    value={calculationMethod}
+                    onChange={(e) => setCalculationMethod(e.target.value as CalculationMethod)}
+                    className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
+                  >
+                    <option value="WEIGHTED_LSE">{t("1. Ağırlıklı En Küçük Kareler")}</option>
+                    <option value="HUBER">{t("2. Huber M-Kestiricisi")}</option>
+                    <option value="HAMPEL">{t("3. Hampel M-Kestiricisi")}</option>
+                    <option value="HODGES_LEHMANN">{t("4. Hodges-Lehmann R-Kestiricisi")}</option>
+                    <option value="TUKEYS_TRIMEAN">{t("5. Tukey's Trimean L-Kestiricisi")}</option>
+                    <option value="OPTIMAL_S">{t("6. Optimal S-Kestiricisi")}</option>
+                  </select>
+                </div>
+              )}
 
               {/* Sadece GNSS Modu */}
               <div className="flex items-center justify-between h-12 px-4 bg-slate-100 rounded-2xl border border-slate-100 shadow-sm">
@@ -867,6 +906,23 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
                   className={`w-12 h-6 rounded-full transition-all relative ${showOnboarding ? 'bg-blue-600' : 'bg-slate-300'}`}
                 >
                   <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${showOnboarding ? 'right-1' : 'left-1'}`}></div>
+                </button>
+              </div>
+
+              {/* Geliştirici Modu */}
+              <div className="flex items-center justify-between h-12 px-4 bg-slate-100 rounded-2xl border border-slate-100 shadow-sm">
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold text-slate-900 leading-none">{t("Geliştirici Modu")}</span>
+                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
+                    {isDeveloperMode ? t("Aktif (Gelişmiş Özellikler)") : t("Şifre ile etkinleştir")}
+                  </span>
+                </div>
+                <button 
+                  type="button"
+                  onClick={handleDeveloperModeToggle}
+                  className={`w-12 h-6 rounded-full transition-all relative ${isDeveloperMode ? 'bg-blue-600' : 'bg-slate-300'}`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${isDeveloperMode ? 'right-1' : 'left-1'}`}></div>
                 </button>
               </div>
             </div>
@@ -1024,6 +1080,75 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+      
+      {/* Geliştirici Modu Şifre Modalı */}
+      {showDevPasswordModal && (
+        <div className="fixed inset-0 z-[4000] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <form 
+            onSubmit={handleDevPasswordSubmit}
+            className="w-full max-w-sm bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-300"
+          >
+            <div className="p-8">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-center text-blue-600 shrink-0 shadow-inner">
+                  <i className="fas fa-lock text-2xl animate-pulse"></i>
+                </div>
+                <div>
+                  <h3 className="text-slate-900 font-extrabold uppercase tracking-tight text-base leading-tight">
+                    {t("Aktivasyon Kodu")}
+                  </h3>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <input 
+                    type="password"
+                    autoFocus
+                    required
+                    placeholder="••••••"
+                    value={devPasswordInput}
+                    onChange={(e) => {
+                      setDevPasswordInput(e.target.value);
+                      setDevPasswordError('');
+                    }}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white text-slate-900 placeholder-slate-300 rounded-xl text-center font-mono text-lg font-black tracking-[0.3em] outline-none transition-all"
+                  />
+                </div>
+
+                {devPasswordError && (
+                  <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl flex items-center gap-2 text-rose-600 animate-in shake duration-200">
+                    <i className="fas fa-circle-exclamation text-xs"></i>
+                    <span className="text-[11px] font-bold uppercase tracking-tight">{devPasswordError}</span>
+                  </div>
+                )}
+
+                <div className="pt-2 flex flex-col gap-2">
+                  <button 
+                    type="submit"
+                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-[13px] uppercase tracking-[0.2em] active:scale-95 transition-all shadow-xl shadow-blue-200 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <i className="fas fa-sign-in-alt"></i>
+                    {t("Giriş Yap")}
+                  </button>
+
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setShowDevPasswordModal(false);
+                      setDevPasswordInput('');
+                      setDevPasswordError('');
+                    }}
+                    className="w-full py-3 bg-slate-50 hover:bg-slate-100 text-slate-500 border border-slate-200/60 rounded-xl font-black text-[11px] uppercase tracking-[0.15em] active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer mt-1"
+                  >
+                    {t("İptal")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
         </div>
       )}
       
