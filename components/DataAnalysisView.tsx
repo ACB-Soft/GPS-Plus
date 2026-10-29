@@ -313,25 +313,45 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
 
 
-  const methods = useMemo<CalculationMethod[]>(() => [
-    'ARITHMETIC_MEAN',
-    'WEIGHTED_LSE',
-    'HUBER',
-    'HAMPEL',
-    'HODGES_LEHMANN',
-    'TUKEYS_TRIMEAN',
-    'OPTIMAL_S'
-  ], []);
+  const isDeveloperMode = safeStorage.getItem('developer_mode_enabled') === 'true';
 
-  const [selectedDisplayMethods, setSelectedDisplayMethods] = useState<CalculationMethod[]>([
-    'ARITHMETIC_MEAN',
-    'WEIGHTED_LSE',
-    'HUBER',
-    'HAMPEL',
-    'HODGES_LEHMANN',
-    'TUKEYS_TRIMEAN',
-    'OPTIMAL_S'
-  ]);
+  const methods = useMemo<CalculationMethod[]>(() => {
+    if (!isDeveloperMode) {
+      return ['WEIGHTED_LSE'];
+    }
+    return [
+      'ARITHMETIC_MEAN',
+      'WEIGHTED_LSE',
+      'HUBER',
+      'HAMPEL',
+      'HODGES_LEHMANN',
+      'TUKEYS_TRIMEAN',
+      'OPTIMAL_S'
+    ];
+  }, [isDeveloperMode]);
+
+  const [selectedDisplayMethods, setSelectedDisplayMethods] = useState<CalculationMethod[]>(() => {
+    const isDev = safeStorage.getItem('developer_mode_enabled') === 'true';
+    if (!isDev) {
+      return ['WEIGHTED_LSE'];
+    }
+    return [
+      'ARITHMETIC_MEAN',
+      'WEIGHTED_LSE',
+      'HUBER',
+      'HAMPEL',
+      'HODGES_LEHMANN',
+      'TUKEYS_TRIMEAN',
+      'OPTIMAL_S'
+    ];
+  });
+
+  React.useEffect(() => {
+    if (!isDeveloperMode) {
+      setSelectedDisplayMethods(['WEIGHTED_LSE']);
+      setReliabilityPlotMethod('WEIGHTED_LSE');
+    }
+  }, [isDeveloperMode]);
 
   const visibleAnalysisResults = useMemo(() => {
     if (!analysisResults) return null;
@@ -1647,90 +1667,92 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("Analiz Sonuçları")}</label>
               </div>
 
-              {/* Yöntem Seçimi Checklisti */}
-              <div className="bg-white rounded-2xl p-4 border border-slate-150/80 shadow-sm space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0 text-xs shadow-xs">
-                      <i className="fas fa-tasks"></i>
+              {/* Yöntem Seçimi Checklisti - Sadece geliştirici modu açıkken görüntülenir */}
+              {isDeveloperMode && (
+                <div className="bg-white rounded-2xl p-4 border border-slate-150/80 shadow-sm space-y-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0 text-xs shadow-xs">
+                        <i className="fas fa-tasks"></i>
+                      </div>
+                      <div>
+                        <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
+                          {language === 'EN' ? "Displayed Methods" : "Görüntülenecek Yöntemler"}
+                        </h4>
+                        <p className="text-[8.5px] font-semibold text-slate-400">
+                          {language === 'EN' 
+                            ? "Select which algorithm results to show in tables, charts and map" 
+                            : "Tablo, grafik ve haritada listelenecek yöntemleri seçin"}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
-                        {language === 'EN' ? "Displayed Methods" : "Görüntülenecek Yöntemler"}
-                      </h4>
-                      <p className="text-[8.5px] font-semibold text-slate-400">
-                        {language === 'EN' 
-                          ? "Select which algorithm results to show in tables, charts and map" 
-                          : "Tablo, grafik ve haritada listelenecek yöntemleri seçin"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100/80 font-mono">
-                      {selectedDisplayMethods.length}/{methods.length}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (selectedDisplayMethods.length === methods.length) {
-                          setSelectedDisplayMethods([methods[0]]);
-                        } else {
-                          setSelectedDisplayMethods([...methods]);
-                        }
-                      }}
-                      className="text-[8.5px] font-black uppercase px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all active:scale-95 cursor-pointer"
-                    >
-                      {selectedDisplayMethods.length === methods.length 
-                        ? (language === 'EN' ? "Clear" : "Temizle") 
-                        : (language === 'EN' ? "Select All" : "Tümünü Seç")}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {methods.map((m) => {
-                    const isSelected = selectedDisplayMethods.includes(m);
-                    const color = METHOD_COLORS[m] || '#3b82f6';
-                    const label = getMethodLabel(m);
-                    const fullName = getMethodFullName(m);
-
-                    return (
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100/80 font-mono">
+                        {selectedDisplayMethods.length}/{methods.length}
+                      </span>
                       <button
-                        key={m}
                         type="button"
-                        onClick={() => toggleDisplayMethod(m)}
-                        className={`flex items-center justify-between p-2.5 rounded-xl border-2 transition-all cursor-pointer text-left select-none ${
-                          isSelected 
-                            ? 'bg-slate-50/90 border-blue-500 shadow-xs ring-1 ring-blue-500/20' 
-                            : 'bg-white border-slate-150 hover:border-slate-250 opacity-60'
-                        }`}
+                        onClick={() => {
+                          if (selectedDisplayMethods.length === methods.length) {
+                            setSelectedDisplayMethods([methods[0]]);
+                          } else {
+                            setSelectedDisplayMethods([...methods]);
+                          }
+                        }}
+                        className="text-[8.5px] font-black uppercase px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all active:scale-95 cursor-pointer"
                       >
-                        <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                          <span
-                            className="text-[9px] font-black px-1.5 py-0.5 rounded text-white shrink-0 tracking-wider shadow-xs"
-                            style={{ backgroundColor: color }}
-                          >
-                            {label}
-                          </span>
-                          <p className="text-[10px] font-extrabold text-slate-800 truncate leading-snug">
-                            {fullName}
-                          </p>
-                        </div>
+                        {selectedDisplayMethods.length === methods.length 
+                          ? (language === 'EN' ? "Clear" : "Temizle") 
+                          : (language === 'EN' ? "Select All" : "Tümünü Seç")}
+                      </button>
+                    </div>
+                  </div>
 
-                        <div
-                          className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-all border ${
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {methods.map((m) => {
+                      const isSelected = selectedDisplayMethods.includes(m);
+                      const color = METHOD_COLORS[m] || '#3b82f6';
+                      const label = getMethodLabel(m);
+                      const fullName = getMethodFullName(m);
+
+                      return (
+                        <button
+                          key={m}
+                          type="button"
+                          onClick={() => toggleDisplayMethod(m)}
+                          className={`flex items-center justify-between p-2.5 rounded-xl border-2 transition-all cursor-pointer text-left select-none ${
                             isSelected 
-                              ? 'bg-blue-600 border-blue-600 text-white shadow-xs' 
-                              : 'bg-white border-slate-300 text-transparent'
+                              ? 'bg-slate-50/90 border-blue-500 shadow-xs ring-1 ring-blue-500/20' 
+                              : 'bg-white border-slate-150 hover:border-slate-250 opacity-60'
                           }`}
                         >
-                          <i className="fas fa-check text-[10px]"></i>
-                        </div>
-                      </button>
-                    );
-                  })}
+                          <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                            <span
+                              className="text-[9px] font-black px-1.5 py-0.5 rounded text-white shrink-0 tracking-wider shadow-xs"
+                              style={{ backgroundColor: color }}
+                            >
+                              {label}
+                            </span>
+                            <p className="text-[10px] font-extrabold text-slate-800 truncate leading-snug">
+                              {fullName}
+                            </p>
+                          </div>
+
+                          <div
+                            className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-all border ${
+                              isSelected 
+                                ? 'bg-blue-600 border-blue-600 text-white shadow-xs' 
+                                : 'bg-white border-slate-300 text-transparent'
+                            }`}
+                          >
+                            <i className="fas fa-check text-[10px]"></i>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Multipath / Reliability Analysis */}
               {multipathAnalysis && (
@@ -2238,22 +2260,33 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                   {/* 2. Custom Method Outlier Filtering Scatter Chart */}
                   <div className="space-y-2">
                     <div className="flex justify-between items-center px-1 gap-2 flex-wrap">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest shrink-0">
-                          {t("SÜZGEÇ YÖNTEMİ:")}
-                        </label>
-                        <select
-                          className="bg-slate-100 border-2 border-slate-200 text-slate-800 text-[10px] font-extrabold rounded-lg px-2 py-0.5 max-w-[200px] focus:outline-none focus:ring-1 focus:ring-indigo-400 cursor-pointer"
-                          value={reliabilityPlotMethod}
-                          onChange={(e) => setReliabilityPlotMethod(e.target.value as CalculationMethod)}
-                        >
-                          {methods.map((m) => (
-                            <option key={m} value={m}>
-                              {getMethodLabel(m)}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      {isDeveloperMode ? (
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest shrink-0">
+                            {t("SÜZGEÇ YÖNTEMİ:")}
+                          </label>
+                          <select
+                            className="bg-slate-100 border-2 border-slate-200 text-slate-800 text-[10px] font-extrabold rounded-lg px-2 py-0.5 max-w-[200px] focus:outline-none focus:ring-1 focus:ring-indigo-400 cursor-pointer"
+                            value={reliabilityPlotMethod}
+                            onChange={(e) => setReliabilityPlotMethod(e.target.value as CalculationMethod)}
+                          >
+                            {methods.map((m) => (
+                              <option key={m} value={m}>
+                                {getMethodLabel(m)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest shrink-0">
+                            {t("SÜZGEÇ YÖNTEMİ:")}
+                          </label>
+                          <span className="bg-violet-50 text-violet-700 border border-violet-200 text-[10px] font-black rounded-lg px-2 py-0.5 tracking-wider">
+                            WLSE
+                          </span>
+                        </div>
+                      )}
                       <button 
                         onClick={() => exportChart(reliabilityChartRef, `gps-plus-${reliabilityPlotMethod.toLowerCase()}-reliability`)}
                         type="button"

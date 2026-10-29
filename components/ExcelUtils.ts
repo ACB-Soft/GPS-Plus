@@ -5,10 +5,10 @@ import { calculateResult, calculateVariance, calculateMaxDistance } from '../uti
 import { FULL_BRAND } from '../version';
 import { getCorrectedHeight, getEllipsoidalHeight } from './GeoidUtils';
 import { geoidService } from '../services/GeoidService';
+import safeStorage from '../utils/safeStorage';
 
 const getMethodName = (m: CalculationMethod) => {
   switch(m) {
-    case 'ARITHMETIC_MEAN': return "ORTALAMA";
     case 'WEIGHTED_LSE': return "WLSE";
     case 'HUBER': return "HUBER-M";
     case 'HAMPEL': return "HAMPEL-M";
@@ -154,15 +154,17 @@ export const getTechnicalReportWorksheet = (location: SavedLocation, settings?: 
 
   // --- İstatistiksel Ön Hazırlık ---
   const accuracyLimit = location.accuracyLimit || 5.0;
+  const isDeveloperMode = safeStorage.getItem('developer_mode_enabled') === 'true';
   
-  const methods: CalculationMethod[] = [
-    'ARITHMETIC_MEAN',
+  const methods: CalculationMethod[] = isDeveloperMode ? [
     'WEIGHTED_LSE', 
     'HUBER',
     'HAMPEL',
     'HODGES_LEHMANN',
     'TUKEYS_TRIMEAN',
     'OPTIMAL_S'
+  ] : [
+    'WEIGHTED_LSE'
   ];
   const methodResults = methods.map(method => {
     const { result, usedIndices } = calculateResult(location.samples!, method, accuracyLimit);
@@ -288,7 +290,10 @@ export const getTechnicalReportWorksheet = (location: SavedLocation, settings?: 
     ["No", txt("Saat", "Time (Local)"), header1, header2, txt("Yükseklik (m)", "Height (m)"), txt("h-Elipsoid (m)", "Ellipsoidal Height (m)"), txt("Ondülasyon (N)", "Undulation (N)"), txt("Hassasiyet (m)", "Horizontal Accuracy (m)"), txt("Dikey Hass. (m)", "Vertical Accuracy (m)"), txt("Hız (m/s)", "Velocity (m/s)"), txt("Yön (Derece)", "Heading (Deg)"), txt("İvme X (m/s²)", "Linear Accel X (m/s²)"), txt("İvme Y (m/s²)", "Linear Accel Y (m/s²)"), txt("İvme Z (m/s²)", "Linear Accel Z (m/s²)"), txt("Yönelim Alpha (°)", "Orientation Alpha (°)"), txt("Eğim Beta (°)", "Roll Beta (°_office)"), txt("Eğim Gamma (°)", "Pitch Gamma (°_office)"), txt("Oturum", "Session No")],
     ...dataRows,
     [],
-    [txt("ANALİZ YÖNTEMLERİ KARŞILAŞTIRMALI SONUÇLAR", "COMPARATIVE ANALYSIS OF ROBUST ESTIMATION METHODS")],
+    [isDeveloperMode 
+      ? txt("ANALİZ YÖNTEMLERİ KARŞILAŞTIRMALI SONUÇLAR", "COMPARATIVE ANALYSIS OF ROBUST ESTIMATION METHODS")
+      : txt("HESAPLANAN KONUM SONUCU (AĞIRLIKLI EN KÜÇÜK KARELER - WLSE)", "CALCULATED POSITION RESULT (WEIGHTED LEAST SQUARES - WLSE)")
+    ],
     [txt("Yöntem", "Estimation Algorithm"), header1, header2, txt("Yükseklik (m)", "Height (m)"), txt("h-Elipsoid (m)", "Ellipsoidal Height (m)"), txt("Ondülasyon (N)", "Undulation (N)"), txt("Kullanılan Örnek", "Epochs Utilized"), txt("Hassasiyet (m)", "Horizontal Accuracy (m)"), txt("Varyans (m²)", "Spatial Variance (m²)")],
     ...methodResults.map(res => [
       getMethodName(res.method),
@@ -369,8 +374,10 @@ export const downloadCombinedAnalysisReport = (
   }
 
   // --- SAYFA 2: İSTATİSTİKSEL ANALİZ VE AR-GE SONUÇLARI ---
+  const isDeveloperMode = safeStorage.getItem('developer_mode_enabled') === 'true';
   const calculationMethod = location.calculationMethod || 'WEIGHTED_LSE';
-  const bestMethod = results.sort((a,b) => a.errors.dhz - b.errors.dhz)[0];
+  const effectiveResults = isDeveloperMode ? results : results.filter(r => r.method === 'WEIGHTED_LSE');
+  const bestMethod = (effectiveResults.length > 0 ? [...effectiveResults] : [...results]).sort((a,b) => (a.errors?.dhz || 0) - (b.errors?.dhz || 0))[0];
   const accuracyLimit = location.accuracyLimit || 5.0;
 
   // --- Veri Saçılımı ve Güvenilirlik Hesapları ---
@@ -459,7 +466,7 @@ export const downloadCombinedAnalysisReport = (
       (0).toFixed(3),
       txt("REFERANS", "REFERENCE")
     ],
-    ...results.map(res => {
+    ...effectiveResults.map(res => {
       const hOrth = getCorrectedHeight(res.lat, res.lng, res.calculated.z, location.deviceOS);
       const hEllip = getEllipsoidalHeight(res.lat, res.lng, res.calculated.z, location.deviceOS);
       const undVal = (hOrth !== null && hEllip !== null) ? (hEllip - hOrth).toFixed(3) : '---';
@@ -475,7 +482,7 @@ export const downloadCombinedAnalysisReport = (
         res.errors.dy.toFixed(3),
         (res.errors.dz ?? 0).toFixed(3),
         res.errors.dhz.toFixed(3),
-        res.method === bestMethod.method ? txt("EN BAŞARILI (YATAY)", "BEST PERFORMER (2D)") : ""
+        (bestMethod && res.method === bestMethod.method) ? txt("EN BAŞARILI (YATAY)", "BEST PERFORMER (2D)") : ""
       ];
     })
   ];

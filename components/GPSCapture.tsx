@@ -468,7 +468,8 @@ const GPSCapture: React.FC<Props> = ({ onComplete, onCancel, isContinuing = fals
       return;
     }
 
-    const calculationMethod = settings.calculationMethod;
+    const isDevMode = safeStorage.getItem('developer_mode_enabled') === 'true';
+    const calculationMethod = isDevMode ? (settings.calculationMethod || 'WEIGHTED_LSE') : 'WEIGHTED_LSE';
     const { result: avg, usedIndices } = calculateResult(samples, calculationMethod, accuracyLimit, settings.gnssOnlyMode);
 
     // Feedback (Sound/Vibration) - Sync with Settings defaults

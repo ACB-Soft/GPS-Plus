@@ -29,11 +29,13 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
   const [locationPrecision, setLocationPrecision] = useState(safeStorage.getItem('default_location_precision') || '2');
   const [heightPrecision, setHeightPrecision] = useState(safeStorage.getItem('default_height_precision') || '1');
   const [heightType, setHeightType] = useState(safeStorage.getItem('default_height_type') || 'orthometric');
-  const [calculationMethod, setCalculationMethod] = useState(safeStorage.getItem('default_calculation_method') || 'WEIGHTED_LSE');
-  const [gnssOnlyMode, setGnssOnlyMode] = useState(safeStorage.getItem('default_gnss_only_mode') === 'true');
-  const [showOnboarding, setShowOnboarding] = useState(safeStorage.getItem('always_show_onboarding') === 'true');
   const [isDeveloperMode, setIsDeveloperMode] = useState<boolean>(() => {
     return safeStorage.getItem('developer_mode_enabled') === 'true';
+  });
+  const [calculationMethod, setCalculationMethod] = useState<CalculationMethod>(() => {
+    const isDev = safeStorage.getItem('developer_mode_enabled') === 'true';
+    if (!isDev) return 'WEIGHTED_LSE';
+    return (safeStorage.getItem('default_calculation_method') as CalculationMethod) || 'WEIGHTED_LSE';
   });
   const [showDevPasswordModal, setShowDevPasswordModal] = useState(false);
   const [devPasswordInput, setDevPasswordInput] = useState('');
@@ -79,6 +81,8 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
     if (isDeveloperMode) {
       setIsDeveloperMode(false);
       safeStorage.setItem('developer_mode_enabled', 'false');
+      setCalculationMethod('WEIGHTED_LSE');
+      safeStorage.setItem('default_calculation_method', 'WEIGHTED_LSE');
     } else {
       setDevPasswordInput('');
       setDevPasswordError('');
