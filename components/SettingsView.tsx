@@ -215,7 +215,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
   const handleCreateBackup = () => {
     try {
       const backupKeys = [
-        'gps_locations_v1.0', 'gps_locations_v5.0',
+        'gps_locations_v1.0',
         'gps_folder_order_v1.0',
         'stakeout_points_v1',
         'stakeout_geometries_v1',
@@ -239,9 +239,12 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
         'developer_mode_enabled'
       ];
 
-      const backupData: Record<string, string | null> = {};
+      const backupData: Record<string, string> = {};
       backupKeys.forEach(key => {
-        backupData[key] = safeStorage.getItem(key);
+        const val = safeStorage.getItem(key);
+        if (val !== null && val !== undefined && val !== '') {
+          backupData[key] = val;
+        }
       });
 
       // 1. ACBLabs'ta kaydedilmiş tüm kesin koordinatları topla (acb_labs_coords_*)
@@ -262,28 +265,63 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
         }
       });
 
-      // 2. Ölçüm noktalarını tara ve acbPreciseCoords alanını lokasyon objelerine de entegre et
+      // Yardımcı fonksiyon: Coordinate objesini null/undefined sensör alanlarından arındırma
+      const cleanCoordinate = (c: any) => {
+        if (!c || typeof c !== 'object') return c;
+        const cleaned: Record<string, any> = {
+          lat: c.lat,
+          lng: c.lng,
+          accuracy: c.accuracy,
+          timestamp: c.timestamp
+        };
+        if (c.altitude !== null && c.altitude !== undefined) cleaned.altitude = c.altitude;
+        if (c.altitudeAccuracy !== null && c.altitudeAccuracy !== undefined) cleaned.altitudeAccuracy = c.altitudeAccuracy;
+        if (c.speed !== null && c.speed !== undefined) cleaned.speed = c.speed;
+        if (c.heading !== null && c.heading !== undefined) cleaned.heading = c.heading;
+        if (c.accelX !== null && c.accelX !== undefined) cleaned.accelX = c.accelX;
+        if (c.accelY !== null && c.accelY !== undefined) cleaned.accelY = c.accelY;
+        if (c.accelZ !== null && c.accelZ !== undefined) cleaned.accelZ = c.accelZ;
+        if (c.gyroAlpha !== null && c.gyroAlpha !== undefined) cleaned.gyroAlpha = c.gyroAlpha;
+        if (c.gyroBeta !== null && c.gyroBeta !== undefined) cleaned.gyroBeta = c.gyroBeta;
+        if (c.gyroGamma !== null && c.gyroGamma !== undefined) cleaned.gyroGamma = c.gyroGamma;
+        if (c.deviceOS) cleaned.deviceOS = c.deviceOS;
+        if (c.sessionId !== undefined && c.sessionId !== null) cleaned.sessionId = c.sessionId;
+        return cleaned;
+      };
+
+      // 2. Ölçüm noktalarını tara, acbPreciseCoords alanını entegre et ve gereksiz null alanları temizle
       const locsJson = safeStorage.getItem('gps_locations_v1.0') || safeStorage.getItem('gps_locations_v5.0');
       if (locsJson) {
         try {
           const locsArray = JSON.parse(locsJson);
           if (Array.isArray(locsArray)) {
-            let updated = false;
             const enrichedLocs = locsArray.map((l: any) => {
               const exact = acbLabsPreciseCoords[l.id] || (l.acbPreciseCoords ? l.acbPreciseCoords : null);
+              const cleanedLoc: any = { ...l };
               if (exact) {
                 acbLabsPreciseCoords[l.id] = exact;
-                backupData[`acb_labs_coords_${l.id}`] = typeof exact === 'string' ? exact : JSON.stringify(exact);
-                updated = true;
-                return { ...l, acbPreciseCoords: exact };
+                cleanedLoc.acbPreciseCoords = exact;
               }
-              return l;
+              // Numune dizilerindeki gereksiz null sensör verilerini temizle
+              if (Array.isArray(cleanedLoc.samples)) {
+                cleanedLoc.samples = cleanedLoc.samples.map(cleanCoordinate);
+              }
+              if (Array.isArray(cleanedLoc.rawSamples)) {
+                cleanedLoc.rawSamples = cleanedLoc.rawSamples.map(cleanCoordinate);
+              }
+              // Ana koordinat alanındaki boş sensör değerlerini buda
+              if (cleanedLoc.speed === null) delete cleanedLoc.speed;
+              if (cleanedLoc.heading === null) delete cleanedLoc.heading;
+              if (cleanedLoc.accelX === null) delete cleanedLoc.accelX;
+              if (cleanedLoc.accelY === null) delete cleanedLoc.accelY;
+              if (cleanedLoc.accelZ === null) delete cleanedLoc.accelZ;
+              if (cleanedLoc.gyroAlpha === null) delete cleanedLoc.gyroAlpha;
+              if (cleanedLoc.gyroBeta === null) delete cleanedLoc.gyroBeta;
+              if (cleanedLoc.gyroGamma === null) delete cleanedLoc.gyroGamma;
+              return cleanedLoc;
             });
-            if (updated) {
-              const enrichedJson = JSON.stringify(enrichedLocs);
-              backupData['gps_locations_v1.0'] = enrichedJson;
-              backupData['gps_locations_v5.0'] = enrichedJson;
-            }
+            // Yalnızca güncel anahtar (gps_locations_v1.0) içerisine yazarak çift klon veriyi engelliyoruz
+            backupData['gps_locations_v1.0'] = JSON.stringify(enrichedLocs);
           }
         } catch (err) {
           console.error("Ölçüm noktaları yedeklenirken kontrol hatası:", err);
@@ -300,7 +338,8 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
         data: backupData
       };
 
-      const jsonString = JSON.stringify(payload, null, 2);
+      // Minify JSON (boşluksuz ve satır atlamasız kompakt string)
+      const jsonString = JSON.stringify(payload);
       const blob = new Blob([jsonString], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -471,20 +510,26 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
             safeStorage.setItem(`acb_labs_coords_${loc.id}`, serialized);
           }
 
-          // Örnekleri (samples) de cihaz OS'i ile etiketleyelim
+          // Örnekleri (samples) de cihaz OS'i ile etiketleyelim ve irtifayı normalize edelim
           const mappedSamples = loc.samples ? loc.samples.map((s: any) => ({
             ...s,
+            altitude: s.altitude !== undefined ? s.altitude : null,
+            altitudeAccuracy: s.altitudeAccuracy !== undefined ? s.altitudeAccuracy : null,
             deviceOS: s.deviceOS || finalOS
           })) : undefined;
 
-          // Ham örnekleri (rawSamples) de cihaz OS'i ile etiketleyelim
+          // Ham örnekleri (rawSamples) de cihaz OS'i ile etiketleyelim ve irtifayı normalize edelim
           const mappedRawSamples = loc.rawSamples ? loc.rawSamples.map((s: any) => ({
             ...s,
+            altitude: s.altitude !== undefined ? s.altitude : null,
+            altitudeAccuracy: s.altitudeAccuracy !== undefined ? s.altitudeAccuracy : null,
             deviceOS: s.deviceOS || finalOS
           })) : undefined;
 
           currentLocations.push({
             ...loc,
+            altitude: loc.altitude !== undefined ? loc.altitude : null,
+            altitudeAccuracy: loc.altitudeAccuracy !== undefined ? loc.altitudeAccuracy : null,
             id: finalId,
             name: finalPointName,
             folderName: mappedFolder === t('Klasör Yok') ? undefined : mappedFolder,
