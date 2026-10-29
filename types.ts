@@ -19,6 +19,7 @@ export interface Coordinate {
 }
 
 export type CalculationMethod = 
+  | 'ARITHMETIC_MEAN'
   | 'WEIGHTED_LSE' 
   | 'HUBER'
   | 'HAMPEL'

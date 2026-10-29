@@ -59,7 +59,7 @@ export function calculateResult(
   let clusters: number[][] | undefined = undefined;
 
   // The minimum epoch requirement for all advanced/professional methods is 5 epochs.
-  const requires5 = method !== 'WEIGHTED_LSE';
+  const requires5 = method !== 'WEIGHTED_LSE' && method !== 'ARITHMETIC_MEAN';
   
   let finalMethod = method;
   let fallbackApplied = false;
@@ -70,6 +70,11 @@ export function calculateResult(
   }
 
   switch (finalMethod) {
+    case 'ARITHMETIC_MEAN':
+      const avgResult = calculateAverage(sourceData);
+      resultData = avgResult;
+      finalCalculatedUsedIndices = sourceData.map((_, i) => i);
+      break;
     case 'WEIGHTED_LSE':
       const lseResult = calculateWeightedLSE(sourceData);
       resultData = lseResult.result;

@@ -789,6 +789,7 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
                     onChange={(e) => setCalculationMethod(e.target.value as CalculationMethod)}
                     className="w-full h-12 px-4 bg-slate-100 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 appearance-none shadow-sm"
                   >
+                    <option value="ARITHMETIC_MEAN">{t("0. Aritmetik Ortalama")}</option>
                     <option value="WEIGHTED_LSE">{t("1. Ağırlıklı En Küçük Kareler")}</option>
                     <option value="HUBER">{t("2. Huber M-Kestiricisi")}</option>
                     <option value="HAMPEL">{t("3. Hampel M-Kestiricisi")}</option>

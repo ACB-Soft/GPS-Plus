@@ -8,6 +8,7 @@ import { geoidService } from '../services/GeoidService';
 
 const getMethodName = (m: CalculationMethod) => {
   switch(m) {
+    case 'ARITHMETIC_MEAN': return "ORTALAMA";
     case 'WEIGHTED_LSE': return "WLSE";
     case 'HUBER': return "HUBER-M";
     case 'HAMPEL': return "HAMPEL-M";
@@ -155,6 +156,7 @@ export const getTechnicalReportWorksheet = (location: SavedLocation, settings?: 
   const accuracyLimit = location.accuracyLimit || 5.0;
   
   const methods: CalculationMethod[] = [
+    'ARITHMETIC_MEAN',
     'WEIGHTED_LSE', 
     'HUBER',
     'HAMPEL',

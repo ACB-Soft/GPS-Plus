@@ -94,7 +94,7 @@ const BingTileLayer = () => {
 };
 
 const METHOD_COLORS: Record<string, string> = {
-  ARITHMETIC_MEAN: '#ec4899',
+  ARITHMETIC_MEAN: '#f59e0b',
   WEIGHTED_LSE: '#8b5cf6',
   HUBER: '#3b82f6',
   KMEANS_4: '#06b6d4',
@@ -313,12 +313,65 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
 
 
+  const methods = useMemo<CalculationMethod[]>(() => [
+    'ARITHMETIC_MEAN',
+    'WEIGHTED_LSE',
+    'HUBER',
+    'HAMPEL',
+    'HODGES_LEHMANN',
+    'TUKEYS_TRIMEAN',
+    'OPTIMAL_S'
+  ], []);
+
+  const [selectedDisplayMethods, setSelectedDisplayMethods] = useState<CalculationMethod[]>([
+    'ARITHMETIC_MEAN',
+    'WEIGHTED_LSE',
+    'HUBER',
+    'HAMPEL',
+    'HODGES_LEHMANN',
+    'TUKEYS_TRIMEAN',
+    'OPTIMAL_S'
+  ]);
+
+  const visibleAnalysisResults = useMemo(() => {
+    if (!analysisResults) return null;
+    const filtered = analysisResults.filter(r => selectedDisplayMethods.includes(r.method));
+    return filtered.length > 0 ? filtered : analysisResults;
+  }, [analysisResults, selectedDisplayMethods]);
+
+  const toggleDisplayMethod = (method: CalculationMethod) => {
+    setSelectedDisplayMethods(prev => {
+      if (prev.includes(method)) {
+        if (prev.length <= 1) {
+          return prev;
+        }
+        return prev.filter(m => m !== method);
+      } else {
+        const next = [...prev, method];
+        return methods.filter(m => next.includes(m));
+      }
+    });
+  };
+
+  const getMethodFullName = (m: CalculationMethod) => {
+    const names: Record<string, { tr: string; en: string }> = {
+      'ARITHMETIC_MEAN': { tr: "Aritmetik Ortalama", en: "Arithmetic Mean" },
+      'WEIGHTED_LSE': { tr: "Ağırlıklı En Küçük Kareler", en: "Weighted Least Squares" },
+      'HUBER': { tr: "Huber M-Kestiricisi", en: "Huber M-Estimator" },
+      'HAMPEL': { tr: "Hampel M-Kestiricisi", en: "Hampel M-Estimator" },
+      'HODGES_LEHMANN': { tr: "Hodges-Lehmann R-Kestiricisi", en: "Hodges-Lehmann Estimator" },
+      'TUKEYS_TRIMEAN': { tr: "Tukey's Trimean L-Kestiricisi", en: "Tukey's Trimean Estimator" },
+      'OPTIMAL_S': { tr: "Optimal S-Kestiricisi", en: "Optimal S-Estimator" }
+    };
+    return names[m] ? (language === 'EN' ? names[m].en : names[m].tr) : m;
+  };
+
   const bestMethod = useMemo(() => {
-    if (!analysisResults || analysisResults.length === 0) return null;
-    const sorted = [...analysisResults]
+    if (!visibleAnalysisResults || visibleAnalysisResults.length === 0) return null;
+    const sorted = [...visibleAnalysisResults]
       .sort((a,b) => (a.errors?.dhz || 0) - (b.errors?.dhz || 0));
     return sorted.length > 0 ? sorted[0].method : null;
-  }, [analysisResults]);
+  }, [visibleAnalysisResults]);
 
   const useLocal = useMemo(() => {
     if (!location) return true;
@@ -355,17 +408,9 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
     }
   }, [selectedPointId, analysisType, location]);
 
-  const methods = useMemo<CalculationMethod[]>(() => [
-    'WEIGHTED_LSE',
-    'HUBER',
-    'HAMPEL',
-    'HODGES_LEHMANN',
-    'TUKEYS_TRIMEAN',
-    'OPTIMAL_S'
-  ], []);
-
   const getMethodLabel = (m: CalculationMethod) => {
     const labels: Record<string, string> = {
+      'ARITHMETIC_MEAN': "ORTALAMA",
       'WEIGHTED_LSE': "WLSE",
       'HUBER': "HUBER-M",
       'HAMPEL': "HAMPEL-M",
@@ -926,7 +971,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       };
     });
 
-    const methodPoints = (analysisResults || [])
+    const methodPoints = (visibleAnalysisResults || [])
       .map((res, index) => {
         const dE = res.calculated.x - centerX;
         const dN = res.calculated.y - centerY;
@@ -949,7 +994,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
       centerLabel: isPrecise ? t('KESİN NOKTA') : t('ORTALAMA'),
       range 
     };
-  }, [chartData, analysisResults, analysisType, appliedPreciseN, appliedPreciseE, useLocal, location]);
+  }, [chartData, visibleAnalysisResults, analysisType, appliedPreciseN, appliedPreciseE, useLocal, location]);
 
   const maxTickLimit = useMemo(() => {
     if (customScatterRange !== 'auto') {
@@ -1296,7 +1341,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
   };
 
   const handleDownloadExcel = () => {
-    if (!analysisResults || !location) return;
+    if (!visibleAnalysisResults || !location) return;
     
     downloadCombinedAnalysisReport(
       location,
@@ -1306,7 +1351,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
         z: parseFloat(appliedPreciseZ), 
         isWgs84: !useLocal 
       },
-      analysisResults,
+      visibleAnalysisResults,
       settings,
       language
     );
@@ -1602,6 +1647,91 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("Analiz Sonuçları")}</label>
               </div>
 
+              {/* Yöntem Seçimi Checklisti */}
+              <div className="bg-white rounded-2xl p-4 border border-slate-150/80 shadow-sm space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0 text-xs shadow-xs">
+                      <i className="fas fa-tasks"></i>
+                    </div>
+                    <div>
+                      <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider">
+                        {language === 'EN' ? "Displayed Methods" : "Görüntülenecek Yöntemler"}
+                      </h4>
+                      <p className="text-[8.5px] font-semibold text-slate-400">
+                        {language === 'EN' 
+                          ? "Select which algorithm results to show in tables, charts and map" 
+                          : "Tablo, grafik ve haritada listelenecek yöntemleri seçin"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100/80 font-mono">
+                      {selectedDisplayMethods.length}/{methods.length}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (selectedDisplayMethods.length === methods.length) {
+                          setSelectedDisplayMethods([methods[0]]);
+                        } else {
+                          setSelectedDisplayMethods([...methods]);
+                        }
+                      }}
+                      className="text-[8.5px] font-black uppercase px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all active:scale-95 cursor-pointer"
+                    >
+                      {selectedDisplayMethods.length === methods.length 
+                        ? (language === 'EN' ? "Clear" : "Temizle") 
+                        : (language === 'EN' ? "Select All" : "Tümünü Seç")}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {methods.map((m) => {
+                    const isSelected = selectedDisplayMethods.includes(m);
+                    const color = METHOD_COLORS[m] || '#3b82f6';
+                    const label = getMethodLabel(m);
+                    const fullName = getMethodFullName(m);
+
+                    return (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => toggleDisplayMethod(m)}
+                        className={`flex items-center justify-between p-2.5 rounded-xl border-2 transition-all cursor-pointer text-left select-none ${
+                          isSelected 
+                            ? 'bg-slate-50/90 border-blue-500 shadow-xs ring-1 ring-blue-500/20' 
+                            : 'bg-white border-slate-150 hover:border-slate-250 opacity-60'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                          <span
+                            className="text-[9px] font-black px-1.5 py-0.5 rounded text-white shrink-0 tracking-wider shadow-xs"
+                            style={{ backgroundColor: color }}
+                          >
+                            {label}
+                          </span>
+                          <p className="text-[10px] font-extrabold text-slate-800 truncate leading-snug">
+                            {fullName}
+                          </p>
+                        </div>
+
+                        <div
+                          className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-all border ${
+                            isSelected 
+                              ? 'bg-blue-600 border-blue-600 text-white shadow-xs' 
+                              : 'bg-white border-slate-300 text-transparent'
+                          }`}
+                        >
+                          <i className="fas fa-check text-[10px]"></i>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Multipath / Reliability Analysis */}
               {multipathAnalysis && (
                 <div className={`p-4.5 rounded-2xl border-2 animate-in slide-in-from-top-4 ${
@@ -1701,7 +1831,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       </tr>
                     </thead>
                     <tbody>
-                      {analysisResults.map((res, idx) => {
+                      {(visibleAnalysisResults || []).map((res, idx) => {
                         const isBest = res.method === bestMethod;
                         const totalCount = location?.samples?.length || 0;
                         const baseCount = res.preFilteredCount ?? totalCount;
@@ -1745,7 +1875,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       </tr>
                     </thead>
                     <tbody>
-                      {analysisResults.map((res, idx) => {
+                      {(visibleAnalysisResults || []).map((res, idx) => {
                         const totalCount = location?.samples?.length || 0;
                         const baseCount = res.preFilteredCount ?? totalCount;
                         return (
@@ -2744,7 +2874,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
               )}
 
               {/* Algorithm Results */}
-              {analysisResults.map((res, index) => {
+              {(visibleAnalysisResults || []).map((res, index) => {
                 return (
                   <Marker 
                     key={res.method}
@@ -2778,7 +2908,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
 
               <MapSetBounds points={[
                 ...location.samples!.filter(s => s.accuracy <= (location.accuracyLimit || 5.0)).map(s => [s.lat, s.lng] as [number, number]),
-                ...analysisResults.map(r => [r.lat, r.lng] as [number, number]),
+                ...((visibleAnalysisResults || []).map(r => [r.lat, r.lng] as [number, number])),
                 ...(analysisType === 'precise' && preciseWgs ? [preciseWgs] : [])
               ]} />
               <MapResizer />
@@ -2795,7 +2925,7 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                       <span className="text-[8px] font-black text-emerald-600 uppercase">REF.</span>
                     </div>
                   )}
-                  {analysisResults.map((res, idx) => (
+                  {(visibleAnalysisResults || []).map((res, idx) => (
                     <div key={res.method} className="flex items-center gap-2">
                       <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-bold text-white shrink-0" style={{ backgroundColor: METHOD_COLORS[res.method] }}>
                         {idx + 1}
