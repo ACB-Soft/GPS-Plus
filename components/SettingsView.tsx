@@ -29,6 +29,8 @@ const SettingsView: React.FC<Props> = ({ onBack, onRestoreLocations }) => {
   const [locationPrecision, setLocationPrecision] = useState(safeStorage.getItem('default_location_precision') || '2');
   const [heightPrecision, setHeightPrecision] = useState(safeStorage.getItem('default_height_precision') || '1');
   const [heightType, setHeightType] = useState(safeStorage.getItem('default_height_type') || 'orthometric');
+  const [gnssOnlyMode, setGnssOnlyMode] = useState<boolean>(() => safeStorage.getItem('default_gnss_only_mode') === 'true');
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(() => safeStorage.getItem('always_show_onboarding') === 'true');
   const [isDeveloperMode, setIsDeveloperMode] = useState<boolean>(() => {
     return safeStorage.getItem('developer_mode_enabled') === 'true';
   });
