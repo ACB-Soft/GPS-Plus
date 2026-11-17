@@ -334,6 +334,12 @@ export const getTechnicalReportWorksheet = (location: SavedLocation, settings?: 
 };
 
 export const downloadTechnicalReport = (location: SavedLocation, settings?: AppSettings, language?: 'TR' | 'EN') => {
+  const isDeveloperMode = safeStorage.getItem('developer_mode_enabled') === 'true';
+  if (!isDeveloperMode) {
+    alert(language === 'EN' ? "Point survey report can only be downloaded when developer mode is enabled." : "Nokta ölçüm raporu sadece geliştirici modu açıkken indirilebilir.");
+    return;
+  }
+
   const worksheet = getTechnicalReportWorksheet(location, settings, language);
   if (!worksheet) {
     alert(language === 'EN' ? "No raw data (samples) found for this point. Survey report can only be generated for newly measured points." : "Bu noktaya ait ham veri (örneklem) bulunamadı. Teknik rapor sadece yeni ölçülen noktalar için oluşturulabilir.");
@@ -357,6 +363,12 @@ export const downloadCombinedAnalysisReport = (
   settings?: AppSettings,
   language?: 'TR' | 'EN'
 ) => {
+  const isDeveloperMode = safeStorage.getItem('developer_mode_enabled') === 'true';
+  if (!isDeveloperMode) {
+    alert(language === 'EN' ? "Point survey report can only be downloaded when developer mode is enabled." : "Nokta ölçüm raporu sadece geliştirici modu açıkken indirilebilir.");
+    return;
+  }
+
   const workbook = XLSX.utils.book_new();
 
   const txt = (tr: string, en: string) => language === 'EN' ? en : tr;
@@ -374,7 +386,6 @@ export const downloadCombinedAnalysisReport = (
   }
 
   // --- SAYFA 2: İSTATİSTİKSEL ANALİZ VE AR-GE SONUÇLARI ---
-  const isDeveloperMode = safeStorage.getItem('developer_mode_enabled') === 'true';
   const calculationMethod = location.calculationMethod || 'WEIGHTED_LSE';
   const effectiveResults = isDeveloperMode ? results : results.filter(r => r.method === 'WEIGHTED_LSE');
   const bestMethod = (effectiveResults.length > 0 ? [...effectiveResults] : [...results]).sort((a,b) => (a.errors?.dhz || 0) - (b.errors?.dhz || 0))[0];

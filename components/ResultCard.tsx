@@ -83,6 +83,7 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
   const [showWarning, setShowWarning] = useState(false);
   const [currentMapProvider, setCurrentMapProvider] = useState(() => safeStorage.getItem('default_map_provider') || 'Google Hybrid');
   const [showLayerMenu, setShowLayerMenu] = useState(false);
+  const isDeveloperMode = safeStorage.getItem('developer_mode_enabled') === 'true';
   const { x, y, labelX, labelY, zone } = convertCoordinate(location.lat, location.lng, location.coordinateSystem || 'WGS84');
   const isUTM = location.coordinateSystem && location.coordinateSystem !== 'WGS84';
   
@@ -241,13 +242,15 @@ const ResultCard: React.FC<Props> = ({ location, settings, initialShowMap = fals
             <i className="fas fa-route"></i>
             {t("Navigasyona Gönder")}
           </button>
-          <button 
-            onClick={() => import('./ExcelUtils').then(m => m.downloadTechnicalReport(location, settings, language))}
-            className="w-full py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-slate-600/20 cursor-pointer"
-          >
-            <i className="fas fa-file-excel"></i>
-            {t("Ölçüm Raporu")}
-          </button>
+          {isDeveloperMode && (
+            <button 
+              onClick={() => import('./ExcelUtils').then(m => m.downloadTechnicalReport(location, settings, language))}
+              className="w-full py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-slate-600/20 cursor-pointer"
+            >
+              <i className="fas fa-file-excel"></i>
+              {t("Ölçüm Raporu")}
+            </button>
+          )}
         </div>
       </div>
 

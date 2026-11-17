@@ -31,6 +31,7 @@ const SavedLocationItem: React.FC<{
   onViewOnMap: (l: SavedLocation) => void;
 }> = ({ l, settings, expanded, togglePoint, deletingPoint, setDeletingPoint, onDelete, onRenamePoint, onViewOnMap }) => {
   const { t, language } = useLanguage();
+  const isDeveloperMode = safeStorage.getItem('developer_mode_enabled') === 'true';
   const geoidInfo = useOrthometricHeight(l.altitude, l.lat, l.lng, l.deviceOS);
   const isOrthometric = settings.heightType === 'orthometric';
   const displayHeight = isOrthometric ? geoidInfo.orthometricHeight : geoidInfo.ellipsoidalHeight;
@@ -257,13 +258,15 @@ const SavedLocationItem: React.FC<{
               <i className="fas fa-route"></i>
               {t("Navigasyona Gönder")}
             </button>
-            <button 
-              onClick={() => import('./ExcelUtils').then(m => m.downloadTechnicalReport(l, settings, language))}
-              className="w-full py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-slate-600/20 cursor-pointer"
-            >
-              <i className="fas fa-file-excel"></i>
-              {t("Ölçüm Raporu")}
-            </button>
+            {isDeveloperMode && (
+              <button 
+                onClick={() => import('./ExcelUtils').then(m => m.downloadTechnicalReport(l, settings, language))}
+                className="w-full py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-slate-600/20 cursor-pointer"
+              >
+                <i className="fas fa-file-excel"></i>
+                {t("Ölçüm Raporu")}
+              </button>
+            )}
           </div>
         </div>
       )}

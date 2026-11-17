@@ -2730,25 +2730,27 @@ const DataAnalysisView: React.FC<Props> = ({ locations, initialSelectedId, setti
                 </div>
               </div>
 
-                <div className="mt-4">
-                {analysisType === 'precise' ? (
-                  <button 
-                    onClick={handleDownloadExcel}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/10 cursor-pointer"
-                  >
-                    <i className="fas fa-file-excel"></i>
-                    {t("Ölçüm Raporu")}
-                  </button>
-                ) : (
-                  <button 
-                    onClick={() => import('./ExcelUtils').then(m => m.downloadTechnicalReport(location!, settings, language))}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/10 cursor-pointer"
-                  >
-                    <i className="fas fa-file-excel"></i>
-                    {t("Ölçüm Raporu")}
-                  </button>
+                {isDeveloperMode && (
+                  <div className="mt-4">
+                    {analysisType === 'precise' ? (
+                      <button 
+                        onClick={handleDownloadExcel}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/10 cursor-pointer"
+                      >
+                        <i className="fas fa-file-excel"></i>
+                        {t("Ölçüm Raporu")}
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => import('./ExcelUtils').then(m => m.downloadTechnicalReport(location!, settings, language))}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/10 cursor-pointer"
+                      >
+                        <i className="fas fa-file-excel"></i>
+                        {t("Ölçüm Raporu")}
+                      </button>
+                    )}
+                  </div>
                 )}
-              </div>
 
 
             </div>
