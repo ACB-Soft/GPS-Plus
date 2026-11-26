@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, Circle, CircleMarker, Polyline, Polygon, Tooltip, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import { StakeoutPoint, Coordinate, StakeoutGeometry, AppSettings } from '../types';
+import { StakeoutPoint, Coordinate, StakeoutGeometry, AppSettings, ParcelQueryResult } from '../types';
 import { getAccuracyColor, getAccuracyBg } from '../utils/StyleUtils';
 import { parseKML, cleanProjectName } from '../utils/KmlParser';
 import { convertCoordinate, convertToWGS84 } from '../utils/CoordinateUtils';
@@ -12,6 +12,7 @@ import GlobalFooter from './GlobalFooter';
 import Header from './Header';
 import { useLanguage } from '../utils/LanguageContext';
 import CompactBottomInfoCard, { SelectedMapFeature } from './CompactBottomInfoCard';
+import ParcelQueryView from './ParcelQueryView';
 import safeStorage from '../utils/safeStorage';
 
 
@@ -308,10 +309,25 @@ const ZoomTracker = ({ onZoomChange }: { onZoomChange: (zoom: number) => void })
   return null;
 };
 
-const BoundsUpdater = ({ points, geometries, trigger }: { points: StakeoutPoint[], geometries: StakeoutGeometry[], trigger?: number }) => {
+const BoundsUpdater = ({
+  points,
+  geometries,
+  trigger,
+  activeProjectTarget,
+}: {
+  points: StakeoutPoint[];
+  geometries: StakeoutGeometry[];
+  trigger?: number;
+  activeProjectTarget?: { coords: [number, number][]; time: number } | null;
+}) => {
   const map = useMap();
 
   useEffect(() => {
+    // If a specific project/parcel focus trigger was just fired, don't override it with global bounds on mount
+    if (activeProjectTarget && Date.now() - activeProjectTarget.time < 2500 && !trigger) {
+      return;
+    }
+
     const allCoords: [number, number][] = [];
     points.forEach(p => allCoords.push([p.lat, p.lng]));
     geometries.forEach(g => g.coordinates.forEach(c => allCoords.push([c.lat, c.lng])));
@@ -340,9 +356,9 @@ const ProjectBoundsFitter = ({ target }: { target: { coords: [number, number][],
       const timer = setTimeout(() => {
         map.invalidateSize();
         const tightZoom = map.getBoundsZoom(bounds, false, L.point(60, 60));
-        const upperLimitZoom = Math.max(1, Math.min(18, tightZoom - 1));
+        const upperLimitZoom = Math.max(1, Math.min(19, tightZoom));
         map.setView(bounds.getCenter(), upperLimitZoom);
-      }, 50);
+      }, 180);
       return () => clearTimeout(timer);
     }
   }, [target, map]);
@@ -543,7 +559,7 @@ const MapTouchWrapper = ({
 
 const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, currentStep, onNavigate }) => {
   const { t } = useLanguage();
-  const [view, setView] = useState<'MENU' | 'LIST' | 'MANUAL' | 'MAP' | 'ALL_MAP'>((currentStep as any) || (initialPoint ? 'MAP' : 'MENU'));
+  const [view, setView] = useState<'MENU' | 'LIST' | 'MANUAL' | 'MAP' | 'ALL_MAP' | 'PARCEL_QUERY'>((currentStep as any) || (initialPoint ? 'MAP' : 'MENU'));
   const [allMapZoom, setAllMapZoom] = useState(0);
   const [allMapCenterTrigger, setAllMapCenterTrigger] = useState<{ pos: [number, number], time: number } | null>(null);
   const [currentMapProvider, setCurrentMapProvider] = useState(() => safeStorage.getItem('default_map_provider') || 'Google Hybrid');
@@ -985,6 +1001,55 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
     showToast(`"${layerName}" ${t("katmanı silindi.")}`, "success");
   };
 
+  const handleConfirmParcel = (parcel: ParcelQueryResult) => {
+    const ada = parcel.adaNo || '0';
+    const parsel = parcel.parselNo || '-';
+    const mahalle = parcel.mahalleAd || t('Parsel');
+    const layerName = `${mahalle} - ${ada}/${parsel}`;
+    const geomId = `parcel-${parcel.mahalleId || 'gps'}-${ada}-${parsel}`;
+
+    const newGeometry: StakeoutGeometry = {
+      id: geomId,
+      name: `${t('Ada')} ${ada} / ${t('Parsel')} ${parsel}`,
+      type: 'Polygon',
+      coordinates: parcel.coordinates,
+      color: '#10b981',
+      projectName: layerName,
+      parcelInfo: {
+        ilAd: parcel.ilAd,
+        ilceAd: parcel.ilceAd,
+        mahalleAd: parcel.mahalleAd,
+        mahalleId: parcel.mahalleId,
+        adaNo: ada,
+        parselNo: parsel,
+        alan: parcel.alan,
+        nitelik: parcel.nitelik,
+        mevkii: parcel.mevkii,
+        pafta: parcel.pafta,
+        zeminKmdurum: parcel.zeminKmdurum,
+        ozet: parcel.ozet,
+      },
+    };
+
+    setGeometries((prev) => {
+      const filtered = prev.filter((g) => g.id !== geomId && cleanProjectName(g.projectName) !== layerName);
+      return [newGeometry, ...filtered];
+    });
+    setHiddenProjects((prev) => prev.filter((n) => n !== layerName));
+
+    const leafletCoords: [number, number][] = parcel.coordinates.map((c) => [c.lat, c.lng]);
+    setProjectBoundsTrigger({ coords: leafletCoords, time: Date.now() });
+    setSelectedFeature({
+      type: 'POLYGON',
+      geometry: newGeometry,
+      area: calculatePolygonArea(parcel.coordinates),
+      perimeter: calculatePolygonPerimeter(parcel.coordinates),
+    });
+
+    showToast(`${layerName} ${t('haritaya eklendi.')}`, 'success');
+    onNavigate('ALL_MAP');
+  };
+
   const handleAddManual = () => {
     if (!manualName || !manualX || !manualY) return;
 
@@ -1097,7 +1162,8 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
         <Header 
           title={view === 'MENU' ? t('Aplikasyon Yap') : 
                  view === 'LIST' ? t('Nokta Listesi') : 
-                 view === 'MANUAL' ? t('Manuel Ekle') : t('Aplikasyon Ekranı')} 
+                 view === 'MANUAL' ? t('Manuel Ekle') :
+                 view === 'PARCEL_QUERY' ? t('Parsel Sorgudan Yükle') : t('Aplikasyon Ekranı')} 
           onBack={() => {
             window.history.back();
           }}
@@ -1153,6 +1219,16 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                         className="hidden" 
                       />
                   </label>
+
+                  <button onClick={() => onNavigate('PARCEL_QUERY')} className="w-full py-2.5 md:py-3.5 px-5 bg-slate-100 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 active:scale-[0.98] transition-all cursor-pointer">
+                    <div className="w-12 h-12 bg-teal-100 text-teal-600 rounded-2xl flex items-center justify-center shrink-0">
+                      <i className="fas fa-draw-polygon text-xl"></i>
+                    </div>
+                    <div className="text-left">
+                      <span className="font-black text-slate-900 block">{t("Parsel Sorgudan Yükle")}</span>
+                      <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">{t("TKGM Ada / Parsel")}</span>
+                    </div>
+                  </button>
   
                   <button onClick={() => onNavigate('LIST')} className="w-full py-2.5 md:py-3.5 px-5 bg-slate-100 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-5 active:scale-[0.98] transition-all">
                     <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
@@ -1660,6 +1736,15 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
           </div>
         )}
 
+        {view === 'PARCEL_QUERY' && (
+          <div className="flex-1 flex flex-col h-full overflow-hidden">
+            <ParcelQueryView
+              onConfirmParcel={handleConfirmParcel}
+            />
+            <GlobalFooter noPadding={true} />
+          </div>
+        )}
+
         {view === 'ALL_MAP' && (
           <div className="flex flex-col h-full relative">
             <div className="flex-1 relative z-10">
@@ -1858,20 +1943,33 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                       </button>
                     </div>
 
-                    {/* Add New Project (KML/KMZ) Button */}
-                    <label className="flex items-center justify-center gap-1.5 py-2 px-3 bg-indigo-50 hover:bg-indigo-100/90 text-indigo-700 border border-indigo-200/80 rounded-xl text-xs font-bold transition-all active:scale-[0.98] cursor-pointer shadow-2xs">
-                      <i className="fas fa-plus-circle text-xs"></i>
-                      <span>{t("Yeni Proje Ekle (KML/KMZ)")}</span>
-                      <input 
-                        type="file" 
-                        accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz,application/zip,application/x-zip-compressed,application/octet-stream" 
-                        onChange={(e) => {
-                          handleKmlUpload(e);
-                          e.target.value = '';
-                        }} 
-                        className="hidden" 
-                      />
-                    </label>
+                    {/* Add New Project (KML/KMZ) & Parcel Query Buttons */}
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <label className="flex items-center justify-center gap-1.5 py-2 px-2.5 bg-indigo-50 hover:bg-indigo-100/90 text-indigo-700 border border-indigo-200/80 rounded-xl text-[11px] font-bold transition-all active:scale-[0.98] cursor-pointer shadow-2xs">
+                        <i className="fas fa-plus-circle text-xs"></i>
+                        <span className="truncate">{t("KML/KMZ Ekle")}</span>
+                        <input 
+                          type="file" 
+                          accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz,application/zip,application/x-zip-compressed,application/octet-stream" 
+                          onChange={(e) => {
+                            handleKmlUpload(e);
+                            e.target.value = '';
+                          }} 
+                          className="hidden" 
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowProjectLayersMenu(false);
+                          onNavigate('PARCEL_QUERY');
+                        }}
+                        className="flex items-center justify-center gap-1.5 py-2 px-2.5 bg-teal-50 hover:bg-teal-100/90 text-teal-700 border border-teal-200/80 rounded-xl text-[11px] font-bold transition-all active:scale-[0.98] cursor-pointer shadow-2xs"
+                      >
+                        <i className="fas fa-draw-polygon text-xs"></i>
+                        <span className="truncate">{t("Parsel Sorgula")}</span>
+                      </button>
+                    </div>
 
                     {/* Quick Visibility Controls */}
                     {projectLayers.length > 1 && (
@@ -2386,7 +2484,7 @@ const StakeoutModule: React.FC<Props> = ({ onBack, initialPoint, settings, curre
                   </>
                 )}
                 <MapRotationHandler mapRotation={mapRotation} />
-                <BoundsUpdater points={visiblePoints} geometries={visibleGeometriesRaw} trigger={fitBoundsTrigger} />
+                <BoundsUpdater points={visiblePoints} geometries={visibleGeometriesRaw} trigger={fitBoundsTrigger} activeProjectTarget={projectBoundsTrigger} />
                 <ProjectBoundsFitter target={projectBoundsTrigger} />
                 <ZoomTracker onZoomChange={setAllMapZoom} />
                 <MapCenterer trigger={allMapCenterTrigger} />

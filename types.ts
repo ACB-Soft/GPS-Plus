@@ -64,6 +64,30 @@ export interface StakeoutPoint {
   projectName?: string;
 }
 
+export interface ParcelMetadata {
+  ilAd: string;
+  ilceAd: string;
+  mahalleAd: string;
+  mahalleId?: number;
+  adaNo: string;
+  parselNo: string;
+  alan: string;
+  nitelik: string;
+  mevkii: string;
+  pafta: string;
+  zeminKmdurum?: string;
+  ozet?: string;
+}
+
+export interface ParcelAdminItem {
+  id: number;
+  text: string;
+}
+
+export interface ParcelQueryResult extends ParcelMetadata {
+  coordinates: { lat: number; lng: number }[];
+}
+
 export interface StakeoutGeometry {
   id: string;
   name: string;
@@ -71,6 +95,7 @@ export interface StakeoutGeometry {
   coordinates: { lat: number; lng: number; altitude?: number }[];
   color?: string;
   projectName?: string;
+  parcelInfo?: ParcelMetadata;
 }
 
 export interface AppSettings {

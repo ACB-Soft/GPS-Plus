@@ -213,15 +213,24 @@ export const CompactBottomInfoCard: React.FC<Props> = ({
           </button>
         </div>
 
-        {/* 2. Satır: Objenin Adı */}
-        <div className="flex items-center gap-2 min-w-0">
-          <span 
-            className="w-2.5 h-2.5 rounded-xs shrink-0 shadow-xs" 
-            style={{ backgroundColor: geometry.color || '#10b981' }}
-          />
-          <span className="text-xs font-black text-slate-900 truncate">
-            {geometry.name || t("Poligon Objesi")}
-          </span>
+        {/* 2. Satır: Objenin Adı ve Parsel Bilgisi */}
+        <div className="flex flex-col gap-0.5 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span 
+              className="w-2.5 h-2.5 rounded-xs shrink-0 shadow-xs" 
+              style={{ backgroundColor: geometry.color || '#10b981' }}
+            />
+            <span className="text-xs font-black text-slate-900 truncate">
+              {geometry.name || t("Poligon Objesi")}
+            </span>
+          </div>
+          {geometry.parcelInfo && (
+            <div className="text-[10.5px] font-medium text-slate-500 pl-4.5 truncate">
+              {[geometry.parcelInfo.ilAd, geometry.parcelInfo.ilceAd, geometry.parcelInfo.mahalleAd].filter(Boolean).join(' · ')}
+              {geometry.parcelInfo.nitelik ? ` · ${geometry.parcelInfo.nitelik}` : ''}
+              {geometry.parcelInfo.alan ? ` · ${t("Tapu")}: ${geometry.parcelInfo.alan} m²` : ''}
+            </div>
+          )}
         </div>
 
         {/* 3. Satır: Yüzölçümü ve Köşe Sayısı Bilgisi */}
