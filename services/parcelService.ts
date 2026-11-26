@@ -145,6 +145,7 @@ async function tryLocalApi<T>(url: string): Promise<{ available: boolean; data?:
 
 async function fetchDirectTkgmJson(path: string, notFoundMessage: string): Promise<unknown> {
   const res = await fetch(`${TKGM_API_BASE}${path}`, {
+    referrerPolicy: 'no-referrer',
     headers: { Accept: 'application/json' },
   });
 
@@ -159,7 +160,8 @@ async function fetchDirectTkgmJson(path: string, notFoundMessage: string): Promi
     throw new Error(notFoundMessage);
   }
   if (!res.ok) {
-    throw new Error(body?.Message || body?.error || `TKGM servisine erişilemedi (${res.status}).`);
+    const tkgmText = typeof body === 'string' ? body : body?.Message || body?.error;
+    throw new Error(tkgmText || `TKGM servisine erişilemedi (${res.status}).`);
   }
   return body;
 }
