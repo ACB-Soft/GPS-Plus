@@ -173,7 +173,7 @@ async function startServer() {
       }
 
       const { status, data } = await fetchTkgmJson(
-        'https://parselsorgu.tkgm.gov.tr/app/modules/administrativeQuery/data/ilListe.json'
+        'https://cbsapi.tkgm.gov.tr/megsiswebapi.v3.1/api/idariYapi/ilListe'
       );
 
       if (status < 200 || status >= 300) {
